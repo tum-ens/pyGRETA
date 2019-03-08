@@ -117,7 +117,10 @@ def calc_region(region, Crd, res, R1):
 
     array2raster("test.tiff", origin, R1["pixelWidth"], -R1["pixelheight"], A_region)
 
-    features = [feature for feature in region.geometry]
+    if region.geometry.geom_type == 'MultiPolygon':
+        features = [feature for feature in region.geometry]
+    else:
+        features = [region.geometry]
 
     with rasterio.open("test.tiff", "r") as src:
         out_image, out_transform = mask.mask(src, features, crop=False, nodata=0, all_touched=False, filled=True)
@@ -150,8 +153,8 @@ def generate_landsea(paths, regions_shp, Crd, Ind, m, n, res, R1):
 def generate_landuse(paths, Ind, R1):
     if not os.path.isfile(paths['LU']):
         with rasterio.open(paths["LU_global"]) as src:
-            w = src.read(1, window=windows.Window.from_slices(slice(Ind[2, 0, 0], Ind[2, 0, 2]),
-                                                              slice(Ind[2, 0, 3], Ind[2, 0, 1])))
+            w = src.read(1, window=windows.Window.from_slices(slice(Ind[2, 0, 0]-1, Ind[2, 0, 2]),
+                                                              slice(Ind[2, 0, 3]-1, Ind[2, 0, 1])))
         w = np.flipud(w)
         array2raster(paths["LU"], R1["RasterOrigin"], R1["pixelWidth"], R1["pixelheight"], w)
         print("files saved:" + paths["LU"])
@@ -169,7 +172,6 @@ def generate_bathymetry(paths, Ind, R1):
 
 def generate_topography(paths, Ind, R1):
     if not os.path.isfile(paths["TOPO"]):
-        print(char_range('A', 'X'))
         Topo = np.zeros((180 * 240, 360 * 240))
         tile_extents = np.zeros((24, 4), dtype=int)
         i = 1
@@ -197,10 +199,10 @@ def generate_topography(paths, Ind, R1):
             if need[index]:
                 with rasterio.open(paths["LU_global"] + '15-' + letter + '.tif') as src:
                     tile = src.read()
-                Topo[tile_extents[index, 0]: tile_extents[index, 2], tile_extents[index, 3]: tile_extents[index, 1]] = \
-                    tile[0:-2, 0:-2]
+                Topo[tile_extents[index, 0]-1: tile_extents[index, 2], tile_extents[index, 3]-1: tile_extents[index, 1]] = \
+                    tile[0:-1, 0:-1]
 
-        A_TOPO = np.flipud(Topo)
+        A_TOPO = np.flipud(Topo[Ind[2,0,0]-1:Ind[2,0,2], Ind[2,0,3]-1:Ind[2,0,1]])
         array2raster(paths["TOPO"], R1["RasterOrigin"], R1["pixelWidth"], R1["pixelheight"], A_TOPO)
         print("files saved:" + paths["TOPO"])
 
@@ -223,40 +225,40 @@ def generate_slope(paths, Ind, R1):
         m_per_deg_lat = 111132.954 - 559.822 * cos(np.deg2rad(2 * latMid)) + 1.175 * cos(np.deg2rad(4 * latMid))
         m_per_deg_lon = (np.pi / 180) * 6367449 * cos(np.deg2rad(latMid_2))
 
-        x_cell = repmat(deltaLon, 180 * 240, 1) * repmat(m_per_deg_lon.T, 1, 360 * 240)
-        x_cell = x_cell[Ind[2, 0, 0] - 2:Ind[2, 0, 2], Ind[2, 0, 3] - 2: Ind[3, 0, 1]]
+        x_cell = repmat(deltaLon, 180 * 240, 1) * repmat(m_per_deg_lon, 360 * 240, 1).T
+        x_cell = x_cell[Ind[2, 0, 0] - 2:Ind[2, 0, 2]+1, Ind[2, 0, 3] - 2: Ind[3, 0, 1]+1]
         x_cell = np.flipud(x_cell)
 
-        y_cell = repmat((deltaLat * m_per_deg_lat).T, 1, 360 * 240)
-        y_cell = y_cell[Ind[2, 0, 0] - 2:Ind[2, 0, 2], Ind[2, 0, 3] - 2: Ind[3, 0, 1]]
+        y_cell = repmat((deltaLat * m_per_deg_lat), 360 * 240, 1).T
+        y_cell = y_cell[Ind[2, 0, 0] - 2:Ind[2, 0, 2]+1, Ind[2, 0, 3] - 2: Ind[3, 0, 1]+1]
         y_cell = np.flipud(y_cell)
 
         with rasterio.open(paths["TOPO"]) as src:
             A_TOPO = src.read(1)
 
         topo_a = np.zeros((Ind[2, 0, 2] - Ind[2, 0, 0] + 3, Ind[2, 0, 1] - Ind[2, 0, 3] + 3))
-        topo_a[0: - 3, 0: - 3] = A_TOPO
+        topo_a[0: - 2, 0: - 2] = A_TOPO
 
         topo_b = np.zeros((Ind[2, 0, 2] - Ind[2, 0, 0] + 3, Ind[2, 0, 1] - Ind[2, 0, 3] + 3))
-        topo_b[0: - 3, 1: - 2] = A_TOPO
+        topo_b[0: - 2, 1: - 1] = A_TOPO
 
         topo_c = np.zeros((Ind[2, 0, 2] - Ind[2, 0, 0] + 3, Ind[2, 0, 1] - Ind[2, 0, 3] + 3))
-        topo_c[0: - 3, 2: - 1] = A_TOPO
+        topo_c[0: - 2, 2: - 0] = A_TOPO
 
         topo_d = np.zeros((Ind[2, 0, 2] - Ind[2, 0, 0] + 3, Ind[2, 0, 1] - Ind[2, 0, 3] + 3))
-        topo_d[1: - 2, 0: - 3] = A_TOPO
+        topo_d[1: - 1, 0: - 2] = A_TOPO
 
         topo_f = np.zeros((Ind[2, 0, 2] - Ind[2, 0, 0] + 3, Ind[2, 0, 1] - Ind[2, 0, 3] + 3))
-        topo_f[1: - 2, 2: - 1] = A_TOPO
+        topo_f[1: - 1, 2: - 0] = A_TOPO
 
         topo_g = np.zeros((Ind[2, 0, 2] - Ind[2, 0, 0] + 3, Ind[2, 0, 1] - Ind[2, 0, 3] + 3))
-        topo_g[2: - 1, 0: - 3] = A_TOPO
+        topo_g[2: - 1, 0: - 2] = A_TOPO
 
         topo_h = np.zeros((Ind[2, 0, 2] - Ind[2, 0, 0] + 3, Ind[2, 0, 1] - Ind[2, 0, 3] + 3))
-        topo_h[2: - 1, 1: - 2] = A_TOPO
+        topo_h[2: - 1, 1: - 1] = A_TOPO
 
         topo_i = np.zeros((Ind[2, 0, 2] - Ind[2, 0, 0] + 3, Ind[2, 0, 1] - Ind[2, 0, 3] + 3))
-        topo_i[2: - 1, 2: - 1] = A_TOPO
+        topo_i[2: - 1, 2: - 0] = A_TOPO
 
         dzdx = ((topo_c + 2 * topo_f + topo_i) - (topo_a + 2 * topo_d + topo_g)) / (8 * x_cell)
         dzdy = ((topo_g + 2 * topo_h + topo_i) - (topo_a + 2 * topo_b + topo_c)) / (8 * y_cell)
@@ -264,7 +266,7 @@ def generate_slope(paths, Ind, R1):
         slope_deg = arctan((dzdx ** 2 + dzdy ** 2) ** 0.5) * 180 / np.pi
         slope_pc = tan(np.deg2rad(slope_deg)) * 100
 
-        A_SLP = slope_pc[1:-2, 1:-2]
+        A_SLP = slope_pc[1:-1, 1:-1]
         array2raster(paths["SLOPE"], R1["RasterOrigin"], R1["pixelWidth"], R1["pixelheight"], A_SLP)
         print("files saved:" + paths["SLOPE"])
 
@@ -273,7 +275,7 @@ def generate_population(paths, Ind, R1):
     if not os.path.isfile(paths["POP"]):
 
         Pop = np.zeros((180 * 240, 360 * 240))
-        tile_extents = np.zeros((24, 4))
+        tile_extents = np.zeros((24, 4), dtype=int)
         i = 1
         j = 1
 
@@ -281,7 +283,7 @@ def generate_population(paths, Ind, R1):
             north = (i - 1) * 45 * 240 + 1
             east = j * 60 * 240
             south = i * 45 * 240
-            west = (j - i) * 60 * 240 + 1
+            west = (j - 1) * 60 * 240 + 1
             tile_extents[ord(letter) - ord('A'), :] = [north, east, south, west]
             j = j + 1
             if j == 7:
@@ -300,9 +302,9 @@ def generate_population(paths, Ind, R1):
             if need[index]:
                 with rasterio.open(paths["Pop_tiles"] + letter + '.tif') as src:
                     tile = src.read()
-                Pop[tile_extents[index, 0]: tile_extents[index, 2], tile_extents[index, 3]: tile_extents[index, 1]] = \
-                    tile
-        A_POP = np.flipud(Pop[Ind[2, 0, 0]:Ind[2, 0, 2], Ind[2, 0, 3]:Ind[2, 0, 1]])
+                Pop[tile_extents[index, 0]-1: tile_extents[index, 2], tile_extents[index, 3]-1: tile_extents[index, 1]] = \
+                    tile[0]
+        A_POP = np.flipud(Pop[Ind[2, 0, 0]-1:Ind[2, 0, 2], Ind[2, 0, 3]-1:Ind[2, 0, 1]])
         array2raster(paths["POP"], R1["RasterOrigin"], R1["pixelWidth"], R1["pixelheight"], A_POP)
         print("files saved:" + paths["POP"])
 

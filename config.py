@@ -7,10 +7,10 @@ import os
 # np.__config__.show()
 region = 'Germany'
 year = '2015'
-technology = 'Wind'  # 'PV','Wind','CSP'
+technology = 'PV'  # 'PV','Wind','CSP'
 windtechnology = ['Offshore', 'Onshore']  # 'Offshore', 'Onshore'
 
-quantiles = np.array([100, 99, 98, 97, 96, 95, 90, 80, 70, 60, 50])
+quantiles = np.array([100, 97, 95, 90, 75, 67, 50, 30])
 correction = 1
 savetiff = 1  # Save geotiff files of mask and weight rasters
 # Correction factors
@@ -34,12 +34,12 @@ if technology == 'PV':
     landuse["Ross_coeff"] = np.array([208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208,
                                       208])
     landuse["albedo"] = np.array([0, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 0, 25, 25, 25, 0, 25])
-    landuse["suit_s"] = np.array([0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0])
-    landuse["avail_s"] = np.array([0, 0, 0, 0, 0, 0, 10, 10, 1, 1, 10, 0, 10, 5, 10, 0, 0])
+    landuse["suit_s"] = np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1])
+    landuse["avail_s"] = np.array([0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 0, 2, 2, 2, 0, 2])
     landuse["cost_s"] = np.array([100, 50, 50, 50, 50, 50, 20, 20, 20, 20, 10, 80, 10, 15, 10, 100, 80])
     # Technology-related parameters Yingli PV module
     pv = {"T_r": 25,
-          "loss_coeff": 0.42,
+          "loss_coeff": 0.37,
           "tracking": 0}
     # For the GCR calculation
     GCR = {"shadefree_period": 6,
@@ -50,7 +50,7 @@ if technology == 'PV':
             "suit_s": landuse["suit_s"]}
     # weight
     weight = {"GCR": GCR, "avail_s": landuse["avail_s"],
-              "f_pd_pv": 0.00016,
+              "f_pd_pv": 0.000160,
               "f_performance_pv": 0.75,
               "f_pd_csp": 0.00016,
               "f_performance_csp": 0.9 * 0.75}
@@ -70,17 +70,17 @@ if technology == 'Wind':
     weight = {}
     if 'Onshore' in windtechnology:
         # Onshore specific parameters
-        landuse["Onshore"] = {"suit_w": np.array([0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0]),
-                              "avail_w": np.array([0, 0, 0, 0, 0, 0, 10, 10, 1, 1, 10, 0, 10, 0, 10, 0, 0]),
+        landuse["Onshore"] = {"suit_w": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1]),
+                              "avail_w": np.array([0, 8, 8, 8, 8, 8, 8, 10, 10, 10, 10, 0, 10, 0, 10, 0, 10]),
                               "cost_w": np.array(
                                   [100, 20, 20, 20, 20, 20, 20, 20, 20, 20, 10, 80, 10, 100, 10, 100, 10])
                               }
 
         turbine["Onshore"] = {"w_in": 4,
-                              "w_r": 12,
+                              "w_r": 15,
                               "w_off": 25,
-                              "P_r": 1.8,
-                              "hub_height": 90}
+                              "P_r": 3,
+                              "hub_height": 80}
         # Weight
         weight["Onshore"] = {"avail_w": landuse["Onshore"]["avail_w"],
                              "f_pd_w": 0.000008,
@@ -88,20 +88,20 @@ if technology == 'Wind':
 
     if 'Offshore' in windtechnology:
         # Offshore specific parameters
-        landuse["Offshore"] = {"suit_w": np.array([0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0]),
-                                "avail_w": np.array([0, 0, 0, 0, 0, 0, 10, 10, 1, 1, 10, 0, 10, 0, 10, 0, 0]),
+        landuse["Offshore"] = {"suit_w": np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+                                "avail_w": np.array([10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
                                 "cost_w": np.array(
                                     [100, 20, 20, 20, 20, 20, 20, 20, 20, 20, 10, 80, 10, 100, 10, 100, 10])
                                 }
 
-        turbine["Offshore"] = {"w_in": 4,
-                               "w_r": 12,
-                               "w_off": 25,
-                               "P_r": 1.8,
-                               "hub_height": 90}
+        turbine["Offshore"] = {"w_in": 3,
+                               "w_r": 16.5,
+                               "w_off": 34,
+                               "P_r": 7.58,
+                               "hub_height": 135}
         # Weight
         weight["Offshore"] = {"avail_w": landuse["Offshore"]["avail_w"],
-                              "f_pd_w": 0.000008,
+                              "f_pd_w": 0.000020,
                               "f_performance_w": 0.87}
     # Mask
     mask = {"slope_w": 20,
@@ -138,8 +138,8 @@ description["landuse"] = landuse
 # Protected Areas
 
 protected_areas = {"pa_type": np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
-                   "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1]),
-                   "pa_availability": np.array([1, 0, 0, 0, 0, 0, 0.5, 0.5, 0, 0, 0.5]),
+                   "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
+                   "pa_availability": np.array([1, 0, 0, 0, 0, 0, 0.25, 1, 1, 1, 1]),
                    "IUCN_Category": np.array(['Not Protected',  # 0
                                               'Ia',  # 1
                                               'Ib',  # 2
@@ -160,9 +160,7 @@ paths = {}
 
 # Shapefiles
 PathTemp = root + "INPUTS" + fs + region + fs + "Shapefile" + fs + region
-
-# paths["SHP_land"] = PathTemp + "_and_neighbors.shp"
-paths["SHP"] = PathTemp + "_with_EEZ.shp"
+paths["SHP"] = PathTemp + "_NUTS0_wo_Balkans_with_EEZ.shp"
 
 # MERRA2
 PathTemp = root + "INPUTS" + fs + region + fs + "MERRA2 " + year + fs
@@ -201,6 +199,10 @@ del PathTemp
 # Ouput Folders
 timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
 paths["OUT"] = root + "OUTPUTS" + fs + region + fs + timestamp + fs
+if technology == "Wind":
+    paths["OUT"] = root + "OUTPUT" + fs + region + fs + str(turbine["hub_height"]) + "m_" + str(correction) + "corr_" + timestamp
+else:
+    paths["OUT"] = root + "OUTPUT" + fs + region + fs + str(pv["tracking"]) + "axis_" + timestamp)
 paths["mask"] = paths["OUT"] + region + "_" + technology + "_mask_" + year + ".mat"
 paths["FLH_mask"] = paths["OUT"] + region + "_" + technology + "_FLH_mask_" + year + ".mat"
 paths["area"] = paths["OUT"] + region + "_" + technology + "_area_" + year + ".mat"

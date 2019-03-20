@@ -25,9 +25,8 @@ buffer_pixel_amount = 0
 # MERRA_Centroid_Extent = [49, -103.75, 28, -129.375]  # California
 # MERRA_Centroid_Extent = np.array([56.25, 15.3125, 47.25, 2.8125])  # Germany
 
-res = np.array([[1 / 2, 5 / 8], [1 / 240, 1 / 240]])
+res = np.array([[1/2, 5/8], [1/240, 1/240]])
 landuse = {"type": np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])}
-cost = {}
 description = {}
 if technology == 'PV':
     # Landuse reclassification
@@ -54,10 +53,7 @@ if technology == 'PV':
               "f_performance_pv": 0.75,
               "f_pd_csp": 0.00016,
               "f_performance_csp": 0.9 * 0.75}
-    # Cost
-    cost = {"lu_s": landuse["cost_s"],
-            "unit_pv": 1 * 10 ** 7,
-            "unit_csp": 1 * 10 ** 7}
+
     description = {"pv": pv}
 
 if technology == 'Wind':
@@ -107,31 +103,10 @@ if technology == 'Wind':
     mask = {"slope_w": 20,
             "depth": -40
             }
-    # costs
-
-    cost = {"depth_thres": 40,
-            "unit_w": 1.37 * 10 ** 7,
-            "offshore": 25}
-
-
-    def depth(x):
-        return np.exp((float(x) - cost["depth_thres"]) / 5)
-
-
-    cost["depth"] = depth
 
     # Output description
     description = {"turbine": turbine}
-# No distinction between technologies
-cost["protected"] = 100
-cost["slope_thres"] = 3
 
-
-def slope(x):
-    return np.exp((x - cost["slope_thres"]) / 10)
-
-
-cost["slope"] = slope
 description["region"] = region
 description["landuse"] = landuse
 
@@ -164,7 +139,6 @@ paths["SHP"] = PathTemp + "_NUTS0_wo_Balkans_with_EEZ.shp"
 
 # MERRA2
 PathTemp = root + "INPUTS" + fs + region + fs + "MERRA2 " + year + fs
-
 paths["U50M"] = PathTemp + "u50m_" + year + ".mat"
 paths["V50M"] = PathTemp + "v50m_" + year + ".mat"
 paths["GHI"] = PathTemp + "swgdn_" + year + ".mat"
@@ -173,7 +147,6 @@ paths["T2M"] = PathTemp + "t2m_" + year + ".mat"  # Temperature
 
 # Global maps
 PathTemp = root + "INPUTS" + fs + "Global maps" + fs
-
 paths["LU_global"] = PathTemp + "Landuse" + fs + "LCType.tif"
 paths["Topo_tiles"] = PathTemp + "Topography" + fs
 paths["Pop_tiles"] = PathTemp + "Population" + fs
@@ -182,7 +155,6 @@ paths["Protected"] = PathTemp + "Protected Areas" + fs + "WDPA_Nov2018-shapefile
 
 # Local maps
 PathTemp = root + "INPUTS" + fs + region + fs + region
-
 paths["LAND"] = PathTemp + "_Land.tif"  # Land pixels
 paths["EEZ"] = PathTemp + "_EEZ.tif"  # Sea pixels
 paths["LU"] = PathTemp + "_Landuse.tif"  # Land use types
@@ -192,9 +164,6 @@ paths["SLOPE"] = PathTemp + "_Slope.tif"  # Slope
 paths["BATH"] = PathTemp + "_Bathymetry.tif"  # Bathymetry
 paths["POP"] = PathTemp + "_Population.tif"  # Population
 paths["PopBuff"] = PathTemp + "_Population_Buffered.tif"  # Buffered population
-
-del PathTemp
-# Define Output Folder Function
 
 # Ouput Folders
 timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
@@ -211,4 +180,4 @@ paths["weight"] = paths["OUT"] + region + "_" + technology + "_weight_" + year +
 paths["FLH_weight"] = paths["OUT"] + region + "_" + technology + "_FLH_weight_" + year + ".mat"
 
 description["paths"] = paths
-del root
+del root, PathTemp

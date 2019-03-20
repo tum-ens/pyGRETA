@@ -838,3 +838,4 @@ def calc_gcr(Crd, res, GCR):
 
     return A_GCR
 
+

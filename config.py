@@ -4,8 +4,7 @@ import os
 
 
 # User preferences
-# np.__config__.show()
-region = 'Germany'
+region = 'Europe'
 year = '2015'
 technology = 'PV'  # 'PV','Wind','CSP'
 windtechnology = ['Offshore', 'Onshore']  # 'Offshore', 'Onshore'
@@ -13,6 +12,7 @@ windtechnology = ['Offshore', 'Onshore']  # 'Offshore', 'Onshore'
 quantiles = np.array([100, 97, 95, 90, 75, 67, 50, 30])
 correction = 1
 savetiff = 1  # Save geotiff files of mask and weight rasters
+nproc = 2
 # Correction factors
 a = 2
 b = 0.1
@@ -155,7 +155,7 @@ protected_areas = {"pa_type": np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
 
 # Initialization - Define Paths
 fs = os.path.sep
-root = os.path.dirname(os.path.abspath(__file__)) + fs
+root = os.path.dirname(os.path.abspath(__file__)) + fs + ".." + fs
 paths = {}
 
 # Shapefiles
@@ -198,11 +198,12 @@ del PathTemp
 
 # Ouput Folders
 timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
+timestamp = "test"
 paths["OUT"] = root + "OUTPUTS" + fs + region + fs + timestamp + fs
-if technology == "Wind":
-    paths["OUT"] = root + "OUTPUT" + fs + region + fs + str(turbine["hub_height"]) + "m_" + str(correction) + "corr_" + timestamp
-else:
-    paths["OUT"] = root + "OUTPUT" + fs + region + fs + str(pv["tracking"]) + "axis_" + timestamp)
+# if technology == "Wind":
+    # paths["OUT"] = root + "OUTPUT" + fs + region + fs + str(turbine["hub_height"]) + "m_" + str(correction) + "corr_" + timestamp
+# else:
+    # paths["OUT"] = root + "OUTPUT" + fs + region + fs + str(pv["tracking"]) + "axis_" + timestamp
 paths["mask"] = paths["OUT"] + region + "_" + technology + "_mask_" + year + ".mat"
 paths["FLH_mask"] = paths["OUT"] + region + "_" + technology + "_FLH_mask_" + year + ".mat"
 paths["area"] = paths["OUT"] + region + "_" + technology + "_area_" + year + ".mat"

@@ -160,6 +160,43 @@ def calc_CF_solar(hour, reg, Ind, Crd, res, CLR_MAX, merraData, rasterData, pv, 
     CF_csp = TOA_h * CLEARNESS * F_direct_csp * (1 - SHADING)
     CF_csp[CF_csp > 1] = 1
     return CF_pv, CF_csp
+	
+	
+def calc_FLH_solar(hours, args):
+    # Decomposing the tuple args
+    reg = args[0]
+    nRegions = args[1]
+    region_name = args[2]
+    Ind = args[3]
+    Crd = args[4]
+    res = args[5]
+    merraData = args[6]
+    rasterData = args[7]
+    m = args[8]
+    n = args[9]
+    technology = args[10]
+    CLR_MAX = args[11]
+    pv = args[12]
+
+    TS = np.zeros((8760, 1))
+    FLH = np.zeros((m[1, reg], n[1, reg]))
+	
+    for hour in hours:
+        # Show progress of the simulation
+        print(str(reg) + '/' + str(nRegions - 1) + ' ' + region_name + ' ' + str(hour + 1))
+        
+        if technology == 'PV':
+            CF, _ = calc_CF_solar(hour, reg, Ind, Crd, res, CLR_MAX, merraData, rasterData, pv, m, n)
+        elif technology == 'CSP':
+            _, CF = calc_CF_solar(hour, reg, Ind, Crd, res, CLR_MAX, merraData, rasterData, pv, m, n)
+        
+        # Aggregates CF to obtain the yearly FLH
+        CF = CF * rasterData["A_region"]
+        CF[np.isnan(CF)] = 0
+        FLH = FLH + CF
+        # Time series for the mean
+        TS[hour] = np.mean(CF[rasterData["A_region"] == 1])
+    return FLH, TS
 
 
 def angles(hour, *args):

@@ -9,6 +9,11 @@ from rasterio import windows
 from shapely.geometry import mapping, MultiPoint
 import fiona
 import h5py
+import hdf5storage
+from multiprocessing import Pool
+from itertools import product
+#import pickle
+#import sys
 
 # Initialization - Enter Location Info
 # read shapefile of regions
@@ -61,7 +66,7 @@ if technology == 'PV' or technology == 'CSP':
     # Downward shortwave radiation on the ground - stored variable SWGDN
     with h5py.File(paths["GHI"]) as f:
         merraData["file_pv"] = {"SWGDN": np.array(f["SWGDN"][:]).T}
-    # Downward shortwave radiation at the top of the athmosphere SWTDN
+    # Downward shortwave radiation at the top of the atmosphere SWTDN
     with h5py.File(paths["TOA"]) as f:
         merraData["file_toa"] = {"SWTDN": np.array(f["SWTDN"][:]).T}
     # Temperature 2m above the ground - stored variable T2M
@@ -102,7 +107,6 @@ if technology == 'Wind':
 
 # Per Region
 
-
 for reg in range(1, nRegions):
     description["region"] = reg - 1
     suffix = ''
@@ -133,7 +137,7 @@ for reg in range(1, nRegions):
         rasterData["A_topo"] = np.flipud(w)
 
     if technology == 'PV' or technology == 'CSP':
-        # Temperatuer coefficients for heating losses
+        # Temperature coefficients for heating losses
         rasterData["A_Ross"] = changem(rasterData["A_lu"], landuse["Ross_coeff"], landuse["type"]).astype(float) / 10000
         # Reflectivity coefficients
         rasterData["A_albedo"] = changem(rasterData["A_lu"], landuse["albedo"], landuse["type"]).astype(float) / 100
@@ -145,37 +149,29 @@ for reg in range(1, nRegions):
 
         rasterData["A_cf"] = A_cf[tech][Ind[1, reg, 2] - 1:Ind[1, reg, 0], Ind[1, reg, 3] - 1:Ind[1, reg, 1]] * \
                              np.exp(a * rasterData["A_topo"] / 5000 - b)
-
-    # Initialize
-
+	
+    list_hours = []
+    chunk = 20 // nproc
+    for i in range(0, nproc-1):
+        list_hours.append(list(range(chunk*i, chunk*(i+1))))
+    list_hours.append(list(range(chunk*(nproc-1), 20)))
+	
+    if technology == 'PV' or technology == 'CSP':
+        args = [reg, nRegions, region_name, Ind, Crd, res, merraData, rasterData, m, n, technology, CLR_MAX, pv]
+        myfun = calc_FLH_solar
+        #test = pickle.dumps(args)
+        #print(region_name, sys.getsizeof(test))
+    elif technology == 'Wind':
+        args = [reg, nRegions, region_name, Ind, Crd, res, merraData, rasterData, m, n, W50M, turbine, tech]
+        myfun = calc_FLH_wind
+    results = Pool(processes=nproc).starmap(myfun, product(list_hours, [args]))
+	
+    # Collecting results
     TS = np.zeros((8760, 1))
     FLH = np.zeros((m[1, reg], n[1, reg]))
-
-    # To be formated as a function Parfor loop to be done later
-    for hour in range(0, 10):
-        # for hour in range(0, 10):
-        # Show progress of the simulation
-        print(str(reg) + '/' + str(nRegions - 1) + ' ' + region_name + ' ' + str(hour + 1))
-
-        if technology == 'PV':
-            CF, _ = calc_CF_solar(hour, reg, Ind, Crd, res, CLR_MAX, merraData, rasterData, pv, m, n)
-        elif technology == 'CSP':
-            _, CF = calc_CF_solar(hour, reg, Ind, Crd, res, CLR_MAX, merraData, rasterData, pv, m, n)
-        elif technology == 'Wind':
-            # Load MERRA data, increase its resolution, and fit it to the extent
-            w50m_h = resizem(W50M[Ind[0, reg, 2] - 1:Ind[0, reg, 0], Ind[0, reg, 3] - 1:Ind[0, reg, 1], hour],
-                             m[1, reg], n[1, reg])
-            # Calculate hourly capacity factor
-            CF = calc_CF_wind(w50m_h, rasterData, turbine, tech)
-        # Aggregates CF to obtain the yearly FLH
-
-        CF = CF * rasterData["A_region"]
-        CF[np.isnan(CF)] = 0
-        FLH = FLH + CF
-        # Time series for the mean
-        TS[hour] = np.mean(CF[rasterData["A_region"] == 1])
-
-    # End
+    for p in range(len(results)):
+        FLH = FLH + results[p][0]
+        TS = TS + results[p][1]
 
     FLH[FLH == 0] = np.nan
     TS[np.isnan(TS)] = 0
@@ -186,13 +182,10 @@ for reg in range(1, nRegions):
     if not os.path.isdir(paths["OUT"]):
         os.mkdir(paths["OUT"])
 
-    with h5py.File(paths["FLH"], 'w') as f:
-        f.create_dataset('FLH', data=FLH)
-        recursive_dict_save(f, 'description/', description)
+    hdf5storage.writes({'FLH':FLH, 'description':description}, paths["FLH"], store_python_metadata=True, matlab_compatible=True)
     print("files saved:" + paths["FLH"])
 
-    with h5py.File(paths["TS_mean"], 'w') as f:
-        f.create_dataset('TS', data=TS)
+    hdf5storage.writes({'TS_mean':TS}, paths["TS_mean"], store_python_metadata=True, matlab_compatible=True)
     print("files saved:" + paths["TS_mean"])
 
     del FLH, TS

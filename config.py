@@ -3,118 +3,36 @@ import numpy as np
 import os
 
 
-# User preferences
-region = 'Europe'
-year = '2015'
-technology = 'PV'  # 'PV','Wind','CSP'
-windtechnology = ['Offshore', 'Onshore']  # 'Offshore', 'Onshore'
+###########################
+#### User preferences #####
+###########################
 
-quantiles = np.array([100, 97, 95, 90, 75, 67, 50, 30])
-correction = 1
-savetiff = 1  # Save geotiff files of mask and weight rasters
-nproc = 2
-# Correction factors
-a = 2
-b = 0.1
-
-# Buffer amount around urban areas
-buffer_pixel_amount = 0
+param = {}
+param["region"] = 'Europe'
+param["year"] = '2015'
+param["technology"] = ['PV', 'CSP', 'WindOn', 'WindOff']
+param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30])
+param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
+param["nproc"] = 8
 
 # MERRA_Centroid_Extent = [74.5, 45, 19, -20.625]  # EUMENA
 # MERRA_Centroid_Extent = [74.5, 36.25, 33.5, -16.25]  # Europe
 # MERRA_Centroid_Extent = [49, -103.75, 28, -129.375]  # California
 # MERRA_Centroid_Extent = np.array([56.25, 15.3125, 47.25, 2.8125])  # Germany
 
-res = np.array([[1/2, 5/8], [1/240, 1/240]])
-landuse = {"type": np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])}
-description = {}
-if technology == 'PV':
-    # Landuse reclassification
-    landuse["Ross_coeff"] = np.array([208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208,
-                                      208])
-    landuse["albedo"] = np.array([0, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 0, 25, 25, 25, 0, 25])
-    landuse["suit_s"] = np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1])
-    landuse["avail_s"] = np.array([0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 0, 2, 2, 2, 0, 2])
-    landuse["cost_s"] = np.array([100, 50, 50, 50, 50, 50, 20, 20, 20, 20, 10, 80, 10, 15, 10, 100, 80])
-    # Technology-related parameters Yingli PV module
-    pv = {"T_r": 25,
-          "loss_coeff": 0.37,
-          "tracking": 0}
-    # For the GCR calculation
-    GCR = {"shadefree_period": 6,
-           "day_north": 79,
-           "day_south": 263}
-    # Mask
-    mask = {"slope_s": 20,
-            "suit_s": landuse["suit_s"]}
-    # weight
-    weight = {"GCR": GCR, "avail_s": landuse["avail_s"],
-              "f_pd_pv": 0.000160,
-              "f_performance_pv": 0.75,
-              "f_pd_csp": 0.00016,
-              "f_performance_csp": 0.9 * 0.75}
+param["res"] = np.array([[ 1/2,   5/8],
+                         [1/240, 1/240]])
 
-    description = {"pv": pv}
-
-if technology == 'Wind':
-    # Landuse reclassification
-    landuse["hellmann"] = np.array([10, 25, 25, 25, 25, 25, 20, 20, 25, 25, 15, 15, 20, 40, 20, 15, 15])
-    landuse["height"] = np.array([213, 366, 366, 366, 366, 366, 320, 320, 366, 366, 274, 274, 320, 457, 320, 274, 274])
-
-    # Technology-related parameters
-    turbine = {}
-    weight = {}
-    if 'Onshore' in windtechnology:
-        # Onshore specific parameters
-        landuse["Onshore"] = {"suit_w": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1]),
-                              "avail_w": np.array([0, 8, 8, 8, 8, 8, 8, 10, 10, 10, 10, 0, 10, 0, 10, 0, 10]),
-                              "cost_w": np.array(
-                                  [100, 20, 20, 20, 20, 20, 20, 20, 20, 20, 10, 80, 10, 100, 10, 100, 10])
-                              }
-
-        turbine["Onshore"] = {"w_in": 4,
-                              "w_r": 15,
-                              "w_off": 25,
-                              "P_r": 3,
-                              "hub_height": 80}
-        # Weight
-        weight["Onshore"] = {"avail_w": landuse["Onshore"]["avail_w"],
-                             "f_pd_w": 0.000008,
-                             "f_performance_w": 0.87}
-
-    if 'Offshore' in windtechnology:
-        # Offshore specific parameters
-        landuse["Offshore"] = {"suit_w": np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
-                                "avail_w": np.array([10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
-                                "cost_w": np.array(
-                                    [100, 20, 20, 20, 20, 20, 20, 20, 20, 20, 10, 80, 10, 100, 10, 100, 10])
-                                }
-
-        turbine["Offshore"] = {"w_in": 3,
-                               "w_r": 16.5,
-                               "w_off": 34,
-                               "P_r": 7.58,
-                               "hub_height": 135}
-        # Weight
-        weight["Offshore"] = {"avail_w": landuse["Offshore"]["avail_w"],
-                              "f_pd_w": 0.000020,
-                              "f_performance_w": 0.87}
-    # Mask
-    mask = {"slope_w": 20,
-            "depth": -40
-            }
-
-    # Output description
-    description = {"turbine": turbine}
-
-description["region"] = region
-description["landuse"] = landuse
-
+# Landuse reclassification
+landuse = {"type":       np.array([  0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,  15,  16]),
+           "Ross_coeff": np.array([208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208]),
+           "albedo":     np.array([  0,  25,  25,  25,  25,  25,  25,  25,  25,  25,  25,   0,  25,  25,  25,   0,  25]),
+           "hellmann":   np.array([ 10,  25,  25,  25,  25,  25,  20,  20,  25,  25,  15,  15,  20,  40,  20,  15,  15]),
+           "height":     np.array([213, 366, 366, 366, 366, 366, 320, 320, 366, 366, 274, 274, 320, 457, 320, 274, 274])
+           }
+		   
 # Protected Areas
-
-protected_areas = {"pa_type": np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
-                   "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
-                   "pa_availability": np.array([1, 0, 0, 0, 0, 0, 0.25, 1, 1, 1, 1]),
+protected_areas = {"type": np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
                    "IUCN_Category": np.array(['Not Protected',  # 0
                                               'Ia',  # 1
                                               'Ib',  # 2
@@ -126,11 +44,104 @@ protected_areas = {"pa_type": np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
                                               'Not Applicable',  # 8
                                               'Not Assigned',  # 9
                                               'Not Reported'  # 10
-                                              ])}
+                                              ])
+                   }
+param["landuse"] = landuse
+param["protected_areas"] = protected_areas
+del landuse, protected_areas
+											  
+# Parameters related to PV
+pv = {}
+pv["technical"] = {"T_r": 25,
+                   "loss_coeff": 0.37,
+                   "tracking": 0
+                   }
+pv["mask"] = {"slope": 20,
+              "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
+              "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
+              }
+GCR = {"shadefree_period": 6,
+       "day_north": 79,
+       "day_south": 263
+       }
+pv["weight"] = {"GCR": GCR,
+                "lu_availability": np.array([0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 0, 2, 2, 2, 0, 2]),
+                "pa_availability": np.array([1, 0, 0, 0, 0, 0, 0.25, 1, 1, 1, 1]),
+                "power_density": 0.000160,
+                "f_performance": 0.75
+                }
+del GCR
 
-# Initialization - Define Paths
+# Parameters related to CSP
+csp = {}
+csp["mask"] = {"slope": 20,
+               "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
+               "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
+               }
+csp["weight"] = {"GCR": 1,
+                 "lu_availability": np.array([0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 0, 2, 2, 2, 0, 2]),
+                 "pa_availability": np.array([1, 0, 0, 0, 0, 0, 0.25, 1, 1, 1, 1]),
+                 "power_density": 0.000160,
+                 "f_performance": 0.9*0.75
+                 }
+
+# Parameters related to onshore wind
+windon = {}
+windon["resource"] = {"res_correction": 1,
+                      "topo_correction": 1,
+                      "topo_factors": (0.0004, -0.1)
+                      }
+windon["technical"] = {"w_in": 4,
+                       "w_r": 15,
+                       "w_off": 25,
+                       "P_r": 3,
+                       "hub_height": 80
+                       }
+windon["mask"] = {"slope": 20,
+                  "lu_suitability": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1]),
+                  "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
+                  "buffer_pixel_amount": 1
+                  }
+windon["weight"] = {"lu_availability": np.array([0, 8, 8, 8, 8, 8, 8, 10, 10, 10, 10, 0, 10, 0, 10, 0, 10]),
+                    "pa_availability": np.array([1, 0, 0, 0, 0, 0, 0.25, 1, 1, 1, 1]),
+                    "power_density": 0.000008,
+                    "f_performance": 0.87
+                    }
+					
+# Parameters related to offshore wind
+windoff = {}
+windoff["resource"] = {"res_correction": 1,
+                       }
+windoff["technical"] = {"w_in": 3,
+                        "w_r": 16.5,
+                        "w_off": 34,
+                        "P_r": 7.58,
+                        "hub_height": 135
+                        }
+windoff["mask"] = {"depth": -40,
+                   "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
+                   }
+windoff["weight"] = {"lu_availability": np.array([10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+                     "pa_availability": np.array([1, 0, 0, 0, 0, 0, 0.25, 1, 1, 1, 1]),
+                     "power_density": 0.000020,
+                     "f_performance": 0.87
+                     }
+
+param["PV"] = pv
+param["CSP"] = csp
+param["WindOn"] = windon
+param["WindOff"] = windoff
+del pv, csp, windon, windoff
+
+###########################
+##### Define Paths ########
+###########################
+
 fs = os.path.sep
 root = os.path.dirname(os.path.abspath(__file__)) + fs + ".." + fs
+region = param["region"]
+year = param["year"]
+
 paths = {}
 
 # Shapefiles
@@ -150,7 +161,7 @@ PathTemp = root + "INPUTS" + fs + "Global maps" + fs
 paths["LU_global"] = PathTemp + "Landuse" + fs + "LCType.tif"
 paths["Topo_tiles"] = PathTemp + "Topography" + fs
 paths["Pop_tiles"] = PathTemp + "Population" + fs
-paths["Bathym_global"] = PathTemp + fs + "Bathymetry" + "ETOPO1_Ice_c_geotiff.tif"
+paths["Bathym_global"] = PathTemp + "Bathymetry" + fs + "ETOPO1_Ice_c_geotiff.tif"
 paths["Protected"] = PathTemp + "Protected Areas" + fs + "WDPA_Nov2018-shapefile-polygons.shp"
 
 # Local maps
@@ -163,21 +174,26 @@ paths["PA"] = PathTemp + "_Protected_areas.tif"  # Protected areas
 paths["SLOPE"] = PathTemp + "_Slope.tif"  # Slope
 paths["BATH"] = PathTemp + "_Bathymetry.tif"  # Bathymetry
 paths["POP"] = PathTemp + "_Population.tif"  # Population
-paths["PopBuff"] = PathTemp + "_Population_Buffered.tif"  # Buffered population
+paths["BUFFER"] = PathTemp + "_Population_Buffered.tif"  # Buffered population
+paths["CORR"] = PathTemp + "_Wind_Correction.tif"  # Correction factors for wind speeds
 
 # Ouput Folders
 timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
 timestamp = "test"
 paths["OUT"] = root + "OUTPUTS" + fs + region + fs + timestamp + fs
+if not os.path.isdir(paths["OUT"]):
+    os.mkdir(paths["OUT"])
 # if technology == "Wind":
     # paths["OUT"] = root + "OUTPUT" + fs + region + fs + str(turbine["hub_height"]) + "m_" + str(correction) + "corr_" + timestamp
 # else:
     # paths["OUT"] = root + "OUTPUT" + fs + region + fs + str(pv["tracking"]) + "axis_" + timestamp
-paths["mask"] = paths["OUT"] + region + "_" + technology + "_mask_" + year + ".mat"
-paths["FLH_mask"] = paths["OUT"] + region + "_" + technology + "_FLH_mask_" + year + ".mat"
-paths["area"] = paths["OUT"] + region + "_" + technology + "_area_" + year + ".mat"
-paths["weight"] = paths["OUT"] + region + "_" + technology + "_weight_" + year + ".mat"
-paths["FLH_weight"] = paths["OUT"] + region + "_" + technology + "_FLH_weight_" + year + ".mat"
+paths["area"] = paths["OUT"] + region + "_area_" + year + ".mat"
+for tech in param["technology"]:
+    paths[tech] = {}
+    paths[tech]["FLH"] = paths["OUT"] + region + '_' + tech + '_FLH_' + year + '.mat'
+    paths[tech]["mask"] = paths["OUT"] + region + "_" + tech + "_mask_" + year + ".mat"
+    paths[tech]["FLH_mask"] = paths["OUT"] + region + "_" + tech + "_FLH_mask_" + year + ".mat"
+    paths[tech]["weight"] = paths["OUT"] + region + "_" + tech + "_weight_" + year + ".mat"
+    paths[tech]["FLH_weight"] = paths["OUT"] + region + "_" + tech + "_FLH_weight_" + year + ".mat"
 
-description["paths"] = paths
-del root, PathTemp
+del root, PathTemp, fs

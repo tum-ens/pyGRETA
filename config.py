@@ -150,6 +150,7 @@ paths["SHP"] = PathTemp + "_NUTS0_wo_Balkans_with_EEZ.shp"
 
 # MERRA2
 PathTemp = root + "INPUTS" + fs + region + fs + "MERRA2 " + year + fs
+paths["MERRA_IN"] = root + "INPUTS" + fs + region + fs + "MERRA2 " + year + fs
 paths["U50M"] = PathTemp + "u50m_" + year + ".mat"
 paths["V50M"] = PathTemp + "v50m_" + year + ".mat"
 paths["GHI"] = PathTemp + "swgdn_" + year + ".mat"

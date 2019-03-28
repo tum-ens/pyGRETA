@@ -62,7 +62,7 @@ def calc_geotiff(Crd, res):
     GeoRef = {"RasterOrigin": [Crd[-1, 3], Crd[-1, 0]],
               "RasterOrigin_alt": [Crd[-1, 3], Crd[-1, 2]],
               "pixelWidth": res[1, 1],
-              "pixelheight": -res[1, 0]}
+              "pixelHeight": -res[1, 0]}
     return GeoRef
 
 
@@ -75,19 +75,28 @@ def calc_region(region, Crd, res, GeoRef):
     A_region = np.ones((M, N))
     origin = [Crd[3], Crd[2]]
 
-    array2raster("A_region.tif", origin, GeoRef["pixelWidth"], -GeoRef["pixelheight"], A_region)
+    array2raster("A_region.tif", origin, GeoRef["pixelWidth"], -GeoRef["pixelHeight"], A_region)
+
+    with rasterio.open("A_region.tif") as f:
+        print(f)
 
     if region.geometry.geom_type == 'MultiPolygon':
         features = [feature for feature in region.geometry]
     else:
         features = [region.geometry]
 
-    with rasterio.open("A_region.tif", "r") as src:
-        out_image, out_transform = mask.mask(src, features, crop=False, nodata=0, all_touched=False, filled=True)
+    driver = gdal.GetDriverByName('MEM')
+    outRaster = driver.Create("", A_region.shape[1], A_region.shape[0], 1, gdal.GDT_Float64)
+    outRaster.SetGeoTransform((origin[0], GeoRef["pixelWidth"], 0, origin[1], 0, -GeoRef["pixelHeight"]))
+    outRasterSRS = osr.SpatialReference()
+    outRasterSRS.ImportFromEPSG(4326)
+    outRaster.SetProjection(outRasterSRS.ExportToWkt())
+    outband = outRaster.GetRasterBand(1)
+    outband.WriteArray(np.flipud(A_region))
+    out_image, out_transform = mask.mask(outRaster, features, crop=False, nodata=0, all_touched=False, filled=True)
     A_region = out_image[0]
-    os.remove("A_region.tif")
-    return A_region
 
+    return A_region
 
 
 def weighting(FLH_all, weight, landuse, paths, technology, windtechnology, Crd, n, res, pa_table):
@@ -195,8 +204,6 @@ def calc_areas(Crd, n, res, reg):
 # ## Miscellaneous Functions
 
 
-
-
 def create_buffer(A_lu, buffer_pixel_amount):
     # A_lu matrix element values range from 0 to 16:
     # 0   -- Water
@@ -273,7 +280,6 @@ def superpose_down(A_lu, buffer_pixed_amount):
     shifted_down = A_lu + down
     shifted_down = shifted_down != 0
     return shifted_down
-
 
 
 def calc_gcr(Crd, res, GCR):

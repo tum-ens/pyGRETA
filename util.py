@@ -6,6 +6,7 @@ from numpy.matlib import repmat, reshape, sin, arcsin, cos, arccos, tan, arctan
 from os import getcwd, chdir
 from glob import glob
 
+
 def sind(alpha):
     return sin(np.deg2rad(alpha))
 
@@ -24,7 +25,8 @@ def arcsind(digit):
 
 def arccosd(digit):
     return np.rad2deg(arccos(digit))
-	
+
+
 def hourofmonth():
     h = 24 * np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]).astype(int)
     for i in range(1, 12):
@@ -36,13 +38,14 @@ def resizem(A_in, row_new, col_new):
     row_rep = row_new // np.shape(A_in)[0]
     col_rep = col_new // np.shape(A_in)[1]
     A_inf = (A_in.flatten(order='F')[np.newaxis])
-    A_out = reshape(repmat(reshape(reshape(repmat((A_in.flatten(order='F')[np.newaxis]), row_rep, 1), (row_new, -1), order='F').T, (-1, 1), order='F'), 1, col_rep).T, (col_new, row_new), order='F').T
+    A_out = reshape(repmat(
+        reshape(reshape(repmat((A_in.flatten(order='F')[np.newaxis]), row_rep, 1), (row_new, -1), order='F').T, (-1, 1),
+                order='F'), 1, col_rep).T, (col_new, row_new), order='F').T
 
     return A_out
 
 
 def array2raster(newRasterfn, rasterOrigin, pixelWidth, pixelHeight, array):
-
     cols = array.shape[1]
     rows = array.shape[0]
     originX = rasterOrigin[0]
@@ -102,7 +105,8 @@ def sub2ind(array_shape, rows, cols):
 
 def ind2sub(array_shape, ind):
     return np.unravel_index(ind, array_shape, order='F')
-	
+
+
 def field_exists(field_name, shp_path):
     shp = ogr.Open(shp_path, 0)
     lyr = shp.GetLayer()
@@ -115,11 +119,11 @@ def field_exists(field_name, shp_path):
 
 
 def changeExt2tif(filepath):
-
     base = os.path.splitext(filepath)[0]
 
     return base + '.tif'
-	
+
+
 def sumnorm_MERRA2(A, m, n, res):
     s = np.zeros((m, n))
     row_step = int(res[0, 0] / res[1, 0])
@@ -129,3 +133,4 @@ def sumnorm_MERRA2(A, m, n, res):
             s[i, j] = np.sum(A[(row_step * i):(row_step * (i + 1)),
                              (col_step * j):(col_step * (j + 1))]) / (row_step * col_step)
     return s
+

@@ -2,13 +2,12 @@ import datetime
 import numpy as np
 import os
 
-
 ###########################
 #### User preferences #####
 ###########################
 
 param = {}
-param["region"] = 'Europe'
+param["region"] = 'Germany'
 param["year"] = '2015'
 param["technology"] = ['PV', 'CSP', 'WindOn', 'WindOff']
 param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30])
@@ -20,17 +19,36 @@ param["nproc"] = 8
 # MERRA_Centroid_Extent = [49, -103.75, 28, -129.375]  # California
 # MERRA_Centroid_Extent = np.array([56.25, 15.3125, 47.25, 2.8125])  # Germany
 
-param["res"] = np.array([[ 1/2,   5/8],
-                         [1/240, 1/240]])
+param["res"] = np.array([[1 / 2, 5 / 8],
+                         [1 / 240, 1 / 240]])
 
 # Landuse reclassification
-landuse = {"type":       np.array([  0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,  15,  16]),
-           "Ross_coeff": np.array([208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208]),
-           "albedo":     np.array([  0,  25,  25,  25,  25,  25,  25,  25,  25,  25,  25,   0,  25,  25,  25,   0,  25]),
-           "hellmann":   np.array([ 10,  25,  25,  25,  25,  25,  20,  20,  25,  25,  15,  15,  20,  40,  20,  15,  15]),
-           "height":     np.array([213, 366, 366, 366, 366, 366, 320, 320, 366, 366, 274, 274, 320, 457, 320, 274, 274])
+# A_lu matrix element values range from 0 to 16:
+# 0   -- Water
+# 1   -- Evergreen needle leaf forest
+# 2   -- Evergreen broad leaf forest
+# 3   -- Deciduous needle leaf forest
+# 4   -- deciduous broad leaf forest
+# 5   -- Mixed forests
+# 6   -- Closed shrublands
+# 7   -- Open shrublands
+# 8   -- Woody savannas
+# 9   -- Grasslands
+# 10  -- Permanent wetland
+# 12  -- Croplands
+# 13  -- URBAN AND BUILT-UP
+# 14  -- Croplands / natural vegetation mosaic
+# 15  -- Snow and ice
+# 16  -- Barren or sparsely vegetated
+
+landuse = {"type": np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]),
+           "Ross_coeff": np.array(
+               [208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208]),
+           "albedo": np.array([0, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 0, 25, 25, 25, 0, 25]),
+           "hellmann": np.array([10, 25, 25, 25, 25, 25, 20, 20, 25, 25, 15, 15, 20, 40, 20, 15, 15]),
+           "height": np.array([213, 366, 366, 366, 366, 366, 320, 320, 366, 366, 274, 274, 320, 457, 320, 274, 274])
            }
-		   
+
 # Protected Areas
 protected_areas = {"type": np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
                    "IUCN_Category": np.array(['Not Protected',  # 0
@@ -49,7 +67,7 @@ protected_areas = {"type": np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
 param["landuse"] = landuse
 param["protected_areas"] = protected_areas
 del landuse, protected_areas
-											  
+
 # Parameters related to PV
 pv = {}
 pv["technical"] = {"T_r": 25,
@@ -82,7 +100,7 @@ csp["weight"] = {"GCR": 1,
                  "lu_availability": np.array([0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 0, 2, 2, 2, 0, 2]),
                  "pa_availability": np.array([1, 0, 0, 0, 0, 0, 0.25, 1, 1, 1, 1]),
                  "power_density": 0.000160,
-                 "f_performance": 0.9*0.75
+                 "f_performance": 0.9 * 0.75
                  }
 
 # Parameters related to onshore wind
@@ -107,7 +125,7 @@ windon["weight"] = {"lu_availability": np.array([0, 8, 8, 8, 8, 8, 8, 10, 10, 10
                     "power_density": 0.000008,
                     "f_performance": 0.87
                     }
-					
+
 # Parameters related to offshore wind
 windoff = {}
 windoff["resource"] = {"res_correction": 1,
@@ -138,7 +156,7 @@ del pv, csp, windon, windoff
 ###########################
 
 fs = os.path.sep
-root = os.path.dirname(os.path.abspath(__file__)) + fs + ".." + fs
+root = os.path.dirname(os.path.abspath(__file__)) + fs  # + ".." + fs
 region = param["region"]
 year = param["year"]
 
@@ -180,14 +198,14 @@ paths["CORR"] = PathTemp + "_Wind_Correction.tif"  # Correction factors for wind
 
 # Ouput Folders
 timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
-timestamp = "test"
+# timestamp = "test"
 paths["OUT"] = root + "OUTPUTS" + fs + region + fs + timestamp + fs
 if not os.path.isdir(paths["OUT"]):
     os.mkdir(paths["OUT"])
 # if technology == "Wind":
-    # paths["OUT"] = root + "OUTPUT" + fs + region + fs + str(turbine["hub_height"]) + "m_" + str(correction) + "corr_" + timestamp
+# paths["OUT"] = root + "OUTPUT" + fs + region + fs + str(turbine["hub_height"]) + "m_" + str(correction) + "corr_" + timestamp
 # else:
-    # paths["OUT"] = root + "OUTPUT" + fs + region + fs + str(pv["tracking"]) + "axis_" + timestamp
+# paths["OUT"] = root + "OUTPUT" + fs + region + fs + str(pv["tracking"]) + "axis_" + timestamp
 paths["area"] = paths["OUT"] + region + "_area_" + year + ".mat"
 for tech in param["technology"]:
     paths[tech] = {}

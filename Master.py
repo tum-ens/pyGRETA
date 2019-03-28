@@ -61,11 +61,13 @@ def initialization():
     param["GeoRef"] = calc_geotiff(Crd, res)
     return paths, param
 
-def NetCDF2MAT(paths):
+
+def NetCDF2MAT(paths, param):
     # This Code reads the daily NetCDF data (from MERRA) for SWGDN, SWTDN, T2M, U50m, and V50m, and saves them in
     # matrices with yearly time series with low spatial resolution. This code has to be run only once.
-    start = datetime.date(2015, 1, 1)
-    end = datetime.date(2015, 12, 31)
+    year = int(param["year"])
+    start = datetime.date(year, 1, 1)
+    end = datetime.date(year, 12, 31)
     root = paths["MERRA_IN"]
 
     SWGDN = np.array([])
@@ -116,16 +118,11 @@ def NetCDF2MAT(paths):
             else:
                 V50M = np.concatenate((V50M, v50m), axis=2)
         if date.year != tomorrow.year:
-            p = root + 'swgdn_' + str(date.year) + '.mat'
-            hdf5storage.writes({'SWGDN': SWGDN}, p, store_python_metadata=True, matlab_compatible=True)
-            p = root + 'swtdn_' + str(date.year) + '.mat'
-            hdf5storage.writes({'SWTDN': SWTDN}, p, store_python_metadata=True, matlab_compatible=True)
-            p = root + 't2m_' + str(date.year) + '.mat'
-            hdf5storage.writes({'T2M': T2M}, p, store_python_metadata=True, matlab_compatible=True)
-            p = root + 'u50m_' + str(date.year) + '.mat'
-            hdf5storage.writes({'U50M': U50M}, p, store_python_metadata=True, matlab_compatible=True)
-            p = root + 'v50m_' + str(date.year) + '.mat'
-            hdf5storage.writes({'V50M': V50M}, p, store_python_metadata=True, matlab_compatible=True)
+            hdf5storage.writes({'SWGDN': SWGDN}, paths["GHI"], store_python_metadata=True, matlab_compatible=True)
+            hdf5storage.writes({'SWTDN': SWTDN}, paths["TOA"], store_python_metadata=True, matlab_compatible=True)
+            hdf5storage.writes({'T2M': T2M}, paths["T2M"], store_python_metadata=True, matlab_compatible=True)
+            hdf5storage.writes({'U50M': U50M}, paths["U50M"], store_python_metadata=True, matlab_compatible=True)
+            hdf5storage.writes({'V50M': V50M}, paths["V50M"], store_python_metadata=True, matlab_compatible=True)
 
 
 def generate_landsea(paths, param):
@@ -133,7 +130,7 @@ def generate_landsea(paths, param):
     n = param["n"]
     res = param["res"]
     GeoRef = param["GeoRef"]
-    if not os.path.isfile(paths["LAND"]):
+    if os.path.isfile(paths["LAND"]):
         nRegions = param["nRegions_land"]
         regions_shp = param["regions_land"]
         Crd = param["Crd"][0:nRegions, :]
@@ -144,7 +141,7 @@ def generate_landsea(paths, param):
             A_region = calc_region(regions_shp.iloc[reg], Crd[reg, :], res, GeoRef)
             A_land[(Ind[1, reg, 2] - 1):Ind[1, reg, 0], (Ind[1, reg, 3] - 1):Ind[1, reg, 1]] = \
                 A_land[(Ind[1, reg, 2] - 1):Ind[1, reg, 0], (Ind[1, reg, 3] - 1):Ind[1, reg, 1]] + A_region
-        array2raster(paths["LAND"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelheight"], A_land)
+        array2raster(paths["LAND"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_land)
         print("files saved: " + paths["LAND"])
 
     if not os.path.isfile(paths["EEZ"]):
@@ -161,7 +158,7 @@ def generate_landsea(paths, param):
         with rasterio.open(paths["LAND"]) as src:
             A_land = np.flipud(src.read(1)).astype(int)
         A_eez = A_eez * (1 - A_land)
-        array2raster(paths["EEZ"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelheight"], A_eez)
+        array2raster(paths["EEZ"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_eez)
         print("files saved: " + paths["EEZ"])
 
 
@@ -173,7 +170,7 @@ def generate_landuse(paths, param):
             w = src.read(1, window=windows.Window.from_slices(slice(Ind[2, -1, 0] - 1, Ind[2, -1, 2]),
                                                               slice(Ind[2, -1, 3] - 1, Ind[2, -1, 1])))
         w = np.flipud(w)
-        array2raster(paths["LU"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelheight"], w)
+        array2raster(paths["LU"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], w)
         print("files saved: " + paths["LU"])
 
 
@@ -185,7 +182,7 @@ def generate_bathymetry(paths, param):
             A_BATH = src.read(1)
         A_BATH = resizem(A_BATH, 180 * 240, 360 * 240)
         A_BATH = np.flipud(A_BATH[Ind[2, -1, 0] - 1: Ind[2, -1, 2], Ind[2, -1, 3] - 1: Ind[2, -1, 1]])
-        array2raster(paths['BATH'], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelheight"], A_BATH)
+        array2raster(paths['BATH'], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_BATH)
         print("files saved: " + paths["BATH"])
 
 
@@ -225,7 +222,7 @@ def generate_topography(paths, param):
                     tile[0, 0:-1, 0:-1]
 
         A_TOPO = np.flipud(Topo[Ind[2, -1, 0] - 1:Ind[2, -1, 2], Ind[2, -1, 3] - 1:Ind[2, -1, 1]])
-        array2raster(paths["TOPO"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelheight"], A_TOPO)
+        array2raster(paths["TOPO"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_TOPO)
         print("files saved: " + paths["TOPO"])
 
 
@@ -291,7 +288,7 @@ def generate_slope(paths, param):
         slope_pc = tan(np.deg2rad(slope_deg)) * 100
 
         A_SLP = np.flipud(slope_pc[1:-1, 1:-1])
-        array2raster(paths["SLOPE"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelheight"], A_SLP)
+        array2raster(paths["SLOPE"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_SLP)
         print("files saved: " + paths["SLOPE"])
 
 
@@ -331,7 +328,7 @@ def generate_population(paths, param):
                 tile_extents[index, 3] - 1: tile_extents[index, 1]] = \
                     tile[0]
         A_POP = np.flipud(Pop[Ind[2, -1, 0] - 1:Ind[2, -1, 2], Ind[2, -1, 3] - 1:Ind[2, -1, 1]])
-        array2raster(paths["POP"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelheight"], A_POP)
+        array2raster(paths["POP"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_POP)
         print("files saved: " + paths["POP"])
 
 
@@ -412,7 +409,7 @@ def generate_buffered_population(paths, param):
         A_lu_buffered = create_buffer(A_lu, buffer_pixel_amount)
         A_notPopulated = (~A_lu_buffered).astype(int)
 
-        array2raster(paths["BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelheight"],
+        array2raster(paths["BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
                      A_notPopulated)
         print("files saved: " + paths["BUFFER"])
 
@@ -456,7 +453,7 @@ def generate_wind_correction(paths, param):
         A_eez = np.flipud(src.read(1)).astype(int)
     A_cf = A_cf_off * A_eez + A_cf_on
 
-    array2raster(paths["CORR"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelheight"], A_cf)
+    array2raster(paths["CORR"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf)
     print("files saved: " + paths["CORR"])
 
 
@@ -631,17 +628,18 @@ def masking(paths, param, tech):
 
     # Save GEOTIFF files
     if param["savetiff"]:
+        Georef = param["Georef"]
         array2raster(changeExt2tif(paths[tech]["mask"]),
-                     R1["RasterOrigin"],
-                     R1["pixelWidth"],
-                     R1["pixelheight"],
+                     Georef["RasterOrigin"],
+                     Georef["pixelWidth"],
+                     Georef["pixelHeight"],
                      A_mask)
         print("files saved:" + changeExt2tif(paths[tech]["mask"]))
 
         array2raster(changeExt2tif(paths[tech]["FLH_mask"]),
-                     R1["RasterOrigin"],
-                     R1["pixelWidth"],
-                     R1["pixelheight"],
+                     Georef["RasterOrigin"],
+                     Georef["pixelWidth"],
+                     Georef["pixelHeight"],
                      FLH_mask)
         print("files saved:" + changeExt2tif(paths[tech]["FLH_mask"]))
 
@@ -896,7 +894,15 @@ def masking(paths, param, tech):
 
 if __name__ == '__main__':
     paths, param = initialization()
-    NetCDF2MAT(paths)
+
+    # Check if Merra2 mat files have been generated
+    if not (os.path.isfile(paths["GHI"])
+            and os.path.isfile((paths["TOA"]))
+            and os.path.isfile(paths["T2M"])
+            and os.path.isfile(paths["U50M"])
+            and os.path.isfile(paths["V50M"])):
+        NetCDF2MAT(paths)
+
     generate_landsea(paths, param)  # Land and Sea
     generate_landuse(paths, param)  # Landuse
     generate_bathymetry(paths, param)  # Bathymetry

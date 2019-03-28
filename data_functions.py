@@ -88,78 +88,73 @@ def calc_region(region, Crd, res, GeoRef):
     os.remove("A_region.tif")
     return A_region
 
+	
+def calc_gcr(Crd, m, n, res, GCR):
+    # This code creates a GCR wieghing matrix for the desired geographic extent. The sizing of the PV system is
+    # conducted on Dec 22 for a shade-free exposure to the Sun during a given number of hours.
+    # INPUTS:
+    # north_, east_, south_, west_: desired geographic extent
+    # res: resolution of MERRA data & desired resolution in lat/lon
+    # Shadefree_period: duration of the shade-free period
 
+    # Vector of latitudes between (south) and (north), with resolution (res_should) degrees
+    lat = np.arange((Crd[0, 2] + res[1, 0] / 2), (Crd[0, 0] - res[1, 0] / 2), res[1, 0])[np.newaxis].T
 
-def weighting(FLH_all, weight, landuse, paths, technology, windtechnology, Crd, n, res, pa_table):
-    if technology == 'PV' or technology == 'CSP':
-        return weightingtemp(FLH_all, weight, landuse, paths, technology, Crd, n, res, pa_table)
-    elif technology == 'Wind':
-        on = [0, 0, 0]
-        off = [0, 0, 0]
-        if 'Onshore' in windtechnology:
-            # Onshore landuse and weighting parameters
-            w = weight["Onshore"]
-            landuse.update(landuse["Onshore"])
-            landuse["tech"] = "Onshore"
+    # Solar time where shade-free exposure starts
+    omegast = 12 - GCR["shadefree_period"] / 2
 
-            on[0], on[1], on[2] = weightingtemp(FLH_all, w, landuse, paths, technology, Crd, n, res, pa_table)
-        if 'Offshore' in windtechnology:
-            # Offshore landuse and weighting parameters
-            w = weight["Offshore"]
-            landuse.update(landuse["Offshore"])
-            landuse["tech"] = "Offshore"
+    # Calculation
+    omega = 15 * (omegast - 12)  # Hour angle
+    phi = abs(lat)  # Latitude angle
 
-            off[0], off[1], on[2] = weightingtemp(FLH_all, w, landuse, paths, technology, Crd, n, res, pa_table)
-        # Summing up the results if both technologies are considered
-        return (on[0] + off[0]), (on[1] + off[1]), (on[2] + off[2])
+    beta = np.maximum(phi, 15)  # Tilt angle = latitude, but at least 15 degrees
 
+    if Crd[0, 2] > 0:
+        day = GCR["day_north"]
+        # Declination angle
+        delta = repmat(arcsind(0.3978) * sin(
+            day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), int(m), 1)
 
-def weightingtemp(FLH_all, weight, landuse, paths, technology, Crd, n, res, pa_table):
+    if Crd[0, 0] < 0:
+        day = GCR["day_south"]
+        # Declination angle
+        delta = repmat(arcsind(0.3978) * sin(
+            day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), int(m), 1)
 
-    with rasterio.open(paths["LU"]) as src:
-        A_lu = src.read(1)
-        A_lu = np.flipud(A_lu).astype(int)  # Landuse classes 0-16, to be reclassified
+    if (Crd[0, 2] * Crd[0, 0]) < 0:
+        lat_pos = np.sum((lat > 0).astype(int))
+        day = GCR["day_north"]
+        # Declination angle
+        delta_pos = repmat(arcsind(0.3978) * sin(
+            day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), lat_pos, 1)
 
-    if technology == 'PV':
-        availability = landuse["avail_s"]
-        f_pd = weight["f_pd_pv"]
-        f_performance = weight["f_performance_pv"]
+        lat_neg = np.sum((lat < 0).astype(int))
+        day = GCR["day_south"]
+        # Declination angle
+        delta_neg = repmat(arcsind(0.3978) * sin(
+            day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), lat_neg, 1)
+        delta = np.append(delta_neg, delta_pos, axis=0)
 
-        # Ground Cover Ratio - defines spacing between PV arrays
-        A_GCR = calc_gcr(Crd[0, :][np.newaxis], res, weight["GCR"])
+    # Elevation angle
+    alpha = arcsind(sind(delta) * sind(phi) + cosd(delta) * cosd(phi) * cosd(omega))
 
-    elif technology == 'CSP':
-        availability = landuse["avail_s"]
-        f_pd = weight["f_pd_csp"]
-        f_performance = weight["f_performance_csp"]
-        A_GCR = 1  # TO BE CHANGED!
-    elif technology == 'Wind':
-        availability = landuse["avail_w"]
-        f_pd = weight["f_pd_w"]
-        f_performance = weight["f_performance_w"]
-        A_GCR = 1  # irrelevant for wind, can be a function of the slope, to be changed!!!!
+    # Azimuth angle
+    azi = arccosd((sind(delta) * cosd(phi) - cosd(delta) * sind(phi) * cosd(omega)) / cosd(alpha))
 
-    with rasterio.open(paths["PA"]) as src:
-        PA = np.flipud(src.read(1))
-    A_notprotect = changem(PA.astype(float), pa_table["pa_availability"], pa_table["pa_type"])
+    # The GCR applies for each line, independently from the longitude
+    A_GCR = repmat((1 / (cosd(beta) + np.abs(cosd(azi)) * sind(beta) / tand(alpha))), 1, int(n))
 
-    A_availability = (changem(A_lu, availability, landuse["type"]).astype(float)/100) * A_notprotect
-    A_area = calc_areas(Crd, n, res, 1) * A_availability
+    # Fix too large and too small values of GCR
+    A_GCR[A_GCR < 0.2] = 0.2
+    A_GCR[A_GCR > 0.9] = 0.9
 
-    # Weighting matrix for the energy output (technical potential) in MWp
-    A_weight = A_area * A_GCR * f_pd * f_performance
-
-    # Now in MWh
-    FLH_weight = FLH_all * A_weight
-
-    return A_area, A_weight, FLH_weight
-
+    return A_GCR
+	
 
 def calc_areas(Crd, n, res, reg):
     # WSG84 ellipsoid constants
     a = 6378137  # major axis
     b = 6356752.3142  # minor axis
-    reg = reg - 1
     e = np.sqrt(1 - (b / a) ** 2)
 
     # Lower pixel latitudes
@@ -190,11 +185,6 @@ def calc_areas(Crd, n, res, reg):
     area_vec = ((upperSliceAreas - lowerSliceAreas) * res[1, 1] / 360).T
     A_area = np.tile(area_vec, (1, n[1, reg]))
     return A_area
-
-
-# ## Miscellaneous Functions
-
-
 
 
 def create_buffer(A_lu, buffer_pixel_amount):
@@ -273,73 +263,3 @@ def superpose_down(A_lu, buffer_pixed_amount):
     shifted_down = A_lu + down
     shifted_down = shifted_down != 0
     return shifted_down
-
-
-
-def calc_gcr(Crd, res, GCR):
-    # This code creates a GCR wieghing matrix for the deisred geographic extent. The sizing of the PV system is
-    # conducted on Dec 22 for a shade-free exposure to the Sun during a given number of hours.
-    # INPUTS:
-    # north_, east_, south_, west_: desired geographic extent
-    # res: resolution of MERRA data & desired resolution in lat/lon
-    # Shadefree_period: duration of the shade-free period
-
-    # Initialisation
-    Ind = ind_merra_high(Crd, res)  # Range indices for high resolution matrices, superposed to MERRA data
-    m = Ind[:, 0] - Ind[:, 2] + 1  # number of rows for the high resolution matrix over MERRA
-    n = Ind[:, 1] - Ind[:, 3] + 1  # number of cols for the high resolution matrix over MERRA
-
-    # Vector of latitudes between (south) and (north), with resolution (res_should) degrees
-    lat = np.arange((Crd[0, 2] + res[1, 0] / 2), (Crd[0, 0] - res[1, 0] / 2), res[1, 0])[np.newaxis].T
-
-    # Solar time where shade-free exposure starts
-    omegast = 12 - GCR["shadefree_period"] / 2
-
-    # Calculation
-    omega = 15 * (omegast - 12)  # Hour angle
-    phi = abs(lat)  # Latitude angle
-
-    beta = np.maximum(phi, 15)  # Tilt angle = latitude, but at least 15 degrees
-
-    if Crd[0, 2] > 0:
-        day = GCR["day_north"]
-        # Declination angle
-        delta = repmat(arcsind(0.3978) * sin(
-            day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), int(m), 1)
-
-    if Crd[0, 0] < 0:
-        day = GCR["day_south"]
-        # Declination angle
-        delta = repmat(arcsind(0.3978) * sin(
-            day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), int(m), 1)
-
-    if (Crd[0, 2] * Crd[0, 0]) < 0:
-        lat_pos = np.sum((lat > 0).astype(int))
-        day = GCR["day_north"]
-        # Declination angle
-        delta_pos = repmat(arcsind(0.3978) * sin(
-            day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), lat_pos, 1)
-
-        lat_neg = np.sum((lat < 0).astype(int))
-        day = GCR["day_south"]
-        # Declination angle
-        delta_neg = repmat(arcsind(0.3978) * sin(
-            day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), lat_neg, 1)
-        delta = np.append(delta_neg, delta_pos, axis=0)
-
-    # Elevation angle
-    alpha = arcsind(sind(delta) * sind(phi) + cosd(delta) * cosd(phi) * cosd(omega))
-
-    # Azimuth angle
-    azi = arccosd((sind(delta) * cosd(phi) - cosd(delta) * sind(phi) * cosd(omega)) / cosd(alpha))
-
-    # The GCR applies for each line, independently from the longitude
-    A_GCR = repmat((1 / (cosd(beta) + np.abs(cosd(azi)) * sind(beta) / tand(alpha))), 1, int(n))
-
-    # Fix too large and too small values of GCR
-    A_GCR[A_GCR < 0.2] = 0.2
-    A_GCR[A_GCR > 0.9] = 0.9
-
-    return A_GCR
-
-

@@ -333,8 +333,8 @@ def angles(hour, *args):
         lon = Locations[:, 1].T  # east = west
         m = len(lat)
         n = len(lon)
-    N = np.floor(hour/24) + 1
-    hourofday = hour - (N - 1) * 24 + 0.5
+    N = hour // 24 + 1
+    hourofday = hour % 24 + 0.5
 
     # Calculation
     # Latitude angle
@@ -460,8 +460,7 @@ def coefficients(beta, ratio, R_b, A_i, f, *args):
         hour = args[0]
         sunrise = args[1]
         sunset = args[2]
-        day = np.floor((hour - 1) / 24) + 1
-        hourofday = hour - (day - 1) * 24 - 0.5
+        hourofday = hour % 24 + 0.5
 
         # Case 1: Sunrise and sunset occur on the same day (GMT)
         critertion = np.logical_and(hourofday < sunrise, np.logical_and(sunrise > 0, sunset < 24))

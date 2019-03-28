@@ -729,10 +729,6 @@ def find_locations_quantiles(paths, param, tech):
 						 
 def generate_time_series(paths, param, tech):
     return 
-# Time series for all regions
-
-
-
     # # Calculate A matrices
     # # Landuse classes 0-16, to be reclassified
     # with rasterio.open(paths["LU"]) as src:

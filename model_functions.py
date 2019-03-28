@@ -60,7 +60,6 @@ def calc_CF_solar(hour, reg, param, merraData, rasterData, calc_type):
             CF_csp = np.zeros((m[1, reg], n[1, reg]))
             return CF_pv, CF_csp
         else:
-            #import pdb; pdb.set_trace()
             # Load MERRA data, increase its resolution, and fit it to the extent
             GHI_MERRA_h = resizem(GHI_MERRA_h, m[1, reg], n[1, reg])
             TOA_MERRA_h = merraData["SWTDN"][:, :, hour]
@@ -74,30 +73,24 @@ def calc_CF_solar(hour, reg, param, merraData, rasterData, calc_type):
         A_albedo = rasterData["A_albedo"]
         A_Ross = rasterData["A_Ross"]
     elif calc_type == 'Points':
-        Locations = param["Locations"] # TO BE SAVED
-        Locations[:, 2:4] = repmat(Crd[-1, 2:4], np.size(Locations, 0), 1)
-        Locations_ind_low = ind_merra_low(crd_merra_low(Locations, res), res)
-        Locations_ind_high = np.squeeze(Ind[3:, reg, :]) - repmat(np.squeeze(Ind[1, reg, 2:4]).T,
-                                                                    np.size(Locations, 0), 2) + 1
+        Crd_Locations = param["Crd_Locations"]
+        Ind_Locations = param["Ind_Locations"]
         # Load MERRA2 data for the desired points
-        GHI_MERRA_h = merraData["file_pv"]["SWGDN"][:, :, hour]
-        GHI_MERRA_h = GHI_MERRA_h[np.ix_(Locations_ind_low[:, 0]-1, Locations_ind_low[:, 1]-1)]
+        GHI_MERRA_h = merraData["SWGDN"][:, :, hour]
+        GHI_MERRA_h = GHI_MERRA_h[np.ix_(np.squeeze(Ind_Locations[0, reg, :, 0])-1, np.squeeze(Ind_Locations[0, reg, :, 1])-1)]
         GHI_MERRA_h = np.diagonal(GHI_MERRA_h)
-        TOA_MERRA_h = merraData["file_toa"]["SWTDN"][:, :, hour]
-        TOA_MERRA_h = TOA_MERRA_h[np.ix_(Locations_ind_low[:, 0]-1, Locations_ind_low[:, 1]-1)]
+        TOA_MERRA_h = merraData["SWTDN"][:, :, hour]
+        TOA_MERRA_h = TOA_MERRA_h[np.ix_(np.squeeze(Ind_Locations[0, reg, :, 0])-1, np.squeeze(Ind_Locations[0, reg, :, 1])-1)]
         TOA_MERRA_h = np.diagonal(TOA_MERRA_h)
-        TEMP_h = merraData["file_t"]["T2M"][:, :, hour]
-        TEMP_h = TEMP_h[np.ix_(Locations_ind_low[:, 0]-1, Locations_ind_low[:, 1]-1)] - 273.15  # Convert to Celsius
+        TEMP_h = merraData["T2M"][:, :, hour]
+        TEMP_h = TEMP_h[np.ix_(np.squeeze(Ind_Locations[0, reg, :, 0])-1, np.squeeze(Ind_Locations[0, reg, :, 1])-1)] - 273.15  # Convert to Celsius
         TEMP_h = np.diagonal(TEMP_h)
         # Compute the angles
-        A_phi, A_omega, A_delta, A_alpha, A_beta, A_azimuth, A_orientation, sunrise, sunset = \
-            angles(hour, Locations)
+        A_phi, A_omega, A_delta, A_alpha, A_beta, A_azimuth, A_orientation, sunrise, sunset = angles(hour, np.squeeze(Crd_Locations[reg, :, :]))
         # Other vectors
-        #CLR_MAX = CLR_MAX[np.ix_(Locations_ind_high[:, 0]-1, Locations_ind_high[:, 1]-1)]
-        #CLR_MAX = np.diagonal(CLR_MAX)
-        A_albedo = rasterData["A_albedo"][np.ix_(Locations_ind_high[:, 0]-1, Locations_ind_high[:, 1]-1)]
+        A_albedo = rasterData["A_albedo"][np.ix_(np.squeeze(Ind_Locations[0, reg, :, 0])-1, np.squeeze(Ind_Locations[0, reg, :, 1])-1)]
         A_albedo = np.diagonal(A_albedo)
-        A_Ross = rasterData["A_Ross"][np.ix_(Locations_ind_high[:, 0]-1, Locations_ind_high[:, 1]-1)]
+        A_Ross = rasterData["A_Ross"][np.ix_(np.squeeze(Ind_Locations[0, reg, :, 0])-1, np.squeeze(Ind_Locations[0, reg, :, 1])-1)]
         A_Ross = np.diagonal(A_Ross)
 
     if pv["tracking"] == 1:
@@ -119,8 +112,6 @@ def calc_CF_solar(hour, reg, param, merraData, rasterData, calc_type):
     # Compute the clearness index
     CLEARNESS = np.zeros(GHI_MERRA_h.shape)
     np.divide(GHI_MERRA_h, TOA_MERRA_h, out = CLEARNESS, where = TOA_MERRA_h!=0)
-    #CLEARNESS = GHI_MERRA_h / TOA_MERRA_h
-    #CLEARNESS[np.isnan(CLEARNESS)] = 0
 
     # Compute the ratio of diffuse radiation
     RATIO = global2diff(CLEARNESS, A_alpha.shape)
@@ -168,6 +159,72 @@ def calc_CF_solar(hour, reg, param, merraData, rasterData, calc_type):
 	
 	
 def calc_FLH_solar(hours, args):
+    # Decomposing the tuple args
+    reg = args[0]
+    paths = args[1]
+    param = args[2]
+    nRegions = args[3]
+    region_name = args[4]
+    rasterData = args[5]
+    tech = args[6]
+	
+    Ind = param["Ind"]
+    regions_shp = param["regions_land"]
+    Crd = param["Crd"]
+    res = param["res"]
+    GeoRef = param["GeoRef"]
+    m = param["m"]
+    n = param["n"]
+    landuse = param["landuse"]
+    nRegions = param["nRegions_land"]
+	
+    # Obtain weather matrices
+    merraData = {}
+    # Downward shortwave radiation on the ground - stored variable SWGDN
+    merraData["SWGDN"] = hdf5storage.read('SWGDN', paths["GHI"])
+    merraData["SWGDN"] = merraData["SWGDN"][Ind[0, reg, 2]-1:Ind[0, reg, 0], Ind[0, reg, 3]-1:Ind[0, reg, 1], :]
+    # Downward shortwave radiation at the top of the atmosphere SWTDN
+    merraData["SWTDN"] = hdf5storage.read('SWTDN', paths["TOA"])
+    merraData["SWTDN"] = merraData["SWTDN"][Ind[0, reg, 2]-1:Ind[0, reg, 0], Ind[0, reg, 3]-1:Ind[0, reg, 1], :]
+    # Temperature 2m above the ground - stored variable T2M
+    merraData["T2M"] = hdf5storage.read('T2M', paths["T2M"])
+    merraData["T2M"] = merraData["T2M"][Ind[0, reg, 2]-1:Ind[0, reg, 0], Ind[0, reg, 3]-1:Ind[0, reg, 1], :]
+		
+    # Calculate A matrices
+    # A_lu
+    with rasterio.open(paths["LU"]) as src:
+        w = src.read(1, window=rasterio.windows.Window.from_slices(slice((m[1, -1] - Ind[1, reg, 0]),
+                                                                         (m[1, -1] - Ind[1, reg, 2] + 1)),
+                                                                   slice(Ind[1, reg, 3] - 1,
+                                                                         Ind[1, reg, 1])))
+    rasterData["A_lu"] = np.flipud(w)
+    # A_Ross (Temperature coefficients for heating losses)
+    rasterData["A_Ross"] = changem(rasterData["A_lu"], param["landuse"]["Ross_coeff"], param["landuse"]["type"]).astype(float) / 10000
+    # A_albedo (Reflectivity coefficients)
+    rasterData["A_albedo"] = changem(rasterData["A_lu"], param["landuse"]["albedo"], param["landuse"]["type"]).astype(float) / 100
+
+    TS = np.zeros((8760, 1))
+    FLH = np.zeros((m[1, reg], n[1, reg]))
+	
+    for hour in hours:
+        # Show progress of the simulation
+        print(str(reg+1) + '/' + str(nRegions) + ' ' + region_name + ' ' + str(hour + 1))
+        
+        if tech == 'PV':
+            CF, _ = calc_CF_solar(hour, reg, param, merraData, rasterData, 'Surface')
+        elif tech == 'CSP':
+            _, CF = calc_CF_solar(hour, reg, param, merraData, rasterData, 'Surface')
+        
+        # Aggregates CF to obtain the yearly FLH
+        CF = CF * rasterData["A_region"]
+        CF[np.isnan(CF)] = 0
+        FLH = FLH + CF
+        # Time series for the mean
+        TS[hour] = np.mean(CF[rasterData["A_region"] == 1])
+    return FLH, TS
+	
+	
+def calc_TS_solar(hours, args):
     # Decomposing the tuple args
     reg = args[0]
     paths = args[1]
@@ -276,8 +333,8 @@ def angles(hour, *args):
         lon = Locations[:, 1].T  # east = west
         m = len(lat)
         n = len(lon)
-    N = np.floor(hour/24) + 1
-    hourofday = hour - (N - 1) * 24 + 0.5
+    N = hour // 24 + 1
+    hourofday = hour % 24 + 0.5
 
     # Calculation
     # Latitude angle
@@ -403,8 +460,7 @@ def coefficients(beta, ratio, R_b, A_i, f, *args):
         hour = args[0]
         sunrise = args[1]
         sunset = args[2]
-        day = np.floor((hour - 1) / 24) + 1
-        hourofday = hour - (day - 1) * 24 - 0.5
+        hourofday = hour % 24 + 0.5
 
         # Case 1: Sunrise and sunset occur on the same day (GMT)
         critertion = np.logical_and(hourofday < sunrise, np.logical_and(sunrise > 0, sunset < 24))
@@ -496,14 +552,15 @@ def global2diff(k_t, dims):
 
     return A_ratio
 
-def calc_CF_wind(w50m_h, rasterData, turbine, tech):
-    # This function calculates the capacity factor for a given wind speed at 50m
+def calc_CF_wind(hour, reg, turbine, m, n, merraData, rasterData):
+    ''' This function calculates the capacity factor for a given wind speed at 50m'''
+	
+    # Load MERRA data, increase its resolution, and fit it to the extent
+    w50m_h = resizem(merraData["W50M"][:, :, hour], m[1, reg], n[1, reg])
+	
     # Calculate the wind speed a the desired height
-
     w_new_h = w50m_h * rasterData["A_cf"]
-
-    # retrieve turbine parameters
-    turbine = turbine[tech]
+    del w50m_h
 
     # Calculate the capacity factor
 
@@ -526,61 +583,56 @@ def calc_CF_wind(w50m_h, rasterData, turbine, tech):
 def calc_FLH_wind(hours, args):
     # Decomposing the tuple args
     reg = args[0]
-    nRegions = args[1]
-    region_name = args[2]
-    Ind = args[3]
-    Crd = args[4]
-    res = args[5]
-    merraData = args[6]
-    rasterData = args[7]
-    m = args[8]
-    n = args[9]
-    W50M = args[10]
-    turbine = args[11]
-    tech = args[12]
+    paths = args[1]
+    param = args[2]
+    nRegions = args[3]
+    region_name = args[4]
+    rasterData = args[5]
+    tech = args[6]
 	
+    if tech == "WindOff":
+        regions_shp = param["regions_eez"]
+        Ind = param["Ind"][:, -nRegions-1:-1, :]
+        m = param["m"][:, -nRegions-1:]
+        n = param["n"][:, -nRegions-1:]
+    else:
+        regions_shp = param["regions_land"]
+        Ind = param["Ind"][:, 0:nRegions, :]
+        m = param["m"][:, 0:nRegions]
+        m = np.c_[m, param["m"][:, -1]]
+        n = param["n"][:, 0:nRegions]
+        n = np.c_[n, param["n"][:, -1]]
+    turbine = param[tech]["technical"]
+	
+	# Obtain weather matrices
     merraData = {}
-    with h5py.File(paths["U50M"]) as f:
-        U50M = np.array(f["U50M"][:]).T
-    with h5py.File(paths["V50M"]) as f:
-        V50M = np.array(f["V50M"][:]).T
+    # Downward shortwave radiation on the ground - stored variable SWGDN
+    U50M = hdf5storage.read('U50M', paths["U50M"])
+    V50M = hdf5storage.read('V50M', paths["V50M"])
     merraData["W50M"] = abs(U50M + (1j * V50M))
     del U50M, V50M
     merraData["W50M"] = merraData["W50M"][Ind[0, reg, 2]-1:Ind[0, reg, 0], Ind[0, reg, 3]-1:Ind[0, reg, 1], :]
 	
     # Calculate A matrices
-    rasterData = {}
-    # A_region
-    rasterData["A_region"] = calc_region(regions_shp.iloc[reg - 1], Crd[reg, :], res, R1)
-    # A_lu
-    with rasterio.open(paths["LU"]) as src:
-        w = src.read(1, window=rasterio.windows.Window.from_slices(slice((m[1, 0] - Ind[1, reg, 0]),
-                                                                         (m[1, 0] - Ind[1, reg, 2] + 1)),
-                                                                   slice(Ind[1, reg, 3] - 1,
-                                                                         Ind[1, reg, 1])))
-    rasterData["A_lu"] = np.flipud(w)
     # A_cf
     with rasterio.open(paths["CORR"]) as src:
-        w = src.read(1, window=rasterio.windows.Window.from_slices(slice((m[1, 0] - Ind[1, reg, 0]),
-                                                                         (m[1, 0] - Ind[1, reg, 2] + 1)),
+        w = src.read(1, window=rasterio.windows.Window.from_slices(slice((m[1, -1] - Ind[1, reg, 0]),
+                                                                         (m[1, -1] - Ind[1, reg, 2] + 1)),
                                                                    slice(Ind[1, reg, 3] - 1,
                                                                          Ind[1, reg, 1])))
     rasterData["A_cf"] = np.flipud(w)
-	
+
     TS = np.zeros((8760, 1))
     FLH = np.zeros((m[1, reg], n[1, reg]))
 	
     for hour in hours:
         # Show progress of the simulation
-        print(str(reg) + '/' + str(nRegions - 1) + ' ' + region_name + ' ' + str(hour + 1))
-        
-        # Load MERRA data, increase its resolution, and fit it to the extent
-        w50m_h = resizem(W50M[Ind[0, reg, 2] - 1:Ind[0, reg, 0], Ind[0, reg, 3] - 1:Ind[0, reg, 1], hour],
-                         m[1, reg], n[1, reg])
+        print(str(reg+1) + '/' + str(nRegions) + ' ' + region_name + ' ' + str(hour + 1))
+		
         # Calculate hourly capacity factor
-        CF = WindFunc.calc_CF_wind(w50m_h, rasterData, turbine, tech)
-        # Aggregates CF to obtain the yearly FLH
+        CF = calc_CF_wind(hour, reg, turbine, m, n, merraData, rasterData)
         
+        # Aggregates CF to obtain the yearly FLH
         CF = CF * rasterData["A_region"]
         CF[np.isnan(CF)] = 0
         FLH = FLH + CF

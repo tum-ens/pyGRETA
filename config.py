@@ -10,10 +10,11 @@ import os
 param = {}
 param["region"] = 'Europe'
 param["year"] = '2015'
-param["technology"] = ['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['PV', 'WindOff'] #['PV', 'CSP', 'WindOn', 'WindOff']
 param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
-param["nproc"] = 8
+param["nproc"] = 24
+param["size_max"] = 20e6 # Maximum size of bands (number of double per sub-matrix
 
 # MERRA_Centroid_Extent = [74.5, 45, 19, -20.625]  # EUMENA
 # MERRA_Centroid_Extent = [74.5, 36.25, 33.5, -16.25]  # Europe
@@ -65,8 +66,8 @@ GCR = {"shadefree_period": 6,
        "day_south": 263
        }
 pv["weight"] = {"GCR": GCR,
-                "lu_availability": np.array([0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 0, 2, 2, 2, 0, 2]),
-                "pa_availability": np.array([1, 0, 0, 0, 0, 0, 0.25, 1, 1, 1, 1]),
+                "lu_availability": np.array([0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.02, 0.00, 0.02, 0.02, 0.02, 0.00, 0.02]),
+                "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
                 "power_density": 0.000160,
                 "f_performance": 0.75
                 }
@@ -78,9 +79,8 @@ csp["mask"] = {"slope": 20,
                "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
                "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
                }
-csp["weight"] = {"GCR": 1,
-                 "lu_availability": np.array([0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 0, 2, 2, 2, 0, 2]),
-                 "pa_availability": np.array([1, 0, 0, 0, 0, 0, 0.25, 1, 1, 1, 1]),
+csp["weight"] = {"lu_availability": np.array([0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.02, 0.00, 0.02, 0.02, 0.02, 0.00, 0.02]),
+                 "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
                  "power_density": 0.000160,
                  "f_performance": 0.9*0.75
                  }
@@ -102,8 +102,8 @@ windon["mask"] = {"slope": 20,
                   "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
                   "buffer_pixel_amount": 1
                   }
-windon["weight"] = {"lu_availability": np.array([0, 8, 8, 8, 8, 8, 8, 10, 10, 10, 10, 0, 10, 0, 10, 0, 10]),
-                    "pa_availability": np.array([1, 0, 0, 0, 0, 0, 0.25, 1, 1, 1, 1]),
+windon["weight"] = {"lu_availability": np.array([0.00, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.10, 0.10, 0.10, 0.10, 0.00, 0.10, 0.00, 0.10, 0.00, 0.10]),
+                    "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
                     "power_density": 0.000008,
                     "f_performance": 0.87
                     }
@@ -121,8 +121,8 @@ windoff["technical"] = {"w_in": 3,
 windoff["mask"] = {"depth": -40,
                    "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
                    }
-windoff["weight"] = {"lu_availability": np.array([10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
-                     "pa_availability": np.array([1, 0, 0, 0, 0, 0, 0.25, 1, 1, 1, 1]),
+windoff["weight"] = {"lu_availability": np.array([0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00]),
+                     "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
                      "power_density": 0.000020,
                      "f_performance": 0.87
                      }
@@ -188,13 +188,14 @@ if not os.path.isdir(paths["OUT"]):
     # paths["OUT"] = root + "OUTPUT" + fs + region + fs + str(turbine["hub_height"]) + "m_" + str(correction) + "corr_" + timestamp
 # else:
     # paths["OUT"] = root + "OUTPUT" + fs + region + fs + str(pv["tracking"]) + "axis_" + timestamp
-paths["area"] = paths["OUT"] + region + "_area_" + year + ".mat"
 for tech in param["technology"]:
     paths[tech] = {}
     paths[tech]["FLH"] = paths["OUT"] + region + '_' + tech + '_FLH_' + year + '.mat'
     paths[tech]["mask"] = paths["OUT"] + region + "_" + tech + "_mask_" + year + ".mat"
     paths[tech]["FLH_mask"] = paths["OUT"] + region + "_" + tech + "_FLH_mask_" + year + ".mat"
+    paths[tech]["area"] = paths["OUT"] + region + "_" + tech + "_area_" + year + ".mat"
     paths[tech]["weight"] = paths["OUT"] + region + "_" + tech + "_weight_" + year + ".mat"
     paths[tech]["FLH_weight"] = paths["OUT"] + region + "_" + tech + "_FLH_weight_" + year + ".mat"
+    paths[tech]["Locations"] = paths["OUT"] + region + "_" + tech +'_Locations.shp'
 
 del root, PathTemp, fs

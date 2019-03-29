@@ -480,6 +480,8 @@ def calculate_FLH(paths, param, tech):
 
         region_name = regions_shp["NAME_SHORT"][reg]
 
+        # Implement split function (Cant' find it on the internet)
+
         list_hours = []
         chunk = 8760 // nproc
         for i in range(0, nproc - 1):

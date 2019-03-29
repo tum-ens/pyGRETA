@@ -86,13 +86,14 @@ def calc_region(region, Crd, res, GeoRef):
         features = [region.geometry]
 
     driver = gdal.GetDriverByName('MEM')
-    outRaster = driver.Create("", A_region.shape[1], A_region.shape[0], 1, gdal.GDT_Float64)
+    outRaster = driver.Create("p", A_region.shape[1], A_region.shape[0], 1, gdal.GDT_Float64)
     outRaster.SetGeoTransform((origin[0], GeoRef["pixelWidth"], 0, origin[1], 0, -GeoRef["pixelHeight"]))
     outRasterSRS = osr.SpatialReference()
     outRasterSRS.ImportFromEPSG(4326)
     outRaster.SetProjection(outRasterSRS.ExportToWkt())
     outband = outRaster.GetRasterBand(1)
     outband.WriteArray(np.flipud(A_region))
+    # Improve
     out_image, out_transform = mask.mask(outRaster, features, crop=False, nodata=0, all_touched=False, filled=True)
     A_region = out_image[0]
 

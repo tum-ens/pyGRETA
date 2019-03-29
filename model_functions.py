@@ -53,19 +53,11 @@ def calc_CF_solar(hour, reg, param, merraData, rasterData, calc_type):
         m = param["m"]
         n = param["n"]
 
-        # Load MERRA data
-        GHI_MERRA_h = merraData["SWGDN"][:, :, hour]
-        if np.sum(GHI_MERRA_h) == 0:  # During Night time
-            CF_pv = np.zeros((m[1, reg], n[1, reg]))
-            CF_csp = np.zeros((m[1, reg], n[1, reg]))
-            return CF_pv, CF_csp
-        else:
-            # Load MERRA data, increase its resolution, and fit it to the extent
-            GHI_MERRA_h = resizem(GHI_MERRA_h, m[1, reg], n[1, reg])
-            TOA_MERRA_h = merraData["SWTDN"][:, :, hour]
-            TOA_MERRA_h = resizem(TOA_MERRA_h, m[1, reg], n[1, reg])
-            TEMP_h = merraData["T2M"][:, :, hour]
-            TEMP_h = resizem(TEMP_h, m[1, reg], n[1, reg]) - 273.15  # Convert to Celsius
+        # Load MERRA data, increase its resolution, and fit it to the extent
+        CLEARNESS_h = merraData["CLEARNESS"][:, :, hour]
+        CLEARNESS_h = resizem(CLEARNESS_h, m[1, reg], n[1, reg])
+        TEMP_h = merraData["T2M"][:, :, hour]
+        TEMP_h = resizem(TEMP_h, m[1, reg], n[1, reg]) - 273.15  # Convert to Celsius
         # Compute the angles
         A_phi, A_omega, A_delta, A_alpha, A_beta, A_azimuth, A_orientation, sunrise, sunset = \
             angles(hour, reg, Crd[reg, :], m[1, reg], n[1, reg], res)
@@ -76,12 +68,9 @@ def calc_CF_solar(hour, reg, param, merraData, rasterData, calc_type):
         Crd_Locations = param["Crd_Locations"]
         Ind_Locations = param["Ind_Locations"]
         # Load MERRA2 data for the desired points
-        GHI_MERRA_h = merraData["SWGDN"][:, :, hour]
-        GHI_MERRA_h = GHI_MERRA_h[np.ix_(np.squeeze(Ind_Locations[0, reg, :, 0])-1, np.squeeze(Ind_Locations[0, reg, :, 1])-1)]
-        GHI_MERRA_h = np.diagonal(GHI_MERRA_h)
-        TOA_MERRA_h = merraData["SWTDN"][:, :, hour]
-        TOA_MERRA_h = TOA_MERRA_h[np.ix_(np.squeeze(Ind_Locations[0, reg, :, 0])-1, np.squeeze(Ind_Locations[0, reg, :, 1])-1)]
-        TOA_MERRA_h = np.diagonal(TOA_MERRA_h)
+        CLEARNESS_h = merraData["CLEARNESS"][:, :, hour]
+        CLEARNESS_h = CLEARNESS_h[np.ix_(np.squeeze(Ind_Locations[0, reg, :, 0])-1, np.squeeze(Ind_Locations[0, reg, :, 1])-1)]
+        CLEARNESS_h = np.diagonal(CLEARNESS_h)
         TEMP_h = merraData["T2M"][:, :, hour]
         TEMP_h = TEMP_h[np.ix_(np.squeeze(Ind_Locations[0, reg, :, 0])-1, np.squeeze(Ind_Locations[0, reg, :, 1])-1)] - 273.15  # Convert to Celsius
         TEMP_h = np.diagonal(TEMP_h)
@@ -99,26 +88,21 @@ def calc_CF_solar(hour, reg, param, merraData, rasterData, calc_type):
         A_beta = 90 - A_alpha
         A_orientation = A_azimuth
 
-    A_incidence = arccosd(
-        sind(A_delta) * sind(A_phi) * cosd(A_beta)
-        - sind(A_delta) * cosd(A_phi) * sind(A_beta) * cosd(A_orientation) + cosd(A_delta) * cosd(A_phi) * cosd(A_beta)
-        * cosd(A_omega) + cosd(A_delta) * sind(A_phi) * sind(A_beta) * cosd(A_orientation)
-        * cosd(A_omega) + cosd(A_delta) * sind(A_beta) * sind(A_orientation) * sind(A_omega)
-    )
+    aux = np.maximum(np.minimum((sind(A_delta) * sind(A_phi) * cosd(A_beta)
+           - sind(A_delta) * cosd(A_phi) * sind(A_beta) * cosd(A_orientation) + cosd(A_delta) * cosd(A_phi) * cosd(A_beta)
+           * cosd(A_omega) + cosd(A_delta) * sind(A_phi) * sind(A_beta) * cosd(A_orientation)
+           * cosd(A_omega) + cosd(A_delta) * sind(A_beta) * sind(A_orientation) * sind(A_omega)), 1), -1)
+    A_incidence = arccosd(aux)
 
     # Compute the hourly TOA radiation
     TOA_h = toa_hourly(A_alpha, hour)
 
-    # Compute the clearness index
-    CLEARNESS = np.zeros(GHI_MERRA_h.shape)
-    np.divide(GHI_MERRA_h, TOA_MERRA_h, out = CLEARNESS, where = TOA_MERRA_h!=0)
-
     # Compute the ratio of diffuse radiation
-    RATIO = global2diff(CLEARNESS, A_alpha.shape)
+    RATIO = global2diff(CLEARNESS_h, A_alpha.shape)
 
     # Compute the coefficients for the HDKR model
     R_b = cosd(A_incidence) / sind(A_alpha)
-    A_i = (1 - RATIO) * CLEARNESS
+    A_i = (1 - RATIO) * CLEARNESS_h
     f = (1 - RATIO) ** 0.5
 
     F_direct, F_diffuse, F_reflected = coefficients(A_beta, RATIO, R_b, A_i, f, hour, sunrise, sunset)
@@ -131,7 +115,7 @@ def calc_CF_solar(hour, reg, param, merraData, rasterData, calc_type):
     F[F > 1] = 1
 
     # Compute the incident radiation
-    GHI_h = TOA_h * CLEARNESS
+    GHI_h = TOA_h * CLEARNESS_h
     GHI_h[GHI_h < 0] = 0
     GHI_h[np.isnan(GHI_h)] = 0
     G_tilt_h = GHI_h * F
@@ -145,15 +129,14 @@ def calc_CF_solar(hour, reg, param, merraData, rasterData, calc_type):
 
     # For CSP: tracking like pv.tracking = 1
     A_beta = 90 - A_alpha
-    A_incidence = arccosd(
-        sind(A_delta) * sind(A_phi) * cosd(A_beta) - sind(A_delta) * cos(np.deg2rad(A_phi)) * sind(A_beta) *
-        cosd(A_orientation) + cosd(A_delta) * cosd(A_phi) * cosd(A_beta) * cosd(A_omega) + cosd(A_delta) * sind(A_phi)
-        * sind(A_beta) * cosd(A_orientation) * cosd(A_omega) + cosd(A_delta) * sind(A_beta) * sind(A_orientation) *
-        sind(A_omega)
-    )
+    aux = np.maximum(np.minimum((sind(A_delta) * sind(A_phi) * cosd(A_beta)
+           - sind(A_delta) * cosd(A_phi) * sind(A_beta) * cosd(A_orientation) + cosd(A_delta) * cosd(A_phi) * cosd(A_beta)
+           * cosd(A_omega) + cosd(A_delta) * sind(A_phi) * sind(A_beta) * cosd(A_orientation)
+           * cosd(A_omega) + cosd(A_delta) * sind(A_beta) * sind(A_orientation) * sind(A_omega)), 1), -1)
+    A_incidence = arccosd(aux)
     R_b = cosd(A_incidence) / sind(A_alpha)
     F_direct_csp, _, _ = coefficients(90 - A_alpha, RATIO, R_b, A_i, f, hour, sunrise, sunset)
-    CF_csp = TOA_h * CLEARNESS * F_direct_csp * (1 - SHADING)
+    CF_csp = TOA_h * CLEARNESS_h * F_direct_csp * (1 - SHADING)
     CF_csp[CF_csp > 1] = 1
     return CF_pv, CF_csp
 	
@@ -180,12 +163,9 @@ def calc_FLH_solar(hours, args):
 	
     # Obtain weather matrices
     merraData = {}
-    # Downward shortwave radiation on the ground - stored variable SWGDN
-    merraData["SWGDN"] = hdf5storage.read('SWGDN', paths["GHI"])
-    merraData["SWGDN"] = merraData["SWGDN"][Ind[0, reg, 2]-1:Ind[0, reg, 0], Ind[0, reg, 3]-1:Ind[0, reg, 1], :]
-    # Downward shortwave radiation at the top of the atmosphere SWTDN
-    merraData["SWTDN"] = hdf5storage.read('SWTDN', paths["TOA"])
-    merraData["SWTDN"] = merraData["SWTDN"][Ind[0, reg, 2]-1:Ind[0, reg, 0], Ind[0, reg, 3]-1:Ind[0, reg, 1], :]
+    # Clearness index - stored variable CLEARNESS
+    merraData["CLEARNESS"] = hdf5storage.read('CLEARNESS', paths["CLEARNESS"])
+    merraData["CLEARNESS"] = merraData["CLEARNESS"][Ind[0, reg, 2]-1:Ind[0, reg, 0], Ind[0, reg, 3]-1:Ind[0, reg, 1], :]
     # Temperature 2m above the ground - stored variable T2M
     merraData["T2M"] = hdf5storage.read('T2M', paths["T2M"])
     merraData["T2M"] = merraData["T2M"][Ind[0, reg, 2]-1:Ind[0, reg, 0], Ind[0, reg, 3]-1:Ind[0, reg, 1], :]
@@ -382,7 +362,8 @@ def angles(hour, *args):
                                                                       range_lon)] - 20) / 65 * 60 + 20  # Asia/China
     
     # Azimuth angle (in degrees)
-    aziam = arccosd(sind(delta) * cosd(phi) - cosd(delta) * sind(phi) * cosd(omega) / cosd(alpha))
+    aux = np.maximum(np.minimum(sind(delta) * cosd(phi) - cosd(delta) * sind(phi) * cosd(omega) / cosd(alpha), 1), -1)
+    aziam = arccosd(aux)
     azipm = 360 - aziam
     azi = aziam * ((omega < 0) * 1) + azipm * ((omega >= 0) * 1)
 
@@ -390,18 +371,18 @@ def angles(hour, *args):
     orientation = np.zeros(alpha.shape)  # Azimuth of the PV panel is zero for the Southern hemisphere
     orientation[phi < 0] = 180  # Azimuth of the PV panel is 180° for the Southern hemisphere
 
-    # Sunrise and sunset Hours in GMT
-    aux = np.maximum(np.minimum((-tand(phi)) * tand(delta), 1), -1);
+    # Sunrise and sunset hours in GMT
+    #aux = np.maximum(np.minimum((-tand(phi)) * tand(delta), 1), -1)
+    aux = np.maximum(np.minimum((-tand(phi)) * tand(delta), 1), -1)
     sunrise = 12 - 1 / 15 * arccosd(aux)
     sunset = 12 + 1 / 15 * arccosd(aux)
     coeff_a = (cosd(phi) / tand(beta)) + sind(phi)
     coeff_b = tand(delta) * (cosd(phi) * cosd(orientation) - sind(phi) / tand(beta))
-    sunrise_tilt = 12 - 1 / 15 * arccosd((coeff_a * coeff_b - sind(orientation)
-                                          * (coeff_a ** 2 - coeff_b ** 2 + sind(orientation) ** 2) ** 0.5
-                                          / (coeff_a ** 2 + sind(orientation) ** 2)))
-    sunset_tilt = 12 + 1 / 15 * arccosd((coeff_a * coeff_b - sind(orientation)
-                                         * (coeff_a ** 2 - coeff_b ** 2 + sind(orientation) ** 2) ** 0.5
-                                         / (coeff_a ** 2 + sind(orientation) ** 2)))
+    aux = np.maximum(np.minimum(((coeff_a * coeff_b - sind(orientation)
+                                 * (coeff_a ** 2 - coeff_b ** 2 + sind(orientation) ** 2) ** 0.5
+                                 / (coeff_a ** 2 + sind(orientation) ** 2))), 1), -1)
+    sunrise_tilt = 12 - 1 / 15 * arccosd(aux)
+    sunset_tilt = 12 + 1 / 15 * arccosd(aux)
 
     #import pdb; pdb.set_trace()
     sunrise = np.maximum(sunrise, sunrise_tilt) - repmat(TC, m, 1)  # Correction Solar time -> GMT
@@ -538,18 +519,6 @@ def global2diff(k_t, dims):
 
     A_ratio = np.minimum(k_d, 1)
 
-    # criterion = SINE <= 0.2
-    # k_d[criterion] = -0.3065 * k_t[criterion] - 0.6669 * SINE[criterion] + 1
-    # criterion = np.logical_and(SINE > 0.2, SINE <= 0.4)
-    # k_d[criterion] = -0.1344 * k_t[criterion] - 0.6774 * SINE[criterion] + 0.9653
-    # criterion = np.logical_and(SINE > 0.4, SINE <= 0.6)
-    # k_d[criterion] = -0.0587 * k_t[criterion] - 0.3843 * SINE[criterion] + 0.8730
-    # criterion = np.logical_and(SINE > 0.6, SINE <= 0.8)
-    # k_d[criterion] = -0.0308 * k_t[criterion] - 0.3592 * SINE[criterion] + 0.8504
-    # criterion = SINE > 0.8
-    # k_d[criterion] = -0.0527 * k_t[criterion] - 0.4226 * SINE[criterion] + 0.8639
-    # A_ratio = np.max(np.min(k_d, 1), 0.05)
-
     return A_ratio
 
 def calc_CF_wind(hour, reg, turbine, m, n, merraData, rasterData):
@@ -607,10 +576,7 @@ def calc_FLH_wind(hours, args):
 	# Obtain weather matrices
     merraData = {}
     # Downward shortwave radiation on the ground - stored variable SWGDN
-    U50M = hdf5storage.read('U50M', paths["U50M"])
-    V50M = hdf5storage.read('V50M', paths["V50M"])
-    merraData["W50M"] = abs(U50M + (1j * V50M))
-    del U50M, V50M
+    merraData["W50M"] = hdf5storage.read('W50M', paths["W50M"])
     merraData["W50M"] = merraData["W50M"][Ind[0, reg, 2]-1:Ind[0, reg, 0], Ind[0, reg, 3]-1:Ind[0, reg, 1], :]
 	
     # Calculate A matrices

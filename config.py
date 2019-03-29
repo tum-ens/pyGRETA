@@ -150,11 +150,13 @@ paths["SHP"] = PathTemp + "_NUTS0_wo_Balkans_with_EEZ.shp"
 
 # MERRA2
 PathTemp = root + "INPUTS" + fs + region + fs + "MERRA2 " + year + fs
-paths["MERRA_IN"] = root + "INPUTS" + fs + region + fs + "MERRA2 " + year + fs
+paths["MERRA_IN"] = PathTemp
 paths["U50M"] = PathTemp + "u50m_" + year + ".mat"
 paths["V50M"] = PathTemp + "v50m_" + year + ".mat"
+paths["W50M"] = PathTemp + "w50m_" + year + ".mat"
 paths["GHI"] = PathTemp + "swgdn_" + year + ".mat"
 paths["TOA"] = PathTemp + "swtdn_" + year + ".mat"
+paths["CLEARNESS"] = PathTemp + "clearness_" + year + ".mat"
 paths["T2M"] = PathTemp + "t2m_" + year + ".mat"  # Temperature
 
 # Global maps

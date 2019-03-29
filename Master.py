@@ -56,71 +56,73 @@ def initialization():
     param["GeoRef"] = calc_geotiff(Crd, res)
     return paths, param
 
-def NetCDF2MAT(paths):
+def generate_weather_files(paths):
     # This Code reads the daily NetCDF data (from MERRA) for SWGDN, SWTDN, T2M, U50m, and V50m, and saves them in
     # matrices with yearly time series with low spatial resolution. This code has to be run only once.
-    start = datetime.date(2015, 1, 1)
-    end = datetime.date(2015, 12, 31)
-    root = paths["MERRA_IN"]
-
-    SWGDN = np.array([])
-    SWTDN = np.array([])
-    T2M = np.array([])
-    U50M = np.array([])
-    V50M = np.array([])
-
-    for date in pd.date_range(start, end):
-        tomorrow = date + pd.Timedelta('1 day')
-        if date.day == 29 and date.month == 2:
-            continue
-
-        # Name and path of the NetCDF file to be read
-        name = root + 'MERRA2_400.tavg1_2d_rad_Nx.' + date.strftime('%Y%m%d') + '.SUB.nc'
-        name2 = root + 'MERRA2_400.tavg1_2d_slv_Nx.' + date.strftime('%Y%m%d') + '.SUB.nc'
-
-        # Read NetCDF file, extract hourly tables
-        with h5netcdf.File(name, 'r') as f:
-            swgdn = np.transpose(f['SWGDN'], [1, 0, 2])
-            if SWGDN.size == 0:
-                SWGDN = swgdn
-            else:
-                SWGDN = np.concatenate((SWGDN, swgdn), axis=2)
-
-            swtdn = np.transpose(f['SWTDN'], [1, 0, 2])
-            if SWTDN.size == 0:
-                SWTDN = swtdn
-            else:
-                SWTDN = np.concatenate((SWTDN, swtdn), axis=2)
-
-        with h5netcdf.File(name2, 'r') as f:
-            t2m = np.transpose(f['T2M'], [1, 0, 2])
-            if T2M.size == 0:
-                T2M = t2m
-            else:
-                T2M = np.concatenate((T2M, t2m), axis=2)
-
-            u50m = np.transpose(f['U50M'], [1, 0, 2])
-            if U50M.size == 0:
-                U50M = u50m
-            else:
-                U50M = np.concatenate((U50M, u50m), axis=2)
-
-            v50m = np.transpose(f['V50M'], [1, 0, 2])
-            if V50M.size == 0:
-                V50M = v50m
-            else:
-                V50M = np.concatenate((V50M, v50m), axis=2)
-        if date.year != tomorrow.year:
-            p = root + 'swgdn_' + str(date.year) + '.mat'
-            hdf5storage.writes({'SWGDN': SWGDN}, p, store_python_metadata=True, matlab_compatible=True)
-            p = root + 'swtdn_' + str(date.year) + '.mat'
-            hdf5storage.writes({'SWTDN': SWTDN}, p, store_python_metadata=True, matlab_compatible=True)
-            p = root + 't2m_' + str(date.year) + '.mat'
-            hdf5storage.writes({'T2M': T2M}, p, store_python_metadata=True, matlab_compatible=True)
-            p = root + 'u50m_' + str(date.year) + '.mat'
-            hdf5storage.writes({'U50M': U50M}, p, store_python_metadata=True, matlab_compatible=True)
-            p = root + 'v50m_' + str(date.year) + '.mat'
-            hdf5storage.writes({'V50M': V50M}, p, store_python_metadata=True, matlab_compatible=True)
+    if not os.path.isfile(paths["U50M"]):
+        start = datetime.date(paths["year"], 1, 1)
+        end = datetime.date(paths["year"], 12, 31)
+        root = paths["MERRA_IN"]
+        
+        SWGDN = np.array([])
+        SWTDN = np.array([])
+        T2M = np.array([])
+        U50M = np.array([])
+        V50M = np.array([])
+        
+        for date in pd.date_range(start, end):
+            tomorrow = date + pd.Timedelta('1 day')
+            if date.day == 29 and date.month == 2:
+                continue
+        
+            # Name and path of the NetCDF file to be read
+            name = root + 'MERRA2_400.tavg1_2d_rad_Nx.' + date.strftime('%Y%m%d') + '.SUB.nc'
+            name2 = root + 'MERRA2_400.tavg1_2d_slv_Nx.' + date.strftime('%Y%m%d') + '.SUB.nc'
+        
+            # Read NetCDF file, extract hourly tables
+            with h5netcdf.File(name, 'r') as f:
+                swgdn = np.transpose(f['SWGDN'], [1, 0, 2])
+                if SWGDN.size == 0:
+                    SWGDN = swgdn
+                else:
+                    SWGDN = np.concatenate((SWGDN, swgdn), axis=2)
+        
+                swtdn = np.transpose(f['SWTDN'], [1, 0, 2])
+                if SWTDN.size == 0:
+                    SWTDN = swtdn
+                else:
+                    SWTDN = np.concatenate((SWTDN, swtdn), axis=2)
+        
+            with h5netcdf.File(name2, 'r') as f:
+                t2m = np.transpose(f['T2M'], [1, 0, 2])
+                if T2M.size == 0:
+                    T2M = t2m
+                else:
+                    T2M = np.concatenate((T2M, t2m), axis=2)
+        
+                u50m = np.transpose(f['U50M'], [1, 0, 2])
+                if U50M.size == 0:
+                    U50M = u50m
+                else:
+                    U50M = np.concatenate((U50M, u50m), axis=2)
+        
+                v50m = np.transpose(f['V50M'], [1, 0, 2])
+                if V50M.size == 0:
+                    V50M = v50m
+                else:
+                    V50M = np.concatenate((V50M, v50m), axis=2)
+            if date.year != tomorrow.year:
+                hdf5storage.writes({'SWGDN': SWGDN}, paths["SWGDN"], store_python_metadata=True, matlab_compatible=True)
+                hdf5storage.writes({'SWTDN': SWTDN}, paths["SWTDN"], store_python_metadata=True, matlab_compatible=True)
+                hdf5storage.writes({'T2M': T2M}, paths["T2M"], store_python_metadata=True, matlab_compatible=True)
+                hdf5storage.writes({'U50M': U50M}, paths["U50M"], store_python_metadata=True, matlab_compatible=True)
+                hdf5storage.writes({'V50M': V50M}, paths["V50M"], store_python_metadata=True, matlab_compatible=True)
+                # Create the overall wind speed
+                W50M = abs(U50M + (1j * V50M))
+                hdf5storage.writes({'W50M': W50M}, paths["W50M"], store_python_metadata=True, matlab_compatible=True)
+                # Calculate the clearness index
+                CLEARNESS = np.divide(SWGDN, SWTDN, where = SWTDN!=0)
+                hdf5storage.writes({'CLEARNESS': CLEARNESS}, paths["CLEARNESS"], store_python_metadata=True, matlab_compatible=True)
 
 
 def generate_landsea(paths, param):
@@ -473,14 +475,11 @@ def calculate_FLH(paths, param, tech):
         regions_shp = param["regions_land"]
         nRegions = param["nRegions_land"]
         Crd = param["Crd"][0:nRegions, :]
+        Ind = param["Ind"][0:nRegions, :]
         m = param["m"][:, 0:nRegions]
         n = param["n"][:, 0:nRegions]
 
-    list_hours = []
-    chunk = 8760 // nproc
-    for i in range(0, nproc-1):
-        list_hours.append(list(range(chunk*i, chunk*(i+1))))
-    list_hours.append(list(range(chunk*(nproc-1), 8760)))
+    list_hours = np.array_split(np.arange(0, 8760), nproc)
 
     for reg in range(0, nRegions):
 
@@ -491,8 +490,13 @@ def calculate_FLH(paths, param, tech):
         rasterData["A_region"] = calc_region(regions_shp.iloc[reg], Crd[reg, :], res, GeoRef)
 
         # results = calc_FLH_solar(range(0,20), [reg, paths, param, nRegions, region_name, rasterData, tech])
-
         if tech in ['PV', 'CSP']:
+            CLEARNESS = hdf5storage.read('CLEARNESS', paths["CLEARNESS"])
+            day_filter = CLEARNESS[Ind[0, reg, 2]-1:Ind[0, reg, 0], Ind[0, reg, 3]-1:Ind[0, reg, 1], :].sum(axis=(0,1)) != 0
+            list_hours = np.arange(0, 8760)
+            #results = calc_FLH_solar(list_hours[day_filter], [reg, paths, param, nRegions, region_name, rasterData, tech])
+            list_hours = np.array_split(list_hours[day_filter], nproc)
+            print(len(list_hours[0]))
             results = Pool(processes=nproc).starmap(calc_FLH_solar, product(list_hours, [
                 [reg, paths, param, nRegions, region_name, rasterData, tech]]))
         elif tech in ['WindOn', 'WindOff']:
@@ -918,7 +922,7 @@ def generate_time_series(paths, param, tech):
 
 if __name__ == '__main__':
     paths, param = initialization()
-    NetCDF2MAT(paths)
+    generate_weather_files(paths)
     generate_landsea(paths, param)  # Land and Sea
     generate_landuse(paths, param)  # Landuse
     generate_bathymetry(paths, param)  # Bathymetry
@@ -926,8 +930,8 @@ if __name__ == '__main__':
     generate_slope(paths, param)  # Slope
     generate_population(paths, param)  # Population
     generate_protected_areas(paths, param)  # Protected areas
-    generate_buffered_population(paths, param)  # Buffered Population
-    generate_wind_correction(paths, param)  # Correction factors for wind speeds
+    #generate_buffered_population(paths, param)  # Buffered Population
+    #generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
         calculate_FLH(paths, param, tech)
         combine_FLH(paths, param, tech)

@@ -8,41 +8,6 @@ np.seterr(divide='ignore')  # Repress Invalid value or division by zero error
 from numpy.matlib import repmat, sin, cos
 import hdf5storage
 
-# def calc_clearness(merraData, reg, Ind):
-    # HoM = hourofmonth()
-    # days = HoM[-1] // 24
-
-    # m = Ind[:, :, 0] - Ind[:, :, 2] + 1  # #rows
-    # n = Ind[:, :, 1] - Ind[:, :, 3] + 1  # #cols
-
-    # # Using MERRA data, find the monthly average daily clearness index CLR_MEAN
-    # # and the yearly maximum daily clearness index CLR_MAX
-
-    # CLR_MEAN = np.zeros((m[1, reg], n[1, reg], 12))
-    # GHI_MERRA_h = merraData["SWGDN"]
-    # TOA_MERRA_h = merraData["SWTDN"]
-
-    # GHI_MERRA_day = np.zeros((m[0, reg], n[0, reg], days))
-    # TOA_MERRA_day = np.zeros((m[0, reg], n[0, reg], days))
-
-    # for dayofyear in range(0, days):
-        # GHI_MERRA_day[:, :, dayofyear] = np.sum(GHI_MERRA_h[:, :, 24 * (dayofyear - 1):24 * dayofyear], 2)
-        # TOA_MERRA_day[:, :, dayofyear] = np.sum(TOA_MERRA_h[:, :, 24 * (dayofyear - 1):24 * dayofyear], 2)
-    # np.seterr(divide='ignore', invalid='ignore')  # Repress Invalid value or division by zero error
-    # CLR_MAX = np.nanmax(np.divide(GHI_MERRA_h, TOA_MERRA_h), axis=2)
-    # print(CLR_MAX)
-    # CLR_MAX = resizem(CLR_MAX, m[1, reg], n[1, reg])
-
-    # CLR_MEAN[:, :, 0] = \
-        # resizem(np.nanmean(GHI_MERRA_day[:, :, 0: HoM[0] // 24] / TOA_MERRA_day[:, :, 0:HoM[0] // 24], 2), m[1, reg],
-                # n[1, reg])
-
-    # for month in range(1, 12):
-        # CLR_MEAN[:, :, month] = \
-            # resizem(np.nanmean((GHI_MERRA_day[:, :, HoM[month-1] // 24:HoM[month] // 24] /
-                                # TOA_MERRA_day[:, :, HoM[month-1] // 24:HoM[month] // 24]), 2), m[1, reg], n[1, reg])
-    # return CLR_MEAN, CLR_MAX
-
 
 def calc_CF_solar(hour, reg, param, merraData, rasterData, calc_type):
     Ind = param["Ind"]
@@ -205,6 +170,7 @@ def calc_FLH_solar(hours, args):
         FLH = FLH + CF
         # Time series for the mean
         TS[hour] = np.mean(CF[rasterData["A_region"] == 1])
+    print('\n')
     return FLH, TS
 	
 	
@@ -282,8 +248,8 @@ def calc_TS_solar(hours, args):
 
 
 def angles(hour, *args):
-    # This code creates six matrices for the desired ectent, that respresent the elevation, tilt, azimuth,
-    # and orientation angles in addition to the sunrise and sunset hours or ecery pixel with the desired resolution.True
+    # This code creates six matrices for the desired extent, that represent the elevation, tilt, azimuth,
+    # and orientation angles in addition to the sunrise and sunset hours of every pixel with the desired resolution.True
     # The inputs are:
     # hour: hour rank in a year (from 1 to 8760)
     # north, est, south, west: desired geographic extent
@@ -612,4 +578,5 @@ def calc_FLH_wind(hours, args):
         FLH = FLH + CF
         # Time series for the mean
         TS[hour] = np.mean(CF[rasterData["A_region"] == 1])
+    print('\n')
     return FLH, TS

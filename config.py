@@ -10,11 +10,10 @@ import os
 param = {}
 param["region"] = 'Europe'
 param["year"] = '2015'
-param["technology"] = ['PV', 'WindOff'] #['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['WindOn', 'WindOff', 'PV'] #['PV', 'CSP', 'WindOn', 'WindOff']
 param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
-param["nproc"] = 24
-param["size_max"] = 20e6 # Maximum size of bands (number of double per sub-matrix
+param["nproc"] = 6
 
 # MERRA_Centroid_Extent = [74.5, 45, 19, -20.625]  # EUMENA
 # MERRA_Centroid_Extent = [74.5, 36.25, 33.5, -16.25]  # Europe

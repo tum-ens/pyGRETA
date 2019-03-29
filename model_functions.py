@@ -1,11 +1,11 @@
 import os
+import sys
 # os.environ['MKL_NUM_THREADS'] = '8'
 from data_functions import *
 from util import *
 import numpy as np
 np.seterr(divide='ignore')  # Repress Invalid value or division by zero error
 from numpy.matlib import repmat, sin, cos
-import h5py
 import hdf5storage
 
 # def calc_clearness(merraData, reg, Ind):
@@ -185,10 +185,14 @@ def calc_FLH_solar(hours, args):
 
     TS = np.zeros((8760, 1))
     FLH = np.zeros((m[1, reg], n[1, reg]))
-	
+    status = 0
     for hour in hours:
-        # Show progress of the simulation
-        print(str(reg+1) + '/' + str(nRegions) + ' ' + region_name + ' ' + str(hour + 1))
+        if hour <= param["status_bar_limit"]:
+            # Show progress of the simulation
+            status = status + 1
+            sys.stdout.write('\r')
+            sys.stdout.write(str(reg+1) + '/' + str(nRegions) + ' ' + region_name + ' ' + '[%-50s] %d%%' % ('='* ((status*50)//len(hours)), (status*100)//len(hours)))
+            sys.stdout.flush()
         
         if tech == 'PV':
             CF, _ = calc_CF_solar(hour, reg, param, merraData, rasterData, 'Surface')
@@ -590,10 +594,14 @@ def calc_FLH_wind(hours, args):
 
     TS = np.zeros((8760, 1))
     FLH = np.zeros((m[1, reg], n[1, reg]))
-	
+    status = 0
     for hour in hours:
-        # Show progress of the simulation
-        print(str(reg+1) + '/' + str(nRegions) + ' ' + region_name + ' ' + str(hour + 1))
+        if hour <= param["status_bar_limit"]:
+            # Show progress of the simulation
+            status = status + 1
+            sys.stdout.write('\r')
+            sys.stdout.write(str(reg+1) + '/' + str(nRegions) + ' ' + region_name + ' ' + '[%-50s] %d%%' % ('='* ((status*50)//len(hours)), (status*100)//len(hours)))
+            sys.stdout.flush()
 		
         # Calculate hourly capacity factor
         CF = calc_CF_wind(hour, reg, turbine, m, n, merraData, rasterData)

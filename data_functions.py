@@ -3,7 +3,7 @@ from util import *
 import math as m
 import numpy as np
 import rasterio
-from rasterio import windows, mask
+from rasterio import windows, mask, MemoryFile
 
 
 
@@ -75,27 +75,25 @@ def calc_region(region, Crd, res, GeoRef):
     A_region = np.ones((M, N))
     origin = [Crd[3], Crd[2]]
 
-    array2raster("A_region.tif", origin, GeoRef["pixelWidth"], -GeoRef["pixelHeight"], A_region)
-
-    with rasterio.open("A_region.tif") as f:
-        print(f)
-
     if region.geometry.geom_type == 'MultiPolygon':
         features = [feature for feature in region.geometry]
     else:
         features = [region.geometry]
+    west = origin[0]
+    north = origin[1]
+    profile = {'driver': 'GTiff',
+               'height': M,
+               'width': N,
+               'count': 1,
+               'dtype': rasterio.float64,
+               'crs': 'EPSG:4326',
+               'transform': rasterio.transform.from_origin(west, north, GeoRef["pixelWidth"], GeoRef["pixelHeight"])}
 
-    driver = gdal.GetDriverByName('MEM')
-    outRaster = driver.Create("p", A_region.shape[1], A_region.shape[0], 1, gdal.GDT_Float64)
-    outRaster.SetGeoTransform((origin[0], GeoRef["pixelWidth"], 0, origin[1], 0, -GeoRef["pixelHeight"]))
-    outRasterSRS = osr.SpatialReference()
-    outRasterSRS.ImportFromEPSG(4326)
-    outRaster.SetProjection(outRasterSRS.ExportToWkt())
-    outband = outRaster.GetRasterBand(1)
-    outband.WriteArray(np.flipud(A_region))
-    # Improve
-    out_image, out_transform = mask.mask(outRaster, features, crop=False, nodata=0, all_touched=False, filled=True)
-    A_region = out_image[0]
+    with MemoryFile() as memfile:
+        with memfile.open(**profile) as f:
+            f.write(A_region, 1)
+            out_image, out_transform = mask.mask(f, features, crop=False, nodata=0, all_touched=False, filled=True)
+        A_region = out_image[0]
 
     return A_region
 

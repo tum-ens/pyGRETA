@@ -58,6 +58,13 @@ def ind_global(Ext_PV, res):
 
 
 def calc_geotiff(Crd, res):
+    """
+    Returns dictionary containing the Georefferencing parameters for geotiff creation,
+    based on the desired extent and resolution
+
+    :param Crd: Extent
+    :param res: resolution
+    """
     GeoRef = {"RasterOrigin": [Crd[-1, 3], Crd[-1, 0]],
               "RasterOrigin_alt": [Crd[-1, 3], Crd[-1, 2]],
               "pixelWidth": res[1, 1],
@@ -97,12 +104,15 @@ def calc_region(region, Crd, res, GeoRef):
 
 
 def calc_gcr(Crd, m, n, res, GCR):
-    # This code creates a GCR wieghing matrix for the desired geographic extent. The sizing of the PV system is
-    # conducted on Dec 22 for a shade-free exposure to the Sun during a given number of hours.
-    # INPUTS:
-    # north_, east_, south_, west_: desired geographic extent
-    # res: resolution of MERRA data & desired resolution in lat/lon
-    # Shadefree_period: duration of the shade-free period
+    """
+    This function creates a GCR weighting matrix for the desired geographic extent
+    The sizing of the PV system is conducted on DEC 22 for a shade-free exposure
+    to the sun during a given number of hours
+
+    :param Crd: desired geographic extent (north, east, south, west)
+    :param m, n, res: desired resolution in lat and lon, and resolution of MERRA data
+    :param GCR: Duration of the shade-free period
+    """
 
     # Vector of latitudes between (south) and (north), with resolution (res_should) degrees
     lat = np.arange((Crd[0, 2] + res[1, 0] / 2), (Crd[0, 0] - res[1, 0] / 2), res[1, 0])[np.newaxis].T
@@ -195,7 +205,9 @@ def calc_areas(Crd, n, res, reg):
 
 
 def create_buffer(A_lu, buffer_pixel_amount):
-    # A_lu matrix element values range from 0 to 16:
+    """
+    This function creates a buffer around urban areas, based on a Von Neumann neighborhood.
+    A_lu matrix element values range from 0 to 16:
     # 0   -- Water
     # 1   -- Evergreen needle leaf forest
     # 2   -- Evergreen broad leaf forest
@@ -212,6 +224,10 @@ def create_buffer(A_lu, buffer_pixel_amount):
     # 14  -- Croplands / natural vegetation mosaic
     # 15  -- Snow and ice
     # 16  -- Barren or sparsely vegetated
+
+    :param A_lu: Landuse matrix
+    :param buffer_pixel_amount: Buffer amount
+    """
 
     # Mark the matrix elements with values 13
     A_lu = A_lu == 13
@@ -237,8 +253,11 @@ def create_buffer(A_lu, buffer_pixel_amount):
 
 
 def superpose_left(A_lu, buffer_pixed_amount):
-    # shift the matrix to the left
-    # shift amount is defined by buffer_pixel amount
+    """
+    Used as part of create_buffer()
+    Shift and superpose to the left, shift amount is defined by buffer_pixel amount
+    """
+
     left = np.append(A_lu[:, buffer_pixed_amount:], np.zeros((A_lu.shape[0], buffer_pixed_amount)), axis=1)
     shifted_left = A_lu + left
     shifted_left = shifted_left != 0
@@ -246,8 +265,11 @@ def superpose_left(A_lu, buffer_pixed_amount):
 
 
 def superpose_right(A_lu, buffer_pixed_amount):
-    # shift the matrix to the right
-    # shift amount is defined by buffer_pixel amount
+    """
+    Used as part of create_buffer()
+    Shift and superpose to the right, shift amount is defined by buffer_pixel amount
+    """
+
     right = np.append(np.zeros((A_lu.shape[0], buffer_pixed_amount)), A_lu[:, :-buffer_pixed_amount], axis=1)
     shifted_right = A_lu + right
     shifted_right = shifted_right != 0
@@ -255,8 +277,11 @@ def superpose_right(A_lu, buffer_pixed_amount):
 
 
 def superpose_up(A_lu, buffer_pixed_amount):
-    # shift the matrix to up
-    # shift amount is defined by buffer_pixel_amount
+    """
+    Used as part of create_buffer()
+    Shift and superpose upward, shift amount is defined by buffer_pixel amount
+    """
+
     up = np.append(A_lu[buffer_pixed_amount:, :], np.zeros((buffer_pixed_amount, A_lu.shape[1])), axis=0)
     shifted_up = A_lu + up
     shifted_up = shifted_up != 0
@@ -264,8 +289,11 @@ def superpose_up(A_lu, buffer_pixed_amount):
 
 
 def superpose_down(A_lu, buffer_pixed_amount):
-    # shift the matrix to down
-    # shift amount is defined by buffer_pixel_amount
+    """
+    Used as part of create_buffer()
+    Shift and superpose to the downward, shift amount is defined by buffer_pixel amount
+    """
+
     down = np.append(np.zeros((buffer_pixed_amount, A_lu.shape[1])), A_lu[:-buffer_pixed_amount, :], axis=0)
     shifted_down = A_lu + down
     shifted_down = shifted_down != 0

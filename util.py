@@ -47,6 +47,16 @@ def resizem(A_in, row_new, col_new):
 
 
 def array2raster(newRasterfn, rasterOrigin, pixelWidth, pixelHeight, array):
+    """
+    Save array to geotiff raster format based on EPSG 4326
+
+    :param newRasterfn: desired paths
+    :param rasterOrigin: latitude and longitube of the top left corner of the raster
+    :param pixelWidth:  pixel width (might be negative)
+    :param pixelHeight: pixel height(might be negative)
+    :param array: Raster array
+    :return:
+    """
     cols = array.shape[1]
     rows = array.shape[0]
     originX = rasterOrigin[0]
@@ -71,6 +81,7 @@ def char_range(c1, c2):
 
 
 def changem(A, newval, oldval):
+    """replace """
     Out = np.zeros(A.shape)
     z = np.array((oldval, newval)).T
     for i, j in z:

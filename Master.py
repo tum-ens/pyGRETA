@@ -14,6 +14,12 @@ from itertools import product
 
 
 def initialization():
+    """
+    Initialization of the script, reads config file and returns the paths and param dictionaries
+    Paths: contains all required paths for loading and saving
+    param: contains many parameters used throughout the script
+    """
+
     # import param and paths
     from config import paths, param
     res = param["res"]
@@ -57,8 +63,14 @@ def initialization():
 
 
 def generate_weather_files(paths):
-    # This Code reads the daily NetCDF data (from MERRA) for SWGDN, SWTDN, T2M, U50m, and V50m, and saves them in
-    # matrices with yearly time series with low spatial resolution. This code has to be run only once.
+    """
+    This function reads the daily NetCDF data (from MERRA) for SWGDN, SWTDN, T2M, U50m, and V50m,
+    and saves them in matrices with yearly time series with low spatial resolution.
+    This code has to be run only once
+
+    :param paths: paths dictionary containing the input file for NetCDF data
+    """
+
     if not os.path.isfile(paths["U50M"]):
         start = datetime.date(paths["year"], 1, 1)
         end = datetime.date(paths["year"], 12, 31)

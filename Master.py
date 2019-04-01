@@ -934,7 +934,7 @@ if __name__ == '__main__':
             and os.path.isfile(paths["T2M"])
             and os.path.isfile(paths["U50M"])
             and os.path.isfile(paths["V50M"])):
-        NetCDF2MAT(paths)
+        generate_weather_files(paths)
 
     generate_landsea(paths, param)  # Land and Sea
     generate_landuse(paths, param)  # Landuse

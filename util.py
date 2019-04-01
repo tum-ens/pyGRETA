@@ -3,6 +3,7 @@ import gdal
 import osr
 from osgeo import ogr
 from numpy.matlib import repmat, reshape, sin, arcsin, cos, arccos, tan, arctan
+import os
 from os import getcwd, chdir
 from glob import glob
 
@@ -85,20 +86,6 @@ def list_files(directory, format):
     return it
 
 
-def forloop():
-    return 1
-
-
-def recursive_dict_save(h5file, path, dic):
-    for key, item in dic.items():
-        if isinstance(item, (int, float, np.ndarray, np.int64, np.float64, str, bytes)):
-            h5file[path + key] = item
-        elif isinstance(item, dict):
-            recursive_dict_save(h5file, path + key + '/', item)
-        else:
-            raise ValueError('Cannot save %s type' % type(item))
-
-
 def sub2ind(array_shape, rows, cols):
     return np.ravel_multi_index((rows, cols), array_shape, order='F')
 
@@ -120,7 +107,6 @@ def field_exists(field_name, shp_path):
 
 def changeExt2tif(filepath):
     base = os.path.splitext(filepath)[0]
-
     return base + '.tif'
 
 

@@ -130,7 +130,7 @@ def generate_landsea(paths, param):
     n = param["n"]
     res = param["res"]
     GeoRef = param["GeoRef"]
-    if os.path.isfile(paths["LAND"]):
+    if not os.path.isfile(paths["LAND"]):
         nRegions = param["nRegions_land"]
         regions_shp = param["regions_land"]
         Crd = param["Crd"][0:nRegions, :]
@@ -462,6 +462,7 @@ def calculate_FLH(paths, param, tech):
     year = param["year"]
     res = param["res"]
     GeoRef = param["GeoRef"]
+    # H = param["Calculated_hours"]
 
     if tech == "WindOff":
         regions_shp = param["regions_sea"]
@@ -484,9 +485,11 @@ def calculate_FLH(paths, param, tech):
 
         list_hours = []
         chunk = 8760 // nproc
+        # chunk = H // nproc
         for i in range(0, nproc - 1):
             list_hours.append(list(range(chunk * i, chunk * (i + 1))))
         list_hours.append(list(range(chunk * (nproc - 1), 8760)))
+        # list_hours.append(list(range(chunk * (nproc - 1), H)))
 
         rasterData = {}
         # A_region
@@ -915,7 +918,7 @@ if __name__ == '__main__':
     generate_buffered_population(paths, param)  # Buffered Population
     generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
-        # calculate_FLH(paths, param, tech)
+        calculate_FLH(paths, param, tech)
         # combine_FLH(paths, param, tech)
-        masking(paths, param, tech)
+        # masking(paths, param, tech)
 

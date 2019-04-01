@@ -3,45 +3,47 @@ import os
 from data_functions import *
 from util import *
 import numpy as np
+
 np.seterr(divide='ignore')  # Repress Invalid value or division by zero error
 from numpy.matlib import repmat, sin, cos
 import h5py
 import hdf5storage
 
+
 # def calc_clearness(merraData, reg, Ind):
-    # HoM = hourofmonth()
-    # days = HoM[-1] // 24
+# HoM = hourofmonth()
+# days = HoM[-1] // 24
 
-    # m = Ind[:, :, 0] - Ind[:, :, 2] + 1  # #rows
-    # n = Ind[:, :, 1] - Ind[:, :, 3] + 1  # #cols
+# m = Ind[:, :, 0] - Ind[:, :, 2] + 1  # #rows
+# n = Ind[:, :, 1] - Ind[:, :, 3] + 1  # #cols
 
-    # # Using MERRA data, find the monthly average daily clearness index CLR_MEAN
-    # # and the yearly maximum daily clearness index CLR_MAX
+# # Using MERRA data, find the monthly average daily clearness index CLR_MEAN
+# # and the yearly maximum daily clearness index CLR_MAX
 
-    # CLR_MEAN = np.zeros((m[1, reg], n[1, reg], 12))
-    # GHI_MERRA_h = merraData["SWGDN"]
-    # TOA_MERRA_h = merraData["SWTDN"]
+# CLR_MEAN = np.zeros((m[1, reg], n[1, reg], 12))
+# GHI_MERRA_h = merraData["SWGDN"]
+# TOA_MERRA_h = merraData["SWTDN"]
 
-    # GHI_MERRA_day = np.zeros((m[0, reg], n[0, reg], days))
-    # TOA_MERRA_day = np.zeros((m[0, reg], n[0, reg], days))
+# GHI_MERRA_day = np.zeros((m[0, reg], n[0, reg], days))
+# TOA_MERRA_day = np.zeros((m[0, reg], n[0, reg], days))
 
-    # for dayofyear in range(0, days):
-        # GHI_MERRA_day[:, :, dayofyear] = np.sum(GHI_MERRA_h[:, :, 24 * (dayofyear - 1):24 * dayofyear], 2)
-        # TOA_MERRA_day[:, :, dayofyear] = np.sum(TOA_MERRA_h[:, :, 24 * (dayofyear - 1):24 * dayofyear], 2)
-    # np.seterr(divide='ignore', invalid='ignore')  # Repress Invalid value or division by zero error
-    # CLR_MAX = np.nanmax(np.divide(GHI_MERRA_h, TOA_MERRA_h), axis=2)
-    # print(CLR_MAX)
-    # CLR_MAX = resizem(CLR_MAX, m[1, reg], n[1, reg])
+# for dayofyear in range(0, days):
+# GHI_MERRA_day[:, :, dayofyear] = np.sum(GHI_MERRA_h[:, :, 24 * (dayofyear - 1):24 * dayofyear], 2)
+# TOA_MERRA_day[:, :, dayofyear] = np.sum(TOA_MERRA_h[:, :, 24 * (dayofyear - 1):24 * dayofyear], 2)
+# np.seterr(divide='ignore', invalid='ignore')  # Repress Invalid value or division by zero error
+# CLR_MAX = np.nanmax(np.divide(GHI_MERRA_h, TOA_MERRA_h), axis=2)
+# print(CLR_MAX)
+# CLR_MAX = resizem(CLR_MAX, m[1, reg], n[1, reg])
 
-    # CLR_MEAN[:, :, 0] = \
-        # resizem(np.nanmean(GHI_MERRA_day[:, :, 0: HoM[0] // 24] / TOA_MERRA_day[:, :, 0:HoM[0] // 24], 2), m[1, reg],
-                # n[1, reg])
+# CLR_MEAN[:, :, 0] = \
+# resizem(np.nanmean(GHI_MERRA_day[:, :, 0: HoM[0] // 24] / TOA_MERRA_day[:, :, 0:HoM[0] // 24], 2), m[1, reg],
+# n[1, reg])
 
-    # for month in range(1, 12):
-        # CLR_MEAN[:, :, month] = \
-            # resizem(np.nanmean((GHI_MERRA_day[:, :, HoM[month-1] // 24:HoM[month] // 24] /
-                                # TOA_MERRA_day[:, :, HoM[month-1] // 24:HoM[month] // 24]), 2), m[1, reg], n[1, reg])
-    # return CLR_MEAN, CLR_MAX
+# for month in range(1, 12):
+# CLR_MEAN[:, :, month] = \
+# resizem(np.nanmean((GHI_MERRA_day[:, :, HoM[month-1] // 24:HoM[month] // 24] /
+# TOA_MERRA_day[:, :, HoM[month-1] // 24:HoM[month] // 24]), 2), m[1, reg], n[1, reg])
+# return CLR_MEAN, CLR_MAX
 
 
 def calc_CF_solar(hour, reg, param, merraData, rasterData, calc_type):
@@ -60,7 +62,7 @@ def calc_CF_solar(hour, reg, param, merraData, rasterData, calc_type):
             CF_csp = np.zeros((m[1, reg], n[1, reg]))
             return CF_pv, CF_csp
         else:
-            #import pdb; pdb.set_trace()
+            # import pdb; pdb.set_trace()
             # Load MERRA data, increase its resolution, and fit it to the extent
             GHI_MERRA_h = resizem(GHI_MERRA_h, m[1, reg], n[1, reg])
             TOA_MERRA_h = merraData["SWTDN"][:, :, hour]
@@ -74,30 +76,30 @@ def calc_CF_solar(hour, reg, param, merraData, rasterData, calc_type):
         A_albedo = rasterData["A_albedo"]
         A_Ross = rasterData["A_Ross"]
     elif calc_type == 'Points':
-        Locations = param["Locations"] # TO BE SAVED
+        Locations = param["Locations"]  # TO BE SAVED
         Locations[:, 2:4] = repmat(Crd[-1, 2:4], np.size(Locations, 0), 1)
         Locations_ind_low = ind_merra_low(crd_merra_low(Locations, res), res)
         Locations_ind_high = np.squeeze(Ind[3:, reg, :]) - repmat(np.squeeze(Ind[1, reg, 2:4]).T,
-                                                                    np.size(Locations, 0), 2) + 1
+                                                                  np.size(Locations, 0), 2) + 1
         # Load MERRA2 data for the desired points
         GHI_MERRA_h = merraData["file_pv"]["SWGDN"][:, :, hour]
-        GHI_MERRA_h = GHI_MERRA_h[np.ix_(Locations_ind_low[:, 0]-1, Locations_ind_low[:, 1]-1)]
+        GHI_MERRA_h = GHI_MERRA_h[np.ix_(Locations_ind_low[:, 0] - 1, Locations_ind_low[:, 1] - 1)]
         GHI_MERRA_h = np.diagonal(GHI_MERRA_h)
         TOA_MERRA_h = merraData["file_toa"]["SWTDN"][:, :, hour]
-        TOA_MERRA_h = TOA_MERRA_h[np.ix_(Locations_ind_low[:, 0]-1, Locations_ind_low[:, 1]-1)]
+        TOA_MERRA_h = TOA_MERRA_h[np.ix_(Locations_ind_low[:, 0] - 1, Locations_ind_low[:, 1] - 1)]
         TOA_MERRA_h = np.diagonal(TOA_MERRA_h)
         TEMP_h = merraData["file_t"]["T2M"][:, :, hour]
-        TEMP_h = TEMP_h[np.ix_(Locations_ind_low[:, 0]-1, Locations_ind_low[:, 1]-1)] - 273.15  # Convert to Celsius
+        TEMP_h = TEMP_h[np.ix_(Locations_ind_low[:, 0] - 1, Locations_ind_low[:, 1] - 1)] - 273.15  # Convert to Celsius
         TEMP_h = np.diagonal(TEMP_h)
         # Compute the angles
         A_phi, A_omega, A_delta, A_alpha, A_beta, A_azimuth, A_orientation, sunrise, sunset = \
             angles(hour, Locations)
         # Other vectors
-        #CLR_MAX = CLR_MAX[np.ix_(Locations_ind_high[:, 0]-1, Locations_ind_high[:, 1]-1)]
-        #CLR_MAX = np.diagonal(CLR_MAX)
-        A_albedo = rasterData["A_albedo"][np.ix_(Locations_ind_high[:, 0]-1, Locations_ind_high[:, 1]-1)]
+        # CLR_MAX = CLR_MAX[np.ix_(Locations_ind_high[:, 0]-1, Locations_ind_high[:, 1]-1)]
+        # CLR_MAX = np.diagonal(CLR_MAX)
+        A_albedo = rasterData["A_albedo"][np.ix_(Locations_ind_high[:, 0] - 1, Locations_ind_high[:, 1] - 1)]
         A_albedo = np.diagonal(A_albedo)
-        A_Ross = rasterData["A_Ross"][np.ix_(Locations_ind_high[:, 0]-1, Locations_ind_high[:, 1]-1)]
+        A_Ross = rasterData["A_Ross"][np.ix_(Locations_ind_high[:, 0] - 1, Locations_ind_high[:, 1] - 1)]
         A_Ross = np.diagonal(A_Ross)
 
     if pv["tracking"] == 1:
@@ -118,9 +120,9 @@ def calc_CF_solar(hour, reg, param, merraData, rasterData, calc_type):
 
     # Compute the clearness index
     CLEARNESS = np.zeros(GHI_MERRA_h.shape)
-    np.divide(GHI_MERRA_h, TOA_MERRA_h, out = CLEARNESS, where = TOA_MERRA_h!=0)
-    #CLEARNESS = GHI_MERRA_h / TOA_MERRA_h
-    #CLEARNESS[np.isnan(CLEARNESS)] = 0
+    np.divide(GHI_MERRA_h, TOA_MERRA_h, out=CLEARNESS, where=TOA_MERRA_h != 0)
+    # CLEARNESS = GHI_MERRA_h / TOA_MERRA_h
+    # CLEARNESS[np.isnan(CLEARNESS)] = 0
 
     # Compute the ratio of diffuse radiation
     RATIO = global2diff(CLEARNESS, A_alpha.shape)
@@ -165,8 +167,8 @@ def calc_CF_solar(hour, reg, param, merraData, rasterData, calc_type):
     CF_csp = TOA_h * CLEARNESS * F_direct_csp * (1 - SHADING)
     CF_csp[CF_csp > 1] = 1
     return CF_pv, CF_csp
-	
-	
+
+
 def calc_FLH_solar(hours, args):
     # Decomposing the tuple args
     reg = args[0]
@@ -176,7 +178,7 @@ def calc_FLH_solar(hours, args):
     region_name = args[4]
     rasterData = args[5]
     tech = args[6]
-	
+
     Ind = param["Ind"]
     regions_shp = param["regions_land"]
     Crd = param["Crd"]
@@ -186,19 +188,19 @@ def calc_FLH_solar(hours, args):
     n = param["n"]
     landuse = param["landuse"]
     nRegions = param["nRegions_land"]
-	
+
     # Obtain weather matrices
     merraData = {}
     # Downward shortwave radiation on the ground - stored variable SWGDN
     merraData["SWGDN"] = hdf5storage.read('SWGDN', paths["GHI"])
-    merraData["SWGDN"] = merraData["SWGDN"][Ind[0, reg, 2]-1:Ind[0, reg, 0], Ind[0, reg, 3]-1:Ind[0, reg, 1], :]
+    merraData["SWGDN"] = merraData["SWGDN"][Ind[0, reg, 2] - 1:Ind[0, reg, 0], Ind[0, reg, 3] - 1:Ind[0, reg, 1], :]
     # Downward shortwave radiation at the top of the atmosphere SWTDN
     merraData["SWTDN"] = hdf5storage.read('SWTDN', paths["TOA"])
-    merraData["SWTDN"] = merraData["SWTDN"][Ind[0, reg, 2]-1:Ind[0, reg, 0], Ind[0, reg, 3]-1:Ind[0, reg, 1], :]
+    merraData["SWTDN"] = merraData["SWTDN"][Ind[0, reg, 2] - 1:Ind[0, reg, 0], Ind[0, reg, 3] - 1:Ind[0, reg, 1], :]
     # Temperature 2m above the ground - stored variable T2M
     merraData["T2M"] = hdf5storage.read('T2M', paths["T2M"])
-    merraData["T2M"] = merraData["T2M"][Ind[0, reg, 2]-1:Ind[0, reg, 0], Ind[0, reg, 3]-1:Ind[0, reg, 1], :]
-		
+    merraData["T2M"] = merraData["T2M"][Ind[0, reg, 2] - 1:Ind[0, reg, 0], Ind[0, reg, 3] - 1:Ind[0, reg, 1], :]
+
     # Calculate A matrices
     # A_lu
     with rasterio.open(paths["LU"]) as src:
@@ -215,22 +217,24 @@ def calc_FLH_solar(hours, args):
                                                                          Ind[1, reg, 1])))
     rasterData["A_topo"] = np.flipud(w)
     # A_Ross (Temperature coefficients for heating losses)
-    rasterData["A_Ross"] = changem(rasterData["A_lu"], param["landuse"]["Ross_coeff"], param["landuse"]["type"]).astype(float) / 10000
+    rasterData["A_Ross"] = changem(rasterData["A_lu"], param["landuse"]["Ross_coeff"], param["landuse"]["type"]).astype(
+        float) / 10000
     # A_albedo (Reflectivity coefficients)
-    rasterData["A_albedo"] = changem(rasterData["A_lu"], param["landuse"]["albedo"], param["landuse"]["type"]).astype(float) / 100
+    rasterData["A_albedo"] = changem(rasterData["A_lu"], param["landuse"]["albedo"], param["landuse"]["type"]).astype(
+        float) / 100
 
     TS = np.zeros((8760, 1))
     FLH = np.zeros((m[1, reg], n[1, reg]))
-	
+
     for hour in hours:
         # Show progress of the simulation
-        print(str(reg+1) + '/' + str(nRegions) + ' ' + region_name + ' ' + str(hour + 1))
-        
+        print(str(reg + 1) + '/' + str(nRegions) + ' ' + region_name + ' ' + str(hour + 1))
+
         if tech == 'PV':
             CF, _ = calc_CF_solar(hour, reg, param, merraData, rasterData, 'Surface')
         elif tech == 'CSP':
             _, CF = calc_CF_solar(hour, reg, param, merraData, rasterData, 'Surface')
-        
+
         # Aggregates CF to obtain the yearly FLH
         CF = CF * rasterData["A_region"]
         CF[np.isnan(CF)] = 0
@@ -276,7 +280,7 @@ def angles(hour, *args):
         lon = Locations[:, 1].T  # east = west
         m = len(lat)
         n = len(lon)
-    N = np.floor(hour/24) + 1
+    N = np.floor(hour / 24) + 1
     hourofday = hour - (N - 1) * 24 + 0.5
 
     # Calculation
@@ -301,7 +305,7 @@ def angles(hour, *args):
 
     # Declination angle
     delta = repmat(arcsind(0.3978 * sin(N * 2 * np.pi / 365.25 - 1.400 + 0.0355
-                                                  * sin(N * 2 * np.pi / 365.25 - 0.0489))), phi.shape[0], phi.shape[1])
+                                        * sin(N * 2 * np.pi / 365.25 - 0.0489))), phi.shape[0], phi.shape[1])
     delta[phi < 0] = - delta[phi < 0]
 
     # Elevation angle (in degrees)
@@ -323,7 +327,7 @@ def angles(hour, *args):
     range_lon = repmat(range_lon, range_lat.shape[0], 1)
     beta[np.logical_and(range_lat, range_lon)] = (beta[np.logical_and(range_lat,
                                                                       range_lon)] - 20) / 65 * 60 + 20  # Asia/China
-    
+
     # Azimuth angle (in degrees)
     aziam = arccosd(sind(delta) * cosd(phi) - cosd(delta) * sind(phi) * cosd(omega) / cosd(alpha))
     azipm = 360 - aziam
@@ -346,7 +350,7 @@ def angles(hour, *args):
                                          * (coeff_a ** 2 - coeff_b ** 2 + sind(orientation) ** 2) ** 0.5
                                          / (coeff_a ** 2 + sind(orientation) ** 2)))
 
-    #import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     sunrise = np.maximum(sunrise, sunrise_tilt) - repmat(TC, m, 1)  # Correction Solar time -> GMT
     sunset = np.minimum(sunset, sunset_tilt) - repmat(TC, m, 1)  # Correction solar time -> GMT
 
@@ -475,7 +479,7 @@ def global2diff(k_t, dims):
 
     criterion = np.logical_and(k_t > 0.22, k_t <= 0.8)
     k_d[criterion] = 0.9511 - 0.1604 * k_t[criterion] + 4.388 * k_t[criterion] ** 2 - 16.638 * k_t[criterion] ** 3 \
-                    + 12.336 * k_t[criterion] ** 4
+                     + 12.336 * k_t[criterion] ** 4
 
     criterion = k_t > 0.8
     k_d[criterion] = 0.165
@@ -495,6 +499,7 @@ def global2diff(k_t, dims):
     # A_ratio = np.max(np.min(k_d, 1), 0.05)
 
     return A_ratio
+
 
 def calc_CF_wind(w50m_h, rasterData, turbine, tech):
     # This function calculates the capacity factor for a given wind speed at 50m
@@ -521,8 +526,8 @@ def calc_CF_wind(w50m_h, rasterData, turbine, tech):
     CF[np.logical_not(np.logical_or(idx1, idx2))] = 0
 
     return CF
-	
-	
+
+
 def calc_FLH_wind(hours, args):
     # Decomposing the tuple args
     reg = args[0]
@@ -538,7 +543,7 @@ def calc_FLH_wind(hours, args):
     W50M = args[10]
     turbine = args[11]
     tech = args[12]
-	
+
     merraData = {}
     with h5py.File(paths["U50M"]) as f:
         U50M = np.array(f["U50M"][:]).T
@@ -546,8 +551,8 @@ def calc_FLH_wind(hours, args):
         V50M = np.array(f["V50M"][:]).T
     merraData["W50M"] = abs(U50M + (1j * V50M))
     del U50M, V50M
-    merraData["W50M"] = merraData["W50M"][Ind[0, reg, 2]-1:Ind[0, reg, 0], Ind[0, reg, 3]-1:Ind[0, reg, 1], :]
-	
+    merraData["W50M"] = merraData["W50M"][Ind[0, reg, 2] - 1:Ind[0, reg, 0], Ind[0, reg, 3] - 1:Ind[0, reg, 1], :]
+
     # Calculate A matrices
     rasterData = {}
     # A_region
@@ -566,21 +571,21 @@ def calc_FLH_wind(hours, args):
                                                                    slice(Ind[1, reg, 3] - 1,
                                                                          Ind[1, reg, 1])))
     rasterData["A_cf"] = np.flipud(w)
-	
+
     TS = np.zeros((8760, 1))
     FLH = np.zeros((m[1, reg], n[1, reg]))
-	
+
     for hour in hours:
         # Show progress of the simulation
         print(str(reg) + '/' + str(nRegions - 1) + ' ' + region_name + ' ' + str(hour + 1))
-        
+
         # Load MERRA data, increase its resolution, and fit it to the extent
         w50m_h = resizem(W50M[Ind[0, reg, 2] - 1:Ind[0, reg, 0], Ind[0, reg, 3] - 1:Ind[0, reg, 1], hour],
                          m[1, reg], n[1, reg])
         # Calculate hourly capacity factor
         CF = WindFunc.calc_CF_wind(w50m_h, rasterData, turbine, tech)
         # Aggregates CF to obtain the yearly FLH
-        
+
         CF = CF * rasterData["A_region"]
         CF[np.isnan(CF)] = 0
         FLH = FLH + CF

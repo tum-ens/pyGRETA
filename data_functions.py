@@ -6,7 +6,6 @@ import rasterio
 from rasterio import windows, mask, MemoryFile
 
 
-
 def calc_ext(regb, ext, res):
     minRow = m.floor(regb["miny"] / res[1, 0]) * res[1, 0]
     maxRow = m.ceil(regb["maxy"] / res[1, 0]) * res[1, 0]

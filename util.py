@@ -36,6 +36,14 @@ def hourofmonth():
 
 
 def resizem(A_in, row_new, col_new):
+    """
+    Resize regular data grid, by copying and pasting parts of the original array
+
+    :param A_in: Input matrix
+    :param row_new: new number of rows
+    :param col_new: new number of columns
+    :return: resized matrix
+    """
     row_rep = row_new // np.shape(A_in)[0]
     col_rep = col_new // np.shape(A_in)[1]
     A_inf = (A_in.flatten(order='F')[np.newaxis])
@@ -81,7 +89,13 @@ def char_range(c1, c2):
 
 
 def changem(A, newval, oldval):
-    """replace """
+    """
+    This function replaces values in a data array.
+
+    :param A: Input Matrix
+    :param newval: New values to be set
+    :param oldval: Old values to be replaced
+    """
     Out = np.zeros(A.shape)
     z = np.array((oldval, newval)).T
     for i, j in z:
@@ -98,10 +112,24 @@ def list_files(directory, format):
 
 
 def sub2ind(array_shape, rows, cols):
+    """
+    Convert subscripts to linear indices
+
+    :param array_shape: tuple (# of rows, # of columns)
+    :param rows: row values
+    :param cols: column values
+    :return: Index
+    """
     return np.ravel_multi_index((rows, cols), array_shape, order='F')
 
 
 def ind2sub(array_shape, ind):
+    """
+    Convert linear indices to subscripts
+    :param array_shape: tuple (# of rows, # of columns)
+    :param ind: Index
+    :return: tuple (row values, column values)
+    """
     return np.unravel_index(ind, array_shape, order='F')
 
 

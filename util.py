@@ -92,8 +92,8 @@ def sub2ind(array_shape, rows, cols):
 
 def ind2sub(array_shape, ind):
     return np.unravel_index(ind, array_shape, order='F')
-	
-	
+
+
 def field_exists(field_name, shp_path):
     shp = ogr.Open(shp_path, 0)
     lyr = shp.GetLayer()
@@ -119,4 +119,3 @@ def sumnorm_MERRA2(A, m, n, res):
             s[i, j] = np.sum(A[(row_step * i):(row_step * (i + 1)),
                              (col_step * j):(col_step * (j + 1))]) / (row_step * col_step)
     return s
-

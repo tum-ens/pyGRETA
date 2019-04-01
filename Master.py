@@ -13,6 +13,7 @@ from multiprocessing import Pool
 from itertools import product
 import h5netcdf
 
+
 def initialization():
     # import param and paths
     from config import paths, param
@@ -26,8 +27,8 @@ def initialization():
     # Recombine the maps in this order: onshore then offshore
 
     regions_all = gpd.GeoDataFrame(pd.concat([param["regions_land"], param["regions_eez"]],
-                                             ignore_index = True), crs = param["regions_land"].crs)
-	
+                                             ignore_index=True), crs=param["regions_land"].crs)
+
     param["nRegions_land"] = len(param["regions_land"])
     param["nRegions_eez"] = len(param["regions_eez"])
 
@@ -56,6 +57,7 @@ def initialization():
     param["GeoRef"] = calc_geotiff(Crd, res)
     return paths, param
 
+
 def generate_weather_files(paths):
     # This Code reads the daily NetCDF data (from MERRA) for SWGDN, SWTDN, T2M, U50m, and V50m, and saves them in
     # matrices with yearly time series with low spatial resolution. This code has to be run only once.
@@ -63,22 +65,22 @@ def generate_weather_files(paths):
         start = datetime.date(paths["year"], 1, 1)
         end = datetime.date(paths["year"], 12, 31)
         root = paths["MERRA_IN"]
-        
+
         SWGDN = np.array([])
         SWTDN = np.array([])
         T2M = np.array([])
         U50M = np.array([])
         V50M = np.array([])
-        
+
         for date in pd.date_range(start, end):
             tomorrow = date + pd.Timedelta('1 day')
             if date.day == 29 and date.month == 2:
                 continue
-        
+
             # Name and path of the NetCDF file to be read
             name = root + 'MERRA2_400.tavg1_2d_rad_Nx.' + date.strftime('%Y%m%d') + '.SUB.nc'
             name2 = root + 'MERRA2_400.tavg1_2d_slv_Nx.' + date.strftime('%Y%m%d') + '.SUB.nc'
-        
+
             # Read NetCDF file, extract hourly tables
             with h5netcdf.File(name, 'r') as f:
                 swgdn = np.transpose(f['SWGDN'], [1, 0, 2])
@@ -86,26 +88,26 @@ def generate_weather_files(paths):
                     SWGDN = swgdn
                 else:
                     SWGDN = np.concatenate((SWGDN, swgdn), axis=2)
-        
+
                 swtdn = np.transpose(f['SWTDN'], [1, 0, 2])
                 if SWTDN.size == 0:
                     SWTDN = swtdn
                 else:
                     SWTDN = np.concatenate((SWTDN, swtdn), axis=2)
-        
+
             with h5netcdf.File(name2, 'r') as f:
                 t2m = np.transpose(f['T2M'], [1, 0, 2])
                 if T2M.size == 0:
                     T2M = t2m
                 else:
                     T2M = np.concatenate((T2M, t2m), axis=2)
-        
+
                 u50m = np.transpose(f['U50M'], [1, 0, 2])
                 if U50M.size == 0:
                     U50M = u50m
                 else:
                     U50M = np.concatenate((U50M, u50m), axis=2)
-        
+
                 v50m = np.transpose(f['V50M'], [1, 0, 2])
                 if V50M.size == 0:
                     V50M = v50m
@@ -121,8 +123,9 @@ def generate_weather_files(paths):
                 W50M = abs(U50M + (1j * V50M))
                 hdf5storage.writes({'W50M': W50M}, paths["W50M"], store_python_metadata=True, matlab_compatible=True)
                 # Calculate the clearness index
-                CLEARNESS = np.divide(SWGDN, SWTDN, where = SWTDN!=0)
-                hdf5storage.writes({'CLEARNESS': CLEARNESS}, paths["CLEARNESS"], store_python_metadata=True, matlab_compatible=True)
+                CLEARNESS = np.divide(SWGDN, SWTDN, where=SWTDN != 0)
+                hdf5storage.writes({'CLEARNESS': CLEARNESS}, paths["CLEARNESS"], store_python_metadata=True,
+                                   matlab_compatible=True)
 
 
 def generate_landsea(paths, param):
@@ -493,7 +496,8 @@ def calculate_FLH(paths, param, tech):
         # results = calc_FLH_solar(range(0,20), [reg, paths, param, nRegions, region_name, rasterData, tech])
         if tech in ['PV', 'CSP']:
             CLEARNESS = hdf5storage.read('CLEARNESS', paths["CLEARNESS"])
-            day_filter = CLEARNESS[Ind[0, reg, 2]-1:Ind[0, reg, 0], Ind[0, reg, 3]-1:Ind[0, reg, 1], :].sum(axis=(0,1)) != 0
+            day_filter = CLEARNESS[Ind[0, reg, 2] - 1:Ind[0, reg, 0], Ind[0, reg, 3] - 1:Ind[0, reg, 1], :].sum(
+                axis=(0, 1)) != 0
             list_hours = np.arange(0, 8760)
             # results = calc_FLH_solar(list_hours[day_filter], [reg, paths, param, nRegions, region_name, rasterData, tech])
             list_hours = np.array_split(list_hours[day_filter], nproc)
@@ -669,39 +673,41 @@ def weighting(paths, param, tech):
         A_GCR = calc_gcr(Crd[-1, :][np.newaxis], m[1, -1], n[1, -1], res, weight["GCR"])
     else:
         A_GCR = 1
-		
+
     with rasterio.open(paths["PA"]) as src:
         A_protect = src.read(1)
         A_protect = np.flipud(A_protect).astype(int)  # Protection categories 0-10, to be classified
     # Calculate availability based on protection categories
     A_availability_pa = changem(A_protect, weight["pa_availability"], param["protected_areas"]["type"]).astype(float)
-	
+
     with rasterio.open(paths["LU"]) as src:
         A_lu = src.read(1)
         A_lu = np.flipud(A_lu).astype(int)  # Landuse classes 0-16, to be reclassified
     # Calculate availability based on landuse types
     A_availability_lu = changem(A_lu, weight["lu_availability"], param["landuse"]["type"]).astype(float)
-	
+
     # Calculate availability
     A_availability = np.minimum(A_availability_pa, A_availability_lu)
     del A_availability_pa, A_availability_lu
-	
+
     # Calculate available areas
     A_area = calc_areas(Crd, n, res, -1) * A_availability
-	
+
     # Weighting matrix for the energy output (technical potential) in MWp
     A_weight = A_area * A_GCR * weight["power_density"] * weight["f_performance"]
 
     # Calculate weighted FLH in MWh
     FLH = hdf5storage.read('FLH', paths[tech]["FLH"])
     FLH_weight = FLH * A_weight
-	
-	# Save HDF5 Files
+
+    # Save HDF5 Files
     hdf5storage.writes({'A_area': A_area}, paths[tech]["area"], store_python_metadata=True, matlab_compatible=True)
     print("files saved: " + paths[tech]["area"])
-    hdf5storage.writes({'A_weight': A_weight}, paths[tech]["weight"], store_python_metadata=True, matlab_compatible=True)
+    hdf5storage.writes({'A_weight': A_weight}, paths[tech]["weight"], store_python_metadata=True,
+                       matlab_compatible=True)
     print("files saved: " + paths[tech]["weight"])
-    hdf5storage.writes({'FLH_weight': FLH_weight}, paths[tech]["FLH_weight"], store_python_metadata=True, matlab_compatible=True)
+    hdf5storage.writes({'FLH_weight': FLH_weight}, paths[tech]["FLH_weight"], store_python_metadata=True,
+                       matlab_compatible=True)
     print("files saved: " + paths[tech]["FLH_weight"])
 
     # Save GEOTIFF files
@@ -712,21 +718,21 @@ def weighting(paths, param, tech):
                      GeoRef["pixelheight"],
                      A_area)
         print("files saved:" + changeExt2tif(paths[tech]["area"]))
-		
+
         array2raster(changeExt2tif(paths[tech]["weight"]),
                      GeoRef["RasterOrigin"],
                      GeoRef["pixelWidth"],
                      GeoRef["pixelheight"],
                      A_weight)
         print("files saved:" + changeExt2tif(paths[tech]["weight"]))
-    
+
         array2raster(changeExt2tif(paths[tech]["FLH_weight"]),
                      GeoRef["RasterOrigin"],
                      GeoRef["pixelWidth"],
                      GeoRef["pixelheight"],
                      FLH_weight)
         print("files saved:" + changeExt2tif(paths[tech]["FLH_weight"]))
-	
+
 
 # #########
 # # Module : reporting
@@ -740,38 +746,37 @@ def weighting(paths, param, tech):
 # energy_potential_sum_TWh = np.nansum(A_FLH_weight) / 1e6
 
 def find_locations_quantiles(paths, param, tech):
-
     FLH_mask = hdf5storage.read('FLH_mask', paths[tech]["FLH_mask"])
     quantiles = param["quantiles"]
     res = param["res"]
     GeoRef = param["GeoRef"]
-	
+
     if tech == "WindOff":
         regions_shp = param["regions_eez"]
         nRegions = param["nRegions_eez"]
-        Crd = param["Crd"][-nRegions-1:, :]
-        Ind = param["Ind"][:, -nRegions-1:-1, :]
+        Crd = param["Crd"][-nRegions - 1:, :]
+        Ind = param["Ind"][:, -nRegions - 1:-1, :]
     else:
         regions_shp = param["regions_land"]
         nRegions = param["nRegions_land"]
         Crd = param["Crd"][0:nRegions, :]
         Crd = np.r_[Crd, param["Crd"][-1, :]]
         Ind = param["Ind"][:, 0:nRegions, :]
-    
+
     Crd_Locations = np.zeros((nRegions, len(quantiles), 4))
     Ind_Locations = np.zeros((2, nRegions, len(quantiles), 4))
     region_names = []
     for reg in range(0, nRegions):
         region_names.append(regions_shp["NAME_SHORT"][reg])
-		
+
         # A_region
         A_region = calc_region(regions_shp.iloc[reg], Crd[reg, :], res, GeoRef)
-    
+
         FLH_reg = A_region * FLH_mask[Ind[1, reg, 2] - 1:Ind[1, reg, 0], Ind[1, reg, 3] - 1:Ind[1, reg, 1]]
         FLH_reg[FLH_reg == 0] = np.nan
         X = FLH_reg.flatten(order='F')
         I_old = np.argsort(X)
-    
+
         # ESCAPE FOR LOOP IF INTERSECTION WITH RASTER ONLY YIELDS NAN
         if sum(np.isnan(X).astype(int)) == len(X):
             # do something
@@ -789,86 +794,86 @@ def find_locations_quantiles(paths, param, tech):
             I, J = ind2sub(FLH_reg.shape, I)
             Ind_Locations[1, reg, q, :] = [(I + Ind[1, reg, 2]), (J + Ind[1, reg, 3]),
                                            (I + Ind[1, reg, 2]), (J + Ind[1, reg, 3])]
-            Crd_Locations[reg, q, :] = crd_exact_high(np.squeeze(Ind_Locations[1, reg, q, :]).T, Crd[-1, :][np.newaxis], res)
-    
+            Crd_Locations[reg, q, :] = crd_exact_high(np.squeeze(Ind_Locations[1, reg, q, :]).T, Crd[-1, :][np.newaxis],
+                                                      res)
+
         Crd_Locations[reg, :, 2:4] = repmat(Crd[-1, 2:4], len(quantiles), 1)
         Ind_Locations[0, reg, :, :] = ind_merra(crd_merra_low(np.squeeze(Crd_Locations[reg, :, :]), res), res[0, :])
 
     param["Crd_Locations"] = Crd_Locations
     param["Ind_Locations"] = Ind_Locations
-	
+
     # Format point locations
-    points = list(map(tuple, np.reshape(Crd_Locations[:,:,[1,0]], (-1, 2), 'C')))
-    attribute1 = np.reshape(np.tile(region_names, (len(quantiles),1)), (-1,1), 'F')
-    attribute2 = ['q'+str(i) for i in np.tile(quantiles, nRegions)]
+    points = list(map(tuple, np.reshape(Crd_Locations[:, :, [1, 0]], (-1, 2), 'C')))
+    attribute1 = np.reshape(np.tile(region_names, (len(quantiles), 1)), (-1, 1), 'F')
+    attribute2 = ['q' + str(i) for i in np.tile(quantiles, nRegions)]
     schema = {'geometry': 'Point', 'properties': {'NAME_SHORT': 'str', 'quantile': 'str'}}
 
     # Create Shapefile
     with fiona.open(paths[tech]["Locations"], 'w', 'ESRI Shapefile', schema) as c:
-        c.writerecords([{'geometry': mapping(Point(points[i])), 'properties': {'NAME_SHORT': attribute1[i], 'quantile': attribute2[i]}} for i in range(0, len(points))])
+        c.writerecords([{'geometry': mapping(Point(points[i])),
+                         'properties': {'NAME_SHORT': attribute1[i], 'quantile': attribute2[i]}} for i in
+                        range(0, len(points))])
     print("files saved: " + paths[tech]["Locations"])
     return param
 
 
-						 
-						 
-						 
 def generate_time_series(paths, param, tech):
-    return 
+    return
     # # Calculate A matrices
     # # Landuse classes 0-16, to be reclassified
     # with rasterio.open(paths["LU"]) as src:
-        # w = src.read(1, window=rasterio.windows.Window.from_slices(slice((m[1, 0] - Ind[1, reg, 0]),
-                                                                         # (m[1, 0] - Ind[1, reg, 2] + 1)),
-                                                                   # slice(Ind[1, reg, 3] - 1,
-                                                                         # Ind[1, reg, 1])))
-        # rasterData["A_lu"] = np.flipud(w)
-    
+    # w = src.read(1, window=rasterio.windows.Window.from_slices(slice((m[1, 0] - Ind[1, reg, 0]),
+    # (m[1, 0] - Ind[1, reg, 2] + 1)),
+    # slice(Ind[1, reg, 3] - 1,
+    # Ind[1, reg, 1])))
+    # rasterData["A_lu"] = np.flipud(w)
+
     # if technology == 'PV' or technology == 'CSP':
-        # # Calculate special A matrices
-        # with rasterio.open(paths["TOPO"]) as src:
-            # w = src.read(1, window=rasterio.windows.Window.from_slices(slice((m[1, 0] - Ind[1, reg, 0]),
-                                                                             # (m[1, 0] - Ind[1, reg, 2] + 1)),
-                                                                       # slice(Ind[1, reg, 3] - 1,
-                                                                             # Ind[1, reg, 1])))
-            # rasterData["A_topo"] = np.flipud(w)
+    # # Calculate special A matrices
+    # with rasterio.open(paths["TOPO"]) as src:
+    # w = src.read(1, window=rasterio.windows.Window.from_slices(slice((m[1, 0] - Ind[1, reg, 0]),
+    # (m[1, 0] - Ind[1, reg, 2] + 1)),
+    # slice(Ind[1, reg, 3] - 1,
+    # Ind[1, reg, 1])))
+    # rasterData["A_topo"] = np.flipud(w)
 
-        # # Temperature coefficients for heating losses
-        # rasterData["A_Ross"] = changem(rasterData["A_lu"], landuse["Ross_coeff"], landuse["type"]).astype(
-            # float) / 10000
-        # # Reflectivity coefficients
-        # rasterData["A_albedo"] = changem(rasterData["A_lu"], landuse["albedo"], landuse["type"]).astype(float) / 100
+    # # Temperature coefficients for heating losses
+    # rasterData["A_Ross"] = changem(rasterData["A_lu"], landuse["Ross_coeff"], landuse["type"]).astype(
+    # float) / 10000
+    # # Reflectivity coefficients
+    # rasterData["A_albedo"] = changem(rasterData["A_lu"], landuse["albedo"], landuse["type"]).astype(float) / 100
 
-        # # Calculate CLR_Mean and CLR_MAX
-        # _, CLR_MAX = calc_clearness(merraData, reg, Ind)
+    # # Calculate CLR_Mean and CLR_MAX
+    # _, CLR_MAX = calc_clearness(merraData, reg, Ind)
 
     # elif technology == 'Wind':
-        # rasterData["A_topo"] = rasterData["A_topo"][Locations_ind_high[:,0], Locations_ind_high[:,1]]
-        # rasterData["A_cf"] = A_cf[tech][np.ix_(Ind[3:, reg, 0] - 1, Ind[3:, reg, 1] - 1)] * \
-                             # np.exp(a * rasterData["A_topo"] / 5000 - b)
-        # rasterData["A_cf"] = np.diagonal(rasterData["A_cf"])
+    # rasterData["A_topo"] = rasterData["A_topo"][Locations_ind_high[:,0], Locations_ind_high[:,1]]
+    # rasterData["A_cf"] = A_cf[tech][np.ix_(Ind[3:, reg, 0] - 1, Ind[3:, reg, 1] - 1)] * \
+    # np.exp(a * rasterData["A_topo"] / 5000 - b)
+    # rasterData["A_cf"] = np.diagonal(rasterData["A_cf"])
 
     # TS = np.zeros((len(quantiles), 8760))
 
     # for hour in range(0, 8760):
-        # # Show progress of the simulation
-        # print(str(reg) + '/' + str(nRegions - 1) + ' ' + region_name + ' ' + str(hour + 1))
+    # # Show progress of the simulation
+    # print(str(reg) + '/' + str(nRegions - 1) + ' ' + region_name + ' ' + str(hour + 1))
 
-        # CF = 0
-        # if technology == 'PV':
-            # CF, _ = calc_CF_solar(hour, reg, Ind, Crd, res, CLR_MAX, merraData, rasterData, pv, Locations)
-        # elif technology == 'CSP':
-            # _, CF = calc_CF_solar(hour, reg, Ind, Crd, res, CLR_MAX, merraData, rasterData, pv, Locations)
-        # elif technology == 'Wind':
-            # # Load MERRA data, increase its resolution, and fit it to the extent
-            # w50m_h = W50M[:, :, hour]
-            # w50m_h = w50m_h[np.ix_(Locations_ind_low[:, 0] - 1, Locations_ind_low[:, 1] - 1)]
-            # w50m_h = np.diagonal(w50m_h)
+    # CF = 0
+    # if technology == 'PV':
+    # CF, _ = calc_CF_solar(hour, reg, Ind, Crd, res, CLR_MAX, merraData, rasterData, pv, Locations)
+    # elif technology == 'CSP':
+    # _, CF = calc_CF_solar(hour, reg, Ind, Crd, res, CLR_MAX, merraData, rasterData, pv, Locations)
+    # elif technology == 'Wind':
+    # # Load MERRA data, increase its resolution, and fit it to the extent
+    # w50m_h = W50M[:, :, hour]
+    # w50m_h = w50m_h[np.ix_(Locations_ind_low[:, 0] - 1, Locations_ind_low[:, 1] - 1)]
+    # w50m_h = np.diagonal(w50m_h)
 
-            # # Calculate hourly capacity factor
-            # CF = calc_CF_wind(w50m_h, rasterData, turbine, tech)
+    # # Calculate hourly capacity factor
+    # CF = calc_CF_wind(w50m_h, rasterData, turbine, tech)
 
-        # TS[:, hour] = CF
+    # TS[:, hour] = CF
 
     # TS[np.isnan(TS)] = 0
 
@@ -877,15 +882,16 @@ def generate_time_series(paths, param, tech):
     # description["paths"] = paths
 
     # with h5py.File(paths["TS_quantiles"], 'w') as f:
-        # f.create_dataset('TS', data=TS)
-        # recursive_dict_save(f, 'description/', description)
+    # f.create_dataset('TS', data=TS)
+    # recursive_dict_save(f, 'description/', description)
     # print("files saved:" + paths["TS_quantiles"])
 
     # with h5py.File(paths["Locations"], 'w') as f:
-        # f.create_dataset('Locations', data=Locations)
-        # recursive_dict_save(f, 'description/', description)
+    # f.create_dataset('Locations', data=Locations)
+    # recursive_dict_save(f, 'description/', description)
     # print("files saved:" + paths["Locations"])
     # del TS
+
 
 # # ## Timeseries for all regions
 
@@ -943,11 +949,11 @@ if __name__ == '__main__':
     generate_slope(paths, param)  # Slope
     generate_population(paths, param)  # Population
     generate_protected_areas(paths, param)  # Protected areas
-    #generate_buffered_population(paths, param)  # Buffered Population
-    #generate_wind_correction(paths, param)  # Correction factors for wind speeds
+    # generate_buffered_population(paths, param)  # Buffered Population
+    # generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
         calculate_FLH(paths, param, tech)
         combine_FLH(paths, param, tech)
         masking(paths, param, tech)
         weighting(paths, param, tech)
-        #param = find_locations_quantiles(paths, param, tech)
+        # param = find_locations_quantiles(paths, param, tech)

@@ -66,7 +66,6 @@ def calc_geotiff(Crd, res):
 
 
 def calc_region(region, Crd, res, GeoRef):
-
     latlim = Crd[2] - Crd[0]
     lonlim = Crd[3] - Crd[1]
     M = int(m.fabs(latlim) / res[1, 0])
@@ -96,7 +95,7 @@ def calc_region(region, Crd, res, GeoRef):
 
     return A_region
 
-	
+
 def calc_gcr(Crd, m, n, res, GCR):
     # This code creates a GCR wieghing matrix for the desired geographic extent. The sizing of the PV system is
     # conducted on Dec 22 for a shade-free exposure to the Sun during a given number of hours.
@@ -157,7 +156,7 @@ def calc_gcr(Crd, m, n, res, GCR):
     A_GCR[A_GCR > 0.9] = 0.9
 
     return A_GCR
-	
+
 
 def calc_areas(Crd, n, res, reg):
     # WSG84 ellipsoid constants

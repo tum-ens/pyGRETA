@@ -6,6 +6,7 @@ from numpy.matlib import repmat, reshape, sin, arcsin, cos, arccos, tan, arctan
 import os
 from os import getcwd, chdir
 from glob import glob
+import psutil
 
 
 def sind(alpha):
@@ -158,3 +159,17 @@ def sumnorm_MERRA2(A, m, n, res):
             s[i, j] = np.sum(A[(row_step * i):(row_step * (i + 1)),
                              (col_step * j):(col_step * (j + 1))]) / (row_step * col_step)
     return s
+
+def limit_cpu(check):
+    """
+    Is called at every process start to set its priority
+    :return:
+    """
+    p = psutil.Process(os.getpid())
+    if check == True:
+        p.nice(19)
+    else:
+        p.nice(0)
+    # Incase of windows, to set it to the lowest priority
+    # p.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
+

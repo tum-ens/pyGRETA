@@ -511,12 +511,14 @@ def calculate_FLH(paths, param, tech):
             list_hours = np.array_split(list_hours[day_filter], nproc)
             print(len(list_hours[0]))
             param["status_bar_limit"] = list_hours[0][-1]
-            results = Pool(processes=nproc).starmap(calc_FLH_solar, product(list_hours, [
+            results = Pool(processes=nproc,initializer=limit_cpu(), initargs=param["CPU_limit"]).\
+                starmap(calc_FLH_solar, product(list_hours, [
                 [reg, paths, param, nRegions, region_name, rasterData, tech]]))
         elif tech in ['WindOn', 'WindOff']:
             print(len(list_hours[0]))
             param["status_bar_limit"] = list_hours[0][-1]
-            results = Pool(processes=nproc).starmap(calc_FLH_wind, product(list_hours, [
+            results = Pool(processes=nproc, initializer=limit_cpu(), initargs=param["CPU_limit"]).\
+                starmap(calc_FLH_wind, product(list_hours, [
                 [reg, paths, param, nRegions, region_name, rasterData, tech]]))
 
         # Collecting results

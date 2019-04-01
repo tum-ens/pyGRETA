@@ -264,13 +264,19 @@ def calc_TS_solar(hours, args):
 
 
 def angles(hour, *args):
-    # This code creates six matrices for the desired extent, that represent the elevation, tilt, azimuth,
-    # and orientation angles in addition to the sunrise and sunset hours of every pixel with the desired resolution.True
-    # The inputs are:
-    # hour: hour rank in a year (from 1 to 8760)
-    # north, est, south, west: desired geographic extent
-    # res: resolution of MERRA data & desired resolution in lat/lon
-    # Ext_in Extent of the global area of interest
+    """
+    This function creates six matrices for the desired extent, that represent the elevation, tilt, azimuth and
+    oerientation angles, in addition to the sunrise and sunset hours of every pixel with the desired resolution
+
+    :param hour: hour rank in a year (from 1 to 8760
+    :param args:
+        set1
+        north, east, south, west: desired geographic extent
+        res: resolution of MERRA data & desired resolution in lat/lon
+        Ext_in: extent of the global are of interest
+        set2
+        (lat, lon): latitude and longitude of all points of interest
+    """
 
     # Initialization
 
@@ -293,7 +299,7 @@ def angles(hour, *args):
             lon = Ext[1]
             n = 1
 
-    elif len(args) == 1:
+    elif len(args) == 1:  # points
         Locations = args[0]
         lat = Locations[:, 0].T  # north = south
         lon = Locations[:, 1].T  # east = west
@@ -411,15 +417,19 @@ def toa_hourly(alpha, *args):
 
 
 def coefficients(beta, ratio, R_b, A_i, f, *args):
-    # This code creates three weighting matrix for the desired extent and with the desired resolution, that correspond
-    # to the gains/losses caused by tilting to each component of the incident radiation (direct, diffuse, reflected)
-    # The input arguments are:
-    # alpha: matrix of elevation angles
-    # beta: matrix of tilting angles
-    # azi: matrix of azimuth angles
-    # orientation: matrix of surface azimuth (PV panel orientation angle)
-    # hour, sunrise, sunset (optional): hour of the year and the matrix
-    # for the sunrise and sunset hours for every location on that day
+    """
+    This function creates three weighting matrices for the desired extent and with the desired resolution,
+    that correspond to the gains/losses caused by tilting to each component of the incident radiation
+    (direct, diffuse, and reflected
+
+    The Input arguements are:
+    - alpha: matrix of elevation angles
+    - beta: matrix of tilting angles
+    - azi: matrix of azimuth angles
+    - orientation: matrix of surface azimuth (PV panel orientation angle)
+    - hour, sunrise, and sunset (optional): hour of the year, and the matrix for the sunrise and sunset hours for every
+    location on that day
+    """
 
     duration = np.ones(beta.shape)  # Adjusts for any inaccuracy in case the sunset or the sunrise occurs within hour
 

@@ -3,8 +3,7 @@ from util import *
 import math as m
 import numpy as np
 import rasterio
-from rasterio import windows, mask
-
+from rasterio import windows, mask, MemoryFile
 
 
 def calc_ext(regb, ext, res):
@@ -37,7 +36,7 @@ def crd_exact_box(Ind, Crd_all, res_high):
            (Ind[:, 2] - 1) * res_high[0] + Crd_all[2],
            (Ind[:, 3] - 1) * res_high[1] + Crd_all[3]]
     return Crd
-	
+
 	
 def crd_exact_points(Ind_points, Crd_all, res):
     ''' description 
@@ -90,17 +89,26 @@ def calc_region(region, Crd_reg, res_high, GeoRef):
     A_region = np.ones((M, N))
     origin = [Crd_reg[3], Crd_reg[2]]
 
-    array2raster("A_region.tif", origin, GeoRef["pixelWidth"], -GeoRef["pixelheight"], A_region)
-
     if region.geometry.geom_type == 'MultiPolygon':
         features = [feature for feature in region.geometry]
     else:
         features = [region.geometry]
+    west = origin[0]
+    north = origin[1]
+    profile = {'driver': 'GTiff',
+               'height': M,
+               'width': N,
+               'count': 1,
+               'dtype': rasterio.float64,
+               'crs': 'EPSG:4326',
+               'transform': rasterio.transform.from_origin(west, north, GeoRef["pixelWidth"], GeoRef["pixelHeight"])}
 
-    with rasterio.open("A_region.tif", "r") as src:
-        out_image, out_transform = mask.mask(src, features, crop=False, nodata=0, all_touched=False, filled=True)
-    A_region = out_image[0]
-    os.remove("A_region.tif")
+    with MemoryFile() as memfile:
+        with memfile.open(**profile) as f:
+            f.write(A_region, 1)
+            out_image, out_transform = mask.mask(f, features, crop=False, nodata=0, all_touched=False, filled=True)
+        A_region = out_image[0]
+
     return A_region
 
 	

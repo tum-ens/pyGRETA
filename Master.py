@@ -153,6 +153,7 @@ def generate_landsea(paths, param):
             A_land[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] = \
                 A_land[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] + A_region
         array2raster(paths["LAND"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelheight"], A_land)
+
         print("files saved: " + paths["LAND"])
 
     if not os.path.isfile(paths["EEZ"]):
@@ -170,7 +171,7 @@ def generate_landsea(paths, param):
         with rasterio.open(paths["LAND"]) as src:
             A_land = np.flipud(src.read(1)).astype(int)
         A_eez = A_eez * (1 - A_land)
-        array2raster(paths["EEZ"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelheight"], A_eez)
+        array2raster(paths["EEZ"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_eez)
         print("files saved: " + paths["EEZ"])
 
 
@@ -184,7 +185,7 @@ def generate_landuse(paths, param):
             w = src.read(1, window=windows.Window.from_slices(slice(Ind[0] - 1, Ind[2]),
                                                               slice(Ind[3] - 1, Ind[1])))
         w = np.flipud(w)
-        array2raster(paths["LU"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelheight"], w)
+        array2raster(paths["LU"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], w)
         print("files saved: " + paths["LU"])
 
 
@@ -308,7 +309,7 @@ def generate_slope(paths, param):
         slope_pc = tan(np.deg2rad(slope_deg)) * 100
 
         A_SLP = np.flipud(slope_pc[1:-1, 1:-1])
-        array2raster(paths["SLOPE"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelheight"], A_SLP)
+        array2raster(paths["SLOPE"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_SLP)
         print("files saved: " + paths["SLOPE"])
 
 
@@ -349,6 +350,7 @@ def generate_population(paths, param):
                 Pop[tile_extents[index, 0] - 1: tile_extents[index, 2],
                 tile_extents[index, 3] - 1: tile_extents[index, 1]] = \
                     tile[0]
+        
         A_POP = np.flipud(Pop[Ind[0] - 1:Ind[2], Ind[3] - 1:Ind[1]])
         array2raster(paths["POP"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelheight"], A_POP)
         print("files saved: " + paths["POP"])
@@ -431,7 +433,7 @@ def generate_buffered_population(paths, param):
         A_lu_buffered = create_buffer(A_lu, buffer_pixel_amount)
         A_notPopulated = (~A_lu_buffered).astype(int)
 
-        array2raster(paths["BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelheight"],
+        array2raster(paths["BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
                      A_notPopulated)
         print("files saved: " + paths["BUFFER"])
 
@@ -478,7 +480,7 @@ def generate_wind_correction(paths, param):
         A_eez = np.flipud(src.read(1)).astype(int)
     A_cf = A_cf_off * A_eez + A_cf_on
 
-    array2raster(paths["CORR"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelheight"], A_cf)
+    array2raster(paths["CORR"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf)
     print("files saved: " + paths["CORR"])
 
 
@@ -649,6 +651,7 @@ def masking(paths, param, tech):
 
     # Save GEOTIFF files
     if param["savetiff"]:
+        Georef = param["Georef"]
         array2raster(changeExt2tif(paths[tech]["mask"]),
                      GeoRef["RasterOrigin"],
                      GeoRef["pixelWidth"],
@@ -936,7 +939,15 @@ def generate_time_series(paths, param, tech):
 
 if __name__ == '__main__':
     paths, param = initialization()
-    generate_weather_files(paths)
+
+    # Check if Merra2 mat files have been generated
+    if not (os.path.isfile(paths["GHI"])
+            and os.path.isfile((paths["TOA"]))
+            and os.path.isfile(paths["T2M"])
+            and os.path.isfile(paths["U50M"])
+            and os.path.isfile(paths["V50M"])):
+        generate_weather_files(paths)
+
     generate_landsea(paths, param)  # Land and Sea
     generate_landuse(paths, param)  # Landuse
     generate_bathymetry(paths, param)  # Bathymetry

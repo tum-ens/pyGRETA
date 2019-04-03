@@ -1,2 +1,12 @@
 *~
 __pycache__/*
+*.xml
+*.iml
+*.tif
+*.nc
+*.shp
+*.shx
+*.mat
+INPUTS/Germany/Shapefile/Germany_NUTS0_wo_Balkans_with_EEZ.dbf
+INPUTS/Germany/Shapefile/Germany_NUTS0_wo_Balkans_with_EEZ.qpj
+INPUTS/Germany/Shapefile/Germany_NUTS0_wo_Balkans_with_EEZ.prj

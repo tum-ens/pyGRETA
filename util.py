@@ -160,16 +160,25 @@ def sumnorm_MERRA2(A, m, n, res):
                              (col_step * j):(col_step * (j + 1))]) / (row_step * col_step)
     return s
 
+
 def limit_cpu(check):
     """
     Is called at every process start to set its priority
     :return:
     """
+    check = check[0]
     p = psutil.Process(os.getpid())
-    if check == True:
-        p.nice(19)
+    if check:
+        # Windows priority
+        p.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
+        # Linux priority
+        # p.nice(19)
     else:
-        p.nice(0)
+        # Windows priority
+        p.nice(psutil.NORMAL_PRIORITY_CLASS)
+        # Linux priority
+        # p.nice(0)
     # Incase of windows, to set it to the lowest priority
-    # p.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
+    #
+
 

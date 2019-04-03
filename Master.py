@@ -124,8 +124,8 @@ def generate_weather_files(paths):
                 else:
                     V50M = np.concatenate((V50M, v50m), axis=2)
             if date.year != tomorrow.year:
-                hdf5storage.writes({'SWGDN': SWGDN}, paths["SWGDN"], store_python_metadata=True, matlab_compatible=True)
-                hdf5storage.writes({'SWTDN': SWTDN}, paths["SWTDN"], store_python_metadata=True, matlab_compatible=True)
+                hdf5storage.writes({'SWGDN': SWGDN}, paths["GHI"], store_python_metadata=True, matlab_compatible=True)
+                hdf5storage.writes({'SWTDN': SWTDN}, paths["TOA"], store_python_metadata=True, matlab_compatible=True)
                 hdf5storage.writes({'T2M': T2M}, paths["T2M"], store_python_metadata=True, matlab_compatible=True)
                 hdf5storage.writes({'U50M': U50M}, paths["U50M"], store_python_metadata=True, matlab_compatible=True)
                 hdf5storage.writes({'V50M': V50M}, paths["V50M"], store_python_metadata=True, matlab_compatible=True)
@@ -475,6 +475,7 @@ def calculate_FLH(paths, param, tech):
     year = param["year"]
     res = param["res"]
     GeoRef = param["GeoRef"]
+    CPU_limit = np.full((1, nproc), param["CPU_limit"])
     # H = param["Calculated_hours"]
 
     if tech == "WindOff":
@@ -509,17 +510,19 @@ def calculate_FLH(paths, param, tech):
             list_hours = np.arange(0, 8760)
             # results = calc_FLH_solar(list_hours[day_filter], [reg, paths, param, nRegions, region_name, rasterData, tech])
             list_hours = np.array_split(list_hours[day_filter], nproc)
-            print(len(list_hours[0]))
+            print(('Number of processors', nproc))
+            print(('Number of hours per process:', len(list_hours[0])))
             param["status_bar_limit"] = list_hours[0][-1]
-            results = Pool(processes=nproc,initializer=limit_cpu(), initargs=param["CPU_limit"]).\
-                starmap(calc_FLH_solar, product(list_hours, [
-                [reg, paths, param, nRegions, region_name, rasterData, tech]]))
+            results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit). \
+                starmap(calc_FLH_solar, product(list_hours,
+                                                [[reg, paths, param, nRegions, region_name, rasterData, tech]]))
         elif tech in ['WindOn', 'WindOff']:
-            print(len(list_hours[0]))
+            print(('Number of processors', nproc))
+            print(('Number of hours per process:', len(list_hours[0])))
             param["status_bar_limit"] = list_hours[0][-1]
-            results = Pool(processes=nproc, initializer=limit_cpu(), initargs=param["CPU_limit"]).\
-                starmap(calc_FLH_wind, product(list_hours, [
-                [reg, paths, param, nRegions, region_name, rasterData, tech]]))
+            results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit). \
+                starmap(calc_FLH_wind, product(list_hours,
+                                               [[reg, paths, param, nRegions, region_name, rasterData, tech]]))
 
         # Collecting results
         TS = np.zeros((8760, 1))
@@ -962,6 +965,7 @@ if __name__ == '__main__':
     generate_protected_areas(paths, param)  # Protected areas
     # generate_buffered_population(paths, param)  # Buffered Population
     # generate_wind_correction(paths, param)  # Correction factors for wind speeds
+
     for tech in param["technology"]:
         calculate_FLH(paths, param, tech)
         combine_FLH(paths, param, tech)

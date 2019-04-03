@@ -522,13 +522,15 @@ def calculate_FLH(paths, param, tech):
         CLEARNESS = hdf5storage.read('CLEARNESS', paths["CLEARNESS"])
         day_filter = np.nonzero(CLEARNESS[Ind[2]-1:Ind[0], Ind[3]-1:Ind[1], :].sum(axis=(0,1)))
         list_hours = np.arange(0, 8760)
-        param["status_bar_limit"] = list_hours[-1] # REMOVE ME!!!
-        results = calc_FLH_solar(list_hours[day_filter], [paths, param, tech])
-        #list_hours = np.array_split(list_hours[day_filter], nproc)
-        #print(len(list_hours[0]))
-        #param["status_bar_limit"] = list_hours[0][-1]
-        #results = Pool(processes=nproc).starmap(calc_FLH_solar, product(list_hours, [
-        #    [paths, param, tech]]))
+        if nproc == 1:
+            param["status_bar_limit"] = list_hours[-1]
+            results = calc_FLH_solar(list_hours[day_filter], [paths, param, tech])
+        else:
+            list_hours = np.array_split(list_hours[day_filter], nproc)
+            print(len(list_hours[0]))
+            param["status_bar_limit"] = list_hours[0][-1]
+            results = Pool(processes=nproc).starmap(calc_FLH_solar, product(list_hours, [
+                [paths, param, tech]]))
     elif tech in ['WindOn', 'WindOff']:
         print(len(list_hours[0]))
         param["status_bar_limit"] = list_hours[0][-1]
@@ -538,9 +540,11 @@ def calculate_FLH(paths, param, tech):
 
     # Collecting results
     FLH = np.zeros((m_high, n_high))
-    #for p in range(len(results)):
-    #    FLH[param["Ind_nz"]] = FLH[param["Ind_nz"]] + results[p]
-    FLH[param["Ind_nz"]] = FLH[param["Ind_nz"]] + results
+    if nproc > 1:
+        for p in range(len(results)):
+            FLH[param["Ind_nz"]] = FLH[param["Ind_nz"]] + results[p]
+    else:
+        FLH[param["Ind_nz"]] = results
     FLH[FLH == 0] = np.nan
 
     hdf5storage.writes({'FLH': FLH}, paths[tech]["FLH"], store_python_metadata=True, matlab_compatible=True)

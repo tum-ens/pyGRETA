@@ -10,7 +10,7 @@ import os
 param = {}
 param["region"] = 'Europe'
 param["year"] = '2015'
-param["technology"] = ['WindOn', 'WindOff', 'PV'] #['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['PV'] #['PV', 'CSP', 'WindOn', 'WindOff']
 param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
 param["nproc"] = 6
@@ -20,8 +20,8 @@ param["nproc"] = 6
 # MERRA_Centroid_Extent = [49, -103.75, 28, -129.375]  # California
 # MERRA_Centroid_Extent = np.array([56.25, 15.3125, 47.25, 2.8125])  # Germany
 
-param["res"] = np.array([[ 1/2,   5/8],
-                         [1/240, 1/240]])
+param["res_low"] = np.array([ 1/2,   5/8])
+param["res_high"] = np.array([1/240, 1/240])
 
 # Landuse reclassification
 landuse = {"type":       np.array([  0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,  15,  16]),

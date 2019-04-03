@@ -19,61 +19,76 @@ def calc_ext(regb, ext, res):
              max(m.ceil((ext[0, 3] - res[0, 1] / 2) / res[0, 1]) * res[0, 1] + res[0, 1] / 2, minCol)]]
 
 
-def crd_merra_low(Ext, res):
-    Crd = np.array([(np.ceil((Ext[:, 0] - res[0, 0] / 2) / res[0, 0]) * res[0, 0] + res[0, 0] / 2),
-                    (np.ceil((Ext[:, 1] - res[0, 1] / 2) / res[0, 1]) * res[0, 1] + res[0, 1] / 2),
-                    (np.floor((Ext[:, 2] + res[0, 0] / 2) / res[0, 0]) * res[0, 0] - res[0, 0] / 2),
-                    (np.floor((Ext[:, 3] + res[0, 1] / 2) / res[0, 1]) * res[0, 1] - res[0, 1] / 2)])
+def crd_merra(Crd_regions, res_low):
+    ''' description '''
+    Crd = np.array([(np.ceil((Crd_regions[:, 0] - res_low[0] / 2) / res_low[0]) * res_low[0] + res_low[0] / 2),
+                    (np.ceil((Crd_regions[:, 1] - res_low[1] / 2) / res_low[1]) * res_low[1] + res_low[1] / 2),
+                    (np.floor((Crd_regions[:, 2] + res_low[0] / 2) / res_low[0]) * res_low[0] - res_low[0] / 2),
+                    (np.floor((Crd_regions[:, 3] + res_low[1] / 2) / res_low[1]) * res_low[1] - res_low[1] / 2)])
     Crd = Crd.T
     return Crd
 
 
-def crd_exact_high(Ind, Ext, res):
+def crd_exact_box(Ind, Crd_all, res_high):
     Ind = Ind[np.newaxis]
 
-    Crd = [Ind[:, 0] * res[1, 0] + Ext[0, 2],
-           Ind[:, 1] * res[1, 1] + Ext[0, 3],
-           (Ind[:, 2] - 1) * res[1, 0] + Ext[0, 2],
-           (Ind[:, 3] - 1) * res[1, 1] + Ext[0, 3]]
+    Crd = [Ind[:, 0] * res_high[0] + Crd_all[2],
+           Ind[:, 1] * res_high[1] + Crd_all[3],
+           (Ind[:, 2] - 1) * res_high[0] + Crd_all[2],
+           (Ind[:, 3] - 1) * res_high[1] + Crd_all[3]]
     return Crd
+	
+	
+def crd_exact_points(Ind_points, Crd_all, res):
+    ''' description 
+    Ind_points: tuple of indices in the vertical and horizontal axes. '''
+
+    Crd_points = [Ind_points[0] * res[0] + Crd_all[2],
+                  Ind_points[1] * res[1] + Crd_all[3]]
+    return Crd_points
 
 
-def ind_merra(Crd, res):
-    ind = np.array([(Crd[:, 0] - Crd[-1, 2]) / res[0],
-                    (Crd[:, 1] - Crd[-1, 3]) / res[1],
-                    (Crd[:, 2] - Crd[-1, 2]) / res[0] + 1,
-                    (Crd[:, 3] - Crd[-1, 3]) / res[1] + 1])
-    ind = np.transpose(ind)
-    ind = ind.astype(int)
-    return ind
+def ind_merra(Crd, Crd_all, res):
+    ''' description '''
+    if len(Crd.shape) == 1:
+        Crd = Crd[np.newaxis]
+    Ind = np.array([(Crd[:, 0] - Crd_all[2]) / res[0],
+                    (Crd[:, 1] - Crd_all[3]) / res[1],
+                    (Crd[:, 2] - Crd_all[2]) / res[0] + 1,
+                    (Crd[:, 3] - Crd_all[3]) / res[1] + 1])
+    Ind = np.transpose(Ind.astype(int))
+    return Ind
 
 
-def ind_global(Ext_PV, res):
-    ind = np.array([np.round((90 - Ext_PV[:, 0]) / res[0]) + 1,
-                    np.round((180 + Ext_PV[:, 1]) / res[1]),
-                    np.round((90 - Ext_PV[:, 2]) / res[0]),
-                    np.round((180 + Ext_PV[:, 3]) / res[1]) + 1])
-    ind = np.transpose(ind)
-    ind = ind.astype(int)
-    return ind
+def ind_global(Crd, res_high):
+    ''' description '''
+    if len(Crd.shape) == 1:
+        Crd = Crd[np.newaxis]
+    Ind = np.array([np.round((90 - Crd[:, 0]) / res_high[0]) + 1,
+                    np.round((180 + Crd[:, 1]) / res_high[1]),
+                    np.round((90 - Crd[:, 2]) / res_high[0]),
+                    np.round((180 + Crd[:, 3]) / res_high[1]) + 1])
+    Ind = np.transpose(Ind.astype(int))
+    return Ind
 
 
-def calc_geotiff(Crd, res):
-    GeoRef = {"RasterOrigin": [Crd[-1, 3], Crd[-1, 0]],
-              "RasterOrigin_alt": [Crd[-1, 3], Crd[-1, 2]],
-              "pixelWidth": res[1, 1],
-              "pixelheight": -res[1, 0]}
+def calc_geotiff(Crd_all, res_high):
+    ''' description - why is there a minus sign?'''
+    GeoRef = {"RasterOrigin": [Crd_all[3], Crd_all[0]],
+              "RasterOrigin_alt": [Crd_all[3], Crd_all[2]],
+              "pixelWidth": res_high[1],
+              "pixelheight": -res_high[0]}
     return GeoRef
 
 
-def calc_region(region, Crd, res, GeoRef):
-
-    latlim = Crd[2] - Crd[0]
-    lonlim = Crd[3] - Crd[1]
-    M = int(m.fabs(latlim) / res[1, 0])
-    N = int(m.fabs(lonlim) / res[1, 1])
+def calc_region(region, Crd_reg, res_high, GeoRef):
+    ''' description - why is there a minus sign?'''
+    latlim = Crd_reg[2] - Crd_reg[0]
+    lonlim = Crd_reg[3] - Crd_reg[1]
+    M = int(m.fabs(latlim) / res_high[0])
+    N = int(m.fabs(lonlim) / res_high[1])
     A_region = np.ones((M, N))
-    origin = [Crd[3], Crd[2]]
+    origin = [Crd_reg[3], Crd_reg[2]]
 
     array2raster("A_region.tif", origin, GeoRef["pixelWidth"], -GeoRef["pixelheight"], A_region)
 

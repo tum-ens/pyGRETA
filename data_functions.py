@@ -37,7 +37,7 @@ def crd_exact_box(Ind, Crd_all, res_high):
            (Ind[:, 3] - 1) * res_high[1] + Crd_all[3]]
     return Crd
 
-  
+
 def crd_exact_points(Ind_points, Crd_all, res):
     ''' description 
     Ind_points: tuple of indices in the vertical and horizontal axes. '''
@@ -82,7 +82,7 @@ def calc_geotiff(Crd_all, res_high):
     GeoRef = {"RasterOrigin": [Crd_all[3], Crd_all[0]],
               "RasterOrigin_alt": [Crd_all[3], Crd_all[2]],
               "pixelWidth": res_high[1],
-              "pixelheight": -res_high[0]}
+              "pixelHeight": -res_high[0]}
     return GeoRef
 
 
@@ -100,14 +100,14 @@ def calc_region(region, Crd_reg, res_high, GeoRef):
     else:
         features = [region.geometry]
     west = origin[0]
-    north = origin[1]
+    south = origin[1]
     profile = {'driver': 'GTiff',
                'height': M,
                'width': N,
                'count': 1,
                'dtype': rasterio.float64,
                'crs': 'EPSG:4326',
-               'transform': rasterio.transform.from_origin(west, north, GeoRef["pixelWidth"], GeoRef["pixelHeight"])}
+               'transform': rasterio.transform.from_origin(west, south, GeoRef["pixelWidth"], GeoRef["pixelHeight"])}
 
     with MemoryFile() as memfile:
         with memfile.open(**profile) as f:
@@ -116,6 +116,30 @@ def calc_region(region, Crd_reg, res_high, GeoRef):
         A_region = out_image[0]
 
     return A_region
+
+
+def calc_region_extended(param, regions_shp, reg, location):
+    m_high = param["m_high"]
+    n_high = param["n_high"]
+    Crd_all = param["Crd_all"]
+    res_high = param["res_high"]
+    GeoRef = param["GeoRef"]
+
+    nRegions = param["nRegions_" + location]
+
+    if location == 'land':
+        Crd_regions = param["Crd_regions"][0:nRegions, :]
+    if location == 'eez':
+        Crd_regions = param["Crd_regions"][- nRegions:, :]
+
+    A_region_extended = np.zeros((m_high, n_high))
+    Ind = ind_merra(Crd_regions, Crd_all, res_high)
+
+    A_region = calc_region(regions_shp, Crd_regions[reg, :], res_high, GeoRef)
+    A_region_extended[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] = \
+        A_region_extended[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] + A_region
+
+    return A_region_extended
 
 
 def calc_gcr(Crd, m, n, res, GCR):

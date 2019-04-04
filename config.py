@@ -9,7 +9,7 @@ import os
 param = {}
 param["region"] = 'Germany'
 param["year"] = '2015'
-param["technology"] = ['PV'] #['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['WindOn'] #['PV', 'CSP', 'WindOn', 'WindOff']
 param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
 param["nproc"] = 4
@@ -205,7 +205,7 @@ paths["CORR"] = PathTemp + "_Wind_Correction.tif"  # Correction factors for wind
 
 # Ouput Folders
 timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
-# timestamp = "test"
+timestamp = "test"
 paths["OUT"] = root + "OUTPUTS" + fs + region + fs + timestamp + fs
 if not os.path.isdir(paths["OUT"]):
     os.mkdir(paths["OUT"])

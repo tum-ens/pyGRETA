@@ -34,12 +34,12 @@ def hourofmonth():
     for i in range(1, 12):
         h[i] = h[i] + h[i - 1]
     return h.astype(int)
-	
-def intersection(lst1, lst2): 
 
-    temp = set(lst2) 
-    lst3 = [value for value in lst1 if value in temp] 
-    return lst3 
+
+def intersection(lst1, lst2):
+    temp = set(lst2)
+    lst3 = [value for value in lst1 if value in temp]
+    return lst3
 
 
 def resizem(A_in, row_new, col_new):
@@ -155,7 +155,7 @@ def changeExt2tif(filepath):
     base = os.path.splitext(filepath)[0]
     return base + '.tif'
 
-	
+
 def sumnorm_MERRA2(A, m, n, res_low, res_high):
     s = np.zeros((m, n))
     row_step = int(res_low[0] / res_high[0])
@@ -184,7 +184,3 @@ def limit_cpu(check):
         p.nice(psutil.NORMAL_PRIORITY_CLASS)
         # Linux priority
         # p.nice(0)
-    # Incase of windows, to set it to the lowest priority
-    #
-
-

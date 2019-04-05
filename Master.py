@@ -774,71 +774,105 @@ def reporting(paths, param, tech):
     A_area = hdf5storage.read('A_area', paths[tech]["area"])
     density = param[tech]["weight"]["power_density"]
 
-    # create empty table - check syntax
-    # check for files availability - to be done later
     # Check if land or see
     if tech in ['PV', 'CSP', 'WindOn']:
         location = "land"
     elif tech in ['WindOff']:
         location = "eez"
+
+    # Initialize region masking parameters
+    Crd_all = param["Crd_all"]
+    GeoRef = param["GeoRef"]
+    res_high = param["res_high"]
     nRegions = param["nRegions_" + location]
     regions_shp = param["regions_" + location]
+    regions = [None] * nRegions
 
-    # loop over each region
-    regions = np.empty(nRegions+1, dtype=dict)
+    # Loop over each region
     for reg1 in range(0, nRegions+1):
         reg = 0
         # Intitialize region stats
         region_stats = {}
         region_stats["Region"] = regions_shp.iloc[reg]["NAME_SHORT"] + "_" + location
-        # Compute region_mask
-        A_region_extended = calc_region_extended(param, regions_shp.iloc[reg], reg, location)
 
-        region_stats["Available"] = np.sum(A_region_extended)
+        # Compute region_mask
+        A_region_extended = calc_region(regions_shp.iloc[reg], Crd_all, res_high, GeoRef)
+
+        # Sum available : available pixels
+        available = np.sum(A_region_extended)
+        region_stats["Available"] = int(available)
+
+        # Sum availabe_masked : available pixels after masking
         A_masked = A_region_extended * A_mask
         available_masked = np.nansum(A_masked)
-        region_stats["Available_Masked"] = available_masked
+        region_stats["Available_Masked"] = int(available_masked)
+
+        # Sum area: available area in km2
         area = A_region_extended * A_area
         Total_area = np.nansum(area)/(10**6)
-        region_stats["Area"] = Total_area
+        region_stats["Available_Area_km2"] = Total_area
+
+        # Stats for FLH
         FLH_region = A_region_extended * FLH
         mean = np.nanmean(FLH_region)
         median = np.nanmedian(FLH_region)
         max = np.nanmax(FLH_region)
         min = np.nanmin(FLH_region)
         std = np.nanstd(FLH_region)
-        region_stats["FLH_mean"] = mean
-        region_stats["FLH_median"] = median
-        region_stats["FLH_max"] = max
-        region_stats["FLH_min"] = min
-        region_stats["FLH_std"] = std
+        region_stats["FLH_Mean_MW"] = mean
+        region_stats["FLH_Median_MW"] = median
+        region_stats["FLH_Max_MW"] = max
+        region_stats["FLH_Min_MW"] = min
+        region_stats["FLH_Std_MW"] = std
+
+        # Stats for FLH_masked
         FLH_region_masked = A_masked * FLH_region
+        FLH_region_masked[FLH_region_masked == 0] = np.nan
         mean = np.nanmean(FLH_region_masked)
         median = np.nanmedian(FLH_region_masked)
         max = np.nanmax(FLH_region_masked)
         min = np.nanmin(FLH_region_masked)
         std = np.nanstd(FLH_region_masked)
-        region_stats["FLH_mean_masked"] = mean
-        region_stats["FLH_median_masked"] = median
-        region_stats["FLH_max_masked"] = max
-        region_stats["FLH_min_masked"] = min
-        region_stats["FLH_std_masked"] = std
+        region_stats["FLH_Mean_Masked_MW"] = mean
+        region_stats["FLH_Median_Masked_MW"] = median
+        region_stats["FLH_Max_Masked_MW"] = max
+        region_stats["FLH_Min_Masked_MW"] = min
+        region_stats["FLH_Std_Masked_MW"] = std
+
+        # Power Potential
         A_P_potential = A_area * density
         power_potential = np.nansum(A_P_potential)
-        region_stats["Power_Potential"] = power_potential
+        region_stats["Power_Potential_GW"] = power_potential / (10**3)
+
+        # Energy Potential
         A_E_potential = A_P_potential * FLH_region
         energy_potential = np.nansum(A_E_potential)
-        region_stats["Energy_Potential"] = energy_potential
+        region_stats["Energy_Potential_TWh"] = energy_potential / (10**6)
+
+        # Energy Potential after weighting
         A_E_W_potential = A_E_potential * A_weight
         energy_potential_weighted = np.nansum(A_E_W_potential)
-        region_stats["Energy_Potential_Weighted"] = energy_potential_weighted
+        region_stats["Energy_Potential_Weighted_TWh"] = energy_potential_weighted / (10**6)
+
+        # Energy Potential After weighting and masking
         A_E_W_M_potential = A_E_W_potential * A_masked
         energy_potential_weighted_masked = np.nansum(A_E_W_M_potential)
-        region_stats["Energy_Potential_Weighted_Masked"] = energy_potential_weighted_masked
-        regions[reg1] = region_stats
-    df = pd.DataFrame.from_dict(regions)
-    print("done")
+        region_stats["Energy_Potential_Weighted_Masked_TWh"] = energy_potential_weighted_masked / (10**6)
 
+        # Add region to list
+        regions[reg1] = region_stats
+
+    # Create Dataframe
+    df = pd.DataFrame.from_dict(regions)
+
+    # Reorder dataframe columns
+    df = df[['Region', 'Available', 'Available_Masked', 'Available_Area_km²', 'FLH_Mean_MW', 'FLH_Median_MW',
+             'FLH_Max_MW', 'FLH_Min_MW', 'FLH_Mean_Masked_MW', 'FLH_Median_Masked_MW', 'FLH_Max_Masked_MW',
+             'FLH_Min_Masked_MW', 'FLH_Std_Masked_MW', 'Power_Potential_GW', 'Energy_Potential_TWh',
+             'Energy_Potential_Weighted_TWh', 'Energy_Potential_Weighted_Masked_TWh']]
+
+    # Export the dataframe as CSV
+    df.to_csv(paths["OUT"] + 'Region_stats.csv')
 
 
 
@@ -847,7 +881,7 @@ def reporting(paths, param, tech):
     # make list of regions
 
 
-    # Sum region_mask to get number of point before masking
+
     # multiply with mask, and sum to get the number of points after masking
     # multiply mask with area to get total area (important: in km²)
     # region_mask on FLH, derive Mean, median, max, min and std
@@ -1083,4 +1117,5 @@ if __name__ == '__main__':
         # masking(paths, param, tech)
         # weighting(paths, param, tech)
         reporting(paths, param, tech)
-        param = find_locations_quantiles(paths, param, tech)
+        print('done')
+        # param = find_locations_quantiles(paths, param, tech)

@@ -116,21 +116,22 @@ def calc_region(region, Crd_reg, res_high, GeoRef):
         A_region = out_image[0]
 
     return A_region
-
-
-def calc_gcr(Crd, m, n, res, GCR):
+	
+def calc_gcr(Crd_all, m_high, n_high, res_high, GCR):
     """
     This function creates a GCR weighting matrix for the desired geographic extent
-    The sizing of the PV system is conducted on DEC 22 for a shade-free exposure
-    to the sun during a given number of hours
+    The sizing of the PV system is conducted on a user-defined day for a shade-free exposure
+    to the sun during a given number of hours.
 
-    :param Crd: desired geographic extent (north, east, south, west)
-    :param m, n, res: desired resolution in lat and lon, and resolution of MERRA data
-    :param GCR: Duration of the shade-free period
+    :param Crd_all: desired geographic extent of the whole region (north, east, south, west)
+    :param m_high, n_high: number of rows and columns
+    :param res_high: high map resolution
+    :param GCR: includes the user-defined day and the duration of the shade-free period
     """
 
     # Vector of latitudes between (south) and (north), with resolution (res_should) degrees
-    lat = np.arange((Crd[0, 2] + res[1, 0] / 2), (Crd[0, 0] - res[1, 0] / 2), res[1, 0])[np.newaxis].T
+    lat = np.arange((Crd_all[2] + res_high[0] / 2), (Crd_all[0] - res_high[0] / 2), res_high[0])[np.newaxis]
+    lon = np.arange((Crd_all[3] + res_high[1] / 2), (Crd_all[1] - res_high[1] / 2), res_high[1])[np.newaxis]
 
     # Solar time where shade-free exposure starts
     omegast = 12 - GCR["shadefree_period"] / 2
@@ -140,20 +141,32 @@ def calc_gcr(Crd, m, n, res, GCR):
     phi = abs(lat)  # Latitude angle
 
     beta = np.maximum(phi, 15)  # Tilt angle = latitude, but at least 15 degrees
+    # Optimal tilt angle (loosely based on Breyer 2010)
+    beta = np.minimum(np.abs(phi), 55)  # The tilt angle is preferably equal to the latitude
+    range_lat = np.logical_and(np.abs(phi) >= 35, np.abs(phi) < 65)
+    beta[range_lat] = (beta[range_lat] - 35) / 65 * 55 + 35  # Tilt angle does not increase very quickly
+    range_lat = np.logical_and(lat >= 35, lat < 65)
+    range_lon = np.logical_and(lon >= -20, lon < 30)
+    beta[np.logical_and(range_lat, range_lon)] = (beta[np.logical_and(range_lat,
+                                                                      range_lon)] - 35) / 65 * 45 + 35  # Europe
+    range_lat = np.logical_and(lat >= 20, lat < 65)
+    range_lon = np.logical_and(lon >= 75, lon < 140)
+    beta[np.logical_and(range_lat, range_lon)] = (beta[np.logical_and(range_lat,
+                                                                      range_lon)] - 20) / 65 * 60 + 20  # Asia/China
 
-    if Crd[0, 2] > 0:
+    if Crd_all[2] > 0:
         day = GCR["day_north"]
         # Declination angle
         delta = repmat(arcsind(0.3978) * sin(
-            day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), int(m), 1)
+            day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), int(m_high), 1)
 
-    if Crd[0, 0] < 0:
+    if Crd_all[0] < 0:
         day = GCR["day_south"]
         # Declination angle
         delta = repmat(arcsind(0.3978) * sin(
-            day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), int(m), 1)
+            day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), int(m_high), 1)
 
-    if (Crd[0, 2] * Crd[0, 0]) < 0:
+    if (Crd_all[2] * Crd_all[0]) < 0:
         lat_pos = np.sum((lat > 0).astype(int))
         day = GCR["day_north"]
         # Declination angle
@@ -174,7 +187,7 @@ def calc_gcr(Crd, m, n, res, GCR):
     azi = arccosd((sind(delta) * cosd(phi) - cosd(delta) * sind(phi) * cosd(omega)) / cosd(alpha))
 
     # The GCR applies for each line, independently from the longitude
-    A_GCR = repmat((1 / (cosd(beta) + np.abs(cosd(azi)) * sind(beta) / tand(alpha))), 1, int(n))
+    A_GCR = repmat((1 / (cosd(beta) + np.abs(cosd(azi)) * sind(beta) / tand(alpha))), 1, int(n_high))
 
     # Fix too large and too small values of GCR
     A_GCR[A_GCR < 0.2] = 0.2
@@ -200,14 +213,14 @@ def sampled_sorting(Raster, sampling):
 
 
 
-def calc_areas(Crd, n, res, reg):
+def calc_areas(Crd_all, n_high, res_high):
     # WSG84 ellipsoid constants
     a = 6378137  # major axis
     b = 6356752.3142  # minor axis
     e = np.sqrt(1 - (b / a) ** 2)
 
     # Lower pixel latitudes
-    lat_vec = np.arange(Crd[reg, 2], Crd[reg, 0], res[1, 0])
+    lat_vec = np.arange(Crd_all[2], Crd_all[0], res_high[0])
     lat_vec = lat_vec[np.newaxis]
 
     # Lower slice areas
@@ -221,7 +234,7 @@ def calc_areas(Crd, n, res, reg):
 
     # Upper slice areas
     # Areas between the equator and the upper pixel latitudes circling the globe
-    f_upper = np.deg2rad(lat_vec + res[1, 0])
+    f_upper = np.deg2rad(lat_vec + res_high[0])
 
     zm_upper = 1 - (e * sin(f_upper))
     zp_upper = 1 + (e * sin(f_upper))
@@ -231,8 +244,8 @@ def calc_areas(Crd, n, res, reg):
 
     # Pixel areas
     # Finding the latitudinal pixel-sized globe slice areas then dividing them by the longitudinal pixel size
-    area_vec = ((upperSliceAreas - lowerSliceAreas) * res[1, 1] / 360).T
-    A_area = np.tile(area_vec, (1, n[1, reg]))
+    area_vec = ((upperSliceAreas - lowerSliceAreas) * res_high[1] / 360).T
+    A_area = np.tile(area_vec, (1, n_high))
     return A_area
 
 

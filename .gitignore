@@ -10,3 +10,5 @@ __pycache__/*
 INPUTS/Germany/Shapefile/Germany_NUTS0_wo_Balkans_with_EEZ.dbf
 INPUTS/Germany/Shapefile/Germany_NUTS0_wo_Balkans_with_EEZ.qpj
 INPUTS/Germany/Shapefile/Germany_NUTS0_wo_Balkans_with_EEZ.prj
+OUTPUTS/Germany/test/Region_stats.csv
+OUTPUTS/Germany/test/sorted_FLH_sampled

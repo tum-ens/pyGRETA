@@ -37,7 +37,7 @@ def crd_exact_box(Ind, Crd_all, res_high):
            (Ind[:, 3] - 1) * res_high[1] + Crd_all[3]]
     return Crd
 
-	
+
 def crd_exact_points(Ind_points, Crd_all, res):
     ''' description 
     Ind_points: tuple of indices in the vertical and horizontal axes. '''
@@ -72,7 +72,13 @@ def ind_global(Crd, res_high):
 
 
 def calc_geotiff(Crd_all, res_high):
-    ''' description - why is there a minus sign?'''
+    """
+    Returns dictionary containing the Georefferencing parameters for geotiff creation,
+    based on the desired extent and resolution
+
+    :param Crd: Extent
+    :param res: resolution
+    """
     GeoRef = {"RasterOrigin": [Crd_all[3], Crd_all[0]],
               "RasterOrigin_alt": [Crd_all[3], Crd_all[2]],
               "pixelWidth": res_high[1],
@@ -94,14 +100,14 @@ def calc_region(region, Crd_reg, res_high, GeoRef):
     else:
         features = [region.geometry]
     west = origin[0]
-    north = origin[1]
+    south = origin[1]
     profile = {'driver': 'GTiff',
                'height': M,
                'width': N,
                'count': 1,
                'dtype': rasterio.float64,
                'crs': 'EPSG:4326',
-               'transform': rasterio.transform.from_origin(west, north, GeoRef["pixelWidth"], GeoRef["pixelHeight"])}
+               'transform': rasterio.transform.from_origin(west, south, GeoRef["pixelWidth"], GeoRef["pixelHeight"])}
 
     with MemoryFile() as memfile:
         with memfile.open(**profile) as f:
@@ -110,15 +116,18 @@ def calc_region(region, Crd_reg, res_high, GeoRef):
         A_region = out_image[0]
 
     return A_region
-
 	
 def calc_gcr(Crd_all, m_high, n_high, res_high, GCR):
-    # This code creates a GCR wieghing matrix for the desired geographic extent. The sizing of the PV system is
-    # conducted on Dec 22 for a shade-free exposure to the Sun during a given number of hours.
-    # INPUTS:
-    # north_, east_, south_, west_: desired geographic extent
-    # res: resolution of MERRA data & desired resolution in lat/lon
-    # Shadefree_period: duration of the shade-free period
+    """
+    This function creates a GCR weighting matrix for the desired geographic extent
+    The sizing of the PV system is conducted on a user-defined day for a shade-free exposure
+    to the sun during a given number of hours.
+
+    :param Crd_all: desired geographic extent of the whole region (north, east, south, west)
+    :param m_high, n_high: number of rows and columns
+    :param res_high: high map resolution
+    :param GCR: includes the user-defined day and the duration of the shade-free period
+    """
 
     # Vector of latitudes between (south) and (north), with resolution (res_should) degrees
     lat = np.arange((Crd_all[2] + res_high[0] / 2), (Crd_all[0] - res_high[0] / 2), res_high[0])[np.newaxis]
@@ -185,7 +194,24 @@ def calc_gcr(Crd_all, m_high, n_high, res_high, GCR):
     A_GCR[A_GCR > 0.9] = 0.9
 
     return A_GCR
-	
+
+
+def sampled_sorting(Raster, sampling):
+
+    # Flatten the raster and sort raster from highest to lowest
+    Sorted_FLH = np.sort(Raster.flatten(order='F'))
+    Sorted_FLH = np.flipud(Sorted_FLH)
+
+    # Loop over list with sampling increment
+
+    s = Sorted_FLH[0]  # Highest value
+    for n in np.arange(sampling, len(Sorted_FLH), sampling):
+        s = np.append(s, Sorted_FLH[n])
+    s = np.append(s, Sorted_FLH[-1])  # Lowest value
+
+    return s
+
+
 
 def calc_areas(Crd_all, n_high, res_high):
     # WSG84 ellipsoid constants
@@ -224,7 +250,9 @@ def calc_areas(Crd_all, n_high, res_high):
 
 
 def create_buffer(A_lu, buffer_pixel_amount):
-    # A_lu matrix element values range from 0 to 16:
+    """
+    This function creates a buffer around urban areas, based on a Von Neumann neighborhood.
+    A_lu matrix element values range from 0 to 16:
     # 0   -- Water
     # 1   -- Evergreen needle leaf forest
     # 2   -- Evergreen broad leaf forest
@@ -241,6 +269,10 @@ def create_buffer(A_lu, buffer_pixel_amount):
     # 14  -- Croplands / natural vegetation mosaic
     # 15  -- Snow and ice
     # 16  -- Barren or sparsely vegetated
+
+    :param A_lu: Landuse matrix
+    :param buffer_pixel_amount: Buffer amount
+    """
 
     # Mark the matrix elements with values 13
     A_lu = A_lu == 13
@@ -266,8 +298,11 @@ def create_buffer(A_lu, buffer_pixel_amount):
 
 
 def superpose_left(A_lu, buffer_pixed_amount):
-    # shift the matrix to the left
-    # shift amount is defined by buffer_pixel amount
+    """
+    Used as part of create_buffer()
+    Shift and superpose to the left, shift amount is defined by buffer_pixel amount
+    """
+
     left = np.append(A_lu[:, buffer_pixed_amount:], np.zeros((A_lu.shape[0], buffer_pixed_amount)), axis=1)
     shifted_left = A_lu + left
     shifted_left = shifted_left != 0
@@ -275,8 +310,11 @@ def superpose_left(A_lu, buffer_pixed_amount):
 
 
 def superpose_right(A_lu, buffer_pixed_amount):
-    # shift the matrix to the right
-    # shift amount is defined by buffer_pixel amount
+    """
+    Used as part of create_buffer()
+    Shift and superpose to the right, shift amount is defined by buffer_pixel amount
+    """
+
     right = np.append(np.zeros((A_lu.shape[0], buffer_pixed_amount)), A_lu[:, :-buffer_pixed_amount], axis=1)
     shifted_right = A_lu + right
     shifted_right = shifted_right != 0
@@ -284,8 +322,11 @@ def superpose_right(A_lu, buffer_pixed_amount):
 
 
 def superpose_up(A_lu, buffer_pixed_amount):
-    # shift the matrix to up
-    # shift amount is defined by buffer_pixel_amount
+    """
+    Used as part of create_buffer()
+    Shift and superpose upward, shift amount is defined by buffer_pixel amount
+    """
+
     up = np.append(A_lu[buffer_pixed_amount:, :], np.zeros((buffer_pixed_amount, A_lu.shape[1])), axis=0)
     shifted_up = A_lu + up
     shifted_up = shifted_up != 0
@@ -293,8 +334,11 @@ def superpose_up(A_lu, buffer_pixed_amount):
 
 
 def superpose_down(A_lu, buffer_pixed_amount):
-    # shift the matrix to down
-    # shift amount is defined by buffer_pixel_amount
+    """
+    Used as part of create_buffer()
+    Shift and superpose to the downward, shift amount is defined by buffer_pixel amount
+    """
+
     down = np.append(np.zeros((buffer_pixed_amount, A_lu.shape[1])), A_lu[:-buffer_pixed_amount, :], axis=0)
     shifted_down = A_lu + down
     shifted_down = shifted_down != 0

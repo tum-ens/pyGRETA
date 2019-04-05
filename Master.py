@@ -67,10 +67,13 @@ def initialization():
     return paths, param
 
 def generate_weather_files(paths):
-    # This Code reads the daily NetCDF data (from MERRA) for SWGDN, SWTDN, T2M, U50m, and V50m, and saves them in
-    # matrices with yearly time series with low spatial resolution. This code has to be run only once.
+    """
+    This function reads the daily NetCDF data (from MERRA) for SWGDN, SWTDN, T2M, U50m, and V50m,
+    and saves them in matrices with yearly time series with low spatial resolution.
+    This code has to be run only once
 
-    # Check if MERRA2 mat files have been generated
+    :param paths: paths dictionary containing the input file for NetCDF data
+    """
     if not (os.path.isfile(paths["W50M"])
             and os.path.isfile((paths["CLEARNESS"]))):
         start = datetime.date(paths["year"], 1, 1)
@@ -491,6 +494,7 @@ def calculate_FLH(paths, param, tech):
     nproc = param["nproc"]
     m_high = param["m_high"]
     n_high = param["n_high"]
+    CPU_limit = np.full((1, nproc), param["CPU_limit"])
 
     if tech == "WindOff":
         regions_shp = param["regions_eez"]
@@ -518,12 +522,12 @@ def calculate_FLH(paths, param, tech):
         else:
             list_hours = np.array_split(list_hours[day_filter], nproc)
             param["status_bar_limit"] = list_hours[0][-1]
-            results = Pool(processes=nproc).starmap(calc_FLH_solar, product(list_hours, [
+            results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(calc_FLH_solar, product(list_hours, [
                 [paths, param, tech]]))
     elif tech in ['WindOn', 'WindOff']:
         list_hours = np.array_split(np.arange(0, 8760), nproc)
         param["status_bar_limit"] = list_hours[0][-1]
-        results = Pool(processes=nproc).starmap(calc_FLH_wind, product(list_hours, [
+        results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(calc_FLH_wind, product(list_hours, [
             [paths, param, tech]]))
     print('\n')
 
@@ -711,16 +715,140 @@ def weighting(paths, param, tech):
         print("files saved:" + changeExt2tif(paths[tech]["FLH_weight"]))
 	
 
-# #########
-# # Module : reporting
-# #########
+def reporting(paths, param, tech):
 
-# # Compute Sums
+    # read FLH, Masking, area, and weighting matrix
+    FLH = hdf5storage.read('FLH', paths[tech]["FLH"])
+    A_mask = hdf5storage.read('A_mask', paths[tech]["mask"])
+    A_weight = hdf5storage.read('A_weight', paths[tech]["weight"])
+    A_area = hdf5storage.read('A_area', paths[tech]["area"])
+    density = param[tech]["weight"]["power_density"]
 
-# A_area_mask = A_area * A_mask
-# area_sum_km_2 = np.nansum(A_area_mask) / 1e6
-# power_potential_sum_TWp = np.nansum(A_weight) / 1e6
-# energy_potential_sum_TWh = np.nansum(A_FLH_weight) / 1e6
+    # Check if land or see
+    if tech in ['PV', 'CSP', 'WindOn']:
+        location = "land"
+    elif tech in ['WindOff']:
+        location = "eez"
+
+    # Initialize region masking parameters
+    Crd_all = param["Crd_all"]
+    GeoRef = param["GeoRef"]
+    res_high = param["res_high"]
+    nRegions = param["nRegions_" + location]
+    regions_shp = param["regions_" + location]
+    regions = [None] * nRegions
+
+    # Initialize regions list of sorted FLH, FLH_M, and FLH_W
+    sorted_FLH_list = {}
+
+    # Define sampling for sorted lists
+    sampling = param["report_sampling"]
+
+    # Loop over each region
+    for reg in range(0, nRegions):
+
+        # Intitialize region stats
+        region_stats = {}
+        region_stats["Region"] = regions_shp.iloc[reg]["NAME_SHORT"] + "_" + location
+
+        # Compute region_mask
+        A_region_extended = calc_region(regions_shp.iloc[reg], Crd_all, res_high, GeoRef)
+
+        # Sum available : available pixels
+        available = np.sum(A_region_extended)
+        region_stats["Available"] = int(available)
+
+        # Sum availabe_masked : available pixels after masking
+        A_masked = A_region_extended * A_mask
+        available_masked = np.nansum(A_masked)
+        region_stats["Available_Masked"] = int(available_masked)
+
+        # Sum area: available area in km2
+        area = A_region_extended * A_area
+        Total_area = np.nansum(area)/(10**6)
+        region_stats["Available_Area_km2"] = Total_area
+
+        # Stats for FLH
+        FLH_region = A_region_extended * FLH
+        FLH_region[FLH_region == 0] = np.nan
+        region_stats["FLH_Mean_MW"] = np.nanmean(FLH_region)
+        region_stats["FLH_Median_MW"] = np.nanmedian(FLH_region)
+        region_stats["FLH_Max_MW"] = np.nanmax(FLH_region)
+        region_stats["FLH_Min_MW"] = np.nanmin(FLH_region)
+        region_stats["FLH_Std_MW"] = np.nanstd(FLH_region)
+
+        # Stats for FLH_masked
+        FLH_region_masked = A_masked * FLH_region
+        FLH_region_masked[FLH_region_masked == 0] = np.nan
+        region_stats["FLH_Mean_Masked_MW"] = np.nanmean(FLH_region_masked)
+        region_stats["FLH_Median_Masked_MW"] = np.nanmedian(FLH_region_masked)
+        region_stats["FLH_Max_Masked_MW"] = np.nanmax(FLH_region_masked)
+        region_stats["FLH_Min_Masked_MW"] = np.nanmin(FLH_region_masked)
+        region_stats["FLH_Std_Masked_MW"] = np.nanstd(FLH_region_masked)
+
+        # Power Potential
+        A_P_potential = A_area * density
+        power_potential = np.nansum(A_P_potential)
+        region_stats["Power_Potential_GW"] = power_potential / (10**3)
+
+        # Energy Potential
+        A_E_potential = A_P_potential * FLH_region
+        energy_potential = np.nansum(A_E_potential)
+        region_stats["Energy_Potential_TWh"] = energy_potential / (10**6)
+
+        # Energy Potential after weighting
+        A_E_W_potential = A_E_potential * A_weight
+        energy_potential_weighted = np.nansum(A_E_W_potential)
+        region_stats["Energy_Potential_Weighted_TWh"] = energy_potential_weighted / (10**6)
+
+        # Energy Potential After weighting and masking
+        A_E_W_M_potential = A_E_W_potential * A_masked
+        energy_potential_weighted_masked = np.nansum(A_E_W_M_potential)
+        region_stats["Energy_Potential_Weighted_Masked_TWh"] = energy_potential_weighted_masked / (10**6)
+
+        sort = {}
+        # Sorted FLH Sampling
+        sorted_sampled_FLH = sampled_sorting(FLH_region[~np.isnan(FLH_region)], sampling)
+        sort["FLH"] = sorted_sampled_FLH
+
+        # Sorted FLH Sampling after masking
+        sorted_sampled_FLH_masked = sampled_sorting(FLH_region_masked[~np.isnan(FLH_region_masked)], sampling)
+        sort["FLH_M"] = sorted_sampled_FLH_masked
+
+        # Sorted FLH Sampling after masking and wieghting
+        FLH_region_masked_weighted = FLH_region_masked * A_weight
+        FLH_region_masked_weighted[FLH_region_masked_weighted == 0] = np.nan
+
+        sorted_sampled_FLH_masked_weighted = \
+            sampled_sorting(FLH_region_masked_weighted[~np.isnan(FLH_region_masked_weighted)], sampling)
+        sort["FLH_M_W"] = sorted_sampled_FLH_masked_weighted
+
+        sorted_FLH_list[region_stats["Region"]] = sort
+
+        # Add region to list
+        regions[reg] = region_stats
+
+    # Create Dataframe
+    df = pd.DataFrame.from_dict(regions)
+
+    # Reorder dataframe columns
+    df = df[['Region', 'Available', 'Available_Masked', 'Available_Area_km2', 'FLH_Mean_MW', 'FLH_Median_MW',
+             'FLH_Max_MW', 'FLH_Min_MW', 'FLH_Mean_Masked_MW', 'FLH_Median_Masked_MW', 'FLH_Max_Masked_MW',
+             'FLH_Min_Masked_MW', 'FLH_Std_Masked_MW', 'Power_Potential_GW', 'Energy_Potential_TWh',
+             'Energy_Potential_Weighted_TWh', 'Energy_Potential_Weighted_Masked_TWh']]
+
+    # Export the dataframe as CSV
+    df.to_csv(paths["OUT"] + 'Region_stats.csv')
+
+    # Save Sorted lists to .mat file
+    filepath = paths["OUT"] + "sorted_FLH_sampled.mat"
+    for reg in sorted_FLH_list.keys():
+
+        hdf5storage.writes({reg + '/FLH': sorted_FLH_list[reg]["FLH"],
+                            reg + '/FLH_masked': sorted_FLH_list[reg]["FLH_M"],
+                            reg + '/FLH_masked_weighted': sorted_FLH_list[reg]["FLH_M_W"]
+                            }, filepath, store_python_metadata=True, matlab_compatible=True)
+     print('Reporting done!')
 
 def find_locations_quantiles(paths, param, tech):
 
@@ -790,6 +918,7 @@ def find_locations_quantiles(paths, param, tech):
 		 
 def generate_time_series(paths, param, tech):
     nproc = param["nproc"]
+    CPU_limit = np.full((1, nproc), param["CPU_limit"])
     param[tech]["Crd_points"] = hdf5storage.read('Crd_points', paths[tech]["Locations"][:-4] + '_Crd.mat')
     param[tech]["Ind_points"] = hdf5storage.read('Ind_points', paths[tech]["Locations"][:-4] + '_Ind.mat')
     list_names = param[tech]["Crd_points"][2]
@@ -812,11 +941,11 @@ def generate_time_series(paths, param, tech):
             list_hours = np.array_split(list_hours[day_filter], nproc)
             print(len(list_hours[0]))
             param["status_bar_limit"] = list_hours[0][-1]
-            results = Pool(processes=nproc).starmap(calc_TS_solar, product(list_hours[day_filter], [[paths, param, tech]]))
+            results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(calc_TS_solar, product(list_hours[day_filter], [[paths, param, tech]]))
     elif tech in ['WindOn', 'WindOff']:
         list_hours = np.array_split(np.arange(0, 8760), nproc)
         param["status_bar_limit"] = list_hours[0][-1]
-        results = Pool(processes=nproc).starmap(calc_TS_wind, product(list_hours, [[paths, param, tech]]))
+        results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(calc_TS_wind, product(list_hours, [[paths, param, tech]]))
     print('\n')
 
     # Collecting results
@@ -851,5 +980,6 @@ if __name__ == '__main__':
         #calculate_FLH(paths, param, tech)
         #masking(paths, param, tech)
         #weighting(paths, param, tech)
+        reporting(paths, param, tech)
         #find_locations_quantiles(paths, param, tech)
         generate_time_series(paths, param, tech)

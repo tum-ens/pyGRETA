@@ -43,6 +43,7 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
     A_albedo = rasterData["A_albedo"][reg_ind_h]
     A_Ross = rasterData["A_Ross"][reg_ind_h]
 
+
     if pv["tracking"] == 1:
         A_beta = 90 - A_alpha
     elif pv["tracking"] == 2:
@@ -50,9 +51,11 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
         A_orientation = A_azimuth
 
     aux = np.maximum(np.minimum((sind(A_delta) * sind(A_phi) * cosd(A_beta)
-           - sind(A_delta) * cosd(A_phi) * sind(A_beta) * cosd(A_orientation) + cosd(A_delta) * cosd(A_phi) * cosd(A_beta)
-           * cosd(A_omega) + cosd(A_delta) * sind(A_phi) * sind(A_beta) * cosd(A_orientation)
-           * cosd(A_omega) + cosd(A_delta) * sind(A_beta) * sind(A_orientation) * sind(A_omega)), 1), -1)
+                                 - sind(A_delta) * cosd(A_phi) * sind(A_beta) * cosd(A_orientation) + cosd(
+                A_delta) * cosd(A_phi) * cosd(A_beta)
+                                 * cosd(A_omega) + cosd(A_delta) * sind(A_phi) * sind(A_beta) * cosd(A_orientation)
+                                 * cosd(A_omega) + cosd(A_delta) * sind(A_beta) * sind(A_orientation) * sind(A_omega)),
+                                1), -1)
     A_incidence = arccosd(aux)
 
     # Compute the hourly TOA radiation
@@ -91,9 +94,11 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
     # For CSP: tracking like pv.tracking = 1
     A_beta = 90 - A_alpha
     aux = np.maximum(np.minimum((sind(A_delta) * sind(A_phi) * cosd(A_beta)
-           - sind(A_delta) * cosd(A_phi) * sind(A_beta) * cosd(A_orientation) + cosd(A_delta) * cosd(A_phi) * cosd(A_beta)
-           * cosd(A_omega) + cosd(A_delta) * sind(A_phi) * sind(A_beta) * cosd(A_orientation)
-           * cosd(A_omega) + cosd(A_delta) * sind(A_beta) * sind(A_orientation) * sind(A_omega)), 1), -1)
+                                 - sind(A_delta) * cosd(A_phi) * sind(A_beta) * cosd(A_orientation) + cosd(
+                A_delta) * cosd(A_phi) * cosd(A_beta)
+                                 * cosd(A_omega) + cosd(A_delta) * sind(A_phi) * sind(A_beta) * cosd(A_orientation)
+                                 * cosd(A_omega) + cosd(A_delta) * sind(A_beta) * sind(A_orientation) * sind(A_omega)),
+                                1), -1)
     A_incidence = arccosd(aux)
     R_b = cosd(A_incidence) / sind(A_alpha)
     F_direct_csp, _, _ = coefficients(90 - A_alpha, RATIO, R_b, A_i, f, hour, sunrise, sunset)
@@ -122,10 +127,12 @@ def calc_FLH_solar(hours, args):
     merraData = {}
     # Clearness index - stored variable CLEARNESS
     merraData["CLEARNESS"] = hdf5storage.read('CLEARNESS', paths["CLEARNESS"])
+
     # Temperature 2m above the ground - stored variable T2M
     merraData["T2M"] = hdf5storage.read('T2M', paths["T2M"])
 
     rasterData = {}
+
     # Calculate A matrices
     # A_lu
     with rasterio.open(paths["LU"]) as src:
@@ -133,9 +140,11 @@ def calc_FLH_solar(hours, args):
     rasterData["A_lu"] = np.flipud(w)
     #rasterData["A_lu"] = rasterData["A_lu"][reg_ind]
     # A_Ross (Temperature coefficients for heating losses)
-    rasterData["A_Ross"] = changem(rasterData["A_lu"], param["landuse"]["Ross_coeff"], param["landuse"]["type"]).astype(float) / 10000
+    rasterData["A_Ross"] = changem(rasterData["A_lu"], param["landuse"]["Ross_coeff"], param["landuse"]["type"]).astype(
+        float) / 10000
     # A_albedo (Reflectivity coefficients)
-    rasterData["A_albedo"] = changem(rasterData["A_lu"], param["landuse"]["albedo"], param["landuse"]["type"]).astype(float) / 100
+    rasterData["A_albedo"] = changem(rasterData["A_lu"], param["landuse"]["albedo"], param["landuse"]["type"]).astype(
+        float) / 100
 
     FLH = np.zeros(len(reg_ind[0]))
     status = 0
@@ -146,18 +155,20 @@ def calc_FLH_solar(hours, args):
             sys.stdout.write('\r')
             sys.stdout.write(tech + ' ' + param["region"] + ' ' + '[%-50s] %d%%' % ('='* ((status*50)//len(hours)), (status*100)//len(hours)))
             sys.stdout.flush()
-        
+
         if tech == 'PV':
             CF, _ = calc_CF_solar(hour, reg_ind, param, merraData, rasterData)
         elif tech == 'CSP':
             _, CF = calc_CF_solar(hour, reg_ind, param, merraData, rasterData)
         
+
         # Aggregates CF to obtain the yearly FLH
         CF[np.isnan(CF)] = 0
         FLH = FLH + CF
+
     return FLH
 	
-	
+
 def calc_TS_solar(hours, args):
     # Decomposing the tuple args
     paths = args[0]
@@ -207,13 +218,19 @@ def calc_TS_solar(hours, args):
 
 
 def angles(hour, reg_ind, Crd_all, res_high):
-    # This code creates six matrices for the desired extent, that represent the elevation, tilt, azimuth,
-    # and orientation angles in addition to the sunrise and sunset hours of every pixel with the desired resolution.True
-    # The inputs are:
-    # hour: hour rank in a year (from 1 to 8760)
-    # north, est, south, west: desired geographic extent
-    # res: resolution of MERRA data & desired resolution in lat/lon
-    # Ext_in Extent of the global area of interest
+    """
+    This function creates six matrices for the desired extent, that represent the elevation, tilt, azimuth and
+    oerientation angles, in addition to the sunrise and sunset hours of every pixel with the desired resolution
+
+    :param hour: hour rank in a year (from 1 to 8760
+    :param args:
+        set1
+        north, east, south, west: desired geographic extent
+        res: resolution of MERRA data & desired resolution in lat/lon
+        Ext_in: extent of the global are of interest
+        set2
+        (lat, lon): latitude and longitude of all points of interest
+    """
 
     # Initialization
     Crd_points = crd_exact_points(reg_ind, Crd_all, res_high)
@@ -274,15 +291,15 @@ def angles(hour, reg_ind, Crd_all, res_high):
     orientation[phi < 0] = 180  # Azimuth of the PV panel is 180° for the Southern hemisphere
 
     # Sunrise and sunset hours in GMT
-    #aux = np.maximum(np.minimum((-tand(phi)) * tand(delta), 1), -1)
+    # aux = np.maximum(np.minimum((-tand(phi)) * tand(delta), 1), -1)
     aux = np.maximum(np.minimum((-tand(phi)) * tand(delta), 1), -1)
     sunrise = 12 - 1 / 15 * arccosd(aux)
     sunset = 12 + 1 / 15 * arccosd(aux)
     coeff_a = (cosd(phi) / tand(beta)) + sind(phi)
     coeff_b = tand(delta) * (cosd(phi) * cosd(orientation) - sind(phi) / tand(beta))
     aux = np.maximum(np.minimum(((coeff_a * coeff_b - sind(orientation)
-                                 * (coeff_a ** 2 - coeff_b ** 2 + sind(orientation) ** 2) ** 0.5
-                                 / (coeff_a ** 2 + sind(orientation) ** 2))), 1), -1)
+                                  * (coeff_a ** 2 - coeff_b ** 2 + sind(orientation) ** 2) ** 0.5
+                                  / (coeff_a ** 2 + sind(orientation) ** 2))), 1), -1)
     sunrise_tilt = 12 - 1 / 15 * arccosd(aux)
     sunset_tilt = 12 + 1 / 15 * arccosd(aux)
 
@@ -314,15 +331,19 @@ def toa_hourly(alpha, *args):
 
 
 def coefficients(beta, ratio, R_b, A_i, f, *args):
-    # This code creates three weighting matrix for the desired extent and with the desired resolution, that correspond
-    # to the gains/losses caused by tilting to each component of the incident radiation (direct, diffuse, reflected)
-    # The input arguments are:
-    # alpha: matrix of elevation angles
-    # beta: matrix of tilting angles
-    # azi: matrix of azimuth angles
-    # orientation: matrix of surface azimuth (PV panel orientation angle)
-    # hour, sunrise, sunset (optional): hour of the year and the matrix
-    # for the sunrise and sunset hours for every location on that day
+    """
+    This function creates three weighting matrices for the desired extent and with the desired resolution,
+    that correspond to the gains/losses caused by tilting to each component of the incident radiation
+    (direct, diffuse, and reflected
+
+    The Input arguements are:
+    - alpha: matrix of elevation angles
+    - beta: matrix of tilting angles
+    - azi: matrix of azimuth angles
+    - orientation: matrix of surface azimuth (PV panel orientation angle)
+    - hour, sunrise, and sunset (optional): hour of the year, and the matrix for the sunrise and sunset hours for every
+    location on that day
+    """
 
     duration = np.ones(beta.shape)  # Adjusts for any inaccuracy in case the sunset or the sunrise occurs within hour
 
@@ -410,13 +431,15 @@ def global2diff(k_t, dims):
 
     return A_ratio
 
+
 def calc_CF_wind(hour, reg_ind, turbine, m, n, merraData, rasterData):
     ''' This function calculates the capacity factor for a given wind speed at 50m'''
-	
+
     # Load MERRA data, increase its resolution, and fit it to the extent
     w50m_h = resizem(merraData["W50M"][:, :, hour], m, n)
     w50m_h = w50m_h[reg_ind]
 	
+
     # Calculate the wind speed a the desired height
     w_new_h = w50m_h * rasterData["A_cf"]
     del w50m_h
@@ -444,19 +467,19 @@ def calc_FLH_wind(hours, args):
     paths = args[0]
     param = args[1]
     tech = args[2]
-	
     m_high = param["m_high"]
     n_high = param["n_high"]
     reg_ind = param["Ind_nz"]
 
     turbine = param[tech]["technical"]
-	
-	# Obtain weather matrices
+
+    # Obtain weather matrices
     merraData = {}
     # Wind speed at 50m
     merraData["W50M"] = hdf5storage.read('W50M', paths["W50M"])
 	
     rasterData = {}
+
     # Calculate A matrices
     # A_cf
     with rasterio.open(paths["CORR"]) as src:
@@ -474,10 +497,11 @@ def calc_FLH_wind(hours, args):
             sys.stdout.write('\r')
             sys.stdout.write(tech + ' ' + param["region"] + ' ' + '[%-50s] %d%%' % ('='* ((status*50)//len(hours)), (status*100)//len(hours)))
             sys.stdout.flush()
-		
+
         # Calculate hourly capacity factor
         CF = calc_CF_wind(hour, reg_ind, turbine, m_high, n_high, merraData, rasterData)
         
+
         # Aggregates CF to obtain the yearly FLH
         CF[np.isnan(CF)] = 0
         FLH = FLH + CF

@@ -6,6 +6,7 @@ from numpy.matlib import repmat, reshape, sin, arcsin, cos, arccos, tan, arctan
 import os
 from os import getcwd, chdir
 from glob import glob
+import psutil
 
 
 def sind(alpha):
@@ -33,15 +34,23 @@ def hourofmonth():
     for i in range(1, 12):
         h[i] = h[i] + h[i - 1]
     return h.astype(int)
-	
-def intersection(lst1, lst2): 
 
-    temp = set(lst2) 
-    lst3 = [value for value in lst1 if value in temp] 
-    return lst3 
+
+def intersection(lst1, lst2):
+    temp = set(lst2)
+    lst3 = [value for value in lst1 if value in temp]
+    return lst3
 
 
 def resizem(A_in, row_new, col_new):
+    """
+    Resize regular data grid, by copying and pasting parts of the original array
+
+    :param A_in: Input matrix
+    :param row_new: new number of rows
+    :param col_new: new number of columns
+    :return: resized matrix
+    """
     row_rep = row_new // np.shape(A_in)[0]
     col_rep = col_new // np.shape(A_in)[1]
     A_inf = (A_in.flatten(order='F')[np.newaxis])
@@ -53,6 +62,16 @@ def resizem(A_in, row_new, col_new):
 
 
 def array2raster(newRasterfn, rasterOrigin, pixelWidth, pixelHeight, array):
+    """
+    Save array to geotiff raster format based on EPSG 4326
+
+    :param newRasterfn: desired paths
+    :param rasterOrigin: latitude and longitube of the top left corner of the raster
+    :param pixelWidth:  pixel width (might be negative)
+    :param pixelHeight: pixel height(might be negative)
+    :param array: Raster array
+    :return:
+    """
     cols = array.shape[1]
     rows = array.shape[0]
     originX = rasterOrigin[0]
@@ -77,6 +96,13 @@ def char_range(c1, c2):
 
 
 def changem(A, newval, oldval):
+    """
+    This function replaces values in a data array.
+
+    :param A: Input Matrix
+    :param newval: New values to be set
+    :param oldval: Old values to be replaced
+    """
     Out = np.zeros(A.shape)
     z = np.array((oldval, newval)).T
     for i, j in z:
@@ -93,13 +119,27 @@ def list_files(directory, format):
 
 
 def sub2ind(array_shape, rows, cols):
+    """
+    Convert subscripts to linear indices
+
+    :param array_shape: tuple (# of rows, # of columns)
+    :param rows: row values
+    :param cols: column values
+    :return: Index
+    """
     return np.ravel_multi_index((rows, cols), array_shape, order='F')
 
 
 def ind2sub(array_shape, ind):
+    """
+    Convert linear indices to subscripts
+    :param array_shape: tuple (# of rows, # of columns)
+    :param ind: Index
+    :return: tuple (row values, column values)
+    """
     return np.unravel_index(ind, array_shape, order='F')
-	
-	
+
+
 def field_exists(field_name, shp_path):
     shp = ogr.Open(shp_path, 0)
     lyr = shp.GetLayer()
@@ -115,7 +155,7 @@ def changeExt2tif(filepath):
     base = os.path.splitext(filepath)[0]
     return base + '.tif'
 
-	
+
 def sumnorm_MERRA2(A, m, n, res_low, res_high):
     s = np.zeros((m, n))
     row_step = int(res_low[0] / res_high[0])
@@ -126,3 +166,21 @@ def sumnorm_MERRA2(A, m, n, res_low, res_high):
                              (col_step * j):(col_step * (j + 1))]) / (row_step * col_step)
     return s
 
+
+def limit_cpu(check):
+    """
+    Is called at every process start to set its priority
+    :return:
+    """
+    check = check[0]
+    p = psutil.Process(os.getpid())
+    if check:
+        # Windows priority
+        p.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
+        # Linux priority
+        # p.nice(19)
+    else:
+        # Windows priority
+        p.nice(psutil.NORMAL_PRIORITY_CLASS)
+        # Linux priority
+        # p.nice(0)

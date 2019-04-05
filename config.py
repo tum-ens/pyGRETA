@@ -7,9 +7,9 @@ import os
 ###########################
 
 param = {}
-param["region"] = 'Germany'
+param["region"] = 'Europe'
 param["year"] = '2015'
-param["technology"] = ['PV'] #['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['WindOff', 'WindOn'] #['PV', 'CSP', 'WindOn', 'WindOff']
 param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
 param["nproc"] = 6
@@ -155,7 +155,7 @@ del pv, csp, windon, windoff
 ###########################
 
 fs = os.path.sep
-root = os.path.dirname(os.path.abspath(__file__)) + fs  # + ".." + fs
+root = os.path.dirname(os.path.abspath(__file__)) + fs  + ".." + fs
 region = param["region"]
 year = param["year"]
 
@@ -199,7 +199,7 @@ paths["CORR"] = PathTemp + "_Wind_Correction.tif"  # Correction factors for wind
 
 # Ouput Folders
 timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
-# timestamp = "test"
+timestamp = "test"
 paths["OUT"] = root + "OUTPUTS" + fs + region + fs + timestamp + fs
 if not os.path.isdir(paths["OUT"]):
     os.mkdir(paths["OUT"])
@@ -216,5 +216,6 @@ for tech in param["technology"]:
     paths[tech]["weight"] = paths["OUT"] + region + "_" + tech + "_weight_" + year + ".mat"
     paths[tech]["FLH_weight"] = paths["OUT"] + region + "_" + tech + "_FLH_weight_" + year + ".mat"
     paths[tech]["Locations"] = paths["OUT"] + region + "_" + tech +'_Locations.shp'
+    paths[tech]["TS"] = paths["OUT"] + region + '_' + tech + '_TS_' + year + '.mat'
 
 del root, PathTemp, fs

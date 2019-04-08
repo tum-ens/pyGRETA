@@ -9,7 +9,7 @@ import os
 param = {}
 param["region"] = 'Europe'
 param["year"] = '2015'
-param["technology"] = ['WindOff', 'WindOn'] #['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['PV'] #['PV', 'CSP', 'WindOn', 'WindOff']
 param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
 param["nproc"] = 6
@@ -218,6 +218,6 @@ for tech in param["technology"]:
     paths[tech]["weight"] = paths["OUT"] + region + "_" + tech + "_weight_" + year + ".mat"
     paths[tech]["FLH_weight"] = paths["OUT"] + region + "_" + tech + "_FLH_weight_" + year + ".mat"
     paths[tech]["Locations"] = paths["OUT"] + region + "_" + tech +'_Locations.shp'
-    paths[tech]["TS"] = paths["OUT"] + region + '_' + tech + '_TS_' + year + '.mat'
+    paths[tech]["TS"] = paths["OUT"] + region + '_' + tech + '_TS_' + year + '.csv'
 
 del root, PathTemp, fs

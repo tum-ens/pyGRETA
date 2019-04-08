@@ -11,7 +11,6 @@ import hdf5storage
 
 
 def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
-
     pv = param["PV"]["technical"]
     m_high = param["m_high"]
     n_high = param["n_high"]
@@ -27,7 +26,7 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
     filter_y = np.logical_and(reg_ind[1] >= reg_ind_h[1][0], reg_ind[1] <= reg_ind_h[1][-1])
     filter = np.logical_and(filter_x, filter_y)
     reg_ind_h = (reg_ind[0][filter], reg_ind[1][filter])
-    if len(reg_ind_h[0])==0:
+    if len(reg_ind_h[0]) == 0:
         CF_pv = np.zeros(reg_ind[0].shape)
         CF_csp = np.zeros(reg_ind[0].shape)
         return CF_pv, CF_csp
@@ -43,7 +42,6 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
     A_albedo = rasterData["A_albedo"][reg_ind_h]
     A_Ross = rasterData["A_Ross"][reg_ind_h]
 
-
     if pv["tracking"] == 1:
         A_beta = 90 - A_alpha
     elif pv["tracking"] == 2:
@@ -51,10 +49,10 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
         A_orientation = A_azimuth
 
     aux = np.maximum(np.minimum((sind(A_delta) * sind(A_phi) * cosd(A_beta)
-                                 - sind(A_delta) * cosd(A_phi) * sind(A_beta) * cosd(A_orientation) + cosd(
-                A_delta) * cosd(A_phi) * cosd(A_beta)
-                                 * cosd(A_omega) + cosd(A_delta) * sind(A_phi) * sind(A_beta) * cosd(A_orientation)
-                                 * cosd(A_omega) + cosd(A_delta) * sind(A_beta) * sind(A_orientation) * sind(A_omega)),
+                                 - sind(A_delta) * cosd(A_phi) * sind(A_beta) * cosd(A_orientation)
+                                 + cosd(A_delta) * cosd(A_phi) * cosd(A_beta) * cosd(A_omega)
+                                 + cosd(A_delta) * sind(A_phi) * sind(A_beta) * cosd(A_orientation) * cosd(A_omega)
+                                 + cosd(A_delta) * sind(A_beta) * sind(A_orientation) * sind(A_omega)),
                                 1), -1)
     A_incidence = arccosd(aux)
 
@@ -85,7 +83,7 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
     G_tilt_h = GHI_h * F
 
     # Compute losses due to heating of the PV cells
-    LOSS_TEMP = loss(G_tilt_h, TEMP_h, A_Ross, pv)
+    LOSS_TEMP, check = loss(G_tilt_h, TEMP_h, A_Ross, pv)
 
     # Compute the hourly capacity factor
     CF_pv = ((A_alpha > 0) * 1) * G_tilt_h / 1000 * (1 - LOSS_TEMP)
@@ -94,17 +92,17 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
     # For CSP: tracking like pv.tracking = 1
     A_beta = 90 - A_alpha
     aux = np.maximum(np.minimum((sind(A_delta) * sind(A_phi) * cosd(A_beta)
-                                 - sind(A_delta) * cosd(A_phi) * sind(A_beta) * cosd(A_orientation) + cosd(
-                A_delta) * cosd(A_phi) * cosd(A_beta)
-                                 * cosd(A_omega) + cosd(A_delta) * sind(A_phi) * sind(A_beta) * cosd(A_orientation)
-                                 * cosd(A_omega) + cosd(A_delta) * sind(A_beta) * sind(A_orientation) * sind(A_omega)),
+                                 - sind(A_delta) * cosd(A_phi) * sind(A_beta) * cosd(A_orientation)
+                                 + cosd(A_delta) * cosd(A_phi) * cosd(A_beta) * cosd(A_omega)
+                                 + cosd(A_delta) * sind(A_phi) * sind(A_beta) * cosd(A_orientation) * cosd(A_omega)
+                                 + cosd(A_delta) * sind(A_beta) * sind(A_orientation) * sind(A_omega)),
                                 1), -1)
     A_incidence = arccosd(aux)
     R_b = cosd(A_incidence) / sind(A_alpha)
     F_direct_csp, _, _ = coefficients(90 - A_alpha, RATIO, R_b, A_i, f, hour, sunrise, sunset)
     CF_csp = TOA_h * CLEARNESS_h * F_direct_csp * (1 - SHADING)
     CF_csp[CF_csp > 1] = 1
-	
+
     # Adjusting the length of the matrices
     aux = np.zeros(len(reg_ind[0]))
     aux[filter] = CF_pv
@@ -119,10 +117,10 @@ def calc_FLH_solar(hours, args):
     paths = args[0]
     param = args[1]
     tech = args[2]
-	
+
     landuse = param["landuse"]
     reg_ind = param["Ind_nz"]
-	
+
     # Obtain weather matrices
     merraData = {}
     # Clearness index - stored variable CLEARNESS
@@ -138,7 +136,7 @@ def calc_FLH_solar(hours, args):
     with rasterio.open(paths["LU"]) as src:
         w = src.read(1)
     rasterData["A_lu"] = np.flipud(w)
-    #rasterData["A_lu"] = rasterData["A_lu"][reg_ind]
+    # rasterData["A_lu"] = rasterData["A_lu"][reg_ind]
     # A_Ross (Temperature coefficients for heating losses)
     rasterData["A_Ross"] = changem(rasterData["A_lu"], param["landuse"]["Ross_coeff"], param["landuse"]["type"]).astype(
         float) / 10000
@@ -153,31 +151,31 @@ def calc_FLH_solar(hours, args):
             # Show progress of the simulation
             status = status + 1
             sys.stdout.write('\r')
-            sys.stdout.write(tech + ' ' + param["region"] + ' ' + '[%-50s] %d%%' % ('='* ((status*50)//len(hours)), (status*100)//len(hours)))
+            sys.stdout.write(tech + ' ' + param["region"] + ' ' + '[%-50s] %d%%' % (
+            '=' * ((status * 50) // len(hours)), (status * 100) // len(hours)))
             sys.stdout.flush()
 
         if tech == 'PV':
             CF, _ = calc_CF_solar(hour, reg_ind, param, merraData, rasterData)
         elif tech == 'CSP':
             _, CF = calc_CF_solar(hour, reg_ind, param, merraData, rasterData)
-        
 
         # Aggregates CF to obtain the yearly FLH
         CF[np.isnan(CF)] = 0
         FLH = FLH + CF
 
     return FLH
-	
+
 
 def calc_TS_solar(hours, args):
     # Decomposing the tuple args
     paths = args[0]
     param = args[1]
     tech = args[2]
-	
+
     landuse = param["landuse"]
     reg_ind = param[tech]["Ind_points"]
-	
+
     # Obtain weather matrices
     merraData = {}
     # Clearness index - stored variable CLEARNESS
@@ -192,9 +190,11 @@ def calc_TS_solar(hours, args):
         w = src.read(1)
     rasterData["A_lu"] = np.flipud(w)
     # A_Ross (Temperature coefficients for heating losses)
-    rasterData["A_Ross"] = changem(rasterData["A_lu"], param["landuse"]["Ross_coeff"], param["landuse"]["type"]).astype(float) / 10000
+    rasterData["A_Ross"] = changem(rasterData["A_lu"], param["landuse"]["Ross_coeff"], param["landuse"]["type"]).astype(
+        float) / 10000
     # A_albedo (Reflectivity coefficients)
-    rasterData["A_albedo"] = changem(rasterData["A_lu"], param["landuse"]["albedo"], param["landuse"]["type"]).astype(float) / 100
+    rasterData["A_albedo"] = changem(rasterData["A_lu"], param["landuse"]["albedo"], param["landuse"]["type"]).astype(
+        float) / 100
 
     TS = np.zeros((len(reg_ind[0]), 8760))
     status = 0
@@ -203,14 +203,15 @@ def calc_TS_solar(hours, args):
             # Show progress of the simulation
             status = status + 1
             sys.stdout.write('\r')
-            sys.stdout.write(tech + ' ' + param["region"] + ' ' + '[%-50s] %d%%' % ('='* ((status*50)//len(hours)), (status*100)//len(hours)))
+            sys.stdout.write(tech + ' ' + param["region"] + ' ' + '[%-50s] %d%%' % (
+            '=' * ((status * 50) // len(hours)), (status * 100) // len(hours)))
             sys.stdout.flush()
-        
+
         if tech == 'PV':
             CF, _ = calc_CF_solar(hour, reg_ind, param, merraData, rasterData)
         elif tech == 'CSP':
             _, CF = calc_CF_solar(hour, reg_ind, param, merraData, rasterData)
-        
+
         # Aggregates CF to obtain the time series
         CF[np.isnan(CF)] = 0
         TS[:, hour] = CF
@@ -236,7 +237,7 @@ def angles(hour, reg_ind, Crd_all, res_high):
     Crd_points = crd_exact_points(reg_ind, Crd_all, res_high)
     lat = Crd_points[0]
     lon = Crd_points[1]
-    k = len(lat) # number of points
+    k = len(lat)  # number of points
     N = hour // 24 + 1
     hourofday = hour % 24 + 0.5
 
@@ -257,7 +258,8 @@ def angles(hour, reg_ind, Crd_all, res_high):
     omega = 15 * (omegast - 12)
 
     # Declination angle
-    delta = np.tile(arcsind(0.3978 * sin(N * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(N * 2 * np.pi / 365.25 - 0.0489))), k)
+    delta = np.tile(
+        arcsind(0.3978 * sin(N * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(N * 2 * np.pi / 365.25 - 0.0489))), k)
     delta[phi < 0] = - delta[phi < 0]
 
     # Elevation angle (in degrees)
@@ -408,7 +410,7 @@ def loss(G_tilt_h, TEMP, A_Ross, pv):
     # loss_coeff: % Heat loss coefficient according to the technical characteristics of the Yingli PV module
 
     T_cell = TEMP + A_Ross * G_tilt_h  # Cell temperature
-    LOSS_TEMP = np.max(T_cell - pv["T_r"], 0) * pv["loss_coeff"] / 100
+    LOSS_TEMP = np.maximum(T_cell - pv["T_r"], 0) * pv["loss_coeff"] / 100
     return LOSS_TEMP
 
 
@@ -438,7 +440,6 @@ def calc_CF_wind(hour, reg_ind, turbine, m, n, merraData, rasterData):
     # Load MERRA data, increase its resolution, and fit it to the extent
     w50m_h = resizem(merraData["W50M"][:, :, hour], m, n)
     w50m_h = w50m_h[reg_ind]
-	
 
     # Calculate the wind speed a the desired height
     w_new_h = w50m_h * rasterData["A_cf"]
@@ -477,7 +478,7 @@ def calc_FLH_wind(hours, args):
     merraData = {}
     # Wind speed at 50m
     merraData["W50M"] = hdf5storage.read('W50M', paths["W50M"])
-	
+
     rasterData = {}
 
     # Calculate A matrices
@@ -495,12 +496,12 @@ def calc_FLH_wind(hours, args):
             # Show progress of the simulation
             status = status + 1
             sys.stdout.write('\r')
-            sys.stdout.write(tech + ' ' + param["region"] + ' ' + '[%-50s] %d%%' % ('='* ((status*50)//len(hours)), (status*100)//len(hours)))
+            sys.stdout.write(tech + ' ' + param["region"] + ' ' + '[%-50s] %d%%' % (
+            '=' * ((status * 50) // len(hours)), (status * 100) // len(hours)))
             sys.stdout.flush()
 
         # Calculate hourly capacity factor
         CF = calc_CF_wind(hour, reg_ind, turbine, m_high, n_high, merraData, rasterData)
-        
 
         # Aggregates CF to obtain the yearly FLH
         CF[np.isnan(CF)] = 0
@@ -513,13 +514,13 @@ def calc_TS_wind(hours, args):
     paths = args[0]
     param = args[1]
     tech = args[2]
-	
+
     m_high = param["m_high"]
     n_high = param["n_high"]
     reg_ind = param[tech]["Ind_points"]
-	
+
     turbine = param[tech]["technical"]
-	
+
     # Obtain weather matrices
     merraData = {}
     # Wind speed at 50m
@@ -541,12 +542,13 @@ def calc_TS_wind(hours, args):
             # Show progress of the simulation
             status = status + 1
             sys.stdout.write('\r')
-            sys.stdout.write(tech + ' ' + param["region"] + ' ' + '[%-50s] %d%%' % ('='* ((status*50)//len(hours)), (status*100)//len(hours)))
+            sys.stdout.write(tech + ' ' + param["region"] + ' ' + '[%-50s] %d%%' % (
+            '=' * ((status * 50) // len(hours)), (status * 100) // len(hours)))
             sys.stdout.flush()
-        
+
         # Calculate hourly capacity factor
         CF = calc_CF_wind(hour, reg_ind, turbine, m_high, n_high, merraData, rasterData)
-        
+
         # Aggregates CF to obtain the time series
         CF[np.isnan(CF)] = 0
         TS[:, hour] = CF

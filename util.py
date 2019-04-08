@@ -176,11 +176,11 @@ def limit_cpu(check):
     p = psutil.Process(os.getpid())
     if check:
         # Windows priority
-        p.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
+        # p.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
         # Linux priority
-        # p.nice(19)
+        p.nice(1)
     else:
         # Windows priority
-        p.nice(psutil.NORMAL_PRIORITY_CLASS)
+        # p.nice(psutil.NORMAL_PRIORITY_CLASS)
         # Linux priority
-        # p.nice(0)
+        p.nice(0)

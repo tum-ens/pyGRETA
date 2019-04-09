@@ -7,6 +7,8 @@ import os
 from os import getcwd, chdir
 from glob import glob
 import psutil
+import datetime
+import inspect
 
 
 def sind(alpha):
@@ -184,3 +186,18 @@ def limit_cpu(check):
         p.nice(psutil.NORMAL_PRIORITY_CLASS)
         # Linux priority
         # p.nice(0)
+
+
+def timecheck(*args):
+
+    if len(args) == 0:
+        print(inspect.stack()[1].function + str(datetime.datetime.now().strftime(": %H:%M:%S:%f")))
+
+    elif len(args) == 1:
+        print(inspect.stack()[1].function + ' - ' + str(args[0])
+              + str(datetime.datetime.now().strftime(": %H:%M:%S:%f")))
+
+    else:
+        raise Exception('Too many arguments have been passed.\nExpected: zero or one \nPassed: ' + format(len(args)))
+
+

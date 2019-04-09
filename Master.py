@@ -1,4 +1,5 @@
 import os
+from util import timecheck
 from data_functions import *
 from model_functions import *
 import numpy as np
@@ -492,6 +493,7 @@ def generate_wind_correction(paths, param):
 
 
 def calculate_FLH(paths, param, tech):
+    timecheck('start')
     nproc = param["nproc"]
     m_high = param["m_high"]
     n_high = param["n_high"]
@@ -545,9 +547,11 @@ def calculate_FLH(paths, param, tech):
 
     hdf5storage.writes({'FLH': FLH}, paths[tech]["FLH"], store_python_metadata=True, matlab_compatible=True)
     print("files saved: " + paths[tech]["FLH"])
+    timecheck('finish')
 
 
 def masking(paths, param, tech):
+    timecheck('start')
     mask = param[tech]["mask"]
     GeoRef = param["GeoRef"]
 
@@ -620,17 +624,17 @@ def masking(paths, param, tech):
     FLH = hdf5storage.read('FLH', paths[tech]["FLH"])
     FLH_mask = FLH * A_mask
     FLH_mask[FLH_mask == 0] = np.nan
-
+    timecheck('Saving files - start')
     # Save HDF5 Files
     hdf5storage.writes({'A_mask': A_mask}, paths[tech]["mask"], store_python_metadata=True, matlab_compatible=True)
     print("files saved: " + paths[tech]["mask"])
     hdf5storage.writes({'FLH_mask': FLH_mask}, paths[tech]["FLH_mask"], store_python_metadata=True,
                        matlab_compatible=True)
     print("files saved: " + paths[tech]["FLH_mask"])
+    timecheck('Saving files - finish')
 
     # Save GEOTIFF files
     if param["savetiff"]:
-        Georef = param["Georef"]
         array2raster(changeExt2tif(paths[tech]["mask"]),
                      GeoRef["RasterOrigin"],
                      GeoRef["pixelWidth"],
@@ -644,6 +648,7 @@ def masking(paths, param, tech):
                      GeoRef["pixelHeight"],
                      FLH_mask)
         print("files saved:" + changeExt2tif(paths[tech]["FLH_mask"]))
+    timecheck('finish')
 
 
 def weighting(paths, param, tech):
@@ -986,9 +991,9 @@ if __name__ == '__main__':
     # generate_buffered_population(paths, param)  # Buffered Population
     # generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
-        calculate_FLH(paths, param, tech)
-        # masking(paths, param, tech)
+        # calculate_FLH(paths, param, tech)
+        masking(paths, param, tech)
         # weighting(paths, param, tech)
         # reporting(paths, param, tech)
         # find_locations_quantiles(paths, param, tech)
-        generate_time_series(paths, param, tech)
+        # generate_time_series(paths, param, tech)

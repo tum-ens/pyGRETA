@@ -83,7 +83,7 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
     G_tilt_h = GHI_h * F
 
     # Compute losses due to heating of the PV cells
-    LOSS_TEMP, check = loss(G_tilt_h, TEMP_h, A_Ross, pv)
+    LOSS_TEMP = loss(G_tilt_h, TEMP_h, A_Ross, pv)
 
     # Compute the hourly capacity factor
     CF_pv = ((A_alpha > 0) * 1) * G_tilt_h / 1000 * (1 - LOSS_TEMP)
@@ -107,6 +107,7 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
     aux = np.zeros(len(reg_ind[0]))
     aux[filter] = CF_pv
     CF_pv = aux
+    aux = np.zeros(len(reg_ind[0]))
     aux[filter] = CF_csp
     CF_csp = aux
     return CF_pv, CF_csp

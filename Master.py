@@ -13,6 +13,7 @@ from multiprocessing import Pool
 from itertools import product
 import h5netcdf
 
+
 def initialization():
     # import param and paths
     from config import paths, param
@@ -27,7 +28,7 @@ def initialization():
     # Recombine the maps in this order: onshore then offshore
 
     regions_all = gpd.GeoDataFrame(pd.concat([param["regions_land"], param["regions_eez"]],
-                                             ignore_index = True), crs = param["regions_land"].crs)
+                                             ignore_index=True), crs=param["regions_land"].crs)
 
     param["nRegions_land"] = len(param["regions_land"])
     param["nRegions_eez"] = len(param["regions_eez"])
@@ -45,13 +46,14 @@ def initialization():
 
     # Indices and matrix dimensions
     Ind_low = ind_merra(Crd_regions, Crd_all, res_low)  # Range indices for MERRA2 data (centroids)
-    Ind_high = ind_merra(Crd_regions, Crd_all, res_high)  # Range indices for high resolution matrices, superposed to MERRA2 data
+    Ind_high = ind_merra(Crd_regions, Crd_all,
+                         res_high)  # Range indices for high resolution matrices, superposed to MERRA2 data
     Ind_global = ind_global(Crd_regions, res_high)
     Ind_all_low = ind_merra(Crd_all, Crd_all, res_low)
     Ind_all_high = ind_merra(Crd_all, Crd_all, res_high)
-    #param["Ind_low"] = Ind_low.astype(int)
-    #param["Ind_high"] = Ind_high.astype(int)
-    #param["Ind_global"] = Ind_global.astype(int)
+    # param["Ind_low"] = Ind_low.astype(int)
+    # param["Ind_high"] = Ind_high.astype(int)
+    # param["Ind_global"] = Ind_global.astype(int)
 
     m_low = Ind_low[:, 0] - Ind_low[:, 2] + 1  # number of rows
     m_high = Ind_high[:, 0] - Ind_high[:, 2] + 1  # number of rows
@@ -65,6 +67,7 @@ def initialization():
     param["n_low"] = (Ind_all_low[:, 1] - Ind_all_low[:, 3] + 1).astype(int)[0]
     param["GeoRef"] = calc_geotiff(Crd_all, res_high)
     return paths, param
+
 
 def generate_weather_files(paths):
     """
@@ -137,8 +140,9 @@ def generate_weather_files(paths):
                 W50M = abs(U50M + (1j * V50M))
                 hdf5storage.writes({'W50M': W50M}, paths["W50M"], store_python_metadata=True, matlab_compatible=True)
                 # Calculate the clearness index
-                CLEARNESS = np.divide(SWGDN, SWTDN, where = SWTDN!=0)
-                hdf5storage.writes({'CLEARNESS': CLEARNESS}, paths["CLEARNESS"], store_python_metadata=True, matlab_compatible=True)
+                CLEARNESS = np.divide(SWGDN, SWTDN, where=SWTDN != 0)
+                hdf5storage.writes({'CLEARNESS': CLEARNESS}, paths["CLEARNESS"], store_python_metadata=True,
+                                   matlab_compatible=True)
 
 
 def generate_landsea(paths, param):
@@ -171,7 +175,7 @@ def generate_landsea(paths, param):
 
         for reg in range(0, nRegions):
             A_region = calc_region(regions_shp.iloc[reg], Crd_regions[reg, :], res_high, GeoRef)
-            #import pdb; pdb.set_trace()
+            # import pdb; pdb.set_trace()
             A_eez[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] = \
                 A_eez[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] + A_region
         with rasterio.open(paths["LAND"]) as src:
@@ -514,7 +518,7 @@ def calculate_FLH(paths, param, tech):
 
     if tech in ['PV', 'CSP']:
         CLEARNESS = hdf5storage.read('CLEARNESS', paths["CLEARNESS"])
-        day_filter = np.nonzero(CLEARNESS[Ind[2]-1:Ind[0], Ind[3]-1:Ind[1], :].sum(axis=(0, 1)))
+        day_filter = np.nonzero(CLEARNESS[Ind[2] - 1:Ind[0], Ind[3] - 1:Ind[1], :].sum(axis=(0, 1)))
         list_hours = np.arange(0, 8760)
         if nproc == 1:
             param["status_bar_limit"] = list_hours[-1]
@@ -522,13 +526,16 @@ def calculate_FLH(paths, param, tech):
         else:
             list_hours = np.array_split(list_hours[day_filter], nproc)
             param["status_bar_limit"] = list_hours[0][-1]
-            results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(calc_FLH_solar, product(list_hours, [
-                [paths, param, tech]]))
+            results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(calc_FLH_solar,
+                                                                                               product(list_hours,
+                                                                                                       [[paths, param,
+                                                                                                        tech]]))
     elif tech in ['WindOn', 'WindOff']:
         list_hours = np.array_split(np.arange(0, 8760), nproc)
         param["status_bar_limit"] = list_hours[0][-1]
-        results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(calc_FLH_wind, product(list_hours, [
-            [paths, param, tech]]))
+        results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(calc_FLH_wind,
+                                                                                           product(list_hours,
+                                                                                                   [[paths, param, tech]]))
     print('\n')
 
     # Collecting results
@@ -686,9 +693,11 @@ def weighting(paths, param, tech):
     # Save HDF5 Files
     hdf5storage.writes({'A_area': A_area}, paths[tech]["area"], store_python_metadata=True, matlab_compatible=True)
     print("files saved: " + paths[tech]["area"])
-    hdf5storage.writes({'A_weight': A_weight}, paths[tech]["weight"], store_python_metadata=True, matlab_compatible=True)
+    hdf5storage.writes({'A_weight': A_weight}, paths[tech]["weight"], store_python_metadata=True,
+                       matlab_compatible=True)
     print("files saved: " + paths[tech]["weight"])
-    hdf5storage.writes({'FLH_weight': FLH_weight}, paths[tech]["FLH_weight"], store_python_metadata=True, matlab_compatible=True)
+    hdf5storage.writes({'FLH_weight': FLH_weight}, paths[tech]["FLH_weight"], store_python_metadata=True,
+                       matlab_compatible=True)
     print("files saved: " + paths[tech]["FLH_weight"])
 
     # Save GEOTIFF files
@@ -716,7 +725,6 @@ def weighting(paths, param, tech):
 
 
 def reporting(paths, param, tech):
-
     # read FLH, Masking, area, and weighting matrix
     FLH = hdf5storage.read('FLH', paths[tech]["FLH"])
     A_mask = hdf5storage.read('A_mask', paths[tech]["mask"])
@@ -746,7 +754,6 @@ def reporting(paths, param, tech):
 
     # Loop over each region
     for reg in range(0, nRegions):
-
         # Intitialize region stats
         region_stats = {}
         region_stats["Region"] = regions_shp.iloc[reg]["NAME_SHORT"] + "_" + location
@@ -765,7 +772,7 @@ def reporting(paths, param, tech):
 
         # Sum area: available area in km2
         area = A_region_extended * A_area
-        Total_area = np.nansum(area)/(10**6)
+        Total_area = np.nansum(area) / (10 ** 6)
         region_stats["Available_Area_km2"] = Total_area
 
         # Stats for FLH
@@ -789,22 +796,22 @@ def reporting(paths, param, tech):
         # Power Potential
         A_P_potential = A_area * density
         power_potential = np.nansum(A_P_potential)
-        region_stats["Power_Potential_GW"] = power_potential / (10**3)
+        region_stats["Power_Potential_GW"] = power_potential / (10 ** 3)
 
         # Energy Potential
         A_E_potential = A_P_potential * FLH_region
         energy_potential = np.nansum(A_E_potential)
-        region_stats["Energy_Potential_TWh"] = energy_potential / (10**6)
+        region_stats["Energy_Potential_TWh"] = energy_potential / (10 ** 6)
 
         # Energy Potential after weighting
         A_E_W_potential = A_E_potential * A_weight
         energy_potential_weighted = np.nansum(A_E_W_potential)
-        region_stats["Energy_Potential_Weighted_TWh"] = energy_potential_weighted / (10**6)
+        region_stats["Energy_Potential_Weighted_TWh"] = energy_potential_weighted / (10 ** 6)
 
         # Energy Potential After weighting and masking
         A_E_W_M_potential = A_E_W_potential * A_masked
         energy_potential_weighted_masked = np.nansum(A_E_W_M_potential)
-        region_stats["Energy_Potential_Weighted_Masked_TWh"] = energy_potential_weighted_masked / (10**6)
+        region_stats["Energy_Potential_Weighted_Masked_TWh"] = energy_potential_weighted_masked / (10 ** 6)
 
         sort = {}
         # Sorted FLH Sampling
@@ -838,21 +845,19 @@ def reporting(paths, param, tech):
              'Energy_Potential_Weighted_TWh', 'Energy_Potential_Weighted_Masked_TWh']]
 
     # Export the dataframe as CSV
-    df.to_csv(paths["OUT"] + 'Region_stats.csv')
+    df.to_csv(paths[tech]["Region_Stats"])
+    print("files saved: " + paths[tech]["Region_Stats"])
 
     # Save Sorted lists to .mat file
-    filepath = paths["OUT"] + "sorted_FLH_sampled.mat"
     for reg in sorted_FLH_list.keys():
-
         hdf5storage.writes({reg + '/FLH': sorted_FLH_list[reg]["FLH"],
                             reg + '/FLH_masked': sorted_FLH_list[reg]["FLH_M"],
                             reg + '/FLH_masked_weighted': sorted_FLH_list[reg]["FLH_M_W"]
-                            }, filepath, store_python_metadata=True, matlab_compatible=True)
-    print('Reporting done!')
+                            }, paths[tech]["Sorted_FLH"], store_python_metadata=True, matlab_compatible=True)
+    print("files saved: " + paths[tech]["Sorted_FLH"])
 
 
 def find_locations_quantiles(paths, param, tech):
-
     FLH_mask = hdf5storage.read('FLH_mask', paths[tech]["FLH_mask"])
     quantiles = param["quantiles"]
     res_high = param["res_high"]
@@ -888,7 +893,7 @@ def find_locations_quantiles(paths, param, tech):
 
         for q in range(0, len(quantiles)):
             list_names.append(regions_shp["NAME_SHORT"].iloc[reg])
-            list_quantiles.append('q'+str(quantiles[q]))
+            list_quantiles.append('q' + str(quantiles[q]))
             if quantiles[q] == 100:
                 I = I_old[(len(X) - 1) - sum(np.isnan(X).astype(int))]
             elif quantiles[q] == 0:
@@ -906,14 +911,19 @@ def find_locations_quantiles(paths, param, tech):
     param[tech]["Crd_points"] = (param[tech]["Crd_points"][0], param[tech]["Crd_points"][1], list_names, list_quantiles)
 
     # Format point locations
-    points = [(param[tech]["Crd_points"][1][i], param[tech]["Crd_points"][0][i]) for i in range(0, len(param[tech]["Crd_points"][0]))]
+    points = [(param[tech]["Crd_points"][1][i], param[tech]["Crd_points"][0][i]) for i in
+              range(0, len(param[tech]["Crd_points"][0]))]
 
     # Create Shapefile
     schema = {'geometry': 'Point', 'properties': {'NAME_SHORT': 'str', 'quantile': 'str'}}
     with fiona.open(paths[tech]["Locations"], 'w', 'ESRI Shapefile', schema) as c:
-        c.writerecords([{'geometry': mapping(Point(points[i])), 'properties': {'NAME_SHORT': list_names[i], 'quantile': list_quantiles[i]}} for i in range(0, len(points))])
-    hdf5storage.writes({'Ind_points': param[tech]["Ind_points"]}, paths[tech]["Locations"][:-4] + '_Ind.mat', store_python_metadata=True, matlab_compatible=True)
-    hdf5storage.writes({'Crd_points': param[tech]["Crd_points"]}, paths[tech]["Locations"][:-4] + '_Crd.mat', store_python_metadata=True, matlab_compatible=True)
+        c.writerecords([{'geometry': mapping(Point(points[i])),
+                         'properties': {'NAME_SHORT': list_names[i], 'quantile': list_quantiles[i]}} for i in
+                        range(0, len(points))])
+    hdf5storage.writes({'Ind_points': param[tech]["Ind_points"]}, paths[tech]["Locations"][:-4] + '_Ind.mat',
+                       store_python_metadata=True, matlab_compatible=True)
+    hdf5storage.writes({'Crd_points': param[tech]["Crd_points"]}, paths[tech]["Locations"][:-4] + '_Crd.mat',
+                       store_python_metadata=True, matlab_compatible=True)
     print("files saved: " + paths[tech]["Locations"])
 
 
@@ -933,7 +943,7 @@ def generate_time_series(paths, param, tech):
     param["status_bar_limit"] = list_hours[-1]
     if tech in ['PV', 'CSP']:
         CLEARNESS = hdf5storage.read('CLEARNESS', paths["CLEARNESS"])
-        day_filter = np.nonzero(CLEARNESS[Ind[2]-1:Ind[0], Ind[3]-1:Ind[1], :].sum(axis=(0,1)))
+        day_filter = np.nonzero(CLEARNESS[Ind[2] - 1:Ind[0], Ind[3] - 1:Ind[1], :].sum(axis=(0, 1)))
         list_hours = np.arange(0, 8760)
         if nproc == 1:
             param["status_bar_limit"] = list_hours[-1]
@@ -942,11 +952,14 @@ def generate_time_series(paths, param, tech):
             list_hours = np.array_split(list_hours[day_filter], nproc)
             print(len(list_hours[0]))
             param["status_bar_limit"] = list_hours[0][-1]
-            results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(calc_TS_solar, product(list_hours[day_filter], [[paths, param, tech]]))
+            results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(calc_TS_solar, product(
+                list_hours[day_filter], [[paths, param, tech]]))
     elif tech in ['WindOn', 'WindOff']:
         list_hours = np.array_split(np.arange(0, 8760), nproc)
         param["status_bar_limit"] = list_hours[0][-1]
-        results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(calc_TS_wind, product(list_hours, [[paths, param, tech]]))
+        results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(calc_TS_wind,
+                                                                                           product(list_hours, [
+                                                                                               [paths, param, tech]]))
     print('\n')
 
     # Collecting results
@@ -975,12 +988,12 @@ if __name__ == '__main__':
     generate_slope(paths, param)  # Slope
     generate_population(paths, param)  # Population
     generate_protected_areas(paths, param)  # Protected areas
-    #generate_buffered_population(paths, param)  # Buffered Population
-    #generate_wind_correction(paths, param)  # Correction factors for wind speeds
+    # generate_buffered_population(paths, param)  # Buffered Population
+    # generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
         calculate_FLH(paths, param, tech)
-        #masking(paths, param, tech)
-        #weighting(paths, param, tech)
+        # masking(paths, param, tech)
+        # weighting(paths, param, tech)
         # reporting(paths, param, tech)
-        #find_locations_quantiles(paths, param, tech)
+        # find_locations_quantiles(paths, param, tech)
         generate_time_series(paths, param, tech)

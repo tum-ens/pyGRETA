@@ -1,5 +1,4 @@
 import os
-from util import timecheck
 from data_functions import *
 from model_functions import *
 import numpy as np
@@ -16,6 +15,7 @@ import h5netcdf
 
 
 def initialization():
+    timecheck('start')
     # import param and paths
     from config import paths, param
     res_low = param["res_low"]
@@ -67,6 +67,7 @@ def initialization():
     param["m_low"] = (Ind_all_low[:, 0] - Ind_all_low[:, 2] + 1).astype(int)[0]
     param["n_low"] = (Ind_all_low[:, 1] - Ind_all_low[:, 3] + 1).astype(int)[0]
     param["GeoRef"] = calc_geotiff(Crd_all, res_high)
+    timecheck('End')
     return paths, param
 
 
@@ -78,10 +79,11 @@ def generate_weather_files(paths):
 
     :param paths: paths dictionary containing the input file for NetCDF data
     """
-    if not (os.path.isfile(paths["W50M"])
-            and os.path.isfile((paths["CLEARNESS"]))):
-        start = datetime.date(paths["year"], 1, 1)
-        end = datetime.date(paths["year"], 12, 31)
+    if not (os.path.isfile(paths["W50M"]) and os.path.isfile(paths["GHI"]) and os.path.isfile(paths["TOA"])
+            and os.path.isfile(paths["T2M"]) and os.path.isfile(paths["CLEARNESS"])):
+        timecheck('Start')
+        start = datetime.date(param["year"], 1, 1)
+        end = datetime.date(param["year"], 12, 31)
         root = paths["MERRA_IN"]
 
         SWGDN = np.array([])
@@ -89,7 +91,6 @@ def generate_weather_files(paths):
         T2M = np.array([])
         U50M = np.array([])
         V50M = np.array([])
-
         for date in pd.date_range(start, end):
             tomorrow = date + pd.Timedelta('1 day')
             if date.day == 29 and date.month == 2:
@@ -132,8 +133,9 @@ def generate_weather_files(paths):
                 else:
                     V50M = np.concatenate((V50M, v50m), axis=2)
             if date.year != tomorrow.year:
-                hdf5storage.writes({'SWGDN': SWGDN}, paths["SWGDN"], store_python_metadata=True, matlab_compatible=True)
-                hdf5storage.writes({'SWTDN': SWTDN}, paths["SWTDN"], store_python_metadata=True, matlab_compatible=True)
+                timecheck('Start Writing Files: GHI, TOA, T2M, W50M')
+                hdf5storage.writes({'SWGDN': SWGDN}, paths["GHI"], store_python_metadata=True, matlab_compatible=True)
+                hdf5storage.writes({'SWTDN': SWTDN}, paths["TOA"], store_python_metadata=True, matlab_compatible=True)
                 hdf5storage.writes({'T2M': T2M}, paths["T2M"], store_python_metadata=True, matlab_compatible=True)
                 hdf5storage.writes({'U50M': U50M}, paths["U50M"], store_python_metadata=True, matlab_compatible=True)
                 hdf5storage.writes({'V50M': V50M}, paths["V50M"], store_python_metadata=True, matlab_compatible=True)
@@ -144,6 +146,8 @@ def generate_weather_files(paths):
                 CLEARNESS = np.divide(SWGDN, SWTDN, where=SWTDN != 0)
                 hdf5storage.writes({'CLEARNESS': CLEARNESS}, paths["CLEARNESS"], store_python_metadata=True,
                                    matlab_compatible=True)
+                timecheck('Finish Writing Files: GHI, TOA, T2M, W50M')
+        timecheck('End')
 
 
 def generate_landsea(paths, param):
@@ -152,7 +156,9 @@ def generate_landsea(paths, param):
     Crd_all = param["Crd_all"]
     res_high = param["res_high"]
     GeoRef = param["GeoRef"]
+
     if not os.path.isfile(paths["LAND"]):
+        timecheck('Start_Land')
         nRegions = param["nRegions_land"]
         regions_shp = param["regions_land"]
         Crd_regions = param["Crd_regions"][0:nRegions, :]
@@ -166,8 +172,10 @@ def generate_landsea(paths, param):
         array2raster(paths["LAND"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_land)
 
         print("files saved: " + paths["LAND"])
+        timecheck('Finish_Land')
 
     if not os.path.isfile(paths["EEZ"]):
+        timecheck('Start_EEZ')
         nRegions = param["nRegions_eez"]
         regions_shp = param["regions_eez"]
         Crd_regions = param["Crd_regions"][- nRegions:, :]
@@ -184,10 +192,12 @@ def generate_landsea(paths, param):
         A_eez = A_eez * (1 - A_land)
         array2raster(paths["EEZ"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_eez)
         print("files saved: " + paths["EEZ"])
+        timecheck('Finish_EEZ')
 
 
 def generate_landuse(paths, param):
     if not os.path.isfile(paths['LU']):
+        timecheck('Start')
         res_high = param["res_high"]
         Crd_all = param["Crd_all"]
         Ind = ind_global(Crd_all, res_high)[0]
@@ -198,10 +208,12 @@ def generate_landuse(paths, param):
         w = np.flipud(w)
         array2raster(paths["LU"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], w)
         print("files saved: " + paths["LU"])
+        timecheck('End')
 
 
 def generate_bathymetry(paths, param):
     if not os.path.isfile(paths['BATH']):
+        timecheck('Start')
         res_high = param["res_high"]
         Crd_all = param["Crd_all"]
         Ind = ind_global(Crd_all, res_high)[0]
@@ -212,10 +224,12 @@ def generate_bathymetry(paths, param):
         A_BATH = np.flipud(A_BATH[Ind[0] - 1: Ind[2], Ind[3] - 1: Ind[1]])
         array2raster(paths['BATH'], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_BATH)
         print("files saved: " + paths["BATH"])
+        timecheck('End')
 
 
 def generate_topography(paths, param):
     if not os.path.isfile(paths["TOPO"]):
+        timecheck('Start')
         res_high = param["res_high"]
         Crd_all = param["Crd_all"]
         Ind = ind_global(Crd_all, res_high)[0]
@@ -254,10 +268,12 @@ def generate_topography(paths, param):
         A_TOPO = np.flipud(Topo[Ind[0] - 1:Ind[2], Ind[3] - 1:Ind[1]])
         array2raster(paths["TOPO"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_TOPO)
         print("files saved: " + paths["TOPO"])
+        timecheck('End')
 
 
 def generate_slope(paths, param):
     if not os.path.isfile(paths["SLOPE"]):
+        timecheck('Start')
         res_high = param["res_high"]
         Crd_all = param["Crd_all"]
         Ind = ind_global(Crd_all, res_high)[0]
@@ -322,10 +338,12 @@ def generate_slope(paths, param):
         A_SLP = np.flipud(slope_pc[1:-1, 1:-1])
         array2raster(paths["SLOPE"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_SLP)
         print("files saved: " + paths["SLOPE"])
+        timecheck('End')
 
 
 def generate_population(paths, param):
     if not os.path.isfile(paths["POP"]):
+        timecheck('Start')
         res_high = param["res_high"]
         Crd_all = param["Crd_all"]
         Ind = ind_global(Crd_all, res_high)[0]
@@ -365,10 +383,12 @@ def generate_population(paths, param):
         A_POP = np.flipud(Pop[Ind[0] - 1:Ind[2], Ind[3] - 1:Ind[1]])
         array2raster(paths["POP"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_POP)
         print("files saved: " + paths["POP"])
+        timecheck('End')
 
 
 def generate_protected_areas(paths, param):
     if not os.path.isfile(paths["PA"]):
+        timecheck('Start')
         protected_areas = param["protected_areas"]
         # set up protected areas dictionary
         protection_type = dict(zip(protected_areas["IUCN_Category"], protected_areas["type"]))
@@ -431,9 +451,11 @@ def generate_protected_areas(paths, param):
         # Close dataset
         out_raster_ds = None
         print("files saved: " + paths["PA"])
+        timecheck('End')
 
 
 def generate_buffered_population(paths, param):
+    timecheck('Start')
     buffer_pixel_amount = param["WindOn"]["mask"]["buffer_pixel_amount"]
     if buffer_pixel_amount:
         GeoRef = param["GeoRef"]
@@ -447,9 +469,11 @@ def generate_buffered_population(paths, param):
         array2raster(paths["BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
                      A_notPopulated)
         print("files saved: " + paths["BUFFER"])
+    timecheck('End')
 
 
 def generate_wind_correction(paths, param):
+    timecheck('Start')
     res_correction = param["WindOn"]["resource"]["res_correction"]
     topo_correction = param["WindOn"]["resource"]["topo_correction"]
     GeoRef = param["GeoRef"]
@@ -493,10 +517,11 @@ def generate_wind_correction(paths, param):
 
     array2raster(paths["CORR"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf)
     print("files saved: " + paths["CORR"])
+    timecheck('End')
 
 
 def calculate_FLH(paths, param, tech):
-    timecheck('start')
+    timecheck('Start')
     nproc = param["nproc"]
     m_high = param["m_high"]
     n_high = param["n_high"]
@@ -517,7 +542,7 @@ def calculate_FLH(paths, param, tech):
             w = src.read(1)
     param["Ind_nz"] = np.nonzero(np.flipud(w))
     del w
-
+    timecheck('Start Processing Hours')
     if tech in ['PV', 'CSP']:
         CLEARNESS = hdf5storage.read('CLEARNESS', paths["CLEARNESS"])
         day_filter = np.nonzero(CLEARNESS[Ind[2] - 1:Ind[0], Ind[3] - 1:Ind[1], :].sum(axis=(0, 1)))
@@ -531,16 +556,18 @@ def calculate_FLH(paths, param, tech):
             results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(calc_FLH_solar,
                                                                                                product(list_hours,
                                                                                                        [[paths, param,
-                                                                                                        tech]]))
+                                                                                                         tech]]))
     elif tech in ['WindOn', 'WindOff']:
         list_hours = np.array_split(np.arange(0, 8760), nproc)
         param["status_bar_limit"] = list_hours[0][-1]
         results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(calc_FLH_wind,
                                                                                            product(list_hours,
-                                                                                                   [[paths, param, tech]]))
+                                                                                                   [[paths, param,
+                                                                                                     tech]]))
     print('\n')
-
+    timecheck('Finish Processing Hours')
     # Collecting results
+    timecheck('Start Collecting Results')
     FLH = np.zeros((m_high, n_high))
     if nproc > 1:
         for p in range(len(results)):
@@ -548,14 +575,14 @@ def calculate_FLH(paths, param, tech):
     else:
         FLH[param["Ind_nz"]] = results
     FLH[FLH == 0] = np.nan
-
+    timecheck('Finish Collecting Results')
     hdf5storage.writes({'FLH': FLH}, paths[tech]["FLH"], store_python_metadata=True, matlab_compatible=True)
     print("files saved: " + paths[tech]["FLH"])
-    timecheck('finish')
+    timecheck('End')
 
 
 def masking(paths, param, tech):
-    timecheck('start')
+    timecheck('Start')
     mask = param[tech]["mask"]
     GeoRef = param["GeoRef"]
 
@@ -635,7 +662,6 @@ def masking(paths, param, tech):
     hdf5storage.writes({'FLH_mask': FLH_mask}, paths[tech]["FLH_mask"], store_python_metadata=True,
                        matlab_compatible=True)
     print("files saved: " + paths[tech]["FLH_mask"])
-    timecheck('Saving files - finish')
 
     # Save GEOTIFF files
     if param["savetiff"]:
@@ -652,10 +678,12 @@ def masking(paths, param, tech):
                      GeoRef["pixelHeight"],
                      FLH_mask)
         print("files saved:" + changeExt2tif(paths[tech]["FLH_mask"]))
-    timecheck('finish')
+    timecheck('Saving files - finish')
+    timecheck('End')
 
 
 def weighting(paths, param, tech):
+    timecheck('Start')
     weight = param[tech]["weight"]
     Crd_all = param["Crd_all"]
     m_high = param["m_high"]
@@ -727,9 +755,11 @@ def weighting(paths, param, tech):
                      GeoRef["pixelHeight"],
                      FLH_weight)
         print("files saved:" + changeExt2tif(paths[tech]["FLH_weight"]))
+    timecheck('End')
 
 
 def reporting(paths, param, tech):
+    timecheck('Start')
     # read FLH, Masking, area, and weighting matrix
     FLH = hdf5storage.read('FLH', paths[tech]["FLH"])
     A_mask = hdf5storage.read('A_mask', paths[tech]["mask"])
@@ -860,6 +890,7 @@ def reporting(paths, param, tech):
                             reg + '/FLH_masked_weighted': sorted_FLH_list[reg]["FLH_M_W"]
                             }, paths[tech]["Sorted_FLH"], store_python_metadata=True, matlab_compatible=True)
     print("files saved: " + paths[tech]["Sorted_FLH"])
+    timecheck('End')
 
 
 def find_locations_quantiles(paths, param, tech):
@@ -996,9 +1027,9 @@ if __name__ == '__main__':
     # generate_buffered_population(paths, param)  # Buffered Population
     # generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
-        # calculate_FLH(paths, param, tech)
+        calculate_FLH(paths, param, tech)
         masking(paths, param, tech)
-        # weighting(paths, param, tech)
-        # reporting(paths, param, tech)
+        weighting(paths, param, tech)
+        reporting(paths, param, tech)
         # find_locations_quantiles(paths, param, tech)
         # generate_time_series(paths, param, tech)

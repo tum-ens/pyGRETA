@@ -804,8 +804,8 @@ def reporting(paths, param, tech):
         region_stats["Available_Masked"] = int(available_masked)
 
         # Sum area: available area in km2
-        area = A_region_extended * A_area
-        Total_area = np.nansum(area) / (10 ** 6)
+        A_area_region = A_region_extended * A_area
+        Total_area = np.nansum(A_area_region) / (10 ** 6)
         region_stats["Available_Area_km2"] = Total_area
 
         # Stats for FLH
@@ -827,7 +827,7 @@ def reporting(paths, param, tech):
         region_stats["FLH_Std_Masked_MW"] = np.nanstd(FLH_region_masked)
 
         # Power Potential
-        A_P_potential = A_area * density
+        A_P_potential = A_area_region * density
         power_potential = np.nansum(A_P_potential)
         region_stats["Power_Potential_GW"] = power_potential / (10 ** 3)
 

@@ -476,13 +476,14 @@ def generate_buffered_population(paths, param):
 
 def generate_wind_correction(paths, param):
     timecheck('Start')
-    res_correction = param["WindOn"]["resource"]["res_correction"]
+    res_correction_on = param["WindOn"]["resource"]["res_correction"]
+    res_correction_off = param["WindOff"]["resource"]["res_correction"]
     topo_correction = param["WindOn"]["resource"]["topo_correction"]
     GeoRef = param["GeoRef"]
-    if res_correction:
+    # Onshore resolution correction
+    if res_correction_on:
         landuse = param["landuse"]
         turbine_height_on = param["WindOn"]["technical"]["hub_height"]
-        turbine_height_off = param["WindOff"]["technical"]["hub_height"]
         m_low = param["m_low"]
         n_low = param["n_low"]
         m_high = param["m_high"]
@@ -497,13 +498,34 @@ def generate_wind_correction(paths, param):
         Sigma = sumnorm_MERRA2((50 / A_gradient_height) ** A_hellmann, m_low, n_low, res_low, res_high)
         A_cf_on = ((turbine_height_on / 50) * turbine_height_on /
                    A_gradient_height) ** A_hellmann / resizem(Sigma, m_high, n_high)
+        del A_gradient_height, Sigma
+    else:
+        A_cf_on = (turbine_height_on / 50) ** A_hellmann
+
+    # Offshore resolution correction
+    if res_correction_off:
+        landuse = param["landuse"]
+        turbine_height_off = param["WindOff"]["technical"]["hub_height"]
+        m_low = param["m_low"]
+        n_low = param["n_low"]
+        m_high = param["m_high"]
+        n_high = param["n_high"]
+        res_low = param["res_low"]
+        res_high = param["res_high"]
+        with rasterio.open(paths["LU"]) as src:
+            A_lu = np.flipud(src.read(1)).astype(int)
+        A_hellmann = changem(A_lu, landuse["hellmann"], landuse["type"]).astype(float) / 100
+        A_gradient_height = changem(A_lu.astype(float), landuse["height"], landuse["type"])
+        del A_lu
+        Sigma = sumnorm_MERRA2((50 / A_gradient_height) ** A_hellmann, m_low, n_low, res_low, res_high)
         A_cf_off = ((turbine_height_off / 50) * turbine_height_off /
                     A_gradient_height) ** A_hellmann / resizem(Sigma, m_high, n_high)
         del A_gradient_height, Sigma
-    # else:
-    #     A_cf_on = (turbine_height_on / 50) ** A_hellmann
-    #     A_cf_off = (turbine_height_on / 50) ** A_hellmann
-    # del A_hellmann
+    else:
+        A_cf_off = (turbine_height_on / 50) ** A_hellmann
+    del A_hellmann
+
+    # Topographic correction (only onshore)
     with rasterio.open(paths["LAND"]) as src:
         A_land = np.flipud(src.read(1)).astype(int)
     A_cf_on = A_cf_on * A_land
@@ -882,7 +904,7 @@ def reporting(paths, param, tech):
              'Energy_Potential_Weighted_TWh', 'Energy_Potential_Weighted_Masked_TWh']]
 
     # Export the dataframe as CSV
-    df.to_csv(paths[tech]["Region_Stats"])
+    df.to_csv(paths[tech]["Region_Stats"], sep=';', decimal=',')
     print("files saved: " + paths[tech]["Region_Stats"])
 
     # Save Sorted lists to .mat file
@@ -893,7 +915,6 @@ def reporting(paths, param, tech):
                             }, paths[tech]["Sorted_FLH"], store_python_metadata=True, matlab_compatible=True)
     print("files saved: " + paths[tech]["Sorted_FLH"])
     timecheck('End')
-
 
 def find_locations_quantiles(paths, param, tech):
     FLH_mask = hdf5storage.read('FLH_mask', paths[tech]["FLH_mask"])
@@ -990,8 +1011,8 @@ def generate_time_series(paths, param, tech):
             list_hours = np.array_split(list_hours[day_filter], nproc)
             print(len(list_hours[0]))
             param["status_bar_limit"] = list_hours[0][-1]
-            results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(calc_TS_solar, product(
-                list_hours[day_filter], [[paths, param, tech]]))
+            results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(
+                calc_TS_solar, product(list_hours, [[paths, param, tech]]))
     elif tech in ['WindOn', 'WindOff']:
         list_hours = np.array_split(np.arange(0, 8760), nproc)
         param["status_bar_limit"] = list_hours[0][-1]
@@ -1011,7 +1032,7 @@ def generate_time_series(paths, param, tech):
     # Restructuring results
     tuples = list(zip(list_names, list_quantiles))
     column_names = pd.MultiIndex.from_tuples(tuples, names=['NAME_SHORT', 'Quantile'])
-    results = pd.DataFrame(TS.T(), columns=column_names)
+    results = pd.DataFrame(TS.transpose(), columns=column_names)
     results.to_csv(paths[tech]["TS"], sep=';', decimal=',')
     print("files saved: " + paths[tech]["TS"])
 
@@ -1033,10 +1054,9 @@ if __name__ == '__main__':
         masking(paths, param, tech)
         weighting(paths, param, tech)
         reporting(paths, param, tech)
-        # find_locations_quantiles(paths, param, tech)
-        # generate_time_series(paths, param, tech)
+        find_locations_quantiles(paths, param, tech)
+        generate_time_series(paths, param, tech)
         # cProfile.run('reporting(paths, param, tech)', 'cprofile_test.txt')
         # p = pstats.Stats('cprofile_test.txt')
         # p.sort_stats('cumulative').print_stats(20)
-
 

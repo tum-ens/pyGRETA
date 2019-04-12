@@ -180,7 +180,7 @@ def limit_cpu(check):
         # Windows priority
         p.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
         # Linux priority
-        # p.nice(19)
+        # p.nice(1)
     else:
         # Windows priority
         p.nice(psutil.NORMAL_PRIORITY_CLASS)
@@ -199,5 +199,4 @@ def timecheck(*args):
 
     else:
         raise Exception('Too many arguments have been passed.\nExpected: zero or one \nPassed: ' + format(len(args)))
-
 

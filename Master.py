@@ -1050,12 +1050,12 @@ if __name__ == '__main__':
     # generate_buffered_population(paths, param)  # Buffered Population
     # generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
-        calculate_FLH(paths, param, tech)
-        masking(paths, param, tech)
-        weighting(paths, param, tech)
+        # calculate_FLH(paths, param, tech)
+        # masking(paths, param, tech)
+        # weighting(paths, param, tech)
         reporting(paths, param, tech)
-        find_locations_quantiles(paths, param, tech)
-        generate_time_series(paths, param, tech)
+        # find_locations_quantiles(paths, param, tech)
+        # generate_time_series(paths, param, tech)
         # cProfile.run('reporting(paths, param, tech)', 'cprofile_test.txt')
         # p = pstats.Stats('cprofile_test.txt')
         # p.sort_stats('cumulative').print_stats(20)

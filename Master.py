@@ -837,20 +837,20 @@ def reporting(paths, param, tech):
         # Stats for FLH
         FLH_region = A_region_extended * FLH
         FLH_region[FLH_region == 0] = np.nan
-        region_stats["FLH_Mean_MW"] = np.nanmean(FLH_region)
-        region_stats["FLH_Median_MW"] = np.nanmedian(FLH_region)
-        region_stats["FLH_Max_MW"] = np.nanmax(FLH_region)
-        region_stats["FLH_Min_MW"] = np.nanmin(FLH_region)
-        region_stats["FLH_Std_MW"] = np.nanstd(FLH_region)
+        region_stats["FLH_Mean"] = np.nanmean(FLH_region)
+        region_stats["FLH_Median"] = np.nanmedian(FLH_region)
+        region_stats["FLH_Max"] = np.nanmax(FLH_region)
+        region_stats["FLH_Min"] = np.nanmin(FLH_region)
+        region_stats["FLH_Std"] = np.nanstd(FLH_region)
 
         # Stats for FLH_masked
         FLH_region_masked = A_masked * FLH_region
         FLH_region_masked[FLH_region_masked == 0] = np.nan
-        region_stats["FLH_Mean_Masked_MW"] = np.nanmean(FLH_region_masked)
-        region_stats["FLH_Median_Masked_MW"] = np.nanmedian(FLH_region_masked)
-        region_stats["FLH_Max_Masked_MW"] = np.nanmax(FLH_region_masked)
-        region_stats["FLH_Min_Masked_MW"] = np.nanmin(FLH_region_masked)
-        region_stats["FLH_Std_Masked_MW"] = np.nanstd(FLH_region_masked)
+        region_stats["FLH_Mean_Masked"] = np.nanmean(FLH_region_masked)
+        region_stats["FLH_Median_Masked"] = np.nanmedian(FLH_region_masked)
+        region_stats["FLH_Max_Masked"] = np.nanmax(FLH_region_masked)
+        region_stats["FLH_Min_Masked"] = np.nanmin(FLH_region_masked)
+        region_stats["FLH_Std_Masked"] = np.nanstd(FLH_region_masked)
 
         # Power Potential
         A_P_potential = A_area_region * density
@@ -898,9 +898,9 @@ def reporting(paths, param, tech):
     df = pd.DataFrame.from_dict(regions)
 
     # Reorder dataframe columns
-    df = df[['Region', 'Available', 'Available_Masked', 'Available_Area_km2', 'FLH_Mean_MW', 'FLH_Median_MW',
-             'FLH_Max_MW', 'FLH_Min_MW', 'FLH_Mean_Masked_MW', 'FLH_Median_Masked_MW', 'FLH_Max_Masked_MW',
-             'FLH_Min_Masked_MW', 'FLH_Std_Masked_MW', 'Power_Potential_GW', 'Energy_Potential_TWh',
+    df = df[['Region', 'Available', 'Available_Masked', 'Available_Area_km2', 'FLH_Mean', 'FLH_Median',
+             'FLH_Max', 'FLH_Min', 'FLH_Mean_Masked', 'FLH_Median_Masked', 'FLH_Max_Masked',
+             'FLH_Min_Masked', 'FLH_Std_Masked', 'Power_Potential_GW', 'Energy_Potential_TWh',
              'Energy_Potential_Weighted_TWh', 'Energy_Potential_Weighted_Masked_TWh']]
 
     # Export the dataframe as CSV
@@ -915,6 +915,7 @@ def reporting(paths, param, tech):
                             }, paths[tech]["Sorted_FLH"], store_python_metadata=True, matlab_compatible=True)
     print("files saved: " + paths[tech]["Sorted_FLH"])
     timecheck('End')
+
 
 def find_locations_quantiles(paths, param, tech):
     FLH_mask = hdf5storage.read('FLH_mask', paths[tech]["FLH_mask"])
@@ -1047,12 +1048,12 @@ if __name__ == '__main__':
     generate_slope(paths, param)  # Slope
     generate_population(paths, param)  # Population
     generate_protected_areas(paths, param)  # Protected areas
-    # generate_buffered_population(paths, param)  # Buffered Population
-    # generate_wind_correction(paths, param)  # Correction factors for wind speeds
+    generate_buffered_population(paths, param)  # Buffered Population
+    generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
         # calculate_FLH(paths, param, tech)
-        # masking(paths, param, tech)
-        # weighting(paths, param, tech)
+        masking(paths, param, tech)
+        weighting(paths, param, tech)
         reporting(paths, param, tech)
         # find_locations_quantiles(paths, param, tech)
         # generate_time_series(paths, param, tech)

@@ -7,12 +7,12 @@ import os
 ###########################
 
 param = {}
-param["region"] = 'Germany'
+param["region"] = 'Europe'
 param["year"] = '2015'
 param["technology"] = ['WindOn']  #['PV', 'CSP', 'WindOn', 'WindOff']
 param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
-param["nproc"] = 4
+param["nproc"] = 1
 param["CPU_limit"] = True
 param["report_sampling"] = 100
 
@@ -44,6 +44,7 @@ param["res_high"] = np.array([1/240, 1/240])
 # 16  -- Barren or sparsely vegetated
 
 landuse = {"type": np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]),
+           "type_urban": 13,
            "Ross_coeff": np.array(
                [208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208]),
            "albedo": np.array([0, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 0, 25, 25, 25, 0, 25]),
@@ -157,7 +158,7 @@ del pv, csp, windon, windoff
 ###########################
 
 fs = os.path.sep
-root = os.path.dirname(os.path.abspath(__file__)) + fs  # + ".d." + fs
+root = os.path.dirname(os.path.abspath(__file__)) + fs + ".." + fs
 region = param["region"]
 year = param["year"]
 

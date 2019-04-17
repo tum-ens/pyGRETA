@@ -170,6 +170,7 @@ def sumnorm_MERRA2(A, m, n, res_low, res_high):
 
 
 def limit_cpu(check):
+    from sys import platform
     """
     Is called at every process start to set its priority
     :return:
@@ -177,15 +178,19 @@ def limit_cpu(check):
     check = check[0]
     p = psutil.Process(os.getpid())
     if check:
-        # Windows priority
-        p.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
-        # Linux priority
-        # p.nice(1)
+        if platform.startswith('win'):
+            # Windows priority
+            p.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
+        elif platform.startswith('linux'):
+            # Linux priority
+            p.nice(1)
     else:
-        # Windows priority
-        p.nice(psutil.NORMAL_PRIORITY_CLASS)
-        # Linux priority
-        # p.nice(0)
+        if platform.startswith('win'):
+            # Windows priority
+            p.nice(psutil.NORMAL_PRIORITY_CLASS)
+        elif platform.startswith('linux'):
+            # Linux priority
+            p.nice(0)
 
 
 def timecheck(*args):

@@ -298,47 +298,24 @@ def generate_slope(paths, param):
         m_per_deg_lon = (np.pi / 180) * 6367449 * cos(np.deg2rad(latMid_2))
 
         x_cell = repmat(deltaLon, 180 * 240, 1) * repmat(m_per_deg_lon, 360 * 240, 1).T
-        x_cell = x_cell[Ind[0] - 2:Ind[2] + 1, Ind[3] - 2: Ind[1] + 1]
+        x_cell = x_cell[Ind[0] - 1:Ind[2], Ind[3] - 1: Ind[1]]
         x_cell = np.flipud(x_cell)
 
         y_cell = repmat((deltaLat * m_per_deg_lat), 360 * 240, 1).T
-        y_cell = y_cell[Ind[0] - 2:Ind[2] + 1, Ind[3] - 2: Ind[1] + 1]
+        y_cell = y_cell[Ind[0] - 1:Ind[2], Ind[3] - 1: Ind[1]]
         y_cell = np.flipud(y_cell)
 
         with rasterio.open(paths["TOPO"]) as src:
             A_TOPO = src.read(1)
 
-        topo_a = np.zeros((Ind[2] - Ind[0] + 3, Ind[1] - Ind[3] + 3))
-        topo_a[0:-2, 0:-2] = A_TOPO
-
-        topo_b = np.zeros((Ind[2] - Ind[0] + 3, Ind[1] - Ind[3] + 3))
-        topo_b[0:-2, 1:-1] = A_TOPO
-
-        topo_c = np.zeros((Ind[2] - Ind[0] + 3, Ind[1] - Ind[3] + 3))
-        topo_c[0:-2, 2:] = A_TOPO
-
-        topo_d = np.zeros((Ind[2] - Ind[0] + 3, Ind[1] - Ind[3] + 3))
-        topo_d[1:-1, 0:-2] = A_TOPO
-
-        topo_f = np.zeros((Ind[2] - Ind[0] + 3, Ind[1] - Ind[3] + 3))
-        topo_f[1:-1, 2:] = A_TOPO
-
-        topo_g = np.zeros((Ind[2] - Ind[0] + 3, Ind[1] - Ind[3] + 3))
-        topo_g[2:, 0:-2] = A_TOPO
-
-        topo_h = np.zeros((Ind[2] - Ind[0] + 3, Ind[1] - Ind[3] + 3))
-        topo_h[2:, 1:-1] = A_TOPO
-
-        topo_i = np.zeros((Ind[2] - Ind[0] + 3, Ind[1] - Ind[3] + 3))
-        topo_i[2:, 2:] = A_TOPO
-
-        dzdx = ((topo_c + 2 * topo_f + topo_i) - (topo_a + 2 * topo_d + topo_g)) / (8 * x_cell)
-        dzdy = ((topo_g + 2 * topo_h + topo_i) - (topo_a + 2 * topo_b + topo_c)) / (8 * y_cell)
-
+        kernel = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]) / 8
+        dzdx = convolve(A_TOPO, kernel) / x_cell
+        kernel = np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]]) / 8
+        dzdy = convolve(A_TOPO, kernel) / y_cell
         slope_deg = arctan((dzdx ** 2 + dzdy ** 2) ** 0.5) * 180 / np.pi
         slope_pc = tan(np.deg2rad(slope_deg)) * 100
 
-        A_SLP = np.flipud(slope_pc[1:-1, 1:-1])
+        A_SLP = np.flipud(slope_pc)
         array2raster(paths["SLOPE"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_SLP)
         print("files saved: " + paths["SLOPE"])
         timecheck('End')
@@ -1051,13 +1028,13 @@ if __name__ == '__main__':
     generate_slope(paths, param)  # Slope
     generate_population(paths, param)  # Population
     generate_protected_areas(paths, param)  # Protected areas
-    generate_buffered_population(paths, param)  # Buffered Population
+    #generate_buffered_population(paths, param)  # Buffered Population
     #generate_wind_correction(paths, param)  # Correction factors for wind speeds
-    for tech in param["technology"]:
+    #for tech in param["technology"]:
         # calculate_FLH(paths, param, tech)
         #masking(paths, param, tech)
         #weighting(paths, param, tech)
-        reporting(paths, param, tech)
+        #reporting(paths, param, tech)
         # find_locations_quantiles(paths, param, tech)
         # generate_time_series(paths, param, tech)
         # cProfile.run('reporting(paths, param, tech)', 'cprofile_test.txt')

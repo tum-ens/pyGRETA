@@ -116,7 +116,8 @@ def calc_region(region, Crd_reg, res_high, GeoRef):
         A_region = out_image[0]
 
     return A_region
-	
+
+
 def calc_gcr(Crd_all, m_high, n_high, res_high, GCR):
     """
     This function creates a GCR weighting matrix for the desired geographic extent
@@ -216,7 +217,6 @@ def sampled_sorting(Raster, sampling):
     return s
 
 
-
 def calc_areas(Crd_all, n_high, res_high):
     # WSG84 ellipsoid constants
     a = 6378137  # major axis
@@ -244,7 +244,7 @@ def calc_areas(Crd_all, n_high, res_high):
     zp_upper = 1 + (e * sin(f_upper))
 
     upperSliceAreas = np.pi * b ** 2 * ((2 * np.arctanh((e * sin(f_upper)))) / (2 * e) +
-                                        (sin(f_lower) / (zp_upper * zm_upper)))
+                                        (sin(f_upper) / (zp_upper * zm_upper)))
 
     # Pixel areas
     # Finding the latitudinal pixel-sized globe slice areas then dividing them by the longitudinal pixel size

@@ -2,6 +2,7 @@ import os
 from data_functions import *
 from model_functions import *
 import numpy as np
+from scipy.ndimage import convolve
 import datetime
 import geopandas as gpd
 import pandas as pd
@@ -17,7 +18,7 @@ import pstats
 
 
 def initialization():
-    timecheck('start')
+    timecheck('Start')
     # import param and paths
     from config import paths, param
     res_low = param["res_low"]
@@ -463,9 +464,11 @@ def generate_buffered_population(paths, param):
         GeoRef = param["GeoRef"]
         with rasterio.open(paths["LU"]) as src:
             A_lu = src.read(1)
-            A_lu = np.flipud(A_lu).astype(int)
-
-        A_lu_buffered = create_buffer(A_lu, buffer_pixel_amount)
+        A_lu = np.flipud(A_lu).astype(int)
+        A_lu = A_lu == param["landuse"]["type_urban"] # Land use type for Urban and built-up
+        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
+        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
+        A_lu_buffered = convolve(A_lu, kernel)
         A_notPopulated = (~A_lu_buffered).astype(int)
 
         array2raster(paths["BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
@@ -1049,11 +1052,11 @@ if __name__ == '__main__':
     generate_population(paths, param)  # Population
     generate_protected_areas(paths, param)  # Protected areas
     generate_buffered_population(paths, param)  # Buffered Population
-    generate_wind_correction(paths, param)  # Correction factors for wind speeds
+    #generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
         # calculate_FLH(paths, param, tech)
-        masking(paths, param, tech)
-        weighting(paths, param, tech)
+        #masking(paths, param, tech)
+        #weighting(paths, param, tech)
         reporting(paths, param, tech)
         # find_locations_quantiles(paths, param, tech)
         # generate_time_series(paths, param, tech)

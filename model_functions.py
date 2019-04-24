@@ -14,7 +14,7 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
     pv = param["PV"]["technical"]
     m_high = param["m_high"]
     n_high = param["n_high"]
-    res_high = param["res_high"]
+    res_desired = param["res_desired"]
     Crd_all = param["Crd_all"]
 
     # Load MERRA data, increase its resolution, and fit it to the extent
@@ -31,13 +31,13 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
         CF_csp = np.zeros(reg_ind[0].shape)
         return CF_pv, CF_csp
 
-    CLEARNESS_h = CLEARNESS_h[reg_ind_h]
+    CLEARNESS_h = CLEARNESS_h[reg_ind_h] * param["PV"]["resource"]["clearness_correction"]
     TEMP_h = merraData["T2M"][:, :, hour]
     TEMP_h = resizem(TEMP_h, m_high, n_high) - 273.15  # Convert to Celsius
     TEMP_h = TEMP_h[reg_ind_h]
     # Compute the angles
     A_phi, A_omega, A_delta, A_alpha, A_beta, A_azimuth, A_orientation, sunrise, sunset = \
-        angles(hour, reg_ind_h, Crd_all, res_high)
+        angles(hour, reg_ind_h, Crd_all, res_desired)
     # Other matrices
     A_albedo = rasterData["A_albedo"][reg_ind_h]
     A_Ross = rasterData["A_Ross"][reg_ind_h]
@@ -64,7 +64,9 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
 
     # Compute the coefficients for the HDKR model
     R_b = cosd(A_incidence) / sind(A_alpha)
-    R_b[R_b <= 0] = 0
+    R_b[A_alpha <= 5] = cosd(A_incidence[A_alpha <= 5]) / sind(5)
+    R_b[A_alpha <= 0] = 0
+
     A_i = (1 - RATIO) * CLEARNESS_h
     f = (1 - RATIO) ** 0.5
 
@@ -86,7 +88,8 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
     LOSS_TEMP = loss(G_tilt_h, TEMP_h, A_Ross, pv)
 
     # Compute the hourly capacity factor
-    CF_pv = ((A_alpha > 0) * 1) * G_tilt_h / 1000 * (1 - LOSS_TEMP)
+    CF_pv = G_tilt_h * (1 - LOSS_TEMP) / 1000
+    CF_pv[A_alpha <= 0] = 0
 
     # For CSP: tracking like pv.tracking = 1
     A_beta = 90 - A_alpha
@@ -139,10 +142,10 @@ def calc_FLH_solar(hours, args):
     # rasterData["A_lu"] = rasterData["A_lu"][reg_ind]
     # A_Ross (Temperature coefficients for heating losses)
     rasterData["A_Ross"] = changem(rasterData["A_lu"], param["landuse"]["Ross_coeff"], param["landuse"]["type"]).astype(
-        float) / 10000
+        float)
     # A_albedo (Reflectivity coefficients)
     rasterData["A_albedo"] = changem(rasterData["A_lu"], param["landuse"]["albedo"], param["landuse"]["type"]).astype(
-        float) / 100
+        float)
 
     FLH = np.zeros(len(reg_ind[0]))
     status = 0
@@ -192,10 +195,10 @@ def calc_TS_solar(hours, args):
     rasterData["A_lu"] = np.flipud(w)
     # A_Ross (Temperature coefficients for heating losses)
     rasterData["A_Ross"] = changem(rasterData["A_lu"], param["landuse"]["Ross_coeff"], param["landuse"]["type"]).astype(
-        float) / 10000
+        float)
     # A_albedo (Reflectivity coefficients)
     rasterData["A_albedo"] = changem(rasterData["A_lu"], param["landuse"]["albedo"], param["landuse"]["type"]).astype(
-        float) / 100
+        float)
 
     TS = np.zeros((len(reg_ind[0]), 8760))
     status = 0
@@ -219,7 +222,7 @@ def calc_TS_solar(hours, args):
     return TS
 
 
-def angles(hour, reg_ind, Crd_all, res_high):
+def angles(hour, reg_ind, Crd_all, res_desired):
     """
     This function creates six matrices for the desired extent, that represent the elevation, tilt, azimuth and
     oerientation angles, in addition to the sunrise and sunset hours of every pixel with the desired resolution
@@ -235,7 +238,7 @@ def angles(hour, reg_ind, Crd_all, res_high):
     """
 
     # Initialization
-    Crd_points = crd_exact_points(reg_ind, Crd_all, res_high)
+    Crd_points = crd_exact_points(reg_ind, Crd_all, res_desired)
     lat = Crd_points[0]
     lon = Crd_points[1]
     k = len(lat)  # number of points
@@ -272,14 +275,10 @@ def angles(hour, reg_ind, Crd_all, res_high):
     beta[range_lat] = (beta[range_lat] - 35) / 65 * 55 + 35  # Tilt angle does not increase very quickly
     range_lat = np.logical_and(lat >= 35, lat < 65)
     range_lon = np.logical_and(lon >= -20, lon < 30)
-    # range_lat = repmat(range_lat, range_lon.shape[1], 1).T
-    # range_lon = repmat(range_lon, range_lat.shape[0], 1)
     beta[np.logical_and(range_lat, range_lon)] = (beta[np.logical_and(range_lat,
                                                                       range_lon)] - 35) / 65 * 45 + 35  # Europe
     range_lat = np.logical_and(lat >= 20, lat < 65)
     range_lon = np.logical_and(lon >= 75, lon < 140)
-    # range_lat = repmat(range_lat, range_lon.shape[1], 1).T
-    # range_lon = repmat(range_lon, range_lat.shape[0], 1)
     beta[np.logical_and(range_lat, range_lon)] = (beta[np.logical_and(range_lat,
                                                                       range_lon)] - 20) / 65 * 60 + 20  # Asia/China
 
@@ -294,7 +293,6 @@ def angles(hour, reg_ind, Crd_all, res_high):
     orientation[phi < 0] = 180  # Azimuth of the PV panel is 180° for the Southern hemisphere
 
     # Sunrise and sunset hours in GMT
-    # aux = np.maximum(np.minimum((-tand(phi)) * tand(delta), 1), -1)
     aux = np.maximum(np.minimum((-tand(phi)) * tand(delta), 1), -1)
     sunrise = 12 - 1 / 15 * arccosd(aux)
     sunset = 12 + 1 / 15 * arccosd(aux)
@@ -311,22 +309,10 @@ def angles(hour, reg_ind, Crd_all, res_high):
     return phi, omega, delta, alpha, beta, azi, orientation, sunrise, sunset
 
 
-def toa_hourly(alpha, *args):
+def toa_hourly(alpha, hour):
+
     solarconst = 1367  # in W/m^2
-
-    if len(args) >= 2:
-        # Calculate day rank in the year
-        month = args[0]
-        dayofmonth = args[1]
-        DoM = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
-        N = dayofmonth  # initialization
-        for ii in range(0, len(month)):
-            if month[ii] != 1:
-                N[ii] = dayofmonth[ii] + np.sum(DoM[1:month[ii] - 1], 2)
-
-    if len(args) == 1:
-        hour = args[0]
-        N = np.floor((hour - 1) / 24) + 1
+    N = hour // 24 + 1
 
     TOA_h = solarconst * (1 + 0.03344 * cos(N * 2 * np.pi / 365.25 - 0.048869)) * sind(alpha)
     TOA_h = np.maximum(TOA_h, 0)

@@ -7,12 +7,12 @@ import os
 ###########################
 
 param = {}
-param["region"] = 'Europe'
+param["region"] = 'Germany'
 param["year"] = '2015'
-param["technology"] = ['WindOn']  #['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['PV']  #['PV', 'CSP', 'WindOn', 'WindOff']
 param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
-param["nproc"] = 1
+param["nproc"] = 6
 param["CPU_limit"] = True
 param["report_sampling"] = 100
 
@@ -21,8 +21,8 @@ param["report_sampling"] = 100
 # MERRA_Centroid_Extent = [49, -103.75, 28, -129.375]  # California
 # MERRA_Centroid_Extent = np.array([56.25, 15.3125, 47.25, 2.8125])  # Germany
 
-param["res_low"] = np.array([ 1/2,   5/8])
-param["res_high"] = np.array([1/240, 1/240])
+param["res_weather"] = np.array([ 1/2,   5/8])
+param["res_desired"] = np.array([1/240, 1/240])
 
 # Landuse reclassification
 # A_lu matrix element values range from 0 to 16:
@@ -46,9 +46,9 @@ param["res_high"] = np.array([1/240, 1/240])
 landuse = {"type": np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]),
            "type_urban": 13,
            "Ross_coeff": np.array(
-               [208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208, 208]),
-           "albedo": np.array([0, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 0, 25, 25, 25, 0, 25]),
-           "hellmann": np.array([10, 25, 25, 25, 25, 25, 20, 20, 25, 25, 15, 15, 20, 40, 20, 15, 15]),
+               [0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208]),
+           "albedo": np.array([0.00, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.00, 0.20, 0.20, 0.20, 0.00, 0.20]),
+           "hellmann": np.array([0.10, 0.25, 0.25, 0.25, 0.25, 0.25, 0.20, 0.20, 0.25, 0.25, 0.15, 0.15, 0.20, 0.40, 0.20, 0.15, 0.15]),
            "height": np.array([213, 366, 366, 366, 366, 366, 320, 320, 366, 366, 274, 274, 320, 457, 320, 274, 274])
            }
 
@@ -73,6 +73,8 @@ del landuse, protected_areas
 
 # Parameters related to PV
 pv = {}
+pv["resource"] = {"clearness_correction": 0.9
+                  }
 pv["technical"] = {"T_r": 25,
                    "loss_coeff": 0.37,
                    "tracking": 0
@@ -166,7 +168,7 @@ paths = {}
 
 # Shapefiles
 PathTemp = root + "INPUTS" + fs + region + fs + "Shapefile" + fs + region
-paths["SHP"] = PathTemp + "_NUTS0_wo_Balkans_with_EEZ.shp"
+paths["SHP"] = PathTemp + "_with_EEZ.shp"
 
 # MERRA2
 PathTemp = root + "INPUTS" + fs + region + fs + "MERRA2 " + year + fs

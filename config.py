@@ -7,7 +7,7 @@ import os
 ###########################
 
 param = {}
-param["region"] = 'Germany'
+param["region"] = 'Europe'
 param["year"] = '2015'
 param["technology"] = ['PV']  #['PV', 'CSP', 'WindOn', 'WindOff']
 param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30])
@@ -73,7 +73,7 @@ del landuse, protected_areas
 
 # Parameters related to PV
 pv = {}
-pv["resource"] = {"clearness_correction": 0.9
+pv["resource"] = {"clearness_correction": 0.85
                   }
 pv["technical"] = {"T_r": 25,
                    "loss_coeff": 0.37,
@@ -168,7 +168,7 @@ paths = {}
 
 # Shapefiles
 PathTemp = root + "INPUTS" + fs + region + fs + "Shapefile" + fs + region
-paths["SHP"] = PathTemp + "_with_EEZ.shp"
+paths["SHP"] = PathTemp + "_NUTS0_wo_Balkans_with_EEZ.shp"
 
 # MERRA2
 PathTemp = root + "INPUTS" + fs + region + fs + "MERRA2 " + year + fs

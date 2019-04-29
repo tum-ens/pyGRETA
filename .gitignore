@@ -15,3 +15,6 @@ OUTPUTS/Germany/test/sorted_FLH_sampled
 OUTPUTS/Germany/test/Germany_WindOn_Region_stats_2015.csv
 OUTPUTS/Germany/test/Germany_WindOn_Locations.cpg
 OUTPUTS/Germany/test/Germany_WindOn_Locations.dbf
+Python_2015_angles_F_Log.csv
+OUTPUTS/Germany/test/Germany_PV_TS_2015.csv
+Germany_PV_TS_2015.csv

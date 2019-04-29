@@ -4,10 +4,10 @@ import sys
 from data_functions import *
 from util import *
 import numpy as np
-
-np.seterr(divide='ignore')  # Repress Invalid value or division by zero error
 from numpy.matlib import repmat, sin, cos
 import hdf5storage
+
+np.seterr(divide='ignore')  # Repress Invalid value or division by zero error
 
 
 def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):

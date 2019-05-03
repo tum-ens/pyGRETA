@@ -4,6 +4,8 @@ import math as m
 import numpy as np
 import rasterio
 from rasterio import windows, mask, MemoryFile
+import hdf5storage
+
 
 
 def calc_ext(regb, ext, res):
@@ -137,7 +139,7 @@ def calc_gcr(Crd_all, m_high, n_high, res_high, GCR):
     # Repeating for all longitudes/latitudes
     lat = repmat(lat.transpose(), 1, int(n_high))
     lon = repmat(lon, int(m_high), 1)
-	
+
     # Solar time where shade-free exposure starts
     omegast = 12 - GCR["shadefree_period"] / 2
 
@@ -347,3 +349,67 @@ def superpose_down(A_lu, buffer_pixed_amount):
     shifted_down = A_lu + down
     shifted_down = shifted_down != 0
     return shifted_down
+
+
+def load_data(paths, param, region):
+
+    # Read data from output folder
+    IRENA_FLH = 0
+    TS = np.zeros(8760)
+
+    # Setup dataframe for EMHIRES DATA
+    EMHIRES = pd.read_csv(paths["regression"] + 'wind_on.txt', '\t')
+    EMHIRES = EMHIRES[EMHIRES["Year"] == int(param["year"])].reset_index()
+    # TO be ADDED, filter by regions understudy
+    EMHIRES = EMHIRES.drop(['index', 'Time', 'step', 'Date', 'Year', 'Month', 'Day', 'Hour'], axis=1)
+    TS = np.array(EMHIRES[region].values)
+
+    # Setup dataframe for IRENA
+    irena = pd.read_csv(paths["regression"] + 'IRENA_FLH.txt', '\t')
+    irena = irena.transpose()
+    irena.columns = irena.iloc[0]
+    irena = irena.drop('NAME_SHORT')
+    IRENA_FLH = irena[region].loc['wind']
+
+    # Setup the data dataframe for generated TS for each quantile
+    TS60 = pd.read_csv(paths["regression"] + 'Germany_WindOn_TS_60_2015.csv', ';')
+
+    # Filters unwanted regions
+    filter_reg = [col for col in TS60 if col.startswith(region)]
+    TS60 = TS60[filter_reg]
+    TS60.columns = TS60.iloc[0]
+    TS60 = TS60.drop(0)
+
+    TS80 = pd.read_csv(paths["regression"] + 'Germany_WindOn_TS_80_2015.csv', ';')
+    filter_reg = [col for col in TS80 if col.startswith(region)]
+    TS80 = TS80[filter_reg]
+    TS80.columns = TS80.iloc[0]
+    TS80 = TS80.drop(0)
+
+    TS100 = pd.read_csv(paths["regression"] + 'Germany_WindOn_TS_100_2015.csv', ';')
+    filter_reg = [col for col in TS100 if col.startswith(region)]
+    TS100 = TS100[filter_reg]
+    TS100.columns = TS100.iloc[0]
+    TS100 = TS100.drop(0)
+
+    GenTS = {"60": TS60.astype(float),
+             "80": TS80.astype(float),
+             "100": TS100.astype(float)}
+
+    # Prepare Timeseries dictionary indexing by height and quantile
+    Timeseries = {}
+    for h in param["hub_heights"]:
+        for q in param["quantiles"]:
+            Timeseries[(h, q)] = np.array(GenTS[str(h)]['q'+str(q)])
+
+    # Create data_input dictionary
+    data = {None: {
+        "h": {None: param["hub_heights"]},
+        "q": {None: param["quantiles"]},
+        "FLH": {None: IRENA_FLH},
+        "shape": {None: TS},
+        "TS": Timeseries
+            }}
+
+    return data
+

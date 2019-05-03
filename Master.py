@@ -12,6 +12,8 @@ import hdf5storage
 from multiprocessing import Pool
 from itertools import product
 import h5netcdf
+import pyomo.environ as pyo
+from pyomo.opt import SolverFactory
 import cProfile
 import pstats
 
@@ -991,7 +993,7 @@ def find_locations_quantiles(paths, param, tech):
     timecheck('End')
 
 
-def generate_time_series(paths, param, tech):
+def generate_time_series(paths, param):
     timecheck('Start')
     nproc = param["nproc"]
     CPU_limit = np.full((1, nproc), param["CPU_limit"])
@@ -1009,7 +1011,7 @@ def generate_time_series(paths, param, tech):
     if tech in ['PV', 'CSP']:
         CLEARNESS = hdf5storage.read('CLEARNESS', paths["CLEARNESS"])
         day_filter = np.nonzero(CLEARNESS[Ind[2] - 1:Ind[0], Ind[3] - 1:Ind[1], :].sum(axis=(0, 1)))
-        list_hours = np.arange(0, 8760)
+        ist_hours = np.arange(0, 8760)
         if nproc == 1:
             param["status_bar_limit"] = list_hours[-1]
             results = calc_TS_solar(list_hours[day_filter], [paths, param, tech])
@@ -1039,8 +1041,43 @@ def generate_time_series(paths, param, tech):
     tuples = list(zip(list_names, list_quantiles))
     column_names = pd.MultiIndex.from_tuples(tuples, names=['NAME_SHORT', 'Quantile'])
     results = pd.DataFrame(TS.transpose(), columns=column_names)
-    results.to_csv(paths[tech]["TS"], sep=';', decimal=',')
+    results.to_csv(paths[tech]["TS"], sep=';', decimal='.')
     print("files saved: " + paths[tech]["TS"])
+    timecheck('End')
+
+
+def regression_coefficient(paths, param):
+    timecheck('Start')
+    param["solver"] = 'glpk'
+
+    model = pyo.AbstractModel()
+    solver = pyo.SolverFactory(param["solver"])
+    model.h = pyo.Set()
+    model.q = pyo.Set()
+    model.hour = pyo.RangeSet(0, 8760)
+
+    model.FLH = pyo.Param()
+    model.Shape = pyo.Param()
+
+    model.TS = pyo.Param(model.h, model.q)
+    model.coef = pyo.Var(model.h, model.q, domain=pyo.NonNegativeReals)
+
+    def ax_constraint_rule(model):
+        return pyo.summation(model.coef * model.TS) == model.FLH
+
+    def obj_expression(model, h, q):
+
+        timeseries = model.coef[h, q] * model.TS[h, q]
+
+        exp = abs(pyo.summation(timeseries))
+        return exp
+
+    model.OBJ = pyo.Objective(model.h, model.q, rule=obj_expression)
+    model.constraint = pyo.Constraint(rule=ax_constraint_rule)
+    reg = model.create_instance(load_data(paths, param, "DE"))
+    results = solver.solve(reg)
+    print(reg.coef)
+    print(results)
     timecheck('End')
 
 
@@ -1056,13 +1093,19 @@ if __name__ == '__main__':
     generate_protected_areas(paths, param)  # Protected areas
     generate_buffered_population(paths, param)  # Buffered Population
     generate_wind_correction(paths, param)  # Correction factors for wind speeds
+
     for tech in param["technology"]:
+        if tech in ["WindOn", "WindOff"]:
+            for height in param["hub_heights"]:
+                param[tech]["technical"]
         # calculate_FLH(paths, param, tech)
+        #
         # masking(paths, param, tech)
         # weighting(paths, param, tech)
         # reporting(paths, param, tech)
         # find_locations_quantiles(paths, param, tech)
-        generate_time_series(paths, param, tech)
+        # generate_time_series(paths, param, tech)
+        regression_coefficient(paths, param)
         # cProfile.run('reporting(paths, param, tech)', 'cprofile_test.txt')
         # p = pstats.Stats('cprofile_test.txt')
         # p.sort_stats('cumulative').print_stats(20)

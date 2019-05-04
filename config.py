@@ -9,7 +9,7 @@ import os
 param = {}
 param["region"] = 'Europe'
 param["year"] = '2015'
-param["technology"] = ['PV']  #['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['WindOn']  #['PV', 'CSP', 'WindOn', 'WindOff']
 param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
 param["nproc"] = 6
@@ -35,8 +35,9 @@ param["res_desired"] = np.array([1/240, 1/240])
 # 6   -- Closed shrublands
 # 7   -- Open shrublands
 # 8   -- Woody savannas
-# 9   -- Grasslands
-# 10  -- Permanent wetland
+# 9   -- Savannas
+# 10  -- Grasslands
+# 11  -- Permanent wetland
 # 12  -- Croplands
 # 13  -- URBAN AND BUILT-UP
 # 14  -- Croplands / natural vegetation mosaic
@@ -111,7 +112,7 @@ csp["weight"] = {"lu_availability": np.array([0.00, 0.00, 0.00, 0.00, 0.00, 0.00
 windon = {}
 windon["resource"] = {"res_correction": 1,
                       "topo_correction": 1,
-                      "topo_factors": (0.0004, -0.1)
+                      "topo_weight": 'capacity' # 'none' or 'size' or 'capacity'
                       }
 windon["technical"] = {"w_in": 4,
                        "w_r": 15,
@@ -167,8 +168,9 @@ year = param["year"]
 paths = {}
 
 # Shapefiles
-PathTemp = root + "INPUTS" + fs + region + fs + "Shapefile" + fs + region
-paths["SHP"] = PathTemp + "_NUTS0_wo_Balkans_with_EEZ.shp"
+PathTemp = root + "INPUTS" + fs + region + fs + "Shapefile" + fs
+paths["SHP"] = PathTemp + "Bayern_in_Europe_with_EEZ.shp"
+paths["Countries"] = PathTemp + region + "_NUTS0_wo_Balkans_with_EEZ.shp" # for eventual correction with the Global Wind Atlas
 
 # MERRA2
 PathTemp = root + "INPUTS" + fs + region + fs + "MERRA2 " + year + fs
@@ -179,7 +181,10 @@ paths["W50M"] = PathTemp + "w50m_" + year + ".mat"
 paths["GHI"] = PathTemp + "swgdn_" + year + ".mat"
 paths["TOA"] = PathTemp + "swtdn_" + year + ".mat"
 paths["CLEARNESS"] = PathTemp + "clearness_" + year + ".mat"
-paths["T2M"] = PathTemp + "t2m_" + year + ".mat"  # Temperature
+paths["T2M"] = PathTemp + "t2m_" + year + ".mat"
+
+# IRENA
+paths["inst-cap"] = root + "INPUTS" + fs + region + fs + "IRENA " + year + fs + "inst_cap_" + year + ".csv"
 
 # Global maps
 PathTemp = root + "INPUTS" + fs + "Global maps" + fs
@@ -188,6 +193,7 @@ paths["Topo_tiles"] = PathTemp + "Topography" + fs
 paths["Pop_tiles"] = PathTemp + "Population" + fs
 paths["Bathym_global"] = PathTemp + "Bathymetry" + fs + "ETOPO1_Ice_c_geotiff.tif"
 paths["Protected"] = PathTemp + "Protected Areas" + fs + "WDPA_Nov2018-shapefile-polygons.shp"
+paths["GWA"] = PathTemp + "Global Wind Atlas" + fs + fs + "windSpeed.csv"
 
 # Local maps
 PathTemp = root + "INPUTS" + fs + region + fs + region
@@ -200,11 +206,12 @@ paths["SLOPE"] = PathTemp + "_Slope.tif"  # Slope
 paths["BATH"] = PathTemp + "_Bathymetry.tif"  # Bathymetry
 paths["POP"] = PathTemp + "_Population.tif"  # Population
 paths["BUFFER"] = PathTemp + "_Population_Buffered.tif"  # Buffered population
+paths["CORR_GWA"] = PathTemp + "_GWA_Correction.mat"  # Correction factors based on the GWA
 paths["CORR"] = PathTemp + "_Wind_Correction.tif"  # Correction factors for wind speeds
 
 # Ouput Folders
 timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
-timestamp = "test"
+timestamp = "20190502 Referenzszenario"
 paths["OUT"] = root + "OUTPUTS" + fs + region + fs + timestamp + fs
 if not os.path.isdir(paths["OUT"]):
     os.mkdir(paths["OUT"])

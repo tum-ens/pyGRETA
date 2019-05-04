@@ -4,6 +4,9 @@ import math as m
 import numpy as np
 import rasterio
 from rasterio import windows, mask, MemoryFile
+import pandas as pd
+import hdf5storage
+from itertools import product
 
 
 def calc_ext(regb, ext, res):
@@ -116,11 +119,83 @@ def calc_region(region, Crd_reg, res_desired, GeoRef):
         A_region = out_image[0]
 
     return A_region
+	
+	
+def calc_gwa_correction(param, paths):
+    ''' description'''
+    m_high = param["m_high"]
+    n_high = param["n_high"]
+    res_desired = param["res_desired"]
+    nCountries = param["nCountries"]
+    countries_shp = param["countries"]
+    Crd_countries = param["Crd_countries"][0:nCountries, :]
+    GeoRef = param["GeoRef"]
+
+    # Obtain wind speed at 50m
+    W50M = hdf5storage.read('W50M', paths["W50M"])
+    W50M = np.mean(W50M, 2)
+    W50M = resizem(W50M, m_high, n_high)
+	
+    # Obtain topography
+    with rasterio.open(paths["TOPO"]) as src:
+        w = src.read(1)
+    TOPO = np.flipud(w)
+	
+    # Get the installed capacities
+    inst_cap = pd.read_csv(paths["inst-cap"], skiprows = 2, sep = ';', index_col = 0)
+
+    w_size = np.zeros((nCountries, 1))
+    w_cap = np.zeros((nCountries, 1))
+    # Try different combinations of (a, b)
+    combi_list = list(product(np.arange(0.00046, 0.00066, 0.00002), np.arange(-0.3, 0, 0.025)))
+    errors = np.zeros((len(combi_list), nCountries))
+    for reg in range(0, nCountries):
+        A_region = calc_region(countries_shp.iloc[reg], Crd_countries[reg, :], res_desired, GeoRef)
+        reg_name = countries_shp.iloc[reg]["NAME_SHORT"]
+        Ind_reg = np.nonzero(A_region)
+        w_size[reg] = len(Ind_reg[0])
+        w_cap[reg] = inst_cap.loc[reg_name, 'WindOn']
+
+        # Load MERRA data, increase its resolution, and fit it to the extent
+        w50m_reg = W50M[Ind_reg]
+        topo_reg = TOPO[Ind_reg]
+		
+        # Get the sampled frequencies from the GWA
+        w50m_gwa = pd.read_csv(paths["GWA"][:-14] + reg_name + paths["GWA"][-14:], usecols=['gwa_ws']).to_numpy()[:,0]
+        
+        i = 0
+        for combi in combi_list:
+            ai, bi = combi
+            w50m_corrected = w50m_reg * np.minimum(np.exp(ai * topo_reg + bi), 3.5)
+            w50m_sorted = np.sort(w50m_corrected)
+            w50m_sampled = np.flipud(w50m_sorted[::(len(w50m_sorted) // 50 + 1)])
+            w50m_diff = w50m_sampled - w50m_gwa
+            errors[i, reg] = np.sqrt((w50m_diff**2).sum())
+            i = i + 1
+			
+    w_size = np.tile(w_size / w_size.sum(), (1, len(combi_list))).transpose()
+    w_cap = np.tile(w_cap / w_cap.sum(), (1, len(combi_list))).transpose()
+	
+    ae, be = combi_list[np.argmin(np.sum(errors / nCountries, 1))]
+    correction_none = np.zeros(TOPO.shape)
+    correction_none = np.minimum(np.exp(ae * TOPO + be), 3.5)
+	
+    a_size, b_size = combi_list[np.argmin(np.sum(errors * w_size, 1))]
+    correction_size = np.zeros(TOPO.shape)
+    correction_size = np.minimum(np.exp(a_size * TOPO + b_size), 3.5)
+	
+    a_cap, b_cap = combi_list[np.argmin(np.sum(errors * w_cap, 1))]
+    correction_capacity = np.zeros(TOPO.shape)
+    correction_capacity = np.minimum(np.exp(a_cap * TOPO + b_cap), 3.5)
+
+    hdf5storage.writes({'correction_none': correction_none, 'correction_size': correction_size, 'correction_capacity': correction_capacity,}, paths["CORR_GWA"],
+                       store_python_metadata=True, matlab_compatible=True)
+    return
 
 
 def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
     """
-    This function creates a GCR weighting matrix for the desired geographic extent
+    This function creates a GCR weighting matrix for the desired geographic extent.
     The sizing of the PV system is conducted on a user-defined day for a shade-free exposure
     to the sun during a given number of hours.
 

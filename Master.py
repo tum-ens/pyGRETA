@@ -47,6 +47,21 @@ def initialization():
     Crd_all = np.array([max(Crd_regions[:, 0]), max(Crd_regions[:, 1]), min(Crd_regions[:, 2]), min(Crd_regions[:, 3])])
     param["Crd_regions"] = Crd_regions
     param["Crd_all"] = Crd_all
+	
+    # Do the same for countries, if wind correction is to be calculated
+    if (not os.path.isfile(paths["CORR_GWA"])) and param["WindOn"]["resource"]["topo_correction"] and ("WindOn" in param["technology"]):
+	    # read shapefile of countries
+        countries_shp = gpd.read_file(paths["Countries"])
+        param["countries"] = countries_shp.drop(countries_shp[countries_shp["Population"] == 0].index)
+        param["nCountries"] = len(param["countries"])
+        nCountries = param["nCountries"]
+        Crd_countries = np.zeros((nCountries, 4))
+        for reg in range(0, nCountries):
+            # Box coordinates for MERRA2 data
+            r = countries_shp.bounds.iloc[reg]
+            box = np.array([r["maxy"], r["maxx"], r["miny"], r["minx"]])[np.newaxis]
+            Crd_countries[reg, :] = crd_merra(box, res_weather)
+        param["Crd_countries"] = Crd_countries
 
     # Indices and matrix dimensions
     Ind_low = ind_merra(Crd_regions, Crd_all, res_weather)  # Range indices for MERRA2 data (centroids)
@@ -430,20 +445,19 @@ def generate_protected_areas(paths, param):
 def generate_buffered_population(paths, param):
     timecheck('Start')
     buffer_pixel_amount = param["WindOn"]["mask"]["buffer_pixel_amount"]
-    if buffer_pixel_amount:
-        GeoRef = param["GeoRef"]
-        with rasterio.open(paths["LU"]) as src:
-            A_lu = src.read(1)
-        A_lu = np.flipud(A_lu).astype(int)
-        A_lu = A_lu == param["landuse"]["type_urban"] # Land use type for Urban and built-up
-        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
-        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_lu_buffered = convolve(A_lu, kernel)
-        A_notPopulated = (~A_lu_buffered).astype(int)
+    GeoRef = param["GeoRef"]
+    with rasterio.open(paths["LU"]) as src:
+        A_lu = src.read(1)
+    A_lu = np.flipud(A_lu).astype(int)
+    A_lu = A_lu == param["landuse"]["type_urban"] # Land use type for Urban and built-up
+    kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
+    kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
+    A_lu_buffered = convolve(A_lu, kernel)
+    A_notPopulated = (~A_lu_buffered).astype(int)
 
-        array2raster(paths["BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
-                     A_notPopulated)
-        print("files saved: " + paths["BUFFER"])
+    array2raster(paths["BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
+                 A_notPopulated)
+    print("files saved: " + paths["BUFFER"])
     timecheck('End')
 
 
@@ -503,10 +517,10 @@ def generate_wind_correction(paths, param):
     A_cf_on = A_cf_on * A_land
     del A_land
     if topo_correction:
-        with rasterio.open(paths["TOPO"]) as src:
-            A_topo = np.flipud(src.read(1)).astype(float)
-        (a, b) = param["WindOn"]["resource"]["topo_factors"]
-        A_cf_on = A_cf_on * np.minimum(np.exp(a * A_topo + b), 3.5)
+        if not os.path.isfile(paths["CORR_GWA"]):
+            calc_gwa_correction(param, paths)
+        gwa_correction = hdf5storage.read('correction_' + param["WindOn"]["resource"]["topo_weight"], paths["CORR_GWA"])
+        A_cf_on = A_cf_on * gwa_correction
     with rasterio.open(paths["EEZ"]) as src:
         A_eez = np.flipud(src.read(1)).astype(int)
     A_cf = A_cf_off * A_eez + A_cf_on
@@ -707,10 +721,10 @@ def weighting(paths, param, tech):
     del A_availability_pa, A_availability_lu
 
     # Calculate available areas
-    A_area = calc_areas(Crd_all, n_high, res_desired) * A_availability
+    A_area = calc_areas(Crd_all, n_high, res_desired)
 
-    # Weighting matrix for the energy output (technical potential) in MWp
-    A_weight = A_area * A_GCR * weight["power_density"] * weight["f_performance"]
+    # Weighting matrix for the power output (technical potential) in MWp
+    A_weight = A_area * A_availability * A_GCR * weight["power_density"] * weight["f_performance"]
 
     # Calculate weighted FLH in MWh
     FLH = hdf5storage.read('FLH', paths[tech]["FLH"])
@@ -825,6 +839,11 @@ def reporting(paths, param, tech):
         A_P_potential = A_area_region * density
         power_potential = np.nansum(A_P_potential)
         region_stats["Power_Potential_GW"] = power_potential / (10 ** 3)
+		
+        # Power Potential after weighting
+        A_P_W_potential = A_region_extended * A_weight
+        power_potential_weighted = np.nansum(A_P_W_potential)
+        region_stats["Power_Potential_Weighted_GW"] = power_potential_weighted / (10 ** 3)
 
         # Energy Potential
         A_E_potential = A_P_potential * FLH_region
@@ -832,7 +851,7 @@ def reporting(paths, param, tech):
         region_stats["Energy_Potential_TWh"] = energy_potential / (10 ** 6)
 
         # Energy Potential after weighting
-        A_E_W_potential = A_E_potential * A_weight
+        A_E_W_potential = FLH_region * A_weight
         energy_potential_weighted = np.nansum(A_E_W_potential)
         region_stats["Energy_Potential_Weighted_TWh"] = energy_potential_weighted / (10 ** 6)
 
@@ -869,7 +888,7 @@ def reporting(paths, param, tech):
     # Reorder dataframe columns
     df = df[['Region', 'Available', 'Available_Masked', 'Available_Area_km2', 'FLH_Mean', 'FLH_Median',
              'FLH_Max', 'FLH_Min', 'FLH_Mean_Masked', 'FLH_Median_Masked', 'FLH_Max_Masked',
-             'FLH_Min_Masked', 'FLH_Std_Masked', 'Power_Potential_GW', 'Energy_Potential_TWh',
+             'FLH_Min_Masked', 'FLH_Std_Masked', 'Power_Potential_GW', 'Power_Potential_Weighted_GW', 'Energy_Potential_TWh',
              'Energy_Potential_Weighted_TWh', 'Energy_Potential_Weighted_Masked_TWh']]
 
     # Export the dataframe as CSV
@@ -1015,15 +1034,15 @@ if __name__ == '__main__':
     generate_slope(paths, param)  # Slope
     generate_population(paths, param)  # Population
     generate_protected_areas(paths, param)  # Protected areas
-    #generate_buffered_population(paths, param)  # Buffered Population
+    generate_buffered_population(paths, param)  # Buffered Population
     #generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
         #calculate_FLH(paths, param, tech)
-        #masking(paths, param, tech)
-        #weighting(paths, param, tech)
+        masking(paths, param, tech)
+        weighting(paths, param, tech)
         reporting(paths, param, tech)
-        find_locations_quantiles(paths, param, tech)
-        generate_time_series(paths, param, tech)
+        #find_locations_quantiles(paths, param, tech)
+        #generate_time_series(paths, param, tech)
         # cProfile.run('reporting(paths, param, tech)', 'cprofile_test.txt')
         # p = pstats.Stats('cprofile_test.txt')
         # p.sort_stats('cumulative').print_stats(20)

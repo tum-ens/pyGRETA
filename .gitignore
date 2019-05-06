@@ -18,3 +18,9 @@ OUTPUTS/Germany/test/Germany_WindOn_Locations.dbf
 Python_2015_angles_F_Log.csv
 OUTPUTS/Germany/test/Germany_PV_TS_2015.csv
 Germany_PV_TS_2015.csv
+OUTPUTS/Germany/Regression/INPUTS/EMHIRES_WindOn.txt
+OUTPUTS/Germany/Regression/INPUTS/Germany_WindOn_100_TS_2015.csv
+OUTPUTS/Germany/Regression/INPUTS/Germany_WindOn_80_TS_2015.csv
+OUTPUTS/Germany/Regression/INPUTS/Germany_WindOn_60_TS_2015.csv
+OUTPUTS/Germany/Regression/INPUTS/IRENA_FLH.txt
+OUTPUTS/Germany/Regression/INPUTS/README.txt

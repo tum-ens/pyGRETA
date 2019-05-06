@@ -18,7 +18,7 @@ param["report_sampling"] = 100
 
 
 # Regression Coefficient
-param["solver"] = 'glpk'
+param["solver"] = 'gurobi'
 param["hub_heights"] = np.array([60, 80, 100])
 
 # MERRA_Centroid_Extent = [74.5, 45, 19, -20.625]  # EUMENA
@@ -205,7 +205,15 @@ paths["BUFFER"] = PathTemp + "_Population_Buffered.tif"  # Buffered population
 paths["CORR"] = PathTemp + "_Wind_Correction.tif"  # Correction factors for wind speeds
 
 # Regression input
-paths["regression"] = root + "OUTPUTS" + fs + region + fs + "regression_input" + fs
+paths["EMHIRES"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + "EMHIRES_"
+paths["IRENA"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + "IRENA_FLH.txt"
+paths["Reg_RM"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + "README.txt"
+
+
+# Regression folders
+paths["regression"] = root + "OUTPUTS" + fs + region + fs + "Regression" + fs
+paths["regression_in"] = paths["regression"] + "INPUTS" + fs
+paths["regression_out"] = paths["regression"] + "OUTPUTS" + fs
 
 # Ouput Folders
 timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
@@ -222,16 +230,17 @@ for tech in param["technology"]:
     paths[tech] = {}
     if tech in ['WindOn', 'WindOff']:
         hubheight = str(param[tech]["technical"]["hub_height"])
-        paths[tech]["FLH"] = paths["OUT"] + region + '_' + tech + ' _ ' + hubheight + '_FLH_' + year + '.mat'
-        paths[tech]["mask"] = paths["OUT"] + region + "_" + tech + ' _ ' + hubheight + "_mask_" + year + ".mat"
-        paths[tech]["FLH_mask"] = paths["OUT"] + region + "_" + tech + ' _ ' + hubheight + "_FLH_mask_" + year + ".mat"
-        paths[tech]["area"] = paths["OUT"] + region + "_" + tech + ' _ ' + hubheight + "_area_" + year + ".mat"
-        paths[tech]["weight"] = paths["OUT"] + region + "_" + tech + ' _ ' + hubheight + "_weight_" + year + ".mat"
-        paths[tech]["FLH_weight"] = paths["OUT"] + region + "_" + tech + ' _ ' + hubheight + "_FLH_weight_" + year + ".mat"
-        paths[tech]["Locations"] = paths["OUT"] + region + "_" + tech + ' _ ' + hubheight + '_Locations.shp'
-        paths[tech]["TS"] = paths["OUT"] + region + '_' + tech + ' _ ' + hubheight + '_TS_' + year + '.csv'
-        paths[tech]["Region_Stats"] = paths["OUT"] + region + '_' + tech + ' _ ' + hubheight + '_Region_stats_' + year + '.csv'
-        paths[tech]["Sorted_FLH"] = paths["OUT"] + region + '_' + tech + ' _ ' + hubheight + '_sorted_FLH_sampled_' + year + '.mat'
+        paths[tech]["FLH"] = paths["OUT"] + region + '_' + tech + '_' + hubheight + '_FLH_' + year + '.mat'
+        paths[tech]["mask"] = paths["OUT"] + region + "_" + tech + '_' + hubheight + "_mask_" + year + ".mat"
+        paths[tech]["FLH_mask"] = paths["OUT"] + region + "_" + tech + '_' + hubheight + "_FLH_mask_" + year + ".mat"
+        paths[tech]["area"] = paths["OUT"] + region + "_" + tech + '_' + hubheight + "_area_" + year + ".mat"
+        paths[tech]["weight"] = paths["OUT"] + region + "_" + tech + '_' + hubheight + "_weight_" + year + ".mat"
+        paths[tech]["FLH_weight"] = paths["OUT"] + region + "_" + tech + '_' + hubheight + "_FLH_weight_" + year + ".mat"
+        paths[tech]["Locations"] = paths["OUT"] + region + "_" + tech + '_' + hubheight + '_Locations.shp'
+        paths[tech]["TS"] = paths["OUT"] + region + '_' + tech + '_' + hubheight + '_TS_' + year + '.csv'
+        paths[tech]["TS_height"] = paths["regression_in"] + region + '_' + tech + '_'
+        paths[tech]["Region_Stats"] = paths["OUT"] + region + '_' + tech + '_' + hubheight + '_Region_stats_' + year + '.csv'
+        paths[tech]["Sorted_FLH"] = paths["OUT"] + region + '_' + tech + '_' + hubheight + '_sorted_FLH_sampled_' + year + '.mat'
     else:
         paths[tech]["FLH"] = paths["OUT"] + region + '_' + tech + '_FLH_' + year + '.mat'
         paths[tech]["mask"] = paths["OUT"] + region + "_" + tech + "_mask_" + year + ".mat"

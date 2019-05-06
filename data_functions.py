@@ -7,7 +7,6 @@ from rasterio import windows, mask, MemoryFile
 import hdf5storage
 
 
-
 def calc_ext(regb, ext, res):
     minRow = m.floor(regb["miny"] / res[1, 0]) * res[1, 0]
     maxRow = m.ceil(regb["maxy"] / res[1, 0]) * res[1, 0]
@@ -351,64 +350,56 @@ def superpose_down(A_lu, buffer_pixed_amount):
     return shifted_down
 
 
-def load_data(paths, param, region):
+def load_data(paths, param, tech, region):
 
     # Read data from output folder
     IRENA_FLH = 0
     TS = np.zeros(8760)
 
-    # Setup dataframe for EMHIRES DATA
-    EMHIRES = pd.read_csv(paths["regression"] + 'wind_on.txt', '\t')
-    EMHIRES = EMHIRES[EMHIRES["Year"] == int(param["year"])].reset_index()
-    # TO be ADDED, filter by regions understudy
-    EMHIRES = EMHIRES.drop(['index', 'Time', 'step', 'Date', 'Year', 'Month', 'Day', 'Hour'], axis=1)
-    TS = np.array(EMHIRES[region].values)
-
-    # Setup dataframe for IRENA
-    irena = pd.read_csv(paths["regression"] + 'IRENA_FLH.txt', '\t')
-    irena = irena.transpose()
-    irena.columns = irena.iloc[0]
-    irena = irena.drop('NAME_SHORT')
-    IRENA_FLH = irena[region].loc['wind']
-
     # Setup the data dataframe for generated TS for each quantile
-    TS60 = pd.read_csv(paths["regression"] + 'Germany_WindOn_TS_60_2015.csv', ';')
+    GenTS = {}
+    for hub in param["hub_heights"]:
+        TS_Temp = pd.read_csv(paths[tech]["TS_height"] + str(hub) + '_TS_' + param["year"] + '.csv', ';')
 
-    # Filters unwanted regions
-    filter_reg = [col for col in TS60 if col.startswith(region)]
-    TS60 = TS60[filter_reg]
-    TS60.columns = TS60.iloc[0]
-    TS60 = TS60.drop(0)
+        # Remove undesired regions
+        filter_reg = [col for col in TS_Temp if col.startswith(region)]
+        TS_Temp = TS_Temp[filter_reg]
+        if TS_Temp.empty:
+            return None
+        TS_Temp.columns = TS_Temp.iloc[0]
+        TS_Temp = TS_Temp.drop(0)
 
-    TS80 = pd.read_csv(paths["regression"] + 'Germany_WindOn_TS_80_2015.csv', ';')
-    filter_reg = [col for col in TS80 if col.startswith(region)]
-    TS80 = TS80[filter_reg]
-    TS80.columns = TS80.iloc[0]
-    TS80 = TS80.drop(0)
-
-    TS100 = pd.read_csv(paths["regression"] + 'Germany_WindOn_TS_100_2015.csv', ';')
-    filter_reg = [col for col in TS100 if col.startswith(region)]
-    TS100 = TS100[filter_reg]
-    TS100.columns = TS100.iloc[0]
-    TS100 = TS100.drop(0)
-
-    GenTS = {"60": TS60.astype(float),
-             "80": TS80.astype(float),
-             "100": TS100.astype(float)}
+        GenTS[str(hub)] = TS_Temp.astype(float)
+    GenTS["TS_Max"] = np.nansum(GenTS[str(np.max(param["hub_heights"]))]["q" + str(np.max(param["quantiles"]))])
+    GenTS["TS_Min"] = np.nansum(GenTS[str(np.min(param["hub_heights"]))]["q" + str(np.min(param["quantiles"]))])
 
     # Prepare Timeseries dictionary indexing by height and quantile
     Timeseries = {}
     for h in param["hub_heights"]:
         for q in param["quantiles"]:
-            Timeseries[(h, q)] = np.array(GenTS[str(h)]['q'+str(q)])
+            for t in range(1, 8761):
+                Timeseries[(h, q, t)] = np.array(GenTS[str(h)]['q'+str(q)])[t-1]
+
+    # Setup dataframe for IRENA
+    IRENA = param["IRENA"]
+    IRENA_FLH = IRENA[region].loc[tech]
+
+    # Setup dataframe for EMHIRES DATA
+    EMHIRES = param["EMHIRES"]
+    ts = np.array(EMHIRES[region].values)
+    TS = {}
+    for t in range(1, 8761):
+        TS[(t,)] = ts[t - 1]
 
     # Create data_input dictionary
     data = {None: {
         "h": {None: param["hub_heights"]},
         "q": {None: param["quantiles"]},
         "FLH": {None: IRENA_FLH},
-        "shape": {None: TS},
-        "TS": Timeseries
+        "shape": TS,
+        "t": {None: np.arange(1, 8761)},
+        "TS": Timeseries,
+        "IRENA_best_worst": (GenTS["TS_Max"] > IRENA_FLH, GenTS["TS_Min"] < IRENA_FLH)
             }}
 
     return data

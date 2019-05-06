@@ -12,10 +12,10 @@ import hdf5storage
 from multiprocessing import Pool
 from itertools import product
 import h5netcdf
+import shutil
 import pyomo.environ as pyo
 from pyomo.opt import SolverFactory
-import cProfile
-import pstats
+
 
 
 def initialization():
@@ -1046,37 +1046,111 @@ def generate_time_series(paths, param):
     timecheck('End')
 
 
-def regression_coefficient(paths, param):
+def regression_coefficient(paths, param, tech):
     timecheck('Start')
-    param["solver"] = 'glpk'
+
+    # Check if regression folder is present, if not creates it
+
+    if not os.path.isdir(paths['regression']):
+        os.mkdir(paths['regression'])
+        os.mkdir(paths["regression_in"])
+        os.mkdir(paths["regression_out"])
+        shutil.copy2(paths["IRENA"],
+                     paths["regression_in"] + os.path.split(paths["IRENA"])[1])
+        shutil.copy2(paths["EMHIRES"] + tech + '.txt',
+                     paths["regression_in"] + os.path.split(paths["EMHIRES"] + tech + '.txt')[1])
+        # display error, and copy readme file
+        shutil.copy2(paths["Reg_RM"],
+                     paths["regression_in"] + os.path.split(paths["Reg_RM"])[1])
+        reg_miss_folder(paths)
+        return
+
+    # Check if the TS files are present in input folder
+
+    missing = 0
+    for hub in param["hub_heights"]:
+        pathfile = paths[tech]["TS_height"] + str(hub) + '_TS_' + param["year"] + '.csv'
+        if not os.path.isfile(pathfile):
+            missing = missing + 1
+    if missing > 0:
+        reg_miss_files(paths, param, missing)
+        return
+    del missing, pathfile, hub
+
+    # Create Pyomo Abstract Model
 
     model = pyo.AbstractModel()
-    solver = pyo.SolverFactory(param["solver"])
+    solver = SolverFactory(param["solver"])
     model.h = pyo.Set()
     model.q = pyo.Set()
-    model.hour = pyo.RangeSet(0, 8760)
+    model.t = pyo.Set()
 
     model.FLH = pyo.Param()
-    model.Shape = pyo.Param()
+    model.shape = pyo.Param(model.t)
 
-    model.TS = pyo.Param(model.h, model.q)
+    model.TS = pyo.Param(model.h, model.q, model.t)
     model.coef = pyo.Var(model.h, model.q, domain=pyo.NonNegativeReals)
 
-    def ax_constraint_rule(model):
-        return pyo.summation(model.coef * model.TS) == model.FLH
+    def constraint_rule(model):
+        FLH = 0
+        for h in model.h:
+            for q in model.q:
+                for t in model.t:
+                    FLH = FLH + pyo.prod([model.coef[h, q], model.TS[h, q, t]])
+        return FLH == model.FLH
 
-    def obj_expression(model, h, q):
+    def obj_expression(model):
+        Error = 0
+        for h in model.h:
+            for q in model.q:
+                for t in model.t:
+                    Error = Error + (pyo.prod([model.coef[h, q], model.TS[h, q, t]]) - model.shape[t]) ** 2
+        return Error
 
-        timeseries = model.coef[h, q] * model.TS[h, q]
+    model.OBJ = pyo.Objective(rule=obj_expression)
+    model.constraint = pyo.Constraint(rule=constraint_rule)
 
-        exp = abs(pyo.summation(timeseries))
-        return exp
+    # Load IRENA data and regions
 
-    model.OBJ = pyo.Objective(model.h, model.q, rule=obj_expression)
-    model.constraint = pyo.Constraint(rule=ax_constraint_rule)
-    reg = model.create_instance(load_data(paths, param, "DE"))
-    results = solver.solve(reg)
-    print(reg.coef)
+    irena = pd.read_csv(paths["regression_in"] + 'IRENA_FLH.txt', '\t')
+    irena_regions = np.array(irena['NAME_SHORT'])
+    irena = irena.transpose()
+    irena.columns = irena.iloc[0]
+    irena = irena.drop('NAME_SHORT')
+    param["IRENA"] = irena
+
+    # load EMHIRES data for desired year
+    EMHIRES = pd.read_csv(paths["regression_in"] + 'EMHIRES_WindOn.txt', '\t')
+    EMHIRES = EMHIRES[EMHIRES["Year"] == int(param["year"])].reset_index()
+    EMHIRES = EMHIRES.drop(['index', 'Time', 'step', 'Date', 'Year', 'Month', 'Day', 'Hour'], axis=1)
+    emhires_regions = np.array(EMHIRES.columns)
+    param["EMHIRES"] = EMHIRES
+
+    # Find intersection between emhires and irena
+    list_regions = np.intersect1d(irena_regions, emhires_regions)
+    del emhires_regions, irena_regions
+
+    # loop over all regions
+    results = {}
+    for reg in list_regions:
+        region_data = load_data(paths, param, tech, reg)
+        if region_data is None:
+            continue
+        if region_data[None]["IRENA_best_worst"] == (True, True):
+            regression = model.create_instance(region_data)
+            results = solver.solve(regression)
+        else:
+            results[reg] = "No solution"
+            print("There is no solution for region:" + reg)
+
+
+    # IRENA_FLH = irena[region].loc['wind']
+    #
+    #   return region data
+    #   instantiate model
+    #   solve it and return results
+    #   Save data to array and parse it to pandas Dataframe
+    # Save dataframe to .csv file
     print(results)
     timecheck('End')
 
@@ -1095,9 +1169,6 @@ if __name__ == '__main__':
     generate_wind_correction(paths, param)  # Correction factors for wind speeds
 
     for tech in param["technology"]:
-        if tech in ["WindOn", "WindOff"]:
-            for height in param["hub_heights"]:
-                param[tech]["technical"]
         # calculate_FLH(paths, param, tech)
         #
         # masking(paths, param, tech)
@@ -1105,7 +1176,7 @@ if __name__ == '__main__':
         # reporting(paths, param, tech)
         # find_locations_quantiles(paths, param, tech)
         # generate_time_series(paths, param, tech)
-        regression_coefficient(paths, param)
+        regression_coefficient(paths, param, tech)
         # cProfile.run('reporting(paths, param, tech)', 'cprofile_test.txt')
         # p = pstats.Stats('cprofile_test.txt')
         # p.sort_stats('cumulative').print_stats(20)

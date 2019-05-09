@@ -1,4 +1,4 @@
-NAME_SHORT	wind	wind-os	slpv	cspr
+NAME_SHORT	WindOn	WindOff	PV	CSP
 AT	1945	0	1000	0
 BE	2023	3670	982	0
 BG	2077	0	1344	0

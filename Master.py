@@ -1052,8 +1052,12 @@ def regression_coefficient(paths, param, tech):
     # Check technology for hubeights
     if tech in ['WindOn', 'WindOff']:
         hub_heights = param["hub_heights"]
+    elif tech in ['PV']:
+        hub_heights = np.array([0])
     else:
-        hub_heights = [0]
+        print(tech + " is not yet implemented;")
+        timecheck('End')
+        return
 
     # Check if regression folder is present, if not creates it
 
@@ -1069,20 +1073,22 @@ def regression_coefficient(paths, param, tech):
         shutil.copy2(paths["Reg_RM"],
                      paths["regression_in"] + os.path.split(paths["Reg_RM"])[1])
         reg_miss_folder(paths)
+        timecheck('End')
         return
 
     # Check if the TS files are present in input folder
 
     missing = 0
     for hub in hub_heights:
-        if hub != 0:
-            pathfile = paths[tech]["TS_height"] + str(hub) + '_TS_' + param["year"] + '.csv'
+        if len(hub_heights) > 1:
+            pathfile = paths[tech]["TS_height"] + '_' + str(hub) + '_TS_' + param["year"] + '.csv'
         else:
             pathfile = paths[tech]["TS_height"] + '_TS_' + param["year"] + '.csv'
         if not os.path.isfile(pathfile):
             missing = missing + 1
     if missing > 0:
-        reg_miss_files(paths, param, missing)
+        reg_miss_files(paths, param, missing, hub_heights)
+        timecheck('End')
         return
     del missing, pathfile, hub
 
@@ -1130,7 +1136,8 @@ def regression_coefficient(paths, param, tech):
     model.constraint_sum = pyo.Constraint(rule=constraint_sum)
 
     # Load IRENA data and regions
-    irena = pd.read_csv(paths["regression_in"] + 'IRENA_FLH.txt', '\t')
+
+    irena = pd.read_csv(paths["regression_in"] + os.path.split(paths["IRENA"])[1], '\t')
     irena_regions = np.array(irena['NAME_SHORT'])
     irena = irena.transpose()
     irena.columns = irena.iloc[0]
@@ -1148,14 +1155,28 @@ def regression_coefficient(paths, param, tech):
     list_regions = np.intersect1d(irena_regions, emhires_regions)
     del emhires_regions, irena_regions
 
+    # Summary Variables
     summary = None
+    nodata = ''
+    nosolution = ''
+    solution = ''
 
     # loop over all regions
+    status = 0
+    print("Regions under study : " + str(len(list_regions)))
     for reg in list_regions:
+        # Show progress of the simulation
+        status = status + 1
+        sys.stdout.write('\r')
+        sys.stdout.write('Regression Coefficients ' + tech + ' ' + param["region"] + ' ' + '[%-50s] %d%%' % (
+        '=' * ((status * 50) // len(list_regions)), (status * 100) // len(list_regions)))
+        sys.stdout.flush()
+
         region_data = load_data(paths, param, tech, hub_heights, reg)
 
         # Skip regions not present in the generated TS
         if region_data is None:
+            nodata = nodata + reg + ', '
             continue
 
         if region_data[None]["IRENA_best_worst"] == (True, True):
@@ -1176,19 +1197,28 @@ def regression_coefficient(paths, param, tech):
                     p += 1
                 c += 1
             r[r < 10**(-5)] = 0
+            solution = solution + reg + ', '
         else:
             r = np.full((len(param["quantiles"]), len(hub_heights)), np.nan)
-            print("There is no solution for region:" + reg)
+            nosolution = nosolution + reg + ', '
 
-        result = pd.DataFrame(r, param["quantiles"], (reg + "_" + str(h) for h in hub_heights))
+        if len(hub_heights) > 1:
+            result = pd.DataFrame(r, param["quantiles"], (reg + "_" + str(h) for h in hub_heights))
+        else:
+            result = pd.DataFrame(r, param["quantiles"], [reg])
+
         if summary is None:
             summary = result
         else:
             summary = pd.concat([summary, result], axis=1)
-
-    print(summary)
-
+    if solution != '':
+        print("\nA solution was found for the following regions: " + solution)
+    if nosolution != '':
+        print("\nNo Solution was found for the following regions: " + nosolution)
+    if nodata != '':
+        print("\nNo data was available for the following regions: " + nodata)
     summary.to_csv(paths[tech]["Regression_summary"], na_rep=param["no_solution"], sep=';', decimal='.')
+    print("files saved: " + paths[tech]["Regression_summary"])
     timecheck('End')
 
 
@@ -1207,7 +1237,6 @@ if __name__ == '__main__':
 
     for tech in param["technology"]:
         # calculate_FLH(paths, param, tech)
-        #
         # masking(paths, param, tech)
         # weighting(paths, param, tech)
         # reporting(paths, param, tech)

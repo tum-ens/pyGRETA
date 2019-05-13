@@ -1051,16 +1051,23 @@ def regression_coefficient(paths, param, tech):
         os.mkdir(paths['regression'])
         os.mkdir(paths["regression_in"])
         os.mkdir(paths["regression_out"])
-        shutil.copy2(paths["IRENA"],
-                     paths["regression_in"] + os.path.split(paths["IRENA"])[1])
-        shutil.copy2(paths[tech]["EMHIRES"],
-                     paths["regression_in"] + os.path.split(paths[tech]["EMHIRES"])[1])
+
         # display error, and copy readme file
         shutil.copy2(paths["Reg_RM"],
                      paths["regression_in"] + os.path.split(paths["Reg_RM"])[1])
         reg_miss_folder(paths)
         timecheck('End')
         return
+
+    # Copy EMHIRES and IRENA files for technology if not present
+
+    if not os.path.isfile(paths["regression_in"] + os.path.split(paths[tech]["EMHIRES"])[1]):
+        shutil.copy2(paths[tech]["EMHIRES"],
+                     paths["regression_in"] + os.path.split(paths[tech]["EMHIRES"])[1])
+
+    if not os.path.isfile(paths["regression_in"] + os.path.split(paths["IRENA"])[1]):
+        shutil.copy2(paths["IRENA"],
+                     paths["regression_in"] + os.path.split(paths["IRENA"])[1])
 
     # Check if the TS files are present in input folder
 
@@ -1198,11 +1205,11 @@ def regression_coefficient(paths, param, tech):
         else:
             summary = pd.concat([summary, result], axis=1)
     if solution != '':
-        print("\nA solution was found for the following regions: " + solution)
+        print("\nA solution was found for the following regions: " + solution.rstrip(', '))
     if nosolution != '':
-        print("\nNo Solution was found for the following regions: " + nosolution)
+        print("\nNo Solution was found for the following regions: " + nosolution.rstrip(', '))
     if nodata != '':
-        print("\nNo data was available for the following regions: " + nodata)
+        print("\nNo data was available for the following regions: " + nodata.rstrip(', '))
     summary.to_csv(paths[tech]["Regression_summary"], na_rep=param["no_solution"], sep=';', decimal='.')
     print("files saved: " + paths[tech]["Regression_summary"])
     timecheck('End')

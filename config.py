@@ -19,8 +19,11 @@ param["report_sampling"] = 100
 
 # Regression Coefficient
 param["solver"] = 'gurobi'
-param["hub_heights"] = np.array([60, 80, 100])
 param["no_solution"] = '**'
+
+# To be implemented later
+# param["TS_datamodel"] = "EMHIRES"  # 'EMHIRES','Renewables.ninja'
+
 
 # MERRA_Centroid_Extent = [74.5, 45, 19, -20.625]  # EUMENA
 # MERRA_Centroid_Extent = [74.5, 36.25, 33.5, -16.25]  # Europe
@@ -218,6 +221,7 @@ paths["IRENA"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + "IR
 paths["Reg_RM"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + "README.txt"
 
 
+
 # Regression folders
 paths["regression"] = root + "OUTPUTS" + fs + region + fs + "Regression" + fs
 paths["regression_in"] = paths["regression"] + "INPUTS" + fs
@@ -238,6 +242,10 @@ for tech in param["technology"]:
         paths[tech]["TS"] = paths["OUT"] + region + '_' + tech + '_' + hubheight + '_TS_' + year + '.csv'
         paths[tech]["Region_Stats"] = paths["OUT"] + region + '_' + tech + '_' + hubheight + '_Region_stats_' + year + '.csv'
         paths[tech]["Sorted_FLH"] = paths["OUT"] + region + '_' + tech + '_' + hubheight + '_sorted_FLH_sampled_' + year + '.mat'
+        if tech == 'WindOn':
+            paths[tech]["EMHIRES"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + "TS.CF.COUNTRY.30yr.date.txt"
+        elif tech == 'WindOff':
+            paths[tech]["EMHIRES"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + "TS.CF.OFFSHORE.30yr.date.txt"
     else:
         paths[tech]["FLH"] = paths["OUT"] + region + '_' + tech + '_FLH_' + year + '.mat'
         paths[tech]["mask"] = paths["OUT"] + region + "_" + tech + "_mask_" + year + ".mat"
@@ -249,9 +257,11 @@ for tech in param["technology"]:
         paths[tech]["TS"] = paths["OUT"] + region + '_' + tech + '_TS_' + year + '.csv'
         paths[tech]["Region_Stats"] = paths["OUT"] + region + '_' + tech + '_Region_stats_' + year + '.csv'
         paths[tech]["Sorted_FLH"] = paths["OUT"] + region + '_' + tech + '_sorted_FLH_sampled_' + year + '.mat'
+        if tech == 'PV':
+            paths[tech]["EMHIRES"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + "EMHIRESPV_TSh_CF_Country_19862015.txt"
 
     paths[tech]["TS_height"] = paths["regression_in"] + region + '_' + tech
     paths[tech]["Regression_summary"] = paths["regression_out"] + region + '_' + tech + '_reg_coefficients_' + timestamp + '.csv'
-    paths[tech]["EMHIRES"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + "EMHIRES_" + tech + '.txt'
+    # paths[tech]["EMHIRES"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + "EMHIRES_" + tech + '.txt'
 
 del root, PathTemp, fs

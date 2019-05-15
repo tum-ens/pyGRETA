@@ -1138,7 +1138,7 @@ def regression_coefficient(paths, param, tech):
 
     # Load IRENA data and regions
 
-    irena = pd.read_csv(paths["regression_in"] + os.path.split(paths["IRENA"])[1], '\t')
+    irena = pd.read_csv(paths["regression_in"] + os.path.split(paths["IRENA"])[1], ',')
     irena_regions = np.array(irena['NAME_SHORT'])
     irena = irena.transpose()
     irena.columns = irena.iloc[0]
@@ -1146,9 +1146,17 @@ def regression_coefficient(paths, param, tech):
     param["IRENA"] = irena
 
     # load EMHIRES data for desired year
-    EMHIRES = pd.read_csv(paths["regression_in"] + os.path.split(paths[tech]["EMHIRES"])[1], '\t')
-    EMHIRES = EMHIRES[EMHIRES["Year"] == int(param["year"])].reset_index()
-    EMHIRES = EMHIRES.drop(['index', 'Time', 'step', 'Date', 'Year', 'Month', 'Day', 'Hour'], axis=1)
+    # specifics of PV EMHIRES data
+    if tech == 'PV':
+        date_index = pd.date_range(start='1/1/1986', end='1/1/2016', freq='H', closed='left')
+        EMHIRES = pd.read_csv(paths["regression_in"] + os.path.split(paths[tech]["EMHIRES"])[1], ' ')
+        EMHIRES = EMHIRES.set_index(date_index)
+        EMHIRES = EMHIRES.loc['1/1/' + param["year"]:'1/1/' + str(int(param["year"])+1)]
+    else:
+        EMHIRES = pd.read_csv(paths["regression_in"] + os.path.split(paths[tech]["EMHIRES"])[1], '\t')
+        EMHIRES = EMHIRES[EMHIRES["Year"] == int(param["year"])].reset_index()
+        EMHIRES = EMHIRES.drop(['index', 'Time', 'step', 'Date', 'Year', 'Month', 'Day', 'Hour'], axis=1)
+
     emhires_regions = np.array(EMHIRES.columns)
     param["EMHIRES"] = EMHIRES
 

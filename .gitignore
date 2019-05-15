@@ -30,3 +30,8 @@ INPUTS/Germany/EMHIRES_IRENA/IRENA_FLH.txt
 INPUTS/Germany/EMHIRES_IRENA/TS.CF.COUNTRY.30yr.date.txt
 INPUTS/Germany/EMHIRES_IRENA/TS.CF.OFFSHORE.30yr.date.txt
 INPUTS/Germany/EMHIRES_IRENA/IRENA_FLH.csv
+OUTPUTS/Germany/Regression/INPUTS/EMHIRESPV_TSh_CF_Country_19862015.txt
+OUTPUTS/Germany/Regression/INPUTS/IRENA_FLH.csv
+OUTPUTS/Germany/Regression/OUTPUTS/Germany_WindOn_reg_coefficients_20190515T125800.csv
+OUTPUTS/Germany/Regression/INPUTS/TS.CF.COUNTRY.30yr.date.txt
+OUTPUTS/Germany/Regression/OUTPUTS/Germany_PV_reg_coefficients_20190515T125800.csv

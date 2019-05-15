@@ -360,7 +360,7 @@ def load_data(paths, param, tech, hubheights, region):
     # Setup the data dataframe for generated TS for each quantile
     GenTS = {}
     for hub in hubheights:
-        if len(hubheights) > 1:
+        if hubheights != [0]:
             TS_Temp = pd.read_csv(paths[tech]["TS_height"] + '_' + str(hub) + '_TS_' + param["year"] + '.csv',
                                   sep=';', dtype=str)
         else:

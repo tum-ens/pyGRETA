@@ -214,14 +214,9 @@ def reg_miss_folder(paths):
           "(look at README.txt in the folder for more information)\n")
 
 
-def reg_miss_files(paths, param, missing, hubheights):
-    if len(hubheights) > 1:
-        print("\n" + str(missing) + "# missing Timeseries files for the chosen hub_heights: \n")
-        print(hubheights)
-    else:
-        print("\n" + str(missing) + "# missing Timeseries files\n")
+def reg_miss_files():
 
-    print("\nPlease populate the input folder with the required data. \n"
+    print("\nPlease populate the input folder with the technology corresponding data.\n"
           "(look at README.txt in the folder for more information)\n")
 
 

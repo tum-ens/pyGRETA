@@ -217,7 +217,7 @@ if not os.path.isdir(paths["OUT"]):
     os.mkdir(paths["OUT"])
 
 # Regression input
-paths["IRENA"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + "IRENA_FLH.txt"
+paths["IRENA"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + "IRENA_FLH.csv"
 paths["Reg_RM"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + "README.txt"
 
 

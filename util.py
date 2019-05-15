@@ -218,5 +218,3 @@ def reg_miss_files():
 
     print("\nPlease populate the input folder with the technology corresponding data.\n"
           "(look at README.txt in the folder for more information)\n")
-
-

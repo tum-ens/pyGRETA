@@ -992,7 +992,7 @@ def find_locations_quantiles(paths, param, tech):
     timecheck('End')
 
 
-def generate_time_series(paths, param):
+def generate_time_series(paths, param, tech):
 
     nproc = param["nproc"]
     CPU_limit = np.full((1, nproc), param["CPU_limit"])

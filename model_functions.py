@@ -295,7 +295,7 @@ def angles(hour, reg_ind, Crd_all, res_desired):
     orientation[phi < 0] = 180  # Azimuth of the PV panel is 180° for the Southern hemisphere
 
     # Sunrise and sunset hours in GMT
-   
+
     aux = np.maximum(np.minimum((-tand(phi)) * tand(delta), 1), -1)
     sunrise = 12 - 1 / 15 * arccosd(aux)
     sunset = 12 + 1 / 15 * arccosd(aux)

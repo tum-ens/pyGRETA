@@ -273,14 +273,12 @@ def angles(hour, reg_ind, Crd_all, res_desired):
     beta[range_lat] = (beta[range_lat] - 35) / 65 * 55 + 35  # Tilt angle does not increase very quickly
     range_lat = np.logical_and(lat >= 35, lat < 65)
     range_lon = np.logical_and(lon >= -20, lon < 30)
-    # range_lat = repmat(range_lat, range_lon.shape[1], 1).T
-    # range_lon = repmat(range_lon, range_lat.shape[0], 1)
+
     beta[np.logical_and(range_lat, range_lon)] = (beta[np.logical_and(range_lat,
                                                                       range_lon)] - 35) / 65 * 45 + 35  # Europe
     range_lat = np.logical_and(lat >= 20, lat < 65)
     range_lon = np.logical_and(lon >= 75, lon < 140)
-    # range_lat = repmat(range_lat, range_lon.shape[1], 1).T
-    # range_lon = repmat(range_lon, range_lat.shape[0], 1)
+
     beta[np.logical_and(range_lat, range_lon)] = (beta[np.logical_and(range_lat,
                                                                       range_lon)] - 20) / 65 * 60 + 20  # Asia/China
 
@@ -295,7 +293,7 @@ def angles(hour, reg_ind, Crd_all, res_desired):
     orientation[phi < 0] = 180  # Azimuth of the PV panel is 180° for the Southern hemisphere
 
     # Sunrise and sunset hours in GMT
-    # aux = np.maximum(np.minimum((-tand(phi)) * tand(delta), 1), -1)
+   
     aux = np.maximum(np.minimum((-tand(phi)) * tand(delta), 1), -1)
     sunrise = 12 - 1 / 15 * arccosd(aux)
     sunset = 12 + 1 / 15 * arccosd(aux)

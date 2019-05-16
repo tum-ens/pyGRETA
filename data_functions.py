@@ -214,8 +214,8 @@ def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
     """
 
     # Vector of latitudes between (south) and (north), with resolution (res_should) degrees
-    lat = np.arange((Crd_all[2] + res_desired[0] / 2), (Crd_all[0] - res_desired[0] / 2), res_high[0])[np.newaxis]
-    lon = np.arange((Crd_all[3] + res_desired[1] / 2), (Crd_all[1] - res_desired[1] / 2), res_high[1])[np.newaxis]
+    lat = np.arange((Crd_all[2] + res_desired[0] / 2), Crd_all[0], res_desired[0])[np.newaxis]
+    lon = np.arange((Crd_all[3] + res_desired[1] / 2), Crd_all[1], res_desired[1])[np.newaxis]
 
     # Repeating for all longitudes/latitudes
     lat = repmat(lat.transpose(), 1, int(n_high))

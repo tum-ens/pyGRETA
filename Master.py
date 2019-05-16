@@ -990,7 +990,7 @@ def find_locations_quantiles(paths, param, tech):
     timecheck('End')
 
 
-def generate_time_series(paths, param):
+def generate_time_series(paths, param, tech):
 
     nproc = param["nproc"]
     param[tech]["Crd_points"] = hdf5storage.read('Crd_points', paths[tech]["Locations"][:-4] + '_Crd.mat')

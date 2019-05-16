@@ -198,6 +198,9 @@ paths["TOA"] = PathTemp + "swtdn_" + year + ".mat"
 paths["CLEARNESS"] = PathTemp + "clearness_" + year + ".mat"
 paths["T2M"] = PathTemp + "t2m_" + year + ".mat"
 
+# IRENA
+paths["inst-cap"] = root + "INPUTS" + fs + region + fs + "IRENA " + year + fs + "inst_cap_" + year + ".csv"
+
 # Global maps
 PathTemp = root + "01 Raw inputs" + fs + "Maps" + fs + "Global maps" + fs
 paths["LU_global"] = PathTemp + "Landuse" + fs + "LCType.tif"

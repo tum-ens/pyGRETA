@@ -65,9 +65,8 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
     # Compute the coefficients for the HDKR model
     R_b = cosd(A_incidence) / sind(A_alpha)
     R_b[A_alpha <= 5] = cosd(A_incidence[A_alpha <= 5]) / sind(5)
-    R_b[R_b <= 0] = 0
-
     R_b[A_alpha <= 0] = 0
+
     A_i = (1 - RATIO) * CLEARNESS_h
     f = (1 - RATIO) ** 0.5
 

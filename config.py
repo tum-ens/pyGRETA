@@ -7,9 +7,9 @@ import os
 ###########################
 
 param = {}
-param["region"] = 'Germany'
+param["region"] = 'Europe'
 param["year"] = '2015'
-param["technology"] = ['WindOn', 'PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['WindOn']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
 param["nproc"] = 6
@@ -171,21 +171,23 @@ del pv, csp, windon, windoff
 ###########################
 
 fs = os.path.sep
-root = os.path.dirname(os.path.abspath(__file__)) + fs  # + ".." + fs
+root = os.path.dirname(os.path.abspath(__file__)) + fs + ".." + fs
+# root = os.path.dirname(os.path.abspath(__file__)) + fs
 region = param["region"]
 year = str(param["year"])
 
 paths = {}
 
 # Shapefiles
-PathTemp = root + "INPUTS" + fs + region + fs + "Shapefile" + fs + region
-paths["SHP"] = PathTemp + "_NUTS0_wo_Balkans_with_EEZ.shp"
 
-# PathTemp = root + "INPUTS" + fs + region + fs + "Shapefile" + fs + region + fs
-# paths["SHP"] = PathTemp + "Bayern_in_Europe_with_EEZ.shp"
+PathTemp = root + "INPUTS" + fs + region + fs + "Shapefile" + fs + region + fs
+paths["SHP"] = PathTemp + "Bayern_in_Europe_with_EEZ.shp"
+# PathTemp = root + "INPUTS" + fs + region + fs + "Shapefile" + fs + region
+# paths["SHP"] = PathTemp + "_NUTS0_wo_Balkans_with_EEZ.shp"
+
 # for eventual correction with the Global Wind Atlas
 paths["Countries"] = PathTemp + region + "_NUTS0_wo_Balkans_with_EEZ.shp"
-paths["Countries"] = paths["SHP"]
+# paths["Countries"] = paths["SHP"]
 
 # MERRA2
 paths["MERRA_IN"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + region + " " + year + fs
@@ -226,7 +228,7 @@ paths["CORR"] = PathTemp + "_Wind_Correction.tif"  # Correction factors for wind
 
 # Ouput Folders
 timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
-timestamp = timestamp
+timestamp = "20190502 Referenzszenario"
 # timestamp = "test"
 paths["OUT"] = root + "OUTPUTS" + fs + region + fs + timestamp + fs
 if not os.path.isdir(paths["OUT"]):

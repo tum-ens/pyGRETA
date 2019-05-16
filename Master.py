@@ -53,8 +53,7 @@ def initialization():
     param["Crd_all"] = Crd_all
 
     # Do the same for countries, if wind correction is to be calculated
-    if (not os.path.isfile(paths["CORR_GWA"])) and param["WindOn"]["resource"]["topo_correction"] and (
-            "WindOn" in param["technology"]):
+    if (not os.path.isfile(paths["CORR_GWA"])) and param["WindOn"]["resource"]["topo_correction"] and ("WindOn" in param["technology"]):
         # read shapefile of countries
         countries_shp = gpd.read_file(paths["Countries"])
         param["countries"] = countries_shp.drop(countries_shp[countries_shp["Population"] == 0].index)
@@ -74,9 +73,6 @@ def initialization():
                          res_desired)  # Range indices for high resolution matrices, superposed to MERRA2 data
     Ind_all_low = ind_merra(Crd_all, Crd_all, res_weather)
     Ind_all_high = ind_merra(Crd_all, Crd_all, res_desired)
-    # param["Ind_low"] = Ind_low.astype(int)
-    # param["Ind_high"] = Ind_high.astype(int)
-    # param["Ind_global"] = Ind_global.astype(int)
 
     m_low = Ind_low[:, 0] - Ind_low[:, 2] + 1  # number of rows
     m_high = Ind_high[:, 0] - Ind_high[:, 2] + 1  # number of rows
@@ -1237,22 +1233,22 @@ def regression_coefficient(paths, param, tech):
 
 if __name__ == '__main__':
     paths, param = initialization()
-    # generate_weather_files(paths)
-    # generate_landsea(paths, param)  # Land and Sea
-    # generate_landuse(paths, param)  # Landuse
-    # generate_bathymetry(paths, param)  # Bathymetry
-    # generate_topography(paths, param)  # Topography
-    # generate_slope(paths, param)  # Slope
-    # generate_population(paths, param)  # Population
-    # generate_protected_areas(paths, param)  # Protected areas
-    # generate_buffered_population(paths, param)  # Buffered Population
-    # generate_wind_correction(paths, param)  # Correction factors for wind speeds
+    generate_weather_files(paths)
+    generate_landsea(paths, param)  # Land and Sea
+    generate_landuse(paths, param)  # Landuse
+    generate_bathymetry(paths, param)  # Bathymetry
+    generate_topography(paths, param)  # Topography
+    generate_slope(paths, param)  # Slope
+    generate_population(paths, param)  # Population
+    generate_protected_areas(paths, param)  # Protected areas
+    generate_buffered_population(paths, param)  # Buffered Population
+    generate_wind_correction(paths, param)  # Correction factors for wind speeds
 
     for tech in param["technology"]:
         # calculate_FLH(paths, param, tech)
-        # masking(paths, param, tech)
-        # weighting(paths, param, tech)
-        # reporting(paths, param, tech)
+        masking(paths, param, tech)
+        weighting(paths, param, tech)
+        reporting(paths, param, tech)
         # find_locations_quantiles(paths, param, tech)
         # generate_time_series(paths, param, tech)
         regression_coefficient(paths, param, tech)

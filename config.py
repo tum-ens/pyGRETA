@@ -9,12 +9,21 @@ import os
 param = {}
 param["region"] = 'Europe'
 param["year"] = '2015'
-param["technology"] = ['WindOn']  #['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['WindOn']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
 param["nproc"] = 6
 param["CPU_limit"] = True
 param["report_sampling"] = 100
+
+
+# Regression Coefficient
+param["solver"] = 'gurobi'
+param["no_solution"] = '**'
+
+# To be implemented later
+# param["TS_datamodel"] = "EMHIRES"  # 'EMHIRES','Renewables.ninja'
+
 
 # MERRA_Centroid_Extent = [74.5, 45, 19, -20.625]  # EUMENA
 # MERRA_Centroid_Extent = [74.5, 36.25, 33.5, -16.25]  # Europe
@@ -47,7 +56,8 @@ param["res_desired"] = np.array([1/240, 1/240])
 landuse = {"type": np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]),
            "type_urban": 13,
            "Ross_coeff": np.array(
-               [0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208]),
+               [0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208,
+                0.0208, 0.0208, 0.0208, 0.0208]),
            "albedo": np.array([0.00, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.00, 0.20, 0.20, 0.20, 0.00, 0.20]),
            "hellmann": np.array([0.10, 0.25, 0.25, 0.25, 0.25, 0.25, 0.20, 0.20, 0.25, 0.25, 0.15, 0.15, 0.20, 0.40, 0.20, 0.15, 0.15]),
            "height": np.array([213, 366, 366, 366, 366, 366, 320, 320, 366, 366, 274, 274, 320, 457, 320, 274, 274])
@@ -112,7 +122,7 @@ csp["weight"] = {"lu_availability": np.array([0.00, 0.00, 0.00, 0.00, 0.00, 0.00
 windon = {}
 windon["resource"] = {"res_correction": 1,
                       "topo_correction": 1,
-                      "topo_weight": 'capacity' # 'none' or 'size' or 'capacity'
+                      "topo_weight": 'capacity'  # 'none' or 'size' or 'capacity'
                       }
 windon["technical"] = {"w_in": 4,
                        "w_r": 15,
@@ -162,15 +172,22 @@ del pv, csp, windon, windoff
 
 fs = os.path.sep
 root = os.path.dirname(os.path.abspath(__file__)) + fs + ".." + fs
+# root = os.path.dirname(os.path.abspath(__file__)) + fs
 region = param["region"]
 year = param["year"]
 
 paths = {}
 
 # Shapefiles
-PathTemp = root + "INPUTS" + fs + region + fs + "Shapefile" + fs
+
+PathTemp = root + "INPUTS" + fs + region + fs + "Shapefile" + fs + region + fs
 paths["SHP"] = PathTemp + "Bayern_in_Europe_with_EEZ.shp"
-paths["Countries"] = PathTemp + region + "_NUTS0_wo_Balkans_with_EEZ.shp" # for eventual correction with the Global Wind Atlas
+# PathTemp = root + "INPUTS" + fs + region + fs + "Shapefile" + fs + region
+# paths["SHP"] = PathTemp + "_NUTS0_wo_Balkans_with_EEZ.shp"
+
+# for eventual correction with the Global Wind Atlas
+paths["Countries"] = PathTemp + region + "_NUTS0_wo_Balkans_with_EEZ.shp"
+# paths["Countries"] = paths["SHP"]
 
 # MERRA2
 PathTemp = root + "INPUTS" + fs + region + fs + "MERRA2 " + year + fs
@@ -212,24 +229,56 @@ paths["CORR"] = PathTemp + "_Wind_Correction.tif"  # Correction factors for wind
 # Ouput Folders
 timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
 timestamp = "20190502 Referenzszenario"
+# timestamp = "test"
 paths["OUT"] = root + "OUTPUTS" + fs + region + fs + timestamp + fs
 if not os.path.isdir(paths["OUT"]):
     os.mkdir(paths["OUT"])
+
 # if technology == "Wind":
-# paths["OUT"] = root + "OUTPUT" + fs + region + fs + str(turbine["hub_height"]) + "m_" + str(correction) + "corr_" + timestamp
+#   paths["OUT"] = root + "OUTPUT" + fs + region + fs + str(turbine["hub_height"]) + "m_" + str(correction) + "corr_"
+# + timestamp
 # else:
-    # paths["OUT"] = root + "OUTPUT" + fs + region + fs + str(pv["tracking"]) + "axis_" + timestamp
+#   paths["OUT"] = root + "OUTPUT" + fs + region + fs + str(pv["tracking"]) + "axis_" + timestamp
+
+# Regression input
+paths["IRENA"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + "IRENA_FLH.csv"
+paths["Reg_RM"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + "README.txt"
+
+# Regression folders
+paths["regression"] = root + "OUTPUTS" + fs + region + fs + "Regression" + fs
+paths["regression_in"] = paths["regression"] + "INPUTS" + fs
+paths["regression_out"] = paths["regression"] + "OUTPUTS" + fs
+
 for tech in param["technology"]:
     paths[tech] = {}
-    paths[tech]["FLH"] = paths["OUT"] + region + '_' + tech + '_FLH_' + year + '.mat'
-    paths[tech]["mask"] = paths["OUT"] + region + "_" + tech + "_mask_" + year + ".mat"
-    paths[tech]["FLH_mask"] = paths["OUT"] + region + "_" + tech + "_FLH_mask_" + year + ".mat"
-    paths[tech]["area"] = paths["OUT"] + region + "_" + tech + "_area_" + year + ".mat"
-    paths[tech]["weight"] = paths["OUT"] + region + "_" + tech + "_weight_" + year + ".mat"
-    paths[tech]["FLH_weight"] = paths["OUT"] + region + "_" + tech + "_FLH_weight_" + year + ".mat"
-    paths[tech]["Locations"] = paths["OUT"] + region + "_" + tech + '_Locations.shp'
-    paths[tech]["TS"] = paths["OUT"] + region + '_' + tech + '_TS_' + year + '.csv'
-    paths[tech]["Region_Stats"] = paths["OUT"] + region + '_' + tech + '_Region_stats_' + year + '.csv'
-    paths[tech]["Sorted_FLH"] = paths["OUT"] + region + '_' + tech + '_sorted_FLH_sampled_' + year + '.mat'
+    if tech == 'WindOn':
+        paths[tech]["EMHIRES"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + \
+                                     "TS.CF.COUNTRY.30yr.date.txt"
+    elif tech == 'WindOff':
+        paths[tech]["EMHIRES"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + \
+                                     "TS.CF.OFFSHORE.30yr.date.txt"
+    elif tech == 'PV':
+        paths[tech]["EMHIRES"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + \
+                                     "EMHIRESPV_TSh_CF_Country_19862015.txt"
+
+    if tech in ['WindOn', 'WindOff']:
+        hubheight = str(param[tech]["technical"]["hub_height"])
+        PathTemp = paths["OUT"] + region + '_' + tech + '_' + hubheight
+    else:
+        PathTemp = paths["OUT"] + region + '_' + tech
+    
+    paths[tech]["FLH"] = PathTemp + '_FLH_' + year + '.mat'
+    paths[tech]["mask"] = PathTemp + "_mask_" + year + ".mat"
+    paths[tech]["FLH_mask"] = PathTemp + "_FLH_mask_" + year + ".mat"
+    paths[tech]["area"] = PathTemp + "_area_" + year + ".mat"
+    paths[tech]["weight"] = PathTemp + "_weight_" + year + ".mat"
+    paths[tech]["FLH_weight"] = PathTemp + "_FLH_weight_" + year + ".mat"
+    paths[tech]["Locations"] = PathTemp + '_Locations.shp'
+    paths[tech]["TS"] = PathTemp + '_TS_' + year + '.csv'
+    paths[tech]["Region_Stats"] = PathTemp + '_Region_stats_' + year + '.csv'
+    paths[tech]["Sorted_FLH"] = PathTemp + '_sorted_FLH_sampled_' + year + '.mat'
+
+    paths[tech]["TS_height"] = paths["regression_in"] + region + '_' + tech
+    paths[tech]["Regression_summary"] = paths["regression_out"] + region + '_' + tech + '_reg_coefficients_' + timestamp + '.csv'
 
 del root, PathTemp, fs

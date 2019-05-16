@@ -205,3 +205,15 @@ def timecheck(*args):
     else:
         raise Exception('Too many arguments have been passed.\nExpected: zero or one \nPassed: ' + format(len(args)))
 
+
+def reg_miss_folder(paths):
+
+    print("\nNo Regression Folder found, It has been created under: \n" + paths["regression"])
+    print("\nPlease populate the input folder with the required data. \n"
+          "(look at README.txt in the folder for more information)\n")
+
+
+def reg_miss_files():
+
+    print("\nPlease populate the input folder with the technology corresponding data.\n"
+          "(look at README.txt in the folder for more information)\n")

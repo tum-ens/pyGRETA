@@ -15,6 +15,10 @@ from itertools import product
 import h5netcdf
 import cProfile
 import pstats
+import shutil
+import pyomo.environ as pyo
+from pyomo.opt import SolverFactory
+import glob
 
 
 def initialization():
@@ -47,10 +51,10 @@ def initialization():
     Crd_all = np.array([max(Crd_regions[:, 0]), max(Crd_regions[:, 1]), min(Crd_regions[:, 2]), min(Crd_regions[:, 3])])
     param["Crd_regions"] = Crd_regions
     param["Crd_all"] = Crd_all
-	
+
     # Do the same for countries, if wind correction is to be calculated
     if (not os.path.isfile(paths["CORR_GWA"])) and param["WindOn"]["resource"]["topo_correction"] and ("WindOn" in param["technology"]):
-	    # read shapefile of countries
+        # read shapefile of countries
         countries_shp = gpd.read_file(paths["Countries"])
         param["countries"] = countries_shp.drop(countries_shp[countries_shp["Population"] == 0].index)
         param["nCountries"] = len(param["countries"])
@@ -321,6 +325,7 @@ def generate_slope(paths, param):
         dzdx = convolve(A_TOPO, kernel) / x_cell
         kernel = np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]]) / 8
         dzdy = convolve(A_TOPO, kernel) / y_cell
+
         slope_deg = arctan((dzdx ** 2 + dzdy ** 2) ** 0.5) * 180 / np.pi
         slope_pc = tan(np.deg2rad(slope_deg)) * 100
 
@@ -579,6 +584,7 @@ def calculate_FLH(paths, param, tech):
     print('\n')
 
     # Collecting results
+
     FLH = np.zeros((m_high, n_high))
     if nproc > 1:
         for p in range(len(results)):
@@ -689,6 +695,7 @@ def masking(paths, param, tech):
                      GeoRef["pixelHeight"],
                      FLH_mask)
         print("files saved:" + changeExt2tif(paths[tech]["FLH_mask"]))
+
     timecheck('End')
 
 
@@ -842,7 +849,8 @@ def reporting(paths, param, tech):
         A_P_potential = A_area_region * density
         power_potential = np.nansum(A_P_potential)
         region_stats["Power_Potential_GW"] = power_potential / (10 ** 3)
-		
+
+
         # Power Potential after weighting
         A_P_W_potential = A_region_extended * A_weight
         power_potential_weighted = np.nansum(A_P_W_potential)
@@ -891,8 +899,8 @@ def reporting(paths, param, tech):
     # Reorder dataframe columns
     df = df[['Region', 'Available', 'Available_Masked', 'Available_Area_km2', 'FLH_Mean', 'FLH_Median',
              'FLH_Max', 'FLH_Min', 'FLH_Mean_Masked', 'FLH_Median_Masked', 'FLH_Max_Masked',
-             'FLH_Min_Masked', 'FLH_Std_Masked', 'Power_Potential_GW', 'Power_Potential_Weighted_GW', 'Energy_Potential_TWh',
-             'Energy_Potential_Weighted_TWh', 'Energy_Potential_Weighted_Masked_TWh']]
+             'FLH_Min_Masked', 'FLH_Std_Masked', 'Power_Potential_GW', 'Power_Potential_Weighted_GW',
+             'Energy_Potential_TWh', 'Energy_Potential_Weighted_TWh', 'Energy_Potential_Weighted_Masked_TWh']]
 
     # Export the dataframe as CSV
     df.to_csv(paths[tech]["Region_Stats"], sep=';', decimal=',')
@@ -909,6 +917,7 @@ def reporting(paths, param, tech):
 
 
 def find_locations_quantiles(paths, param, tech):
+    timecheck('Start')
     FLH_mask = hdf5storage.read('FLH_mask', paths[tech]["FLH_mask"])
     quantiles = param["quantiles"]
     res_desired = param["res_desired"]
@@ -976,9 +985,11 @@ def find_locations_quantiles(paths, param, tech):
     hdf5storage.writes({'Crd_points': param[tech]["Crd_points"]}, paths[tech]["Locations"][:-4] + '_Crd.mat',
                        store_python_metadata=True, matlab_compatible=True)
     print("files saved: " + paths[tech]["Locations"])
+    timecheck('End')
 
 
 def generate_time_series(paths, param, tech):
+
     nproc = param["nproc"]
     CPU_limit = np.full((1, nproc), param["CPU_limit"])
     param[tech]["Crd_points"] = hdf5storage.read('Crd_points', paths[tech]["Locations"][:-4] + '_Crd.mat')
@@ -1027,6 +1038,201 @@ def generate_time_series(paths, param, tech):
     results = pd.DataFrame(TS.transpose(), columns=column_names)
     results.to_csv(paths[tech]["TS"], sep=';', decimal=',')
     print("files saved: " + paths[tech]["TS"])
+    timecheck('End')
+
+
+def regression_coefficient(paths, param, tech):
+    timecheck('Start')
+
+    # Check if regression folder is present, if not creates it
+
+    if not os.path.isdir(paths['regression']):
+        os.mkdir(paths['regression'])
+        os.mkdir(paths["regression_in"])
+        os.mkdir(paths["regression_out"])
+
+        # display error, and copy readme file
+        shutil.copy2(paths["Reg_RM"],
+                     paths["regression_in"] + os.path.split(paths["Reg_RM"])[1])
+        reg_miss_folder(paths)
+        timecheck('End')
+        return
+
+    # Reads the files present in input folder and extract hub_heights represented.
+
+    inputfiles = glob.glob(paths[tech]["TS_height"] + '_*')
+    if len(inputfiles) == 0:
+        reg_miss_files()
+        timecheck('End')
+        return
+    elif len(inputfiles) == 1:
+        hub_heights = np.zeros(1, dtype=int)
+    else:
+        hub_heights = np.zeros(len(inputfiles), dtype=int)
+
+        h = 0
+        for filename in inputfiles:
+            heigh = int(filename.replace(paths[tech]["TS_height"] + '_', '').replace('_TS_' + param["year"] + '.csv', ''))
+            hub_heights[h] = heigh
+            h += 1
+        hub_heights = sorted(hub_heights, reverse=True)
+
+    del inputfiles
+
+    print("\nFor technology " + tech + ", the following hubheights have been detected: ")
+    print(hub_heights)
+
+    # Copy EMHIRES and IRENA files for technology if not present
+
+    if not os.path.isfile(paths["regression_in"] + os.path.split(paths[tech]["EMHIRES"])[1]):
+        shutil.copy2(paths[tech]["EMHIRES"],
+                     paths["regression_in"] + os.path.split(paths[tech]["EMHIRES"])[1])
+
+    if not os.path.isfile(paths["regression_in"] + os.path.split(paths["IRENA"])[1]):
+        shutil.copy2(paths["IRENA"],
+                     paths["regression_in"] + os.path.split(paths["IRENA"])[1])
+
+    # Create Pyomo Abstract Model
+
+    model = pyo.AbstractModel()
+    solver = SolverFactory(param["solver"])
+    model.h = pyo.Set()
+    model.q = pyo.Set()
+    model.t = pyo.Set()
+
+    model.FLH = pyo.Param()
+    model.shape = pyo.Param(model.t)
+
+    model.TS = pyo.Param(model.h, model.q, model.t)
+    model.coef = pyo.Var(model.h, model.q, domain=pyo.NonNegativeReals)
+
+    def constraint_FLH(model):
+        FLH = 0
+        for h in model.h:
+            for q in model.q:
+                tempTS = 0
+                for t in model.t:
+                    tempTS = tempTS + model.TS[h, q, t]
+                FLH = FLH + pyo.prod([model.coef[h, q], tempTS])
+        return FLH == model.FLH
+
+    def constraint_sum(model):
+        sum = 0
+        for h in model.h:
+            for q in model.q:
+                sum = sum + model.coef[h, q]
+        return sum == 1
+
+    def obj_expression(model):
+        Error = 0
+        for h in model.h:
+            for q in model.q:
+                for t in model.t:
+                    Error = Error + (pyo.prod([model.coef[h, q], model.TS[h, q, t]]) - model.shape[t]) ** 2
+        return Error
+
+    model.OBJ = pyo.Objective(rule=obj_expression)
+    model.constraint_FLH = pyo.Constraint(rule=constraint_FLH)
+    model.constraint_sum = pyo.Constraint(rule=constraint_sum)
+
+    # Load IRENA data and regions
+
+    irena = pd.read_csv(paths["regression_in"] + os.path.split(paths["IRENA"])[1], ',')
+    irena_regions = np.array(irena['NAME_SHORT'])
+    irena = irena.transpose()
+    irena.columns = irena.iloc[0]
+    irena = irena.drop('NAME_SHORT')
+    param["IRENA"] = irena
+
+    # load EMHIRES data for desired year
+
+    if tech == 'PV':
+        date_index = pd.date_range(start='1/1/1986', end='1/1/2016', freq='H', closed='left')
+        EMHIRES = pd.read_csv(paths["regression_in"] + os.path.split(paths[tech]["EMHIRES"])[1], ' ')
+        EMHIRES = EMHIRES.set_index(date_index)
+        EMHIRES = EMHIRES.loc['1/1/' + param["year"]:'1/1/' + str(int(param["year"])+1)]
+    else:
+        EMHIRES = pd.read_csv(paths["regression_in"] + os.path.split(paths[tech]["EMHIRES"])[1], '\t')
+        EMHIRES = EMHIRES[EMHIRES["Year"] == int(param["year"])].reset_index()
+        EMHIRES = EMHIRES.drop(['index', 'Time', 'step', 'Date', 'Year', 'Month', 'Day', 'Hour'], axis=1)
+
+    emhires_regions = np.array(EMHIRES.columns)
+    param["EMHIRES"] = EMHIRES
+
+    # Find intersection between EMHIRES and IRENA
+
+    list_regions = np.intersect1d(irena_regions, emhires_regions)
+    del emhires_regions, irena_regions
+
+    # Summary Variables
+    summary = None
+    nodata = ''
+    nosolution = ''
+    solution = ''
+
+    # loop over all regions
+    status = 0
+    print("Regions under study : " + str(len(list_regions)))
+    for reg in list_regions:
+        # Show progress of the simulation
+        status = status + 1
+        sys.stdout.write('\r')
+        sys.stdout.write('Regression Coefficients ' + tech + ' ' + param["region"] + ' ' + '[%-50s] %d%%' % (
+        '=' * ((status * 50) // len(list_regions)), (status * 100) // len(list_regions)))
+        sys.stdout.flush()
+
+        region_data = load_data(paths, param, tech, hub_heights, reg)
+
+        # Skip regions not present in the generated TS
+        if region_data is None:
+            nodata = nodata + reg + ', '
+            continue
+
+        if region_data[None]["IRENA_best_worst"] == (True, True):
+
+            # create model instance
+            regression = model.create_instance(region_data)
+
+            # solve model and return results
+            solver.solve(regression)
+
+            # Retreive results
+            r = np.zeros((len(param["quantiles"]), len(hub_heights)))
+            c = 0
+            for q in param["quantiles"]:
+                p = 0
+                for h in hub_heights:
+                    r[c, p] = pyo.value(regression.coef[h, q])
+                    p += 1
+                c += 1
+            r[r < 10**(-5)] = 0
+            solution = solution + reg + ', '
+        else:
+            r = np.full((len(param["quantiles"]), len(hub_heights)), np.nan)
+            nosolution = nosolution + reg + ', '
+
+        if hub_heights != [0]:
+            result = pd.DataFrame(r, param["quantiles"], (reg + "_" + str(h) for h in hub_heights))
+        else:
+            result = pd.DataFrame(r, param["quantiles"], [reg])
+
+        if summary is None:
+            summary = result
+        else:
+            summary = pd.concat([summary, result], axis=1)
+
+    # Print Regression Summary
+
+    if solution != '':
+        print("\nA solution was found for the following regions: " + solution.rstrip(', '))
+    if nosolution != '':
+        print("\nNo Solution was found for the following regions: " + nosolution.rstrip(', '))
+    if nodata != '':
+        print("\nNo data was available for the following regions: " + nodata.rstrip(', '))
+
+    summary.to_csv(paths[tech]["Regression_summary"], na_rep=param["no_solution"], sep=';', decimal='.')
+    print("\nfiles saved: " + paths[tech]["Regression_summary"])
+    timecheck('End')
 
 
 if __name__ == '__main__':
@@ -1040,14 +1246,16 @@ if __name__ == '__main__':
     generate_population(paths, param)  # Population
     generate_protected_areas(paths, param)  # Protected areas
     generate_buffered_population(paths, param)  # Buffered Population
-    #generate_wind_correction(paths, param)  # Correction factors for wind speeds
+    # generate_wind_correction(paths, param)  # Correction factors for wind speeds
+
     for tech in param["technology"]:
-        #calculate_FLH(paths, param, tech)
+        # calculate_FLH(paths, param, tech)
         masking(paths, param, tech)
         weighting(paths, param, tech)
         reporting(paths, param, tech)
-        #find_locations_quantiles(paths, param, tech)
-        #generate_time_series(paths, param, tech)
+        # find_locations_quantiles(paths, param, tech)
+        # generate_time_series(paths, param, tech)
+        regression_coefficient(paths, param, tech)
         # cProfile.run('reporting(paths, param, tech)', 'cprofile_test.txt')
         # p = pstats.Stats('cprofile_test.txt')
         # p.sort_stats('cumulative').print_stats(20)

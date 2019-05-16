@@ -23,10 +23,14 @@ def calc_ext(regb, ext, res):
 
 def crd_merra(Crd_regions, res_weather):
     ''' description '''
-    Crd = np.array([(np.ceil((Crd_regions[:, 0] - res_weather[0] / 2) / res_weather[0]) * res_weather[0] + res_weather[0] / 2),
-                    (np.ceil((Crd_regions[:, 1] - res_weather[1] / 2) / res_weather[1]) * res_weather[1] + res_weather[1] / 2),
-                    (np.floor((Crd_regions[:, 2] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2),
-                    (np.floor((Crd_regions[:, 3] + res_weather[1] / 2) / res_weather[1]) * res_weather[1] - res_weather[1] / 2)])
+    Crd = np.array([(np.ceil((Crd_regions[:, 0] - res_weather[0] / 2) / res_weather[0])
+                     * res_weather[0] + res_weather[0] / 2),
+                    (np.ceil((Crd_regions[:, 1] - res_weather[1] / 2) / res_weather[1])
+                     * res_weather[1] + res_weather[1] / 2),
+                    (np.floor((Crd_regions[:, 2] + res_weather[0] / 2) / res_weather[0])
+                     * res_weather[0] - res_weather[0] / 2),
+                    (np.floor((Crd_regions[:, 3] + res_weather[1] / 2) / res_weather[1])
+                     * res_weather[1] - res_weather[1] / 2)])
     Crd = Crd.T
     return Crd
 
@@ -42,8 +46,10 @@ def crd_exact_box(Ind, Crd_all, res_desired):
 
 
 def crd_exact_points(Ind_points, Crd_all, res):
-    ''' description 
-    Ind_points: tuple of indices in the vertical and horizontal axes. '''
+    '''
+    description
+    :param Ind_points: tuple of indices in the vertical and horizontal axes.
+    '''
 
     Crd_points = [Ind_points[0] * res[0] + Crd_all[2],
                   Ind_points[1] * res[1] + Crd_all[3]]
@@ -119,10 +125,11 @@ def calc_region(region, Crd_reg, res_desired, GeoRef):
         A_region = out_image[0]
 
     return A_region
-	
-	
+
+
 def calc_gwa_correction(param, paths):
     ''' description'''
+
     m_high = param["m_high"]
     n_high = param["n_high"]
     res_desired = param["res_desired"]
@@ -135,14 +142,14 @@ def calc_gwa_correction(param, paths):
     W50M = hdf5storage.read('W50M', paths["W50M"])
     W50M = np.mean(W50M, 2)
     W50M = resizem(W50M, m_high, n_high)
-	
+
     # Obtain topography
     with rasterio.open(paths["TOPO"]) as src:
         w = src.read(1)
     TOPO = np.flipud(w)
-	
+
     # Get the installed capacities
-    inst_cap = pd.read_csv(paths["inst-cap"], skiprows = 2, sep = ';', index_col = 0)
+    inst_cap = pd.read_csv(paths["inst-cap"], skiprows=2, sep=';', index_col=0)
 
     w_size = np.zeros((nCountries, 1))
     w_cap = np.zeros((nCountries, 1))
@@ -159,10 +166,10 @@ def calc_gwa_correction(param, paths):
         # Load MERRA data, increase its resolution, and fit it to the extent
         w50m_reg = W50M[Ind_reg]
         topo_reg = TOPO[Ind_reg]
-		
+
         # Get the sampled frequencies from the GWA
         w50m_gwa = pd.read_csv(paths["GWA"][:-14] + reg_name + paths["GWA"][-14:], usecols=['gwa_ws']).to_numpy()[:,0]
-        
+
         i = 0
         for combi in combi_list:
             ai, bi = combi
@@ -172,18 +179,18 @@ def calc_gwa_correction(param, paths):
             w50m_diff = w50m_sampled - w50m_gwa
             errors[i, reg] = np.sqrt((w50m_diff**2).sum())
             i = i + 1
-			
+
     w_size = np.tile(w_size / w_size.sum(), (1, len(combi_list))).transpose()
     w_cap = np.tile(w_cap / w_cap.sum(), (1, len(combi_list))).transpose()
-	
+
     ae, be = combi_list[np.argmin(np.sum(errors / nCountries, 1))]
     correction_none = np.zeros(TOPO.shape)
     correction_none = np.minimum(np.exp(ae * TOPO + be), 3.5)
-	
+
     a_size, b_size = combi_list[np.argmin(np.sum(errors * w_size, 1))]
     correction_size = np.zeros(TOPO.shape)
     correction_size = np.minimum(np.exp(a_size * TOPO + b_size), 3.5)
-	
+
     a_cap, b_cap = combi_list[np.argmin(np.sum(errors * w_cap, 1))]
     correction_capacity = np.zeros(TOPO.shape)
     correction_capacity = np.minimum(np.exp(a_cap * TOPO + b_cap), 3.5)
@@ -194,6 +201,7 @@ def calc_gwa_correction(param, paths):
 
 
 def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
+
     """
     This function creates a GCR weighting matrix for the desired geographic extent.
     The sizing of the PV system is conducted on a user-defined day for a shade-free exposure
@@ -212,7 +220,7 @@ def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
     # Repeating for all longitudes/latitudes
     lat = repmat(lat.transpose(), 1, int(n_high))
     lon = repmat(lon, int(m_high), 1)
-	
+
     # Solar time where shade-free exposure starts
     omegast = 12 - GCR["shadefree_period"] / 2
 
@@ -326,3 +334,69 @@ def calc_areas(Crd_all, n_high, res_desired):
     area_vec = ((upperSliceAreas - lowerSliceAreas) * res_desired[1] / 360).T
     A_area = np.tile(area_vec, (1, n_high))
     return A_area
+
+
+def load_data(paths, param, tech, hubheights, region):
+
+    # Read data from output folder
+    IRENA_FLH = 0
+    TS = np.zeros(8760)
+    time = range(1, 8761)
+
+    # Setup the data dataframe for generated TS for each quantile
+    GenTS = {}
+    for hub in hubheights:
+        if hubheights != [0]:
+            TS_Temp = pd.read_csv(paths[tech]["TS_height"] + '_' + str(hub) + '_TS_' + param["year"] + '.csv',
+                                  sep=';', dtype=str)
+        else:
+            TS_Temp = pd.read_csv(paths[tech]["TS_height"] + '_TS_' + param["year"] + '.csv',
+                                  sep=';', dtype=str)
+
+        # Remove undesired regions
+        filter_reg = [col for col in TS_Temp if col.startswith(region)]
+        TS_Temp = TS_Temp[filter_reg]
+
+        # Exit function if region is not present in TS files
+        if TS_Temp.empty:
+            return None
+
+        TS_Temp.columns = TS_Temp.iloc[0]
+        TS_Temp = TS_Temp.drop(0)
+
+        GenTS[str(hub)] = TS_Temp.astype(float)
+
+    GenTS["TS_Max"] = np.nansum(GenTS[str(np.max(hubheights))]["q" + str(np.max(param["quantiles"]))])
+    GenTS["TS_Min"] = np.nansum(GenTS[str(np.min(hubheights))]["q" + str(np.min(param["quantiles"]))])
+
+    # Prepare Timeseries dictionary indexing by height and quantile
+    Timeseries = {}
+    for h in hubheights:
+        for q in param["quantiles"]:
+            for t in time:
+                Timeseries[(h, q, t)] = np.array(GenTS[str(h)]['q'+str(q)])[t-1]
+
+    # Setup dataframe for IRENA
+    IRENA = param["IRENA"]
+    IRENA_FLH = IRENA[region].loc[tech]
+
+    # Setup dataframe for EMHIRES DATA
+    EMHIRES = param["EMHIRES"]
+    ts = np.array(EMHIRES[region].values)
+    TS = {}
+    for t in time:
+        TS[(t,)] = ts[t - 1]
+
+    # Create data_input dictionary
+    data = {None: {
+        "h": {None: hubheights},
+        "q": {None: param["quantiles"]},
+        "FLH": {None: IRENA_FLH},
+        "shape": TS,
+        "t": {None: np.array(time)},
+        "TS": Timeseries,
+        "IRENA_best_worst": (GenTS["TS_Max"] > IRENA_FLH, GenTS["TS_Min"] < IRENA_FLH)
+            }}
+
+    return data
+

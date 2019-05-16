@@ -4,10 +4,10 @@ import sys
 from data_functions import *
 from util import *
 import numpy as np
-
-np.seterr(divide='ignore')  # Repress Invalid value or division by zero error
 from numpy.matlib import repmat, sin, cos
 import hdf5storage
+
+np.seterr(divide='ignore')  # Repress Invalid value or division by zero error
 
 
 def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
@@ -89,6 +89,7 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
 
     # Compute the hourly capacity factor
     CF_pv = G_tilt_h * (1 - LOSS_TEMP) / 1000
+
     CF_pv[A_alpha <= 0] = 0
 
     # For CSP: tracking like pv.tracking = 1
@@ -162,7 +163,6 @@ def calc_FLH_solar(hours, args):
             CF = calc_CF_solar(hour, reg_ind, param, merraData, rasterData)[0]
         elif tech == 'CSP':
             CF = calc_CF_solar(hour, reg_ind, param, merraData, rasterData)[1]
-
 
         # Aggregates CF to obtain the yearly FLH
         CF[np.isnan(CF)] = 0
@@ -275,10 +275,12 @@ def angles(hour, reg_ind, Crd_all, res_desired):
     beta[range_lat] = (beta[range_lat] - 35) / 65 * 55 + 35  # Tilt angle does not increase very quickly
     range_lat = np.logical_and(lat >= 35, lat < 65)
     range_lon = np.logical_and(lon >= -20, lon < 30)
+
     beta[np.logical_and(range_lat, range_lon)] = (beta[np.logical_and(range_lat,
                                                                       range_lon)] - 35) / 65 * 45 + 35  # Europe
     range_lat = np.logical_and(lat >= 20, lat < 65)
     range_lon = np.logical_and(lon >= 75, lon < 140)
+
     beta[np.logical_and(range_lat, range_lon)] = (beta[np.logical_and(range_lat,
                                                                       range_lon)] - 20) / 65 * 60 + 20  # Asia/China
 
@@ -293,6 +295,7 @@ def angles(hour, reg_ind, Crd_all, res_desired):
     orientation[phi < 0] = 180  # Azimuth of the PV panel is 180° for the Southern hemisphere
 
     # Sunrise and sunset hours in GMT
+
     aux = np.maximum(np.minimum((-tand(phi)) * tand(delta), 1), -1)
     sunrise = 12 - 1 / 15 * arccosd(aux)
     sunset = 12 + 1 / 15 * arccosd(aux)

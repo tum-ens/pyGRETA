@@ -118,32 +118,32 @@ def generate_weather_files(paths):
 
             # Read NetCDF file, extract hourly tables
             with h5netcdf.File(name, 'r') as f:
-                swgdn = np.transpose(f['SWGDN'], [1, 0, 2])
+                swgdn = np.transpose(f['SWGDN'], [1, 2, 0])
                 if SWGDN.size == 0:
                     SWGDN = swgdn
                 else:
                     SWGDN = np.concatenate((SWGDN, swgdn), axis=2)
 
-                swtdn = np.transpose(f['SWTDN'], [1, 0, 2])
+                swtdn = np.transpose(f['SWTDN'], [1, 2, 0])
                 if SWTDN.size == 0:
                     SWTDN = swtdn
                 else:
                     SWTDN = np.concatenate((SWTDN, swtdn), axis=2)
 
             with h5netcdf.File(name2, 'r') as f:
-                t2m = np.transpose(f['T2M'], [1, 0, 2])
+                t2m = np.transpose(f['T2M'], [1, 2, 0])
                 if T2M.size == 0:
                     T2M = t2m
                 else:
                     T2M = np.concatenate((T2M, t2m), axis=2)
 
-                u50m = np.transpose(f['U50M'], [1, 0, 2])
+                u50m = np.transpose(f['U50M'], [1, 2, 0])
                 if U50M.size == 0:
                     U50M = u50m
                 else:
                     U50M = np.concatenate((U50M, u50m), axis=2)
 
-                v50m = np.transpose(f['V50M'], [1, 0, 2])
+                v50m = np.transpose(f['V50M'], [1, 2, 0])
                 if V50M.size == 0:
                     V50M = v50m
                 else:
@@ -1246,15 +1246,15 @@ if __name__ == '__main__':
     generate_population(paths, param)  # Population
     generate_protected_areas(paths, param)  # Protected areas
     generate_buffered_population(paths, param)  # Buffered Population
-    # generate_wind_correction(paths, param)  # Correction factors for wind speeds
 
+    generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
-        # calculate_FLH(paths, param, tech)
+        calculate_FLH(paths, param, tech)
         masking(paths, param, tech)
         weighting(paths, param, tech)
         reporting(paths, param, tech)
-        # find_locations_quantiles(paths, param, tech)
-        # generate_time_series(paths, param, tech)
+        find_locations_quantiles(paths, param, tech)
+        generate_time_series(paths, param, tech)
         regression_coefficient(paths, param, tech)
         # cProfile.run('reporting(paths, param, tech)', 'cprofile_test.txt')
         # p = pstats.Stats('cprofile_test.txt')

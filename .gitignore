@@ -6,14 +6,7 @@ __pycache__/*
 *.nc
 *.shp
 *.shx
+*.dbf
+*.prj
+*.qpj
 *.mat
-INPUTS/Germany/Shapefile/Germany_NUTS0_wo_Balkans_with_EEZ.dbf
-INPUTS/Germany/Shapefile/Germany_NUTS0_wo_Balkans_with_EEZ.qpj
-INPUTS/Germany/Shapefile/Germany_NUTS0_wo_Balkans_with_EEZ.prj
-INPUTS/Germany/EMHIRES_IRENA/IRENA_FLH.txt
-INPUTS/Germany/EMHIRES_IRENA/EMHIRESPV_TSh_CF_Country_19862015.txt
-INPUTS/Germany/EMHIRES_IRENA/IRENA_FLH.txt
-INPUTS/Germany/EMHIRES_IRENA/TS.CF.COUNTRY.30yr.date.txt
-INPUTS/Germany/EMHIRES_IRENA/TS.CF.OFFSHORE.30yr.date.txt
-INPUTS/Germany/EMHIRES_IRENA/IRENA_FLH.csv
-OUTPUTS/

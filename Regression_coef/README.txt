@@ -4,13 +4,12 @@
 
 !Required Files!
 
-The following folders have been created:
+The following folder has been created:
+00 Assumptions/Regression_Inputs/
 
-OUTPUTS/"region"/Regression/INPUTS
-OUTPUTS/"region"/Regression/OUTPUTS
 
-Populate the INPUTS folder with the required TS .csv files corresponding to the technology and hubheights specified in the config.py file.
-If a file is missing, the script will prompt you to provide it. Alternatively you can change the config file to select fewer hub heights
+Populate the Inputs folder with the required TS .csv files corresponding to the technologies specified in the config.py file.
+If a file is missing, the script will prompt you to provide it. If multiple hub heights are detected, the optimization is done both over the quantiles and hubheights.
 
 !Process!
 
@@ -24,3 +23,9 @@ The no-solution place holder can be specified in the config.py file.
 
 The .csv files must follow the system's decimal separator setting. 
 This means that the decimal separator in the .csv file might have to be changed manually from a point ('.') to a comma (',') or visversa.
+
+!OUTPUTS!
+
+The summary .csv files are present in the output folder:
+
+02 Intermediate files/Files *region*/Renewable energy/*time_stamp*/Regression_Ouputs

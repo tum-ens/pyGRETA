@@ -1,6 +1,7 @@
 import datetime
 import numpy as np
 import os
+from sys import platform
 
 ###########################
 #### User preferences #####
@@ -9,7 +10,7 @@ import os
 param = {}
 param["region"] = 'Germany'
 param["year"] = 2015
-param["technology"] = ['WindOn', 'PV']  #['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['WindOn', 'PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 
 param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
@@ -172,17 +173,24 @@ del pv, csp, windon, windoff
 ###########################
 
 fs = os.path.sep
-root = os.path.dirname(os.path.abspath(__file__)) + fs + ".." + fs
-# root = os.path.dirname(os.path.abspath(__file__)) + fs
+
+git_RT_folder = os.path.dirname(os.path.abspath(__file__))
+
+if platform.startswith('win'):
+    # Windows Root Folder
+    from pathlib import Path
+    root = str(Path(git_RT_folder).parent) + fs
+elif platform.startswith('linux'):
+    # Linux Root Folder
+    root = git_RT_folder + fs + ".." + fs
+
 region = param["region"]
 year = str(param["year"])
 
 paths = {}
-
 # Shapefiles
-PathTemp = root + "INPUTS" + fs + region + fs + "Shapefile" + fs + region + fs
+PathTemp = root + "01 Raw inputs" + fs + "Maps" + fs + "Shapefiles" + fs  # + region + fs
 paths["SHP"] = PathTemp + "Germany_with_EEZ.shp"
-# PathTemp = root + "INPUTS" + fs + region + fs + "Shapefile" + fs + region
 # paths["SHP"] = PathTemp + "_NUTS0_wo_Balkans_with_EEZ.shp"
 
 # for eventual correction with the Global Wind Atlas
@@ -228,7 +236,7 @@ paths["CORR"] = PathTemp + "_Wind_Correction.tif"  # Correction factors for wind
 
 # Ouput Folders
 timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
-#timestamp = "20190502 Referenzszenario"
+# timestamp = "20190502 Referenzszenario"
 paths["OUT"] = root + "02 Intermediate files" + fs + "Files " + region + fs + "Renewable energy" + fs + timestamp + fs
 if not os.path.isdir(paths["OUT"]):
     os.mkdir(paths["OUT"])
@@ -240,24 +248,25 @@ if not os.path.isdir(paths["OUT"]):
 #   paths["OUT"] = root + "OUTPUT" + fs + region + fs + str(pv["tracking"]) + "axis_" + timestamp
 
 # Regression input
-paths["IRENA"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + "IRENA_FLH.csv"
-paths["Reg_RM"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + "README.txt"
+paths["IRENA"] = root + "00 Assumptions" + fs + region + fs + "IRENA_FLH.csv"
+
+paths["Reg_RM"] = git_RT_folder + fs + "Regression_coef" + fs + "README.txt"
+paths["IRENA_example"] = git_RT_folder + fs + "Regression_coef" + fs + "IRENA_FLH_example.csv"
 
 # Regression folders
-paths["regression"] = root + "OUTPUTS" + fs + region + fs + "Regression" + fs
-paths["regression_in"] = paths["regression"] + "INPUTS" + fs
-paths["regression_out"] = paths["regression"] + "OUTPUTS" + fs
+paths["regression_in"] = root + "00 Assumptions" + fs + "Regression_Inputs" + fs
+paths["regression_out"] = paths["OUT"] + "Regression_Ouputs" + fs
 
 for tech in param["technology"]:
     paths[tech] = {}
     if tech == 'WindOn':
-        paths[tech]["EMHIRES"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + \
+        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + year + fs + \
                                      "TS.CF.COUNTRY.30yr.date.txt"
     elif tech == 'WindOff':
-        paths[tech]["EMHIRES"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + \
+        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + year + fs + \
                                      "TS.CF.OFFSHORE.30yr.date.txt"
     elif tech == 'PV':
-        paths[tech]["EMHIRES"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + \
+        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + year + fs + \
                                      "EMHIRESPV_TSh_CF_Country_19862015.txt"
 
     if tech in ['WindOn', 'WindOff']:

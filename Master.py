@@ -1068,7 +1068,7 @@ def regression_coefficient(paths, param, tech):
 
         h = 0
         for filename in inputfiles:
-            heigh = int(filename.replace(paths[tech]["TS_height"] + '_', '').replace('_TS_' + param["year"] + '.csv', ''))
+            heigh = int(filename.replace(paths[tech]["TS_height"] + '_', '').replace('_TS_' + str(param["year"])+ '.csv', ''))
             hub_heights[h] = heigh
             h += 1
         hub_heights = sorted(hub_heights, reverse=True)
@@ -1146,10 +1146,10 @@ def regression_coefficient(paths, param, tech):
         date_index = pd.date_range(start='1/1/1986', end='1/1/2016', freq='H', closed='left')
         EMHIRES = pd.read_csv(paths["regression_in"] + os.path.split(paths[tech]["EMHIRES"])[1], ' ')
         EMHIRES = EMHIRES.set_index(date_index)
-        EMHIRES = EMHIRES.loc['1/1/' + param["year"]:'1/1/' + str(int(param["year"])+1)]
+        EMHIRES = EMHIRES.loc['1/1/' + str(param["year"]):'1/1/' + str(param["year"] + 1)]
     else:
         EMHIRES = pd.read_csv(paths["regression_in"] + os.path.split(paths[tech]["EMHIRES"])[1], '\t')
-        EMHIRES = EMHIRES[EMHIRES["Year"] == int(param["year"])].reset_index()
+        EMHIRES = EMHIRES[EMHIRES["Year"] == param["year"]].reset_index()
         EMHIRES = EMHIRES.drop(['index', 'Time', 'step', 'Date', 'Year', 'Month', 'Day', 'Hour'], axis=1)
 
     emhires_regions = np.array(EMHIRES.columns)
@@ -1177,7 +1177,7 @@ def regression_coefficient(paths, param, tech):
         '=' * ((status * 50) // len(list_regions)), (status * 100) // len(list_regions)))
         sys.stdout.flush()
 
-        region_data = load_data(paths, param, tech, hub_heights, reg)
+        region_data = regmodel_load_data(paths, param, tech, hub_heights, reg)
 
         # Skip regions not present in the generated TS
         if region_data is None:

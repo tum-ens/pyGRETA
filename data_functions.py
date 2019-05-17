@@ -336,7 +336,13 @@ def calc_areas(Crd_all, n_high, res_desired):
     return A_area
 
 
-def load_data(paths, param, tech, hubheights, region):
+def regmodel_load_data(paths, param, tech, hubheights, region):
+    """
+    This function returns a dictionary used to initialize a pyomo abstract model.
+    The dictionary keys are: hubheights, quantiles, IRENA goal FLH, EMHIRES or Renewable.ninja timeseries,
+    the duration of the timeseries, the input timeseries as regression parameters,
+    and tuple of booleans representing the existance of a solution to the optimization problem.
+    """
 
     # Read data from output folder
     IRENA_FLH = 0
@@ -347,10 +353,10 @@ def load_data(paths, param, tech, hubheights, region):
     GenTS = {}
     for hub in hubheights:
         if hubheights != [0]:
-            TS_Temp = pd.read_csv(paths[tech]["TS_height"] + '_' + str(hub) + '_TS_' + param["year"] + '.csv',
+            TS_Temp = pd.read_csv(paths[tech]["TS_height"] + '_' + str(hub) + '_TS_' + str(param["year"]) + '.csv',
                                   sep=';', dtype=str)
         else:
-            TS_Temp = pd.read_csv(paths[tech]["TS_height"] + '_TS_' + param["year"] + '.csv',
+            TS_Temp = pd.read_csv(paths[tech]["TS_height"] + '_TS_' + str(param["year"]) + '.csv',
                                   sep=';', dtype=str)
 
         # Remove undesired regions

@@ -1051,6 +1051,16 @@ def generate_time_series(paths, param, tech):
 
 
 def regression_coefficient(paths, param, tech):
+    """
+    Solves following optimization problem:
+
+    Express a given model timeseries provided by EMHIRES as a combination timeseries
+    for different Hub-Heights and Quantiles, while constraining the total sum of
+    the obtained TS to the FLH given by IRENA
+
+    Save the regression coefficients and the result timeseries in a .csv file
+
+    """
     timecheck('Start')
 
     # Check if regression folder is present, if not creates it and add readme file
@@ -1174,6 +1184,7 @@ def regression_coefficient(paths, param, tech):
 
     # Summary Variables
     summary = None
+    summaryTS = None
     nodata = ''
     nosolution = ''
     solution = ''
@@ -1206,14 +1217,18 @@ def regression_coefficient(paths, param, tech):
 
             # Retreive results
             r = np.zeros((len(param["quantiles"]), len(hub_heights)))
+            finalTS = np.zeros(8760)
             c = 0
             for q in param["quantiles"]:
                 p = 0
                 for h in hub_heights:
                     r[c, p] = pyo.value(regression.coef[h, q])
+                    finalTS = finalTS + region_data[None]["GenTS"][str(h)]["q"+str(q)] * r[c, p]
                     p += 1
                 c += 1
             r[r < 10**(-5)] = 0
+            finalTS = pd.DataFrame(finalTS, np.arange(1, 8761), [reg])
+            summaryTS = pd.concat([summaryTS, finalTS], axis=1)
             solution = solution + reg + ', '
         else:
             r = np.full((len(param["quantiles"]), len(hub_heights)), np.nan)
@@ -1229,6 +1244,7 @@ def regression_coefficient(paths, param, tech):
         else:
             summary = pd.concat([summary, result], axis=1)
 
+
     # Print Regression Summary
 
     if solution != '':
@@ -1243,6 +1259,9 @@ def regression_coefficient(paths, param, tech):
 
     summary.to_csv(paths[tech]["Regression_summary"], na_rep=param["no_solution"], sep=';', decimal='.')
     print("\nfiles saved: " + paths[tech]["Regression_summary"])
+    if summaryTS is not None:
+        summaryTS.to_csv(paths[tech]["Regression_TS"], sep=';', decimal='.')
+        print("\nfiles saved: " + paths[tech]["Regression_TS"])
     timecheck('End')
 
 
@@ -1259,12 +1278,12 @@ if __name__ == '__main__':
     generate_buffered_population(paths, param)  # Buffered Population
     generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
-        calculate_FLH(paths, param, tech)
-        masking(paths, param, tech)
-        weighting(paths, param, tech)
-        reporting(paths, param, tech)
-        find_locations_quantiles(paths, param, tech)
-        generate_time_series(paths, param, tech)
+        # calculate_FLH(paths, param, tech)
+        # masking(paths, param, tech)
+        # weighting(paths, param, tech)
+        # reporting(paths, param, tech)
+        # find_locations_quantiles(paths, param, tech)
+        # generate_time_series(paths, param, tech)
         regression_coefficient(paths, param, tech)
         # cProfile.run('reporting(paths, param, tech)', 'cprofile_test.txt')
         # p = pstats.Stats('cprofile_test.txt')

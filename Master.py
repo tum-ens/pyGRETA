@@ -1244,7 +1244,6 @@ def regression_coefficient(paths, param, tech):
         else:
             summary = pd.concat([summary, result], axis=1)
 
-
     # Print Regression Summary
 
     if solution != '':
@@ -1259,9 +1258,11 @@ def regression_coefficient(paths, param, tech):
 
     summary.to_csv(paths[tech]["Regression_summary"], na_rep=param["no_solution"], sep=';', decimal='.')
     print("\nfiles saved: " + paths[tech]["Regression_summary"])
+
     if summaryTS is not None:
         summaryTS.to_csv(paths[tech]["Regression_TS"], sep=';', decimal='.')
         print("\nfiles saved: " + paths[tech]["Regression_TS"])
+
     timecheck('End')
 
 

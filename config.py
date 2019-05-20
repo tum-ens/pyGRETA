@@ -23,10 +23,6 @@ param["report_sampling"] = 100
 param["solver"] = 'gurobi'
 param["no_solution"] = '**'
 
-# To be implemented later
-# param["TS_datamodel"] = "EMHIRES"  # 'EMHIRES','Renewables.ninja'
-
-
 # MERRA_Centroid_Extent = [74.5, 45, 19, -20.625]  # EUMENA
 # MERRA_Centroid_Extent = [74.5, 36.25, 33.5, -16.25]  # Europe
 # MERRA_Centroid_Extent = [49, -103.75, 28, -129.375]  # California

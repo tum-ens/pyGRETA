@@ -10,7 +10,7 @@ from sys import platform
 param = {}
 param["region"] = 'Germany'
 param["year"] = 2015
-param["technology"] = ['WindOn', 'PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 
 param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
@@ -22,10 +22,6 @@ param["report_sampling"] = 100
 # Regression Coefficient
 param["solver"] = 'gurobi'
 param["no_solution"] = '**'
-
-# To be implemented later
-# param["TS_datamodel"] = "EMHIRES"  # 'EMHIRES','Renewables.ninja'
-
 
 # MERRA_Centroid_Extent = [74.5, 45, 19, -20.625]  # EUMENA
 # MERRA_Centroid_Extent = [74.5, 36.25, 33.5, -16.25]  # Europe
@@ -288,5 +284,6 @@ for tech in param["technology"]:
 
     paths[tech]["TS_height"] = paths["regression_in"] + region + '_' + tech
     paths[tech]["Regression_summary"] = paths["regression_out"] + region + '_' + tech + '_reg_coefficients_' + timestamp + '.csv'
+    paths[tech]["Regression_TS"] = paths["regression_out"] + region + '_' + tech + '_reg_TimeSeries_' + timestamp + '.csv'
 
 del root, PathTemp, fs

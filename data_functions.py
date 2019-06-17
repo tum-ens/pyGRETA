@@ -389,6 +389,7 @@ def regmodel_load_data(paths, param, tech, hubheights, region):
     # Setup dataframe for EMHIRES DATA
     EMHIRES = param["EMHIRES"]
     ts = np.array(EMHIRES[region].values)
+    ts = ts * IRENA_FLH/np.sum(ts)
     TS = {}
     for t in time:
         TS[(t,)] = ts[t - 1]
@@ -401,7 +402,8 @@ def regmodel_load_data(paths, param, tech, hubheights, region):
         "shape": TS,
         "t": {None: np.array(time)},
         "TS": Timeseries,
-        "IRENA_best_worst": (GenTS["TS_Max"] > IRENA_FLH, GenTS["TS_Min"] < IRENA_FLH)
+        "IRENA_best_worst": (GenTS["TS_Max"] > IRENA_FLH, GenTS["TS_Min"] < IRENA_FLH),
+        "GenTS": GenTS
             }}
 
     return data

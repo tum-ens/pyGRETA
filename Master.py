@@ -104,6 +104,8 @@ def generate_weather_files(paths):
 
         SWGDN = np.array([])
         SWTDN = np.array([])
+        SWGNT = np.array([])
+        SWTNT = np.array([])
         T2M = np.array([])
         U50M = np.array([])
         V50M = np.array([])
@@ -130,6 +132,18 @@ def generate_weather_files(paths):
                 else:
                     SWTDN = np.concatenate((SWTDN, swtdn), axis=2)
 
+                swgnt = np.transpose(f['SWGNT'], [1, 2, 0])
+                if SWGNT.size == 0:
+                    SWGNT = swgnt
+                else:
+                    SWGNT = np.concatenate((SWGNT, swgnt), axis=2)
+
+                swtnt = np.transpose(f['SWTNT'], [1, 2, 0])
+                if SWTNT.size == 0:
+                    SWTNT = swtnt
+                else:
+                    SWTNT = np.concatenate((SWTNT, swtnt), axis=2)
+
             with h5netcdf.File(name2, 'r') as f:
                 t2m = np.transpose(f['T2M'], [1, 2, 0])
                 if T2M.size == 0:
@@ -150,6 +164,8 @@ def generate_weather_files(paths):
                     V50M = np.concatenate((V50M, v50m), axis=2)
             if date.year != tomorrow.year:
                 timecheck('Start Writing Files: GHI, TOA, T2M, W50M')
+                hdf5storage.writes({'SWGNT': SWGNT}, paths["GHI_net"], store_python_metadata=True, matlab_compatible=True)
+                hdf5storage.writes({'SWTNT': SWTNT}, paths["TOA_net"], store_python_metadata=True, matlab_compatible=True)
                 hdf5storage.writes({'SWGDN': SWGDN}, paths["GHI"], store_python_metadata=True, matlab_compatible=True)
                 hdf5storage.writes({'SWTDN': SWTDN}, paths["TOA"], store_python_metadata=True, matlab_compatible=True)
                 hdf5storage.writes({'T2M': T2M}, paths["T2M"], store_python_metadata=True, matlab_compatible=True)
@@ -161,6 +177,9 @@ def generate_weather_files(paths):
                 # Calculate the clearness index
                 CLEARNESS = np.divide(SWGDN, SWTDN, where=SWTDN != 0)
                 hdf5storage.writes({'CLEARNESS': CLEARNESS}, paths["CLEARNESS"], store_python_metadata=True,
+                                   matlab_compatible=True)
+                CLEARNESS_net = np.divide(SWGNT, SWTNT, where=SWTNT != 0)
+                hdf5storage.writes({'CLEARNESS': CLEARNESS_net}, paths["CLEARNESS_net"], store_python_metadata=True,
                                    matlab_compatible=True)
                 timecheck('Finish Writing Files: GHI, TOA, T2M, W50M')
         timecheck('End')
@@ -1186,7 +1205,8 @@ def regression_coefficient(paths, param, tech):
     summary = None
     summaryTS = None
     nodata = ''
-    nosolution = ''
+    no_sol_high = ''
+    no_sol_low = ''
     solution = ''
 
     # loop over all regions
@@ -1230,9 +1250,12 @@ def regression_coefficient(paths, param, tech):
             finalTS = pd.DataFrame(finalTS, np.arange(1, 8761), [reg])
             summaryTS = pd.concat([summaryTS, finalTS], axis=1)
             solution = solution + reg + ', '
-        else:
+        elif region_data[None]["IRENA_best_worst"][1] == False:
             r = np.full((len(param["quantiles"]), len(hub_heights)), np.nan)
-            nosolution = nosolution + reg + ', '
+            no_sol_high = no_sol_high + reg + ', '
+        elif region_data[None]["IRENA_best_worst"][0] == False:
+            r = np.full((len(param["quantiles"]), len(hub_heights)), np.nan)
+            no_sol_low = no_sol_low + reg + ', '
 
         if hub_heights != [0]:
             result = pd.DataFrame(r, param["quantiles"], (reg + "_" + str(h) for h in hub_heights))
@@ -1248,19 +1271,21 @@ def regression_coefficient(paths, param, tech):
 
     if solution != '':
         print("\nA solution was found for the following regions: " + solution.rstrip(', '))
-    if nosolution != '':
-        print("\nNo Solution was found for the following regions: " + nosolution.rstrip(', '))
+    if no_sol_low != '':
+        print("\nNo Solution was found for the following regions because they are too low: " + no_sol_low.rstrip(', '))
+    if no_sol_high != '':
+        print("\nNo Solution was found for the following regions because they are too high: " + no_sol_high.rstrip(', '))
     if nodata != '':
         print("\nNo data was available for the following regions: " + nodata.rstrip(', '))
 
     if not os.path.isdir(paths['regression_out']):
         os.mkdir(paths["regression_out"])
 
-    summary.to_csv(paths[tech]["Regression_summary"], na_rep=param["no_solution"], sep=';', decimal='.')
+    summary.to_csv(paths[tech]["Regression_summary"], na_rep=param["no_solution"], sep=';', decimal=',')
     print("\nfiles saved: " + paths[tech]["Regression_summary"])
 
     if summaryTS is not None:
-        summaryTS.to_csv(paths[tech]["Regression_TS"], sep=';', decimal='.')
+        summaryTS.to_csv(paths[tech]["Regression_TS"], sep=';', decimal=',')
         print("\nfiles saved: " + paths[tech]["Regression_TS"])
 
     timecheck('End')
@@ -1276,16 +1301,16 @@ if __name__ == '__main__':
     generate_slope(paths, param)  # Slope
     generate_population(paths, param)  # Population
     generate_protected_areas(paths, param)  # Protected areas
-    generate_buffered_population(paths, param)  # Buffered Population
-    generate_wind_correction(paths, param)  # Correction factors for wind speeds
+    #generate_buffered_population(paths, param)  # Buffered Population
+    #generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
-        calculate_FLH(paths, param, tech)
-        masking(paths, param, tech)
-        weighting(paths, param, tech)
-        reporting(paths, param, tech)
+        #calculate_FLH(paths, param, tech)
+        #masking(paths, param, tech)
+        #weighting(paths, param, tech)
+        #reporting(paths, param, tech)
         find_locations_quantiles(paths, param, tech)
         generate_time_series(paths, param, tech)
-        regression_coefficient(paths, param, tech)
+        # regression_coefficient(paths, param, tech)
         # cProfile.run('reporting(paths, param, tech)', 'cprofile_test.txt')
         # p = pstats.Stats('cprofile_test.txt')
         # p.sort_stats('cumulative').print_stats(20)

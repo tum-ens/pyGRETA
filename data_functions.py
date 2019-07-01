@@ -354,10 +354,10 @@ def regmodel_load_data(paths, param, tech, hubheights, region):
     for hub in hubheights:
         if hubheights != [0]:
             TS_Temp = pd.read_csv(paths[tech]["TS_height"] + '_' + str(hub) + '_TS_' + str(param["year"]) + '.csv',
-                                  sep=';', dtype=str)
+                                  sep=';', decimal=',', dtype=str)
         else:
             TS_Temp = pd.read_csv(paths[tech]["TS_height"] + '_TS_' + str(param["year"]) + '.csv',
-                                  sep=';', dtype=str)
+                                  sep=';', decimal=',', dtype=str)
 
         # Remove undesired regions
         filter_reg = [col for col in TS_Temp if col.startswith(region)]
@@ -366,7 +366,7 @@ def regmodel_load_data(paths, param, tech, hubheights, region):
         # Exit function if region is not present in TS files
         if TS_Temp.empty:
             return None
-
+       
         TS_Temp.columns = TS_Temp.iloc[0]
         TS_Temp = TS_Temp.drop(0)
         # Replace ',' with '.' for float conversion

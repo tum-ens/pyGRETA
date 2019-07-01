@@ -1210,7 +1210,6 @@ def regression_coefficient(paths, param, tech):
     no_sol_high = ''
     no_sol_low = ''
     no_sol_low_high = ''
-    solution = ''
 
     # loop over all regions
     status = 0
@@ -1293,11 +1292,11 @@ def regression_coefficient(paths, param, tech):
     if not os.path.isdir(paths['regression_out']):
         os.mkdir(paths["regression_out"])
 
-    summary.to_csv(paths[tech]["Regression_summary"], na_rep=param["no_solution"], sep=';', decimal='.')
+    summary.to_csv(paths[tech]["Regression_summary"], na_rep=param["no_solution"], sep=';', decimal=',')
     print("\nfiles saved: " + paths[tech]["Regression_summary"])
 
     if summaryTS is not None:
-        summaryTS.to_csv(paths[tech]["Regression_TS"], sep=';', decimal='.')
+        summaryTS.to_csv(paths[tech]["Regression_TS"], sep=';', decimal=',')
         print("\nfiles saved: " + paths[tech]["Regression_TS"])
 
     timecheck('End')
@@ -1305,16 +1304,16 @@ def regression_coefficient(paths, param, tech):
 
 if __name__ == '__main__':
     paths, param = initialization()
-    # generate_weather_files(paths)
-    # generate_landsea(paths, param)  # Land and Sea
-    # generate_landuse(paths, param)  # Landuse
-    # generate_bathymetry(paths, param)  # Bathymetry
-    # generate_topography(paths, param)  # Topography
-    # generate_slope(paths, param)  # Slope
-    # generate_population(paths, param)  # Population
-    # generate_protected_areas(paths, param)  # Protected areas
-    # generate_buffered_population(paths, param)  # Buffered Population
-    # generate_wind_correction(paths, param)  # Correction factors for wind speeds
+    generate_weather_files(paths)
+    generate_landsea(paths, param)  # Land and Sea
+    generate_landuse(paths, param)  # Landuse
+    generate_bathymetry(paths, param)  # Bathymetry
+    generate_topography(paths, param)  # Topography
+    generate_slope(paths, param)  # Slope
+    generate_population(paths, param)  # Population
+    generate_protected_areas(paths, param)  # Protected areas
+    generate_buffered_population(paths, param)  # Buffered Population
+    generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
         calculate_FLH(paths, param, tech)
         masking(paths, param, tech)
@@ -1322,7 +1321,7 @@ if __name__ == '__main__':
         # reporting(paths, param, tech)
         find_locations_quantiles(paths, param, tech)
         generate_time_series(paths, param, tech)
-        regression_coefficient(paths, param, tech)
+        # regression_coefficient(paths, param, tech)
         # cProfile.run('reporting(paths, param, tech)', 'cprofile_test.txt')
         # p = pstats.Stats('cprofile_test.txt')
         # p.sort_stats('cumulative').print_stats(20)

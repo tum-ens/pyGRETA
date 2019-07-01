@@ -11,10 +11,9 @@ param = {}
 param["region"] = 'Europe'
 param["year"] = 2015
 param["technology"] = ['WindOn']  # ['PV', 'CSP', 'WindOn', 'WindOff']
-
 param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30, 0])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
-param["nproc"] = 1
+param["nproc"] = 18
 param["CPU_limit"] = True
 param["report_sampling"] = 100
 
@@ -126,7 +125,7 @@ windon["technical"] = {"w_in": 4,
                        "w_r": 15,
                        "w_off": 25,
                        "P_r": 3,
-                       "hub_height": 80
+                       "hub_height": 60
                        }
 windon["mask"] = {"slope": 20,
                   "lu_suitability": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1]),
@@ -186,11 +185,11 @@ year = str(param["year"])
 paths = {}
 # Shapefiles
 PathTemp = root + "01 Raw inputs" + fs + "Maps" + fs + "Shapefiles" + fs  # + region + fs
-paths["SHP"] = PathTemp + "Germany_with_EEZ.shp"
+paths["SHP"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
 # paths["SHP"] = PathTemp + "_NUTS0_wo_Balkans_with_EEZ.shp"
 
 # for eventual correction with the Global Wind Atlas
-paths["Countries"] = PathTemp + "Germany_with_EEZ.shp"
+paths["Countries"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
 # paths["Countries"] = paths["SHP"]
 
 # MERRA2
@@ -209,7 +208,7 @@ paths["T2M"] = PathTemp + "t2m_" + year + ".mat"
 # Testing GHI and TOA net as input
 # paths["GHI"] = paths["GHI_net"]
 # paths["TOA"] = paths["TOA_net"]
-# paths["CLEARNESS"] = paths["CLEARNESS_net"]
+paths["CLEARNESS"] = paths["CLEARNESS_net"]
 
 # IRENA
 paths["inst-cap"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA " + year + fs + "inst_cap_" + year + ".csv"

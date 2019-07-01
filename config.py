@@ -8,13 +8,13 @@ from sys import platform
 ###########################
 
 param = {}
-param["region"] = 'Germany'
+param["region"] = 'Europe'
 param["year"] = 2015
-param["technology"] = ['PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['WindOn']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 
-param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30])
+param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30, 0])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
-param["nproc"] = 6
+param["nproc"] = 1
 param["CPU_limit"] = True
 param["report_sampling"] = 100
 
@@ -175,10 +175,10 @@ git_RT_folder = os.path.dirname(os.path.abspath(__file__))
 if platform.startswith('win'):
     # Windows Root Folder
     from pathlib import Path
-    root = str(Path(git_RT_folder).parent) + fs
+    root = str(Path(git_RT_folder).parent.parent) + "Database_KS" + fs
 elif platform.startswith('linux'):
     # Linux Root Folder
-    root = git_RT_folder + fs + ".." + fs
+    root = git_RT_folder + fs + ".." + fs + ".." + fs + "Database_KS" + fs
 
 region = param["region"]
 year = str(param["year"])
@@ -200,9 +200,16 @@ paths["U50M"] = PathTemp + "u50m_" + year + ".mat"
 paths["V50M"] = PathTemp + "v50m_" + year + ".mat"
 paths["W50M"] = PathTemp + "w50m_" + year + ".mat"
 paths["GHI"] = PathTemp + "swgdn_" + year + ".mat"
+paths["GHI_net"] = PathTemp + "swgnt_" + year + ".mat"
 paths["TOA"] = PathTemp + "swtdn_" + year + ".mat"
+paths["TOA_net"] = PathTemp + "swtnt_" + year + ".mat"
 paths["CLEARNESS"] = PathTemp + "clearness_" + year + ".mat"
+paths["CLEARNESS_net"] = PathTemp + "clearness_net_" + year + ".mat"
 paths["T2M"] = PathTemp + "t2m_" + year + ".mat"
+# Testing GHI and TOA net as input
+# paths["GHI"] = paths["GHI_net"]
+# paths["TOA"] = paths["TOA_net"]
+# paths["CLEARNESS"] = paths["CLEARNESS_net"]
 
 # IRENA
 paths["inst-cap"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA " + year + fs + "inst_cap_" + year + ".csv"
@@ -228,11 +235,16 @@ paths["BATH"] = PathTemp + "_Bathymetry.tif"  # Bathymetry
 paths["POP"] = PathTemp + "_Population.tif"  # Population
 paths["BUFFER"] = PathTemp + "_Population_Buffered.tif"  # Buffered population
 paths["CORR_GWA"] = PathTemp + "_GWA_Correction.mat"  # Correction factors based on the GWA
-paths["CORR"] = PathTemp + "_Wind_Correction.tif"  # Correction factors for wind speeds
+
+# Correction factors for wind speeds
+turbine_height_on = str(param["WindOn"]["technical"]["hub_height"])
+turbine_height_off = str(param["WindOff"]["technical"]["hub_height"])
+paths["CORR"] = PathTemp + "_Wind_Correction_" + '_' + turbine_height_on + '_' + turbine_height_off + '.tif'
+
 
 # Ouput Folders
 timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
-# timestamp = "20190502 Referenzszenario"
+timestamp = "20190617T142740"
 paths["OUT"] = root + "02 Intermediate files" + fs + "Files " + region + fs + "Renewable energy" + fs + timestamp + fs
 if not os.path.isdir(paths["OUT"]):
     os.mkdir(paths["OUT"])

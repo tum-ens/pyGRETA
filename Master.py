@@ -96,14 +96,17 @@ def generate_weather_files(paths):
     :param paths: paths dictionary containing the input file for NetCDF data
     """
     if not (os.path.isfile(paths["W50M"]) and os.path.isfile(paths["GHI"]) and os.path.isfile(paths["TOA"])
-            and os.path.isfile(paths["T2M"]) and os.path.isfile(paths["CLEARNESS"])):
+            and os.path.isfile(paths["T2M"]) and os.path.isfile(paths["CLEARNESS"]) and os.path.isfile(paths["GHI_net"])
+            and os.path.isfile(paths["TOA_net"]) and os.path.isfile(paths["CLEARNESS_net"])):
         timecheck('Start')
         start = datetime.date(param["year"], 1, 1)
         end = datetime.date(param["year"], 12, 31)
         root = paths["MERRA_IN"]
 
         SWGDN = np.array([])
+        SWGNT = np.array([])
         SWTDN = np.array([])
+        SWTNT = np.array([])
         T2M = np.array([])
         U50M = np.array([])
         V50M = np.array([])
@@ -130,6 +133,18 @@ def generate_weather_files(paths):
                 else:
                     SWTDN = np.concatenate((SWTDN, swtdn), axis=2)
 
+                swgnt = np.transpose(f['SWGNT'], [1, 2, 0])
+                if SWGNT.size == 0:
+                    SWGNT = swgnt
+                else:
+                    SWGNT = np.concatenate((SWGNT, swgnt), axis=2)
+
+                swtnt = np.transpose(f['SWTNT'], [1, 2, 0])
+                if SWTNT.size == 0:
+                    SWTNT = swtnt
+                else:
+                    SWTNT = np.concatenate((SWTNT, swtnt), axis=2)
+
             with h5netcdf.File(name2, 'r') as f:
                 t2m = np.transpose(f['T2M'], [1, 2, 0])
                 if T2M.size == 0:
@@ -150,6 +165,8 @@ def generate_weather_files(paths):
                     V50M = np.concatenate((V50M, v50m), axis=2)
             if date.year != tomorrow.year:
                 timecheck('Start Writing Files: GHI, TOA, T2M, W50M')
+                hdf5storage.writes({'SWGNT': SWGNT}, paths["GHI_net"], store_python_metadata=True, matlab_compatible=True)
+                hdf5storage.writes({'SWTNT': SWTNT}, paths["TOA_net"], store_python_metadata=True, matlab_compatible=True)
                 hdf5storage.writes({'SWGDN': SWGDN}, paths["GHI"], store_python_metadata=True, matlab_compatible=True)
                 hdf5storage.writes({'SWTDN': SWTDN}, paths["TOA"], store_python_metadata=True, matlab_compatible=True)
                 hdf5storage.writes({'T2M': T2M}, paths["T2M"], store_python_metadata=True, matlab_compatible=True)
@@ -161,6 +178,9 @@ def generate_weather_files(paths):
                 # Calculate the clearness index
                 CLEARNESS = np.divide(SWGDN, SWTDN, where=SWTDN != 0)
                 hdf5storage.writes({'CLEARNESS': CLEARNESS}, paths["CLEARNESS"], store_python_metadata=True,
+                                   matlab_compatible=True)
+                CLEARNESS_net = np.divide(SWGNT, SWTNT, where=SWTNT != 0)
+                hdf5storage.writes({'CLEARNESS': CLEARNESS_net}, paths["CLEARNESS_net"], store_python_metadata=True,
                                    matlab_compatible=True)
                 timecheck('Finish Writing Files: GHI, TOA, T2M, W50M')
         timecheck('End')
@@ -998,6 +1018,7 @@ def find_locations_quantiles(paths, param, tech):
 
 
 def generate_time_series(paths, param, tech):
+    timecheck('Start')
 
     nproc = param["nproc"]
     CPU_limit = np.full((1, nproc), param["CPU_limit"])
@@ -1186,12 +1207,15 @@ def regression_coefficient(paths, param, tech):
     summary = None
     summaryTS = None
     nodata = ''
-    nosolution = ''
+    no_sol_high = ''
+    no_sol_low = ''
+    no_sol_low_high = ''
     solution = ''
 
     # loop over all regions
     status = 0
-    print("Regions under study : " + str(len(list_regions)))
+    print("Regions under study : ")
+    print(list_regions)
     for reg in list_regions:
         # Show progress of the simulation
         status = status + 1
@@ -1230,9 +1254,15 @@ def regression_coefficient(paths, param, tech):
             finalTS = pd.DataFrame(finalTS, np.arange(1, 8761), [reg])
             summaryTS = pd.concat([summaryTS, finalTS], axis=1)
             solution = solution + reg + ', '
+        elif region_data[None]["IRENA_best_worst"] == (False, True):
+            r = np.full((len(param["quantiles"]), len(hub_heights)), np.nan)
+            no_sol_high = no_sol_high + reg + ', '
+        elif region_data[None]["IRENA_best_worst"] == (True, False):
+            r = np.full((len(param["quantiles"]), len(hub_heights)), np.nan)
+            no_sol_low = no_sol_low + reg + ', '
         else:
             r = np.full((len(param["quantiles"]), len(hub_heights)), np.nan)
-            nosolution = nosolution + reg + ', '
+            no_sol_low_high = no_sol_low_high + reg + ', '
 
         if hub_heights != [0]:
             result = pd.DataFrame(r, param["quantiles"], (reg + "_" + str(h) for h in hub_heights))
@@ -1248,8 +1278,15 @@ def regression_coefficient(paths, param, tech):
 
     if solution != '':
         print("\nA solution was found for the following regions: " + solution.rstrip(', '))
-    if nosolution != '':
-        print("\nNo Solution was found for the following regions: " + nosolution.rstrip(', '))
+    if no_sol_low != '':
+        print("\nNo Solution was found for the following regions because they are too low: " + no_sol_low.rstrip(', '))
+    if no_sol_high != '':
+        print(
+            "\nNo Solution was found for the following regions because they are too high: " + no_sol_high.rstrip(', '))
+    if no_sol_low_high != '':
+        print(
+            "\nNo Solution was found for the following regions because they are too high and too low: "
+            + no_sol_low_high.rstrip(', '))
     if nodata != '':
         print("\nNo data was available for the following regions: " + nodata.rstrip(', '))
 
@@ -1268,21 +1305,21 @@ def regression_coefficient(paths, param, tech):
 
 if __name__ == '__main__':
     paths, param = initialization()
-    generate_weather_files(paths)
-    generate_landsea(paths, param)  # Land and Sea
-    generate_landuse(paths, param)  # Landuse
-    generate_bathymetry(paths, param)  # Bathymetry
-    generate_topography(paths, param)  # Topography
-    generate_slope(paths, param)  # Slope
-    generate_population(paths, param)  # Population
-    generate_protected_areas(paths, param)  # Protected areas
-    generate_buffered_population(paths, param)  # Buffered Population
-    generate_wind_correction(paths, param)  # Correction factors for wind speeds
+    # generate_weather_files(paths)
+    # generate_landsea(paths, param)  # Land and Sea
+    # generate_landuse(paths, param)  # Landuse
+    # generate_bathymetry(paths, param)  # Bathymetry
+    # generate_topography(paths, param)  # Topography
+    # generate_slope(paths, param)  # Slope
+    # generate_population(paths, param)  # Population
+    # generate_protected_areas(paths, param)  # Protected areas
+    # generate_buffered_population(paths, param)  # Buffered Population
+    # generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
         calculate_FLH(paths, param, tech)
         masking(paths, param, tech)
         weighting(paths, param, tech)
-        reporting(paths, param, tech)
+        # reporting(paths, param, tech)
         find_locations_quantiles(paths, param, tech)
         generate_time_series(paths, param, tech)
         regression_coefficient(paths, param, tech)

@@ -495,6 +495,7 @@ def generate_wind_correction(paths, param):
         res_correction_off = param["WindOff"]["resource"]["res_correction"]
         topo_correction = param["WindOn"]["resource"]["topo_correction"]
         GeoRef = param["GeoRef"]
+
         # Onshore resolution correction
         if res_correction_on:
             landuse = param["landuse"]
@@ -560,7 +561,6 @@ def generate_wind_correction(paths, param):
         with rasterio.open(paths["EEZ"]) as src:
             A_eez = np.flipud(src.read(1)).astype(int)
         A_cf = A_cf_off * A_eez + A_cf_on
-
         array2raster(paths["CORR"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf)
         print("files saved: " + paths["CORR"])
         timecheck('End')

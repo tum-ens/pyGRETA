@@ -10,11 +10,11 @@ from sys import platform
 param = {}
 param["region"] = 'Europe'
 param["year"] = 2015
-param["technology"] = ['WindOff']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 
 param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
-param["nproc"] = 18
+param["nproc"] = 36
 param["CPU_limit"] = True
 param["report_sampling"] = 100
 
@@ -82,7 +82,7 @@ del landuse, protected_areas
 
 # Parameters related to PV
 pv = {}
-pv["resource"] = {"clearness_correction": 0.85
+pv["resource"] = {"clearness_correction": 1
                   }
 pv["technical"] = {"T_r": 25,
                    "loss_coeff": 0.37,

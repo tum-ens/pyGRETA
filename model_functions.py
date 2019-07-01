@@ -44,6 +44,41 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
 
     if pv["tracking"] == 1:
         A_beta = 90 - A_alpha
+        x = [-cosd(A_alpha) * sind(A_azimuth - A_orientation)] / [-cosd(A_alpha) * cosd(A_azimuth - A_orientation) * sind(A_beta) + sind(A_alpha) * cosd(A_beta)]
+    
+        # The difference should be the angular displacement
+        Az_dif = A_azimuth - (A_orientation + 180)
+        criterion = Az_dif < -180
+        Az_dif(criterion) = Az_dif(criterion) + 360
+        criterion = Az_dif > 180
+        Az_dif(criterion) = Az_dif(criterion) - 360
+        
+        #y is used to locate R on the right quadrant
+        y = zeros(size(x));
+        criterion = (x==0) or (((x>0) and (Az_dif>0)) or ((x<0) and (Az_dif<0)))
+        y(criterion) = 0
+        criterion = ((x<0) and (Az_dif>0))
+        y(criterion) = 180
+        criterion = (x>0) and (Az_dif<0)
+        y(criterion) = -180
+        
+        #R = atand(x)+y  # tracking angle
+        
+        # new beta
+        #beta = acosd(cosd(R) * cosd(A_beta));
+        
+        #new orientation
+        #orientation = zeros(size(beta));
+        #criterion =and(beta~=0, -90 <= R & R <= 90); )
+        #orientation(criterion) = A_orientation(criterion)+180 + asind(sind(R(criterion))./sind(beta(criterion))); 
+        #criterion = -180 <= R & R < -90; 
+        #orientation(criterion)= A_orientation(criterion) - asind(sind(R(criterion))./sind(beta(criterion))); 
+        #criterion = 90 < R & R<= 180;
+        #orientation(criterion)= A_orientation(criterion)+360 - asind(sind(R(criterion))./sind(beta(criterion)));
+        
+        #A_orientation = orientation-180;
+        #A_beta = beta;
+
     elif pv["tracking"] == 2:
         A_beta = 90 - A_alpha
         A_orientation = A_azimuth

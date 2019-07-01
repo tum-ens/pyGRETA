@@ -13,7 +13,7 @@ param["year"] = 2015
 param["technology"] = ['WindOn']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30, 0])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
-param["nproc"] = 6
+param["nproc"] = 18
 param["CPU_limit"] = True
 param["report_sampling"] = 100
 

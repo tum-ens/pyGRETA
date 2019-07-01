@@ -238,7 +238,7 @@ paths["CORR_GWA"] = PathTemp + "_GWA_Correction.mat"  # Correction factors based
 # Correction factors for wind speeds
 turbine_height_on = str(param["WindOn"]["technical"]["hub_height"])
 turbine_height_off = str(param["WindOff"]["technical"]["hub_height"])
-paths["CORR"] = PathTemp + "_Wind_Correction_" + '_' + turbine_height_on + '_' + turbine_height_off + '.tif'
+paths["CORR"] = PathTemp + "_Wind_Correction_" + turbine_height_on + '_' + turbine_height_off + '.tif'
 
 
 # Ouput Folders

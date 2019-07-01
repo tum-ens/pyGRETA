@@ -13,7 +13,7 @@ param["year"] = 2015
 param["technology"] = ['WindOn']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30, 0])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
-param["nproc"] = 18
+param["nproc"] = 6
 param["CPU_limit"] = True
 param["report_sampling"] = 100
 
@@ -239,7 +239,6 @@ paths["CORR_GWA"] = PathTemp + "_GWA_Correction.mat"  # Correction factors based
 turbine_height_on = str(param["WindOn"]["technical"]["hub_height"])
 turbine_height_off = str(param["WindOff"]["technical"]["hub_height"])
 paths["CORR"] = PathTemp + "_Wind_Correction_" + '_' + turbine_height_on + '_' + turbine_height_off + '.tif'
-
 
 # Ouput Folders
 timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))

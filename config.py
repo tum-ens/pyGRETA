@@ -240,7 +240,6 @@ turbine_height_on = str(param["WindOn"]["technical"]["hub_height"])
 turbine_height_off = str(param["WindOff"]["technical"]["hub_height"])
 paths["CORR"] = PathTemp + "_Wind_Correction_" + turbine_height_on + '_' + turbine_height_off + '.tif'
 
-
 # Ouput Folders
 timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
 timestamp = "20190617T142740"

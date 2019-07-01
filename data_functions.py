@@ -369,7 +369,9 @@ def regmodel_load_data(paths, param, tech, hubheights, region):
 
         TS_Temp.columns = TS_Temp.iloc[0]
         TS_Temp = TS_Temp.drop(0)
-
+        # Replace ',' with '.' for float conversion
+        for q in TS_Temp.columns:
+            TS_Temp[q] = TS_Temp[q].str.replace(',', '.')
         GenTS[str(hub)] = TS_Temp.astype(float)
 
     GenTS["TS_Max"] = np.nansum(GenTS[str(np.max(hubheights))]["q" + str(np.max(param["quantiles"]))])

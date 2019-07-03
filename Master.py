@@ -568,6 +568,10 @@ def generate_wind_correction(paths, param):
 
 def calculate_FLH(paths, param, tech):
     timecheck('Start')
+
+    if tech in ["WindOn", "WindOff"]:
+        print("\nHUB_HEIGHTS: " + str(param[tech]["technical"]["hub_height"]))
+
     nproc = param["nproc"]
     m_high = param["m_high"]
     n_high = param["n_high"]
@@ -1210,6 +1214,7 @@ def regression_coefficient(paths, param, tech):
     no_sol_high = ''
     no_sol_low = ''
     no_sol_low_high = ''
+    solution = ''
 
     # loop over all regions
     status = 0
@@ -1315,13 +1320,13 @@ if __name__ == '__main__':
     generate_buffered_population(paths, param)  # Buffered Population
     generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
-        calculate_FLH(paths, param, tech)
-        masking(paths, param, tech)
-        weighting(paths, param, tech)
-        # reporting(paths, param, tech)
-        find_locations_quantiles(paths, param, tech)
-        generate_time_series(paths, param, tech)
-        # regression_coefficient(paths, param, tech)
+        # calculate_FLH(paths, param, tech)
+        # masking(paths, param, tech)
+        # weighting(paths, param, tech)
+        # # reporting(paths, param, tech)
+        # find_locations_quantiles(paths, param, tech)
+        # generate_time_series(paths, param, tech)
+        regression_coefficient(paths, param, tech)
         # cProfile.run('reporting(paths, param, tech)', 'cprofile_test.txt')
         # p = pstats.Stats('cprofile_test.txt')
         # p.sort_stats('cumulative').print_stats(20)

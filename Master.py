@@ -1,24 +1,4 @@
-import os
-from data_functions import *
 from model_functions import *
-import numpy as np
-from scipy.ndimage import convolve
-import datetime
-import geopandas as gpd
-import pandas as pd
-from rasterio import windows
-from shapely.geometry import mapping, Point
-import fiona
-import hdf5storage
-from multiprocessing import Pool
-from itertools import product
-import h5netcdf
-import cProfile
-import pstats
-import shutil
-import pyomo.environ as pyo
-from pyomo.opt import SolverFactory
-import glob
 
 
 def initialization():
@@ -836,9 +816,14 @@ def reporting(paths, param, tech):
 
     # Define sampling for sorted lists
     sampling = param["report_sampling"]
-
+    status = 0
     # Loop over each region
     for reg in range(0, nRegions):
+
+        # Display Progress
+        status += 1
+        display_progress('Reporting ', (nRegions, status))
+
         # Intitialize region stats
         region_stats = {}
         region_stats["Region"] = regions_shp.iloc[reg]["NAME_SHORT"] + "_" + location
@@ -1223,10 +1208,7 @@ def regression_coefficient(paths, param, tech):
     for reg in list_regions:
         # Show progress of the simulation
         status = status + 1
-        sys.stdout.write('\r')
-        sys.stdout.write('Regression Coefficients ' + tech + ' ' + param["region"] + ' ' + '[%-50s] %d%%' % (
-        '=' * ((status * 50) // len(list_regions)), (status * 100) // len(list_regions)))
-        sys.stdout.flush()
+        display_progress('Regression Coefficients ' + tech + ' ' + param["region"], (len(list_regions), status))
 
         region_data = regmodel_load_data(paths, param, tech, hub_heights, reg)
 
@@ -1309,16 +1291,16 @@ def regression_coefficient(paths, param, tech):
 
 if __name__ == '__main__':
     paths, param = initialization()
-    generate_weather_files(paths)
-    generate_landsea(paths, param)  # Land and Sea
-    generate_landuse(paths, param)  # Landuse
-    generate_bathymetry(paths, param)  # Bathymetry
-    generate_topography(paths, param)  # Topography
-    generate_slope(paths, param)  # Slope
-    generate_population(paths, param)  # Population
-    generate_protected_areas(paths, param)  # Protected areas
-    generate_buffered_population(paths, param)  # Buffered Population
-    generate_wind_correction(paths, param)  # Correction factors for wind speeds
+    # generate_weather_files(paths)
+    # generate_landsea(paths, param)  # Land and Sea
+    # generate_landuse(paths, param)  # Landuse
+    # generate_bathymetry(paths, param)  # Bathymetry
+    # generate_topography(paths, param)  # Topography
+    # generate_slope(paths, param)  # Slope
+    # generate_population(paths, param)  # Population
+    # generate_protected_areas(paths, param)  # Protected areas
+    # generate_buffered_population(paths, param)  # Buffered Population
+    # generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
         # calculate_FLH(paths, param, tech)
         # masking(paths, param, tech)

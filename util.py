@@ -1,4 +1,3 @@
-import numpy as np
 import gdal
 import osr
 from osgeo import ogr
@@ -9,6 +8,30 @@ from glob import glob
 import psutil
 import datetime
 import inspect
+import sys
+from numpy.matlib import repmat, sin, cos
+import hdf5storage
+import math as m
+import rasterio
+from rasterio import windows, mask, MemoryFile
+import pandas as pd
+import numpy as np
+from scipy.ndimage import convolve
+import datetime
+import geopandas as gpd
+from rasterio import windows
+from shapely.geometry import mapping, Point
+import fiona
+import hdf5storage
+from multiprocessing import Pool
+from itertools import product
+import h5netcdf
+import cProfile
+import pstats
+import shutil
+import pyomo.environ as pyo
+from pyomo.opt import SolverFactory
+import glob
 
 
 def sind(alpha):
@@ -217,3 +240,13 @@ def reg_miss_files():
 
     print("\nPlease populate the input folder with the technology corresponding data.\n"
           "(look at README.txt in the folder for more information)\n")
+
+
+def display_progress(message, progress_stat):
+    length = progress_stat[0]
+    status = progress_stat[1]
+    sys.stdout.write('\r')
+    sys.stdout.write(message + ' ' + '[%-50s] %d%%' % ('=' * ((status * 50) // length), (status * 100) // length))
+    sys.stdout.flush()
+    if status == length:
+        print('\n')

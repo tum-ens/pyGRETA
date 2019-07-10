@@ -1,12 +1,4 @@
-import os
 from util import *
-import math as m
-import numpy as np
-import rasterio
-from rasterio import windows, mask, MemoryFile
-import pandas as pd
-import hdf5storage
-from itertools import product
 
 
 def calc_ext(regb, ext, res):

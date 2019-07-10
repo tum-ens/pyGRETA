@@ -1,11 +1,6 @@
-import os
-import sys
-# os.environ['MKL_NUM_THREADS'] = '8'
 from data_functions import *
 from util import *
-import numpy as np
-from numpy.matlib import repmat, sin, cos
-import hdf5storage
+
 
 np.seterr(divide='ignore')  # Repress Invalid value or division by zero error
 

@@ -37,16 +37,16 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
     TEMP_h = TEMP_h[reg_ind_h]
     # Compute the angles
     A_phi, A_omega, A_delta, A_alpha, A_beta, A_azimuth, A_orientation, sunrise, sunset = \
-        angles(hour, reg_ind_h, Crd_all, res_desired)
+        angles(hour, reg_ind_h, Crd_all, res_desired, pv["orientation"])
     # Other matrices
     A_albedo = rasterData["A_albedo"][reg_ind_h]
     A_Ross = rasterData["A_Ross"][reg_ind_h]
 
+    #
     if pv["tracking"] == 1:
-        A_beta = 90 - A_alpha
+        A_orientation, A_beta = traking(1, A_phi, A_alpha, A_beta, A_azimuth)
     elif pv["tracking"] == 2:
-        A_beta = 90 - A_alpha
-        A_orientation = A_azimuth
+        A_orientation, A_beta = traking(2, A_phi, A_alpha, A_beta, A_azimuth)
 
     aux = np.maximum(np.minimum((sind(A_delta) * sind(A_phi) * cosd(A_beta)
                                  - sind(A_delta) * cosd(A_phi) * sind(A_beta) * cosd(A_orientation)
@@ -222,7 +222,7 @@ def calc_TS_solar(hours, args):
     return TS
 
 
-def angles(hour, reg_ind, Crd_all, res_desired):
+def angles(hour, reg_ind, Crd_all, res_desired, orient):
     """
     This function creates six matrices for the desired extent, that represent the elevation, tilt, azimuth and
     oerientation angles, in addition to the sunrise and sunset hours of every pixel with the desired resolution
@@ -291,8 +291,8 @@ def angles(hour, reg_ind, Crd_all, res_desired):
     azi = aziam * ((omega < 0) * 1) + azipm * ((omega >= 0) * 1)
 
     # Orientation (in degrees)
-    orientation = np.zeros(alpha.shape)  # Azimuth of the PV panel is zero for the Southern hemisphere
-    orientation[phi < 0] = 180  # Azimuth of the PV panel is 180° for the Southern hemisphere
+    orientation = np.full(alpha.shape, orient)  # Azimuth of the PV panel is zero for the Northern hemisphere
+    orientation[phi < 0] = 180 - orient  # Azimuth of the PV panel is 180° for the Southern hemisphere
 
     # Sunrise and sunset hours in GMT
 
@@ -310,6 +310,56 @@ def angles(hour, reg_ind, Crd_all, res_desired):
     sunrise = np.maximum(sunrise, sunrise_tilt) - TC  # Correction Solar time -> GMT
     sunset = np.minimum(sunset, sunset_tilt) - TC  # Correction solar time -> GMT
     return phi, omega, delta, alpha, beta, azi, orientation, sunrise, sunset
+
+
+def traking(axis, A_phi, A_alpha, A_beta, A_azimuth):
+    # One axis Tracking
+    if axis == 1:
+        A_orientation = np.zeros(A_alpha.shape)
+        A_orientation[A_phi < 0] = 180
+
+        x = (cosd(A_alpha) * (-sind(A_azimuth - A_orientation))) \
+            / (cosd(A_alpha) * (-cosd(A_azimuth - A_orientation)) * sind(A_beta) + sind(A_alpha) * cosd(A_beta))
+
+        # The difference should be the angular displacement
+        Az_dif = A_azimuth - (A_orientation + 180)
+        Az_dif[Az_dif < -180] = Az_dif[Az_dif < -180] + 360
+        Az_dif[Az_dif > 180] = Az_dif[Az_dif > 180] - 360
+
+        # y is used to locate R on the right quadrant
+        y = np.zeros(x.shape())
+        crit = np.logical_or(x == 0,
+                             np.logical_or(np.logical_and(x > 0, Az_dif > 0), np.logical_and(x < 0, Az_dif < 0)))
+        y[crit] = 0
+        crit = np.logical_and(x < 0, Az_dif > 0)
+        y[crit] = 180
+        crit = np.logical_and(x > 0, Az_dif < 0)
+        y[crit] = -180
+
+        # Tracking angle
+        R = arctand(x) + y
+
+        # New beta
+        beta = arccosd(cosd(R) * cosd(A_beta))
+
+        # New orientation
+        orientation = np.zeros(A_beta.shape())
+        crit = np.logical_and(A_beta != 0, np.logical_and(-90 <= R, R <= 90))
+        orientation[crit] = A_orientation[crit] + 180 + arcsind(sind(R[crit]) / sind(beta[crit]))
+        crit = np.logical_and(-180 <= R, R < -90)
+        orientation[crit] = A_orientation[crit] - arcsind(sind(R[crit]) / sind(beta[crit]))
+        crit = np.logical_and(90 < R, R <= 180)
+        orientation[crit] = A_orientation[crit] + 360 - arcsind(sind(R[crit]) / sind(beta[crit]))
+
+        A_orientation = orientation - 180
+        A_beta = beta
+
+    # Two Axis Tracking
+    elif axis == 2:
+        A_beta = 90 - A_alpha
+        A_orientation = A_azimuth - 180
+
+    return A_orientation, A_beta
 
 
 def toa_hourly(alpha, hour):

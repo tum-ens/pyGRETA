@@ -8,12 +8,13 @@ from sys import platform
 ###########################
 
 param = {}
-param["region"] = 'Europe'
+param["region"] = 'Germany'
 param["year"] = 2015
-param["technology"] = ['WindOn']  # ['PV', 'CSP', 'WindOn', 'WindOff']
-param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30, 0])
+param["technology"] = ['PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+# param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30, 0])
+param["quantiles"] = np.array([100, 95, 90, 85, 80, 70, 60, 50, 40, 35, 20, 0])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
-param["nproc"] = 18
+param["nproc"] = 24
 param["CPU_limit"] = True
 param["report_sampling"] = 100
 
@@ -81,11 +82,12 @@ del landuse, protected_areas
 
 # Parameters related to PV
 pv = {}
-pv["resource"] = {"clearness_correction": 0.85
+pv["resource"] = {"clearness_correction": 0.75
                   }
 pv["technical"] = {"T_r": 25,
                    "loss_coeff": 0.37,
-                   "tracking": 0
+                   "tracking": 0,
+                   "orientation": -30
                    }
 pv["mask"] = {"slope": 20,
               "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
@@ -125,7 +127,7 @@ windon["technical"] = {"w_in": 4,
                        "w_r": 15,
                        "w_off": 25,
                        "P_r": 3,
-                       "hub_height": 100
+                       "hub_height": 140
                        }
 windon["mask"] = {"slope": 20,
                   "lu_suitability": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1]),
@@ -146,7 +148,7 @@ windoff["technical"] = {"w_in": 3,
                         "w_r": 16.5,
                         "w_off": 34,
                         "P_r": 7.58,
-                        "hub_height": 135
+                        "hub_height": 120
                         }
 windoff["mask"] = {"depth": -40,
                    "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
@@ -185,11 +187,13 @@ year = str(param["year"])
 paths = {}
 # Shapefiles
 PathTemp = root + "01 Raw inputs" + fs + "Maps" + fs + "Shapefiles" + fs  # + region + fs
-paths["SHP"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
-# paths["SHP"] = PathTemp + "_NUTS0_wo_Balkans_with_EEZ.shp"
+paths["SHP"] = PathTemp + "Germany_with_EEZ.shp"
+# paths["SHP"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
+# paths["SHP"] = PathTemp + "Germany_with_EEZ.shp"
 
 # for eventual correction with the Global Wind Atlas
-paths["Countries"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
+paths["Countries"] = PathTemp + "Germany_with_EEZ.shp"
+# paths["Countries"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
 # paths["Countries"] = paths["SHP"]
 
 # MERRA2
@@ -208,7 +212,7 @@ paths["T2M"] = PathTemp + "t2m_" + year + ".mat"
 # Testing GHI and TOA net as input
 # paths["GHI"] = paths["GHI_net"]
 # paths["TOA"] = paths["TOA_net"]
-paths["CLEARNESS"] = paths["CLEARNESS_net"]
+# paths["CLEARNESS"] = paths["CLEARNESS_net"]
 
 # IRENA
 paths["inst-cap"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA " + year + fs + "inst_cap_" + year + ".csv"
@@ -238,11 +242,11 @@ paths["CORR_GWA"] = PathTemp + "_GWA_Correction.mat"  # Correction factors based
 # Correction factors for wind speeds
 turbine_height_on = str(param["WindOn"]["technical"]["hub_height"])
 turbine_height_off = str(param["WindOff"]["technical"]["hub_height"])
-paths["CORR"] = PathTemp + "_Wind_Correction_" + '_' + turbine_height_on + '_' + turbine_height_off + '.tif'
+paths["CORR"] = PathTemp + "_Wind_Correction_" + turbine_height_on + '_' + turbine_height_off + '.tif'
 
 # Ouput Folders
-timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
-timestamp = "20190617T142740"
+timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S")) + '_-30°'
+# timestamp = "20190714T213540"
 paths["OUT"] = root + "02 Intermediate files" + fs + "Files " + region + fs + "Renewable energy" + fs + timestamp + fs
 if not os.path.isdir(paths["OUT"]):
     os.mkdir(paths["OUT"])
@@ -261,7 +265,7 @@ paths["IRENA_example"] = git_RT_folder + fs + "Regression_coef" + fs + "IRENA_FL
 
 # Regression folders
 paths["regression_in"] = root + "00 Assumptions" + fs + "Regression_Inputs" + fs
-paths["regression_out"] = paths["OUT"] + "Regression_Ouputs" + fs
+paths["regression_out"] = paths["OUT"] + "Regression_Outputs" + fs
 
 for tech in param["technology"]:
     paths[tech] = {}
@@ -293,7 +297,7 @@ for tech in param["technology"]:
     paths[tech]["Sorted_FLH"] = PathTemp + '_sorted_FLH_sampled_' + year + '.mat'
 
     paths[tech]["TS_height"] = paths["regression_in"] + region + '_' + tech
-    paths[tech]["Regression_summary"] = paths["regression_out"] + region + '_' + tech + '_reg_coefficients_' + timestamp + '.csv'
-    paths[tech]["Regression_TS"] = paths["regression_out"] + region + '_' + tech + '_reg_TimeSeries_' + timestamp + '.csv'
+    paths[tech]["Regression_summary"] = paths["regression_out"] + region + '_' + tech + '_reg_coefficients_'
+    paths[tech]["Regression_TS"] = paths["regression_out"] + region + '_' + tech + '_reg_TimeSeries_'
 
 del root, PathTemp, fs

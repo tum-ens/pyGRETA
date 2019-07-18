@@ -31,6 +31,10 @@ def arccosd(digit):
     return np.rad2deg(arccos(digit))
 
 
+def arctand(digit):
+    return np.rad2deg(arctan(digit))
+
+
 def hourofmonth():
     h = 24 * np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]).astype(int)
     for i in range(1, 12):

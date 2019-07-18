@@ -377,16 +377,26 @@ def regmodel_load_data(paths, param, tech, hubheights, region):
     GenTS["TS_Max"] = np.nansum(GenTS[str(np.max(hubheights))]["q" + str(np.max(param["quantiles"]))])
     GenTS["TS_Min"] = np.nansum(GenTS[str(np.min(hubheights))]["q" + str(np.min(param["quantiles"]))])
 
-    # Prepare Timeseries dictionary indexing by height and quantile
-    Timeseries = {}
-    for h in hubheights:
-        for q in param["quantiles"]:
-            for t in time:
-                Timeseries[(h, q, t)] = np.array(GenTS[str(h)]['q'+str(q)])[t-1]
-
     # Setup dataframe for IRENA
     IRENA = param["IRENA"]
     IRENA_FLH = IRENA[region].loc[tech]
+
+    solution_check = (GenTS["TS_Max"] > IRENA_FLH, GenTS["TS_Min"] < IRENA_FLH)
+
+    # Prepare Timeseries dictionary indexing by height and quantile
+
+    if solution_check == (False, True):
+        Timeseries = GenTS[str(np.max(hubheights))]["q" + str(np.max(param["quantiles"]))]
+
+    elif solution_check == (True, False):
+        Timeseries = GenTS[str(np.min(hubheights))]["q" + str(np.min(param["quantiles"]))]
+
+    elif solution_check == (True, True):
+        Timeseries = {}
+        for h in hubheights:
+            for q in param["quantiles"]:
+                for t in time:
+                    Timeseries[(h, q, t)] = np.array(GenTS[str(h)]['q'+str(q)])[t-1]
 
     # Setup dataframe for EMHIRES DATA
     EMHIRES = param["EMHIRES"]
@@ -404,7 +414,7 @@ def regmodel_load_data(paths, param, tech, hubheights, region):
         "shape": TS,
         "t": {None: np.array(time)},
         "TS": Timeseries,
-        "IRENA_best_worst": (GenTS["TS_Max"] > IRENA_FLH, GenTS["TS_Min"] < IRENA_FLH),
+        "IRENA_best_worst": solution_check,
         "GenTS": GenTS
             }}
 

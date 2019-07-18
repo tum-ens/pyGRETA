@@ -53,7 +53,8 @@ def initialization():
     param["Crd_all"] = Crd_all
 
     # Do the same for countries, if wind correction is to be calculated
-    if (not os.path.isfile(paths["CORR_GWA"])) and param["WindOn"]["resource"]["topo_correction"] and ("WindOn" in param["technology"]):
+    if (not os.path.isfile(paths["CORR_GWA"])) and param["WindOn"]["resource"]["topo_correction"] and (
+            "WindOn" in param["technology"]):
         # read shapefile of countries
         countries_shp = gpd.read_file(paths["Countries"])
         param["countries"] = countries_shp.drop(countries_shp[countries_shp["Population"] == 0].index)
@@ -165,8 +166,10 @@ def generate_weather_files(paths):
                     V50M = np.concatenate((V50M, v50m), axis=2)
             if date.year != tomorrow.year:
                 timecheck('Start Writing Files: GHI, TOA, T2M, W50M')
-                hdf5storage.writes({'SWGNT': SWGNT}, paths["GHI_net"], store_python_metadata=True, matlab_compatible=True)
-                hdf5storage.writes({'SWTNT': SWTNT}, paths["TOA_net"], store_python_metadata=True, matlab_compatible=True)
+                hdf5storage.writes({'SWGNT': SWGNT}, paths["GHI_net"], store_python_metadata=True,
+                                   matlab_compatible=True)
+                hdf5storage.writes({'SWTNT': SWTNT}, paths["TOA_net"], store_python_metadata=True,
+                                   matlab_compatible=True)
                 hdf5storage.writes({'SWGDN': SWGDN}, paths["GHI"], store_python_metadata=True, matlab_compatible=True)
                 hdf5storage.writes({'SWTDN': SWTDN}, paths["TOA"], store_python_metadata=True, matlab_compatible=True)
                 hdf5storage.writes({'T2M': T2M}, paths["T2M"], store_python_metadata=True, matlab_compatible=True)
@@ -220,7 +223,6 @@ def generate_landsea(paths, param):
 
         for reg in range(0, nRegions):
             A_region = calc_region(regions_shp.iloc[reg], Crd_regions[reg, :], res_desired, GeoRef)
-            # import pdb; pdb.set_trace()
             A_eez[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] = \
                 A_eez[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] + A_region
         with rasterio.open(paths["LAND"]) as src:
@@ -476,7 +478,7 @@ def generate_buffered_population(paths, param):
         with rasterio.open(paths["LU"]) as src:
             A_lu = src.read(1)
         A_lu = np.flipud(A_lu).astype(int)
-        A_lu = A_lu == param["landuse"]["type_urban"] # Land use type for Urban and built-up
+        A_lu = A_lu == param["landuse"]["type_urban"]  # Land use type for Urban and built-up
         kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
         kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
         A_lu_buffered = convolve(A_lu, kernel)
@@ -556,7 +558,8 @@ def generate_wind_correction(paths, param):
         if topo_correction:
             if not os.path.isfile(paths["CORR_GWA"]):
                 calc_gwa_correction(param, paths)
-            gwa_correction = hdf5storage.read('correction_' + param["WindOn"]["resource"]["topo_weight"], paths["CORR_GWA"])
+            gwa_correction = hdf5storage.read('correction_' + param["WindOn"]["resource"]["topo_weight"],
+                                              paths["CORR_GWA"])
             A_cf_on = A_cf_on * gwa_correction
         with rasterio.open(paths["EEZ"]) as src:
             A_eez = np.flipud(src.read(1)).astype(int)
@@ -570,7 +573,7 @@ def calculate_FLH(paths, param, tech):
     timecheck('Start')
 
     if tech in ["WindOn", "WindOff"]:
-        print("\nHUB_HEIGHTS: " + str(param[tech]["technical"]["hub_height"]))
+        print("\n" + tech + " - HUB_HEIGHTS: " + str(param[tech]["technical"]["hub_height"]))
 
     nproc = param["nproc"]
     m_high = param["m_high"]
@@ -883,7 +886,6 @@ def reporting(paths, param, tech):
         power_potential = np.nansum(A_P_potential)
         region_stats["Power_Potential_GW"] = power_potential / (10 ** 3)
 
-
         # Power Potential after weighting
         A_P_W_potential = A_region_extended * A_weight
         power_potential_weighted = np.nansum(A_P_W_potential)
@@ -980,7 +982,7 @@ def find_locations_quantiles(paths, param, tech):
         I_old = np.argsort(X)
 
         # Escape loop if intersection only yields NaN
-        if sum(np.isnan(X).astype(int)) == len(X):
+        if np.isnan(X).all():
             # do nothing
             continue
 
@@ -1108,14 +1110,15 @@ def regression_coefficient(paths, param, tech):
         reg_miss_files()
         timecheck('End')
         return
-    elif len(inputfiles) == 1:
+    elif len(inputfiles) == 1 and tech in ['PV', 'CSP']:
         hub_heights = np.zeros(1, dtype=int)
     else:
         hub_heights = np.zeros(len(inputfiles), dtype=int)
 
         h = 0
         for filename in inputfiles:
-            heigh = int(filename.replace(paths[tech]["TS_height"] + '_', '').replace('_TS_' + str(param["year"])+ '.csv', ''))
+            heigh = int(
+                filename.replace(paths[tech]["TS_height"] + '_', '').replace('_TS_' + str(param["year"]) + '.csv', ''))
             hub_heights[h] = heigh
             h += 1
         hub_heights = sorted(hub_heights, reverse=True)
@@ -1124,6 +1127,9 @@ def regression_coefficient(paths, param, tech):
 
     print("\nFor technology " + tech + ", the following hubheights have been detected: ")
     print(hub_heights)
+    hh = ''
+    for hub in hub_heights:
+        hh = hh + str(hub) + '_'
 
     # Copy EMHIRES and IRENA files for technology if not present
 
@@ -1197,7 +1203,7 @@ def regression_coefficient(paths, param, tech):
     else:
         EMHIRES = pd.read_csv(paths["regression_in"] + os.path.split(paths[tech]["EMHIRES"])[1], '\t')
         EMHIRES = EMHIRES[EMHIRES["Year"] == param["year"]].reset_index()
-        EMHIRES = EMHIRES.drop(['index', 'Time', 'step', 'Date', 'Year', 'Month', 'Day', 'Hour'], axis=1)
+        EMHIRES = EMHIRES.drop(['index', 'Time step', 'Date', 'Year', 'Month', 'Day', 'Hour'], axis=1)
 
     emhires_regions = np.array(EMHIRES.columns)
     param["EMHIRES"] = EMHIRES
@@ -1225,7 +1231,7 @@ def regression_coefficient(paths, param, tech):
         status = status + 1
         sys.stdout.write('\r')
         sys.stdout.write('Regression Coefficients ' + tech + ' ' + param["region"] + ' ' + '[%-50s] %d%%' % (
-        '=' * ((status * 50) // len(list_regions)), (status * 100) // len(list_regions)))
+            '=' * ((status * 50) // len(list_regions)), (status * 100) // len(list_regions)))
         sys.stdout.flush()
 
         region_data = regmodel_load_data(paths, param, tech, hub_heights, reg)
@@ -1251,22 +1257,66 @@ def regression_coefficient(paths, param, tech):
                 p = 0
                 for h in hub_heights:
                     r[c, p] = pyo.value(regression.coef[h, q])
-                    finalTS = finalTS + region_data[None]["GenTS"][str(h)]["q"+str(q)] * r[c, p]
+                    finalTS = finalTS + region_data[None]["GenTS"][str(h)]["q" + str(q)] * r[c, p]
                     p += 1
                 c += 1
-            r[r < 10**(-5)] = 0
+            r[r < 10 ** (-5)] = 0
             finalTS = pd.DataFrame(finalTS, np.arange(1, 8761), [reg])
             summaryTS = pd.concat([summaryTS, finalTS], axis=1)
             solution = solution + reg + ', '
+
         elif region_data[None]["IRENA_best_worst"] == (False, True):
-            r = np.full((len(param["quantiles"]), len(hub_heights)), np.nan)
+            # Select best TS (highest height, highest quantile)
+            r = np.full((len(param["quantiles"]), len(hub_heights)), 0)
+            r[0, 0] = 1
+            finalTS = np.array(region_data[None]["TS"])
+            finalTS = pd.DataFrame(finalTS, np.arange(1, 8761), [reg])
+            summaryTS = pd.concat([summaryTS, finalTS], axis=1)
             no_sol_high = no_sol_high + reg + ', '
+
         elif region_data[None]["IRENA_best_worst"] == (True, False):
-            r = np.full((len(param["quantiles"]), len(hub_heights)), np.nan)
+            # Select worst TS (lowest height, lowest quantile)
+            r = np.full((len(param["quantiles"]), len(hub_heights)), 0)
+            r[-1, -1] = 1
+            finalTS = region_data[None]["TS"]
+            finalTS = pd.DataFrame(finalTS, np.arange(1, 8761), [reg])
+            summaryTS = pd.concat([summaryTS, finalTS], axis=1)
             no_sol_low = no_sol_low + reg + ', '
+
         else:
             r = np.full((len(param["quantiles"]), len(hub_heights)), np.nan)
             no_sol_low_high = no_sol_low_high + reg + ', '
+
+        if hub_heights != [0]:
+            result = pd.DataFrame(r, param["quantiles"], (reg + "_" + str(h) for h in hub_heights))
+        else:
+            result = pd.DataFrame(r, param["quantiles"], [reg])
+
+        if summary is None:
+            summary = result
+        else:
+            summary = pd.concat([summary, result], axis=1)
+
+    # Regions not present in EMHIRES and IRENA
+    TS_nodata = {}
+    hub = hub_heights[0]
+    if hub != [0]:
+        TS_nodata[str(hub)] = pd.read_csv(
+            paths[tech]["TS_height"] + '_' + str(hub) + '_TS_' + str(param["year"]) + '.csv',
+            sep=';', decimal=',', dtype=str, header=[0, 1], index_col=[0])
+    else:
+        TS_nodata[str(hub)] = pd.read_csv(paths[tech]["TS_height"] + '_TS_' + str(param["year"]) + '.csv',
+                                          sep=';', decimal=',', dtype=str, header=[0, 1], index_col=[0])
+
+    # Remove undesired regions
+    for region in list_regions:
+        filter_reg = [col for col in TS_nodata[str(hub)] if col[0].startswith((region,))]
+        TS_nodata[str(hub)] = TS_nodata[str(hub)].drop(filter_reg, axis=1)
+
+    # Get list of regions
+    nodata_regions = np.array(TS_nodata[str(hub)].columns.get_level_values(0).unique()).astype(str)
+    for reg in nodata_regions:
+        r = np.full((len(param["quantiles"]), len(hub_heights)), 0)
 
         if hub_heights != [0]:
             result = pd.DataFrame(r, param["quantiles"], (reg + "_" + str(h) for h in hub_heights))
@@ -1283,10 +1333,10 @@ def regression_coefficient(paths, param, tech):
     if solution != '':
         print("\nA solution was found for the following regions: " + solution.rstrip(', '))
     if no_sol_low != '':
-        print("\nNo Solution was found for the following regions because they are too low: " + no_sol_low.rstrip(', '))
+        print("\nNo Solution was found for the following regions because they are too high: " + no_sol_low.rstrip(', '))
     if no_sol_high != '':
         print(
-            "\nNo Solution was found for the following regions because they are too high: " + no_sol_high.rstrip(', '))
+            "\nNo Solution was found for the following regions because they are too low: " + no_sol_high.rstrip(', '))
     if no_sol_low_high != '':
         print(
             "\nNo Solution was found for the following regions because they are too high and too low: "
@@ -1297,12 +1347,13 @@ def regression_coefficient(paths, param, tech):
     if not os.path.isdir(paths['regression_out']):
         os.mkdir(paths["regression_out"])
 
-    summary.to_csv(paths[tech]["Regression_summary"], na_rep=param["no_solution"], sep=';', decimal=',')
-    print("\nfiles saved: " + paths[tech]["Regression_summary"])
+    summary.to_csv(paths[tech]["Regression_summary"] + hh[:-1] + '.csv', na_rep=param["no_solution"], sep=';',
+                   decimal=',')
+    print("\nfiles saved: " + paths[tech]["Regression_summary"] + hh[:-1] + '.csv')
 
     if summaryTS is not None:
-        summaryTS.to_csv(paths[tech]["Regression_TS"], sep=';', decimal=',')
-        print("\nfiles saved: " + paths[tech]["Regression_TS"])
+        summaryTS.to_csv(paths[tech]["Regression_TS"] + hh[:-1] + '.csv', sep=';', decimal=',')
+        print("\nfiles saved: " + paths[tech]["Regression_TS"] + hh[:-1] + '.csv')
 
     timecheck('End')
 
@@ -1318,16 +1369,15 @@ if __name__ == '__main__':
     generate_population(paths, param)  # Population
     generate_protected_areas(paths, param)  # Protected areas
     generate_buffered_population(paths, param)  # Buffered Population
-    generate_wind_correction(paths, param)  # Correction factors for wind speeds
+    # generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
-        # calculate_FLH(paths, param, tech)
-        # masking(paths, param, tech)
-        # weighting(paths, param, tech)
-        # # reporting(paths, param, tech)
-        # find_locations_quantiles(paths, param, tech)
-        # generate_time_series(paths, param, tech)
-        regression_coefficient(paths, param, tech)
+        calculate_FLH(paths, param, tech)
+        masking(paths, param, tech)
+        weighting(paths, param, tech)
+        reporting(paths, param, tech)
+        find_locations_quantiles(paths, param, tech)
+        generate_time_series(paths, param, tech)
+        # regression_coefficient(paths, param, tech)
         # cProfile.run('reporting(paths, param, tech)', 'cprofile_test.txt')
         # p = pstats.Stats('cprofile_test.txt')
         # p.sort_stats('cumulative').print_stats(20)
-

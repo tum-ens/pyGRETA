@@ -245,17 +245,11 @@ turbine_height_off = str(param["WindOff"]["technical"]["hub_height"])
 paths["CORR"] = PathTemp + "_Wind_Correction_" + turbine_height_on + '_' + turbine_height_off + '.tif'
 
 # Ouput Folders
-timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S")) + '_-30°'
+timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
 # timestamp = "20190714T213540"
 paths["OUT"] = root + "02 Intermediate files" + fs + "Files " + region + fs + "Renewable energy" + fs + timestamp + fs
 if not os.path.isdir(paths["OUT"]):
     os.mkdir(paths["OUT"])
-
-# if technology == "Wind":
-#   paths["OUT"] = root + "OUTPUT" + fs + region + fs + str(turbine["hub_height"]) + "m_" + str(correction) + "corr_"
-# + timestamp
-# else:
-#   paths["OUT"] = root + "OUTPUT" + fs + region + fs + str(pv["tracking"]) + "axis_" + timestamp
 
 # Regression input
 paths["IRENA"] = root + "00 Assumptions" + fs + region + fs + "IRENA_FLH.csv"
@@ -264,7 +258,7 @@ paths["Reg_RM"] = git_RT_folder + fs + "Regression_coef" + fs + "README.txt"
 paths["IRENA_example"] = git_RT_folder + fs + "Regression_coef" + fs + "IRENA_FLH_example.csv"
 
 # Regression folders
-paths["regression_in"] = root + "00 Assumptions" + fs + "Regression_Inputs" + fs
+paths["regression_in"] = paths["OUT"]
 paths["regression_out"] = paths["OUT"] + "Regression_Outputs" + fs
 
 for tech in param["technology"]:

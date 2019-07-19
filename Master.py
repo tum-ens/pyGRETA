@@ -1359,7 +1359,7 @@ if __name__ == '__main__':
         reporting(paths, param, tech)
         find_locations_quantiles(paths, param, tech)
         generate_time_series(paths, param, tech)
-        # regression_coefficient(paths, param, tech)
+        regression_coefficient(paths, param, tech)
         # cProfile.run('reporting(paths, param, tech)', 'cprofile_test.txt')
         # p = pstats.Stats('cprofile_test.txt')
         # p.sort_stats('cumulative').print_stats(20)

@@ -30,9 +30,16 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
     TEMP_h = merraData["T2M"][:, :, hour]
     TEMP_h = resizem(TEMP_h, m_high, n_high) - 273.15  # Convert to Celsius
     TEMP_h = TEMP_h[reg_ind_h]
+
+    # Check orientation parameter
+    if 'orientation' in pv.keys():
+        orient = pv["orientation"]
+    else:
+        orient = 0
+
     # Compute the angles
     A_phi, A_omega, A_delta, A_alpha, A_beta, A_azimuth, A_orientation, sunrise, sunset = \
-        angles(hour, reg_ind_h, Crd_all, res_desired, pv["orientation"])
+        angles(hour, reg_ind_h, Crd_all, res_desired, orient)
     # Other matrices
     A_albedo = rasterData["A_albedo"][reg_ind_h]
     A_Ross = rasterData["A_Ross"][reg_ind_h]
@@ -287,7 +294,7 @@ def angles(hour, reg_ind, Crd_all, res_desired, orient):
 
     # Orientation (in degrees)
     orientation = np.full(alpha.shape, orient)  # Azimuth of the PV panel is zero for the Northern hemisphere
-    orientation[phi < 0] = 180 - orient  # Azimuth of the PV panel is 180° for the Southern hemisphere
+    # orientation[phi < 0] = 180 - orient  # Azimuth of the PV panel is 180° for the Southern hemisphere
 
     # Sunrise and sunset hours in GMT
 

@@ -1,7 +1,7 @@
 import datetime
 import numpy as np
 import os
-from sys import platform
+from pathlib import Path
 
 ###########################
 #### User preferences #####
@@ -170,31 +170,16 @@ del pv, csp, windon, windoff
 fs = os.path.sep
 
 git_RT_folder = os.path.dirname(os.path.abspath(__file__))
-
-if platform.startswith('win'):
-    # Windows Root Folder
-    from pathlib import Path
-    root = str(Path(git_RT_folder).parent.parent) + "Database_KS" + fs
-elif platform.startswith('linux'):
-    # Linux Root Folder
-    root = git_RT_folder + fs + ".." + fs + ".." + fs + "Database_KS" + fs
+root = str(Path(git_RT_folder).parent.parent) + "Database_KS" + fs
 
 region = param["region"]
 year = str(param["year"])
 
 paths = {}
-# Shapefiles
-PathTemp = root + "01 Raw inputs" + fs + "Maps" + fs + "Shapefiles" + fs  # + region + fs
-paths["SHP"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
-# paths["SHP"] = PathTemp + "_NUTS0_wo_Balkans_with_EEZ.shp"
-
-# for eventual correction with the Global Wind Atlas
-paths["Countries"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
-# paths["Countries"] = paths["SHP"]
 
 # MERRA2
 paths["MERRA_IN"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + region + " " + year + fs
-PathTemp = root + "02 Intermediate files" + fs + "Files " + region + fs + "Renewable energy" + fs + "MERRA2 " + year + fs
+PathTemp = root + "03 Intermediate files" + fs + "Files " + region + fs + "Renewable energy" + fs + "MERRA2 " + year + fs
 paths["U50M"] = PathTemp + "u50m_" + year + ".mat"
 paths["V50M"] = PathTemp + "v50m_" + year + ".mat"
 paths["W50M"] = PathTemp + "w50m_" + year + ".mat"
@@ -214,7 +199,7 @@ paths["CLEARNESS"] = paths["CLEARNESS_net"]
 paths["inst-cap"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA " + year + fs + "inst_cap_" + year + ".csv"
 
 # Global maps
-PathTemp = root + "01 Raw inputs" + fs + "Maps" + fs + "Global maps" + fs
+PathTemp = root + "01 Raw inputs" + fs + "Maps" + fs
 paths["LU_global"] = PathTemp + "Landuse" + fs + "LCType.tif"
 paths["Topo_tiles"] = PathTemp + "Topography" + fs
 paths["Pop_tiles"] = PathTemp + "Population" + fs
@@ -222,8 +207,15 @@ paths["Bathym_global"] = PathTemp + "Bathymetry" + fs + "ETOPO1_Ice_c_geotiff.ti
 paths["Protected"] = PathTemp + "Protected Areas" + fs + "WDPA_Nov2018-shapefile-polygons.shp"
 paths["GWA"] = PathTemp + "Global Wind Atlas" + fs + fs + "windSpeed.csv"
 
+# Shapefiles
+PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
+paths["SHP"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
+# for eventual correction with the Global Wind Atlas
+paths["Countries"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
+# paths["Countries"] = paths["SHP"]
+
 # Local maps
-PathTemp = root + "02 Intermediate files" + fs + "Files " + region + fs + "Maps" + fs + region
+PathTemp = root + "03 Intermediate files" + fs + "Files " + region + fs + "Maps" + fs + region
 paths["LAND"] = PathTemp + "_Land.tif"  # Land pixels
 paths["EEZ"] = PathTemp + "_EEZ.tif"  # Sea pixels
 paths["LU"] = PathTemp + "_Landuse.tif"  # Land use types

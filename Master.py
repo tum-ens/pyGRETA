@@ -1339,6 +1339,7 @@ if __name__ == '__main__':
     generate_buffered_population(paths, param)  # Buffered Population
     # generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
+        print("Tech: " + tech)
         calculate_FLH(paths, param, tech)
         masking(paths, param, tech)
         weighting(paths, param, tech)

@@ -519,6 +519,8 @@ def calculate_FLH(paths, param, tech):
 
     if tech in ["WindOn", "WindOff"]:
         print("\n" + tech + " - HUB_HEIGHTS: " + str(param[tech]["technical"]["hub_height"]))
+    elif tech in ["PV"] and 'orientation' in param["PV"]["technical"].keys():
+        print("\n" + tech + " - Orientation: " + str(param[tech]["technical"]["orientation"]))
 
     nproc = param["nproc"]
     m_high = param["m_high"]
@@ -1055,7 +1057,7 @@ def regression_coefficient(paths, param, tech):
 
     # Reads the files present in input folder and extract hub_heights represented.
 
-    inputfiles = glob.glob(paths[tech]["TS_param"] + '_*')
+    inputfiles = glob.glob(paths[tech]["TS_param"] + '_*_TS_' + str(param["year"]) + '.csv')
     if len(inputfiles) == 0:
         reg_miss_files()
         timecheck('End')
@@ -1083,7 +1085,7 @@ def regression_coefficient(paths, param, tech):
             print(param["regression"]["hub_heights"])
             settings = sorted(param["regression"]["hub_heights"], reverse=True)
     elif tech in ['PV']:
-        if len(param["regression"]["orientations"] != 0):
+        if len(param["regression"]["orientations"]) != 0:
             print("Orientations to be used for the regression: ")
             print(param["regression"]["orientations"])
             settings = sorted(param["regression"]["orientations"], reverse=True)
@@ -1092,20 +1094,22 @@ def regression_coefficient(paths, param, tech):
     for set in settings:
         st = st + str(set) + '_'
 
-    # Copy EMHIRES and IRENA files for technology if not present
+    # Copy EMHIRES and IRENA files to regression folder not present
+    if not os.path.isdir(paths['regression_out']):
+        os.mkdir(paths["regression_out"])
 
-    if not os.path.isfile(paths["regression_in"] + os.path.split(paths[tech]["EMHIRES"])[1]):
+    if not os.path.isfile(paths["regression_out"] + os.path.split(paths[tech]["EMHIRES"])[1]):
         shutil.copy2(paths[tech]["EMHIRES"],
-                     paths["regression_in"] + os.path.split(paths[tech]["EMHIRES"])[1])
+                     paths["regression_out"] + os.path.split(paths[tech]["EMHIRES"])[1])
 
-    if not os.path.isfile(paths["regression_in"] + os.path.split(paths["IRENA"])[1]):
-        shutil.copy2(paths["IRENA"],
-                     paths["regression_in"] + os.path.split(paths["IRENA"])[1])
+    if not os.path.isfile(paths["regression_out"] + os.path.split(paths["IRENA_FLH"])[1]):
+        shutil.copy2(paths["IRENA_FLH"],
+                     paths["regression_out"] + os.path.split(paths["IRENA_FLH"])[1])
 
     # Create Pyomo Abstract Model
 
     model = pyo.AbstractModel()
-    solver = SolverFactory(param["solver"])
+    solver = SolverFactory(param["regression"]["solver"])
     model.h = pyo.Set()
     model.q = pyo.Set()
     model.t = pyo.Set()
@@ -1147,7 +1151,7 @@ def regression_coefficient(paths, param, tech):
 
     # Load IRENA data and regions
 
-    irena = pd.read_csv(paths["regression_in"] + os.path.split(paths["IRENA"])[1], ',')
+    irena = pd.read_csv(paths["regression_out"] + os.path.split(paths["IRENA_FLH"])[1], ',')
     irena_regions = np.array(irena['NAME_SHORT'])
     irena = irena.transpose()
     irena.columns = irena.iloc[0]
@@ -1158,11 +1162,11 @@ def regression_coefficient(paths, param, tech):
 
     if tech == 'PV':
         date_index = pd.date_range(start='1/1/1986', end='1/1/2016', freq='H', closed='left')
-        EMHIRES = pd.read_csv(paths["regression_in"] + os.path.split(paths[tech]["EMHIRES"])[1], ' ')
+        EMHIRES = pd.read_csv(paths["regression_out"] + os.path.split(paths[tech]["EMHIRES"])[1], ' ')
         EMHIRES = EMHIRES.set_index(date_index)
         EMHIRES = EMHIRES.loc['1/1/' + str(param["year"]):'1/1/' + str(param["year"] + 1)]
     else:
-        EMHIRES = pd.read_csv(paths["regression_in"] + os.path.split(paths[tech]["EMHIRES"])[1], '\t')
+        EMHIRES = pd.read_csv(paths["regression_out"] + os.path.split(paths[tech]["EMHIRES"])[1], '\t')
         EMHIRES = EMHIRES[EMHIRES["Year"] == param["year"]].reset_index()
         EMHIRES = EMHIRES.drop(['index', 'Time step', 'Date', 'Year', 'Month', 'Day', 'Hour'], axis=1)
 
@@ -1180,7 +1184,6 @@ def regression_coefficient(paths, param, tech):
     nodata = ''
     no_sol_high = ''
     no_sol_low = ''
-    no_sol_low_high = ''
     solution = ''
 
     # loop over all regions
@@ -1236,13 +1239,13 @@ def regression_coefficient(paths, param, tech):
             # Select worst TS (lowest height, lowest quantile)
             r = np.full((len(param["quantiles"]), len(settings)), 0)
             r[-1, -1] = 1
-            finalTS = region_data[None]["TS"]
+            finalTS = np.array(region_data[None]["TS"])
             finalTS = pd.DataFrame(finalTS, np.arange(1, 8761), [reg])
             summaryTS = pd.concat([summaryTS, finalTS], axis=1)
             no_sol_low = no_sol_low + reg + ', '
 
         else:
-            r = np.full((len(param["quantiles"]), len(settings)), np.nan)
+            r = np.full((len(param["quantiles"]), len(settings)), 0)
             no_sol_low_high = no_sol_low_high + reg + ', '
 
         if settings != [0]:
@@ -1295,18 +1298,10 @@ def regression_coefficient(paths, param, tech):
     if no_sol_high != '':
         print(
             "\nNo Solution was found for the following regions because they are too low: " + no_sol_high.rstrip(', '))
-    if no_sol_low_high != '':
-        print(
-            "\nNo Solution was found for the following regions because they are too high and too low: "
-            + no_sol_low_high.rstrip(', '))
     if nodata != '':
         print("\nNo data was available for the following regions: " + nodata.rstrip(', '))
 
-    if not os.path.isdir(paths['regression_out']):
-        os.mkdir(paths["regression_out"])
-
-    summary.to_csv(paths[tech]["Regression_summary"] + st[:-1] + '.csv', na_rep=param["no_solution"], sep=';',
-                   decimal=',')
+    summary.to_csv(paths[tech]["Regression_summary"] + st[:-1] + '.csv', sep=';', decimal=',')
     print("\nfiles saved: " + paths[tech]["Regression_summary"] + st[:-1] + '.csv')
 
     if summaryTS is not None:
@@ -1327,15 +1322,15 @@ if __name__ == '__main__':
     generate_population(paths, param)  # Population
     generate_protected_areas(paths, param)  # Protected areas
     generate_buffered_population(paths, param)  # Buffered Population
-    # generate_wind_correction(paths, param)  # Correction factors for wind speeds
+    generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
         print("Tech: " + tech)
-        calculate_FLH(paths, param, tech)
-        masking(paths, param, tech)
-        weighting(paths, param, tech)
-        reporting(paths, param, tech)
-        find_locations_quantiles(paths, param, tech)
-        generate_time_series(paths, param, tech)
+        # calculate_FLH(paths, param, tech)
+        # masking(paths, param, tech)
+        # weighting(paths, param, tech)
+        # reporting(paths, param, tech)
+        # find_locations_quantiles(paths, param, tech)
+        # generate_time_series(paths, param, tech)
         regression_coefficient(paths, param, tech)
         # cProfile.run('reporting(paths, param, tech)', 'cprofile_test.txt')
         # p = pstats.Stats('cprofile_test.txt')

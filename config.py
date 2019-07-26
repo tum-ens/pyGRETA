@@ -8,13 +8,14 @@ from pathlib import Path
 ###########################
 
 param = {}
-param["region"] = 'Germany'
+param["region"] = 'Europe'
 param["year"] = 2015
 param["technology"] = ['PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 # param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30, 0])
-param["quantiles"] = np.array([100, 95, 90, 85, 80, 70, 60, 50, 40, 35, 20, 0])
+# param["quantiles"] = np.array([100, 95, 90, 85, 80, 70, 60, 50, 40, 35, 20, 0])
+param["quantiles"] = np.array([100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
-param["nproc"] = 24
+param["nproc"] = 11
 param["CPU_limit"] = True
 param["report_sampling"] = 100
 
@@ -22,7 +23,7 @@ param["report_sampling"] = 100
 # Regression Coefficient
 regression = {
     "solver": 'gurobi',
-    "hub_heights": [],
+    "hub_heights": [100, 80, 60],
     "orientations": []}
 param["regression"] = regression
 
@@ -90,7 +91,7 @@ pv["resource"] = {"clearness_correction": 0.75
 pv["technical"] = {"T_r": 25,
                    "loss_coeff": 0.37,
                    "tracking": 0,
-                   "orientation": 0
+                   "orientation": -90
                    }
 pv["mask"] = {"slope": 20,
               "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
@@ -133,7 +134,7 @@ windon["technical"] = {"w_in": 4,
                        "w_r": 15,
                        "w_off": 25,
                        "P_r": 3,
-                       "hub_height": 140
+                       "hub_height": 60
                        }
 windon["mask"] = {"slope": 20,
                   "lu_suitability": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1]),
@@ -154,7 +155,7 @@ windoff["technical"] = {"w_in": 3,
                         "w_r": 16.5,
                         "w_off": 34,
                         "P_r": 7.58,
-                        "hub_height": 120
+                        "hub_height": 80
                         }
 windoff["mask"] = {"depth": -40,
                    "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
@@ -201,6 +202,11 @@ paths["T2M"] = PathTemp + "t2m_" + year + ".mat"
 
 # IRENA
 paths["inst-cap"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA " + year + fs + "inst_cap_" + year + ".csv"
+paths["IRENA_FLH"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA " + year + fs + "IRENA_FLH_" + year + ".csv"
+
+# Regression input
+paths["Reg_RM"] = git_RT_folder + fs + "Regression_coef" + fs + "README.txt"
+paths["inst-cap_example"] = git_RT_folder + fs + "Regression_coef" + fs + "IRENA_FLH_example.csv"
 
 # Global maps
 PathTemp = root + "01 Raw inputs" + fs + "Maps" + fs
@@ -213,10 +219,11 @@ paths["GWA"] = PathTemp + "Global Wind Atlas" + fs + fs + "windSpeed.csv"
 
 # Shapefiles
 PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
-paths["SHP"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
+paths["SHP"] = PathTemp + "Magda.shp"
 # for eventual correction with the Global Wind Atlas
 paths["Countries"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
-# paths["Countries"] = paths["SHP"]
+# paths["Countries"] = PathTemp + "Germany_with_EEZ.shp"
+# paths["SHP"] = paths["Countries"]
 
 # Local maps
 PathTemp = root + "03 Intermediate files" + fs + "Files " + region + fs + "Maps" + fs + region
@@ -239,15 +246,10 @@ paths["CORR"] = PathTemp + "_Wind_Correction_" + turbine_height_on + '_' + turbi
 # Ouput Folders
 timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
 # timestamp = "20190714T213540"
-paths["OUT"] = root + "02 Intermediate files" + fs + "Files " + region + fs + "Renewable energy" + fs + timestamp + fs
+timestamp = 'Magda_Timeseries'
+paths["OUT"] = root + "03 Intermediate files" + fs + "Files " + region + fs + "Renewable energy" + fs + timestamp + fs
 if not os.path.isdir(paths["OUT"]):
     os.mkdir(paths["OUT"])
-
-# Regression input
-paths["IRENA"] = root + "00 Assumptions" + fs + region + fs + "IRENA_FLH.csv"
-
-paths["Reg_RM"] = git_RT_folder + fs + "Regression_coef" + fs + "README.txt"
-paths["IRENA_example"] = git_RT_folder + fs + "Regression_coef" + fs + "IRENA_FLH_example.csv"
 
 # Regression folders
 paths["regression_in"] = paths["OUT"]
@@ -269,18 +271,18 @@ for tech in param["technology"]:
         hubheight = str(param[tech]["technical"]["hub_height"])
         PathTemp = paths["OUT"] + region + '_' + tech + '_' + hubheight
     elif tech in ['PV']:
-        if 'orientation' in pv.keys():
+        if 'orientation' in param["PV"]["technical"].keys():
             orientation = str(param[tech]["technical"]["orientation"])
         else:
             orientation = '0'
         PathTemp = paths["OUT"] + region + '_' + tech + '_' + orientation
     else:
         PathTemp = paths["OUT"] + region + '_' + tech
-    
+
+    paths[tech]["area"] = paths["OUT"] + region + "_area_" + year + ".mat"
     paths[tech]["FLH"] = PathTemp + '_FLH_' + year + '.mat'
     paths[tech]["mask"] = PathTemp + "_mask_" + year + ".mat"
     paths[tech]["FLH_mask"] = PathTemp + "_FLH_mask_" + year + ".mat"
-    paths[tech]["area"] = PathTemp + "_area_" + year + ".mat"
     paths[tech]["weight"] = PathTemp + "_weight_" + year + ".mat"
     paths[tech]["FLH_weight"] = PathTemp + "_FLH_weight_" + year + ".mat"
     paths[tech]["Locations"] = PathTemp + '_Locations.shp'

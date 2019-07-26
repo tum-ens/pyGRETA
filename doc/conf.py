@@ -17,12 +17,13 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'renewable-timeseries'
+project = 'Renewable-Timeseries'
 copyright = '2019, Kais Siala, Houssame Houmy'
 author = 'Kais Siala, Houssame Houmy'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1'
+release = '0.1.0'
+version = release
 
 
 # -- General configuration ---------------------------------------------------
@@ -33,8 +34,10 @@ release = '0.1'
 extensions = ['sphinx.ext.autodoc'
 ]
 
+master_doc = 'index'
+
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['ntemplates']
+templates_path = ['_templates']
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.

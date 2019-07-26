@@ -366,8 +366,14 @@ def regmodel_load_data(paths, param, tech, hubheights, region):
             TS_Temp[q] = TS_Temp[q].str.replace(',', '.')
         GenTS[str(hub)] = TS_Temp.astype(float)
 
-    GenTS["TS_Max"] = np.nansum(GenTS[str(np.max(hubheights))]["q" + str(np.max(param["quantiles"]))])
-    GenTS["TS_Min"] = np.nansum(GenTS[str(np.min(hubheights))]["q" + str(np.min(param["quantiles"]))])
+    # reorder hubheights to go from max TS to min TS:
+    hubheights = np.array(pd.DataFrame((np.nansum(GenTS[key])
+                                        for key in GenTS.keys()),
+                                       index=hubheights,
+                                       columns=['FLH_all_quant']).sort_values(by='FLH_all_quant', ascending=0).index)
+
+    GenTS["TS_Max"] = np.nansum(GenTS[str(hubheights[0])]["q" + str(np.max(param["quantiles"]))])
+    GenTS["TS_Min"] = np.nansum(GenTS[str(hubheights[-1])]["q" + str(np.min(param["quantiles"]))])
 
     # Setup dataframe for IRENA
     IRENA = param["IRENA"]

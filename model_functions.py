@@ -44,7 +44,7 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
     A_albedo = rasterData["A_albedo"][reg_ind_h]
     A_Ross = rasterData["A_Ross"][reg_ind_h]
 
-    #
+    # Tracking
     if pv["tracking"] == 1:
         A_orientation, A_beta = traking(1, A_phi, A_alpha, A_beta, A_azimuth)
     elif pv["tracking"] == 2:

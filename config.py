@@ -108,7 +108,10 @@ pv["weight"] = {"GCR": GCR,
                 "f_performance": 0.75
                 }
 del GCR
-
+if pv["technical"]["tracking"] != 0 and pv["technical"]["orientation"] not in [0, 180]:
+    print('WARNING: ' + str(pv["technical"]["tracking"]) + ' axis tracking, overwrites orientation input: '
+          + str(pv["technical"]["orientation"]))
+    pv["technical"]["orientation"] = 'track_' + str(pv["technical"]["tracking"])
 # Parameters related to CSP
 csp = {}
 csp["mask"] = {"slope": 20,

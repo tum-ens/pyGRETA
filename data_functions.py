@@ -160,7 +160,7 @@ def calc_gwa_correction(param, paths):
         topo_reg = TOPO[Ind_reg]
 
         # Get the sampled frequencies from the GWA
-        w50m_gwa = pd.read_csv(paths["GWA"][:-14] + reg_name + paths["GWA"][-14:], usecols=['gwa_ws']).to_numpy()[:,0]
+        w50m_gwa = pd.read_csv(paths["GWA"][:-14] + reg_name + paths["GWA"][-14:], usecols=['gwa_ws']).to_numpy()[:, 0]
 
         i = 0
         for combi in combi_list:
@@ -169,7 +169,7 @@ def calc_gwa_correction(param, paths):
             w50m_sorted = np.sort(w50m_corrected)
             w50m_sampled = np.flipud(w50m_sorted[::(len(w50m_sorted) // 50 + 1)])
             w50m_diff = w50m_sampled - w50m_gwa
-            errors[i, reg] = np.sqrt((w50m_diff**2).sum())
+            errors[i, reg] = np.sqrt((w50m_diff ** 2).sum())
             i = i + 1
 
     w_size = np.tile(w_size / w_size.sum(), (1, len(combi_list))).transpose()
@@ -187,13 +187,13 @@ def calc_gwa_correction(param, paths):
     correction_capacity = np.zeros(TOPO.shape)
     correction_capacity = np.minimum(np.exp(a_cap * TOPO + b_cap), 3.5)
 
-    hdf5storage.writes({'correction_none': correction_none, 'correction_size': correction_size, 'correction_capacity': correction_capacity,}, paths["CORR_GWA"],
+    hdf5storage.writes({'correction_none': correction_none, 'correction_size': correction_size,
+                        'correction_capacity': correction_capacity, }, paths["CORR_GWA"],
                        store_python_metadata=True, matlab_compatible=True)
     return
 
 
 def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
-
     """
     This function creates a GCR weighting matrix for the desired geographic extent.
     The sizing of the PV system is conducted on a user-defined day for a shade-free exposure
@@ -277,7 +277,6 @@ def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
 
 
 def sampled_sorting(Raster, sampling):
-
     # Flatten the raster and sort raster from highest to lowest
     Sorted_FLH = np.sort(Raster.flatten(order='F'))
     Sorted_FLH = np.flipud(Sorted_FLH)
@@ -344,12 +343,8 @@ def regmodel_load_data(paths, param, tech, hubheights, region):
     # Setup the data dataframe for generated TS for each quantile
     GenTS = {}
     for hub in hubheights:
-        if hubheights != [0]:
-            TS_Temp = pd.read_csv(paths[tech]["TS_param"] + '_' + str(hub) + '_TS_' + str(param["year"]) + '.csv',
-                                  sep=';', decimal=',', dtype=str)
-        else:
-            TS_Temp = pd.read_csv(paths[tech]["TS_param"] + '_TS_' + str(param["year"]) + '.csv',
-                                  sep=';', decimal=',', dtype=str)
+        TS_Temp = pd.read_csv(paths[tech]["TS_param"] + '_' + str(hub) + '_TS_' + str(param["year"]) + '.csv',
+                              sep=';', decimal=',', dtype=str)
 
         # Remove undesired regions
         filter_reg = [col for col in TS_Temp if col.startswith(region)]
@@ -358,7 +353,7 @@ def regmodel_load_data(paths, param, tech, hubheights, region):
         # Exit function if region is not present in TS files
         if TS_Temp.empty:
             return None
-       
+
         TS_Temp.columns = TS_Temp.iloc[0]
         TS_Temp = TS_Temp.drop(0)
         # Replace ',' with '.' for float conversion
@@ -395,12 +390,12 @@ def regmodel_load_data(paths, param, tech, hubheights, region):
         for h in hubheights:
             for q in param["quantiles"]:
                 for t in time:
-                    Timeseries[(h, q, t)] = np.array(GenTS[str(h)]['q'+str(q)])[t-1]
+                    Timeseries[(h, q, t)] = np.array(GenTS[str(h)]['q' + str(q)])[t - 1]
 
     # Setup dataframe for EMHIRES DATA
     EMHIRES = param["EMHIRES"]
     ts = np.array(EMHIRES[region].values)
-    ts = ts * IRENA_FLH/np.sum(ts)
+    ts = ts * IRENA_FLH / np.sum(ts)
     TS = {}
     for t in time:
         TS[(t,)] = ts[t - 1]
@@ -415,7 +410,6 @@ def regmodel_load_data(paths, param, tech, hubheights, region):
         "TS": Timeseries,
         "IRENA_best_worst": solution_check,
         "GenTS": GenTS
-            }}
+    }}
 
     return data
-

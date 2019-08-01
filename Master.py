@@ -457,7 +457,6 @@ def generate_wind_correction(paths, param):
             A_lu = np.flipud(src.read(1)).astype(int)
         A_hellmann = changem(A_lu, landuse["hellmann"], landuse["type"]).astype(float)
 
-
         # Onshore resolution correction
         turbine_height_on = param["WindOn"]["technical"]["hub_height"]
 
@@ -516,6 +515,7 @@ def generate_wind_correction(paths, param):
 
 def calculate_FLH(paths, param, tech):
     timecheck('Start')
+    print('Region: ' + param["region"])
 
     if tech in ["WindOn", "WindOff"]:
         print("\n" + tech + " - HUB_HEIGHTS: " + str(param[tech]["technical"]["hub_height"]))
@@ -789,7 +789,6 @@ def reporting(paths, param, tech):
     status = 0
     # Loop over each region
     for reg in range(0, nRegions):
-
         # Display Progress
         status += 1
         display_progress('Reporting ', (nRegions, status))
@@ -1261,13 +1260,8 @@ def regression_coefficient(paths, param, tech):
     # Regions not present in EMHIRES and IRENA
     TS_nodata = {}
     set = settings[0]
-    if set != [0]:
-        TS_nodata[str(set)] = pd.read_csv(
-            paths[tech]["TS_param"] + '_' + str(set) + '_TS_' + str(param["year"]) + '.csv',
-            sep=';', decimal=',', dtype=str, header=[0, 1], index_col=[0])
-    else:
-        TS_nodata[str(set)] = pd.read_csv(paths[tech]["TS_param"] + '_TS_' + str(param["year"]) + '.csv',
-                                          sep=';', decimal=',', dtype=str, header=[0, 1], index_col=[0])
+    TS_nodata[str(set)] = pd.read_csv(paths[tech]["TS_param"] + '_' + str(set) + '_TS_' + str(param["year"]) + '.csv',
+                                      sep=';', decimal=',', dtype=str, header=[0, 1], index_col=[0])
 
     # Remove undesired regions
     for region in list_regions:
@@ -1325,13 +1319,13 @@ if __name__ == '__main__':
     generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
         print("Tech: " + tech)
-        # calculate_FLH(paths, param, tech)
-        # masking(paths, param, tech)
-        # weighting(paths, param, tech)
-        # reporting(paths, param, tech)
-        # find_locations_quantiles(paths, param, tech)
-        # generate_time_series(paths, param, tech)
-        regression_coefficient(paths, param, tech)
+        calculate_FLH(paths, param, tech)
+        masking(paths, param, tech)
+        weighting(paths, param, tech)
+        reporting(paths, param, tech)
+        find_locations_quantiles(paths, param, tech)
+        generate_time_series(paths, param, tech)
+        # regression_coefficient(paths, param, tech)
         # cProfile.run('reporting(paths, param, tech)', 'cprofile_test.txt')
         # p = pstats.Stats('cprofile_test.txt')
         # p.sort_stats('cumulative').print_stats(20)

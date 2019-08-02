@@ -15,10 +15,9 @@ param["technology"] = ['PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 # param["quantiles"] = np.array([100, 95, 90, 85, 80, 70, 60, 50, 40, 35, 20, 0])
 param["quantiles"] = np.array([100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
-param["nproc"] = 11
+param["nproc"] = 1
 param["CPU_limit"] = True
 param["report_sampling"] = 100
-
 
 # Regression Coefficient
 regression = {
@@ -32,8 +31,8 @@ param["regression"] = regression
 # MERRA_Centroid_Extent = [49, -103.75, 28, -129.375]  # California
 # MERRA_Centroid_Extent = np.array([56.25, 15.3125, 47.25, 2.8125])  # Germany
 
-param["res_weather"] = np.array([ 1/2,   5/8])
-param["res_desired"] = np.array([1/240, 1/240])
+param["res_weather"] = np.array([1 / 2, 5 / 8])
+param["res_desired"] = np.array([1 / 240, 1 / 240])
 
 # Landuse reclassification
 # A_lu matrix element values range from 0 to 16:
@@ -60,8 +59,10 @@ landuse = {"type": np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 1
            "Ross_coeff": np.array(
                [0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208,
                 0.0208, 0.0208, 0.0208, 0.0208]),
-           "albedo": np.array([0.00, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.00, 0.20, 0.20, 0.20, 0.00, 0.20]),
-           "hellmann": np.array([0.10, 0.25, 0.25, 0.25, 0.25, 0.25, 0.20, 0.20, 0.25, 0.25, 0.15, 0.15, 0.20, 0.40, 0.20, 0.15, 0.15]),
+           "albedo": np.array(
+               [0.00, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.00, 0.20, 0.20, 0.20, 0.00, 0.20]),
+           "hellmann": np.array(
+               [0.10, 0.25, 0.25, 0.25, 0.25, 0.25, 0.20, 0.20, 0.25, 0.25, 0.15, 0.15, 0.20, 0.40, 0.20, 0.15, 0.15]),
            "height": np.array([213, 366, 366, 366, 366, 366, 320, 320, 366, 366, 274, 274, 320, 457, 320, 274, 274])
            }
 
@@ -91,7 +92,7 @@ pv["resource"] = {"clearness_correction": 0.75
 pv["technical"] = {"T_r": 25,
                    "loss_coeff": 0.37,
                    "tracking": 0,
-                   "orientation": -90
+                   "orientation": 0
                    }
 pv["mask"] = {"slope": 20,
               "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
@@ -102,7 +103,9 @@ GCR = {"shadefree_period": 6,
        "day_south": 263
        }
 pv["weight"] = {"GCR": GCR,
-                "lu_availability": np.array([0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.02, 0.00, 0.02, 0.02, 0.02, 0.00, 0.02]),
+                "lu_availability": np.array(
+                    [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.02, 0.00, 0.02, 0.02, 0.02, 0.00,
+                     0.02]),
                 "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
                 "power_density": 0.000160,
                 "f_performance": 0.75
@@ -114,11 +117,18 @@ if pv["technical"]["tracking"] != 0 and pv["technical"]["orientation"] not in [0
     pv["technical"]["orientation"] = 'track_' + str(pv["technical"]["tracking"])
 # Parameters related to CSP
 csp = {}
+csp["technical"] = {"Tin_HTF": 350,  # °C
+                    "Cp_HTF": 2.0,  # kJ/kg.K
+                    "loss_coeff": 0.37,  # Heat Loss coefficient W/m².K
+                    "Flow_coeff": 0.5,  # Flow or heat removal factor
+                    "AbRe_ratio": 0.008,  # Receiver Area / Concentrator appeture
+                    }
 csp["mask"] = {"slope": 20,
                "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
                "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
                }
-csp["weight"] = {"lu_availability": np.array([0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.02, 0.00, 0.02, 0.02, 0.02, 0.00, 0.02]),
+csp["weight"] = {"lu_availability": np.array(
+    [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.02, 0.00, 0.02, 0.02, 0.02, 0.00, 0.02]),
                  "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
                  "power_density": 0.000160,
                  "f_performance": 0.9 * 0.75
@@ -141,7 +151,8 @@ windon["mask"] = {"slope": 20,
                   "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
                   "buffer_pixel_amount": 1
                   }
-windon["weight"] = {"lu_availability": np.array([0.00, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.10, 0.10, 0.10, 0.10, 0.00, 0.10, 0.00, 0.10, 0.00, 0.10]),
+windon["weight"] = {"lu_availability": np.array(
+    [0.00, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.10, 0.10, 0.10, 0.10, 0.00, 0.10, 0.00, 0.10, 0.00, 0.10]),
                     "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
                     "power_density": 0.000008,
                     "f_performance": 0.87
@@ -160,7 +171,8 @@ windoff["technical"] = {"w_in": 3,
 windoff["mask"] = {"depth": -40,
                    "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
                    }
-windoff["weight"] = {"lu_availability": np.array([0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00]),
+windoff["weight"] = {"lu_availability": np.array(
+    [0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00]),
                      "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
                      "power_density": 0.000020,
                      "f_performance": 0.87
@@ -201,8 +213,10 @@ paths["CLEARNESS_net"] = PathTemp + "clearness_net_" + year + ".mat"
 paths["T2M"] = PathTemp + "t2m_" + year + ".mat"
 
 # IRENA
-paths["inst-cap"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA " + year + fs + "inst_cap_" + year + ".csv"
-paths["IRENA_FLH"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA " + year + fs + "IRENA_FLH_" + year + ".csv"
+paths[
+    "inst-cap"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA " + year + fs + "inst_cap_" + year + ".csv"
+paths[
+    "IRENA_FLH"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA " + year + fs + "IRENA_FLH_" + year + ".csv"
 
 # Regression input
 paths["Reg_RM"] = git_RT_folder + fs + "Regression_coef" + fs + "README.txt"
@@ -259,13 +273,13 @@ for tech in param["technology"]:
     paths[tech] = {}
     if tech == 'WindOn':
         paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + year + fs + \
-                                     "TS.CF.COUNTRY.30yr.date.txt"
+                                 "TS.CF.COUNTRY.30yr.date.txt"
     elif tech == 'WindOff':
         paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + year + fs + \
-                                     "TS.CF.OFFSHORE.30yr.date.txt"
+                                 "TS.CF.OFFSHORE.30yr.date.txt"
     elif tech == 'PV':
         paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + year + fs + \
-                                     "EMHIRESPV_TSh_CF_Country_19862015.txt"
+                                 "EMHIRESPV_TSh_CF_Country_19862015.txt"
 
     if tech in ['WindOn', 'WindOff']:
         hubheight = str(param[tech]["technical"]["hub_height"])
@@ -293,6 +307,5 @@ for tech in param["technology"]:
     paths[tech]["TS_param"] = paths["regression_in"] + region + '_' + tech
     paths[tech]["Regression_summary"] = paths["regression_out"] + region + '_' + tech + '_reg_coefficients_'
     paths[tech]["Regression_TS"] = paths["regression_out"] + region + '_' + tech + '_reg_TimeSeries_'
-
 
 del root, PathTemp, fs

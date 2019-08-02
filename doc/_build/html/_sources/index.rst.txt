@@ -6,7 +6,8 @@
 Renewable-timeseries: GIS-based model for renewable energy potential prediction and timeseries genertion
 ========================================================================================================
 
-:Author: Kais Siala <kais.siala@tum.de>, Houssame Houmy <houmyh@gmail.com>
+:Developers: Kais Siala <kais.siala@tum.de>, Houssame Houmy <houmyh@gmail.com>
+:Maintainers: Kais Siala <kais.siala@tum.de>
 :Organization: `Chair of Renewable and Sustainable Energy Systems`_,
                Technical University of Munich,
 :Version: |version|
@@ -17,50 +18,56 @@ Renewable-timeseries: GIS-based model for renewable energy potential prediction 
   This documentation is licensed under a `Creative Commons Attribution 4.0 
   International <http://creativecommons.org/licenses/by/4.0/>`_ license.
 
+Changes:
+========
+version 1.0.0
+-------------
+Changes here
+
+Features
+========
+* To be completed 
+
 Contents
---------
+========
 
 User's manual
-^^^^^^^^^^^^^
+-------------
 
-We can link here to the user manual for the config files maybe
+These documents give a general overview and help you getting started from after the installation (which is covered in the README.md file on GitHub) to you first running model.
 
 .. the following section contains the links to the other parts of the documentation, the 'maxdepth' component define how many sub sections should be displayed
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 3
+   
+   User_manual
 	
 
 Mathematical documentation
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+--------------------------
 
-Continue here if you want to understand the theoretical conception of the model
-generator, the logic behind the equations and the structure of the features.
+Continue here if you want to understand the theoretical conception of the model,
+ the logic behind the equations, and the structure of the features.
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    theoretical
 
 Technical documentation
-^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------
 
-Continue here if you want to understand in detail the model generator
-implementation.
+Continue here if you want to understand in detail the model implementation.
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    
    implementation
 
 
-Features
---------
-* To be completed 
-
-
 Dependencies
-------------
+============
 
 * `Python`_ versions 2.7 or 3.x are both supported.
 * `pyomo`_ for model equations and as the interface to optimisation solvers.

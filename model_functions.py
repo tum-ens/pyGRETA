@@ -377,7 +377,7 @@ def toa_hourly(alpha, hour):
 
 def coefficients(beta, ratio, R_b, A_i, f, *args):
     """
-    This function creates three weighting matrices for the desired extent and with the desired resolution,
+    This function creates three weighting matrices for the desired extent and width the desired resolution,
     that correspond to the gains/losses caused by tilting to each component of the incident radiation
     (direct, diffuse, and reflected
 

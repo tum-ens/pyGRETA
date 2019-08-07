@@ -10,7 +10,6 @@ import datetime
 import inspect
 import sys
 from numpy.matlib import repmat, sin, cos
-import hdf5storage
 import math as m
 import rasterio
 from rasterio import windows, mask, MemoryFile

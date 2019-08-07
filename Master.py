@@ -64,7 +64,7 @@ def initialization():
     return paths, param
 
 
-def generate_weather_files(paths):
+def generate_weather_files(paths, param):
     """
     This function reads the daily NetCDF data (from MERRA) for SWGDN, SWTDN, T2M, U50m, and V50m,
     and saves them in matrices with yearly time series with low spatial resolution.
@@ -79,7 +79,13 @@ def generate_weather_files(paths):
         start = datetime.date(param["year"], 1, 1)
         end = datetime.date(param["year"], 12, 31)
         root = paths["MERRA_IN"]
-
+        crd = param["Crd_all"]
+        res = param["res_weather"]
+        northlim = int((90 / res[0] + 1) - m.ceil(crd[0]/res[0]))
+        eastlim = int((180 / res[1]) + m.ceil(crd[1]/res[1]))
+        southlim = int((90 / res[0] + 1) - m.floor(crd[2]/res[0]))
+        westlim = int((180 / res[1]) + m.floor(crd[3]/res[1]))
+        subset = (northlim, southlim, westlim, eastlim)
         SWGDN = np.array([])
         SWTDN = np.array([])
         T2M = np.array([])
@@ -96,7 +102,8 @@ def generate_weather_files(paths):
 
             # Read NetCDF file, extract hourly tables
             with h5netcdf.File(name, 'r') as f:
-                swgdn = np.transpose(f['SWGDN'], [1, 2, 0])
+                # [time, lat 361, lon 576]
+                swgdn = np.transpose(f['SWGDN'][:, subset[0]:subset[1], subset[2]:subset[3]], [1, 2, 0])
                 if SWGDN.size == 0:
                     SWGDN = swgdn
                 else:
@@ -542,6 +549,7 @@ def calculate_FLH(paths, param, tech):
             w = src.read(1)
     param["Ind_nz"] = np.nonzero(np.flipud(w))
     del w
+
 
     if tech in ['PV', 'CSP']:
         CLEARNESS = hdf5storage.read('CLEARNESS', paths["CLEARNESS"])
@@ -1307,7 +1315,7 @@ def regression_coefficient(paths, param, tech):
 
 if __name__ == '__main__':
     paths, param = initialization()
-    generate_weather_files(paths)
+    generate_weather_files(paths, param)
     generate_landsea(paths, param)  # Land and Sea
     generate_landuse(paths, param)  # Landuse
     generate_bathymetry(paths, param)  # Bathymetry

@@ -41,6 +41,7 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
 
     # If all TOA values are zero, return to main function
     if not TOA_h.all():
+        print(' H: ' + str(hour))
         CF_pv = np.zeros(reg_ind[0].shape)
         CF_csp = np.zeros(reg_ind[0].shape)
         return CF_pv, CF_csp
@@ -133,7 +134,6 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
         aux = np.zeros(len(reg_ind[0]))
         aux[filter] = CF_csp
         CF_csp = aux
-        print('\n\n' + str(np.mean(S)) + ' - ' + str(np.mean(CF_csp)) + '\n')
     else:
         CF_csp = None
 
@@ -211,13 +211,6 @@ def calc_TS_solar(hours, args):
     landuse = param["landuse"]
     reg_ind = param[tech]["Ind_points"]
 
-    # Obtain weather matrices
-    merraData = {}
-    # Clearness index - stored variable CLEARNESS
-    merraData["CLEARNESS"] = hdf5storage.read('CLEARNESS', paths["CLEARNESS"])
-    # Temperature 2m above the ground - stored variable T2M
-    merraData["T2M"] = hdf5storage.read('T2M', paths["T2M"])
-
     rasterData = {}
     # Calculate A matrices
     # A_lu
@@ -230,6 +223,19 @@ def calc_TS_solar(hours, args):
     # A_albedo (Reflectivity coefficients)
     rasterData["A_albedo"] = changem(rasterData["A_lu"], param["landuse"]["albedo"], param["landuse"]["type"]).astype(
         float)
+    # A_WS_Coef wind Speed at 2m above the ground
+    A_hellmann = changem(rasterData["A_lu"], landuse["hellmann"], landuse["type"]).astype(float)
+    rasterData["A_WindSpeed_Corr"] = (2 / 50) ** A_hellmann
+    del A_hellmann
+
+    # Obtain weather matrices
+    merraData = {}
+    # Clearness index - stored variable CLEARNESS
+    merraData["CLEARNESS"] = hdf5storage.read('CLEARNESS', paths["CLEARNESS"])
+    # Temperature 2m above the ground - stored variable T2M
+    merraData["T2M"] = hdf5storage.read('T2M', paths["T2M"])
+    # Wind Speed
+    merraData["W50M"] = hdf5storage.read('W50M', paths["W50M"])
 
     TS = np.zeros((len(reg_ind[0]), 8760))
     status = 0

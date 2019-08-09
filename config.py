@@ -8,14 +8,14 @@ from pathlib import Path
 ###########################
 
 param = {}
-param["region"] = 'Germany'
+param["region"] = 'World'
 param["year"] = 2015
-param["technology"] = ['CSP']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 # param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30, 0])
 # param["quantiles"] = np.array([100, 95, 90, 85, 80, 70, 60, 50, 40, 35, 20, 0])
 param["quantiles"] = np.array([100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
-param["nproc"] = 3
+param["nproc"] = 20
 param["CPU_limit"] = True
 param["report_sampling"] = 100
 
@@ -92,7 +92,7 @@ pv["resource"] = {"clearness_correction": 1
 pv["technical"] = {"T_r": 25,
                    "loss_coeff": 0.37,
                    "tracking": 0,
-                   "orientation": 0
+                   "orientation": -90
                    }
 pv["mask"] = {"slope": 20,
               "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
@@ -191,7 +191,10 @@ del pv, csp, windon, windoff
 fs = os.path.sep
 
 git_RT_folder = os.path.dirname(os.path.abspath(__file__))
-root = str(Path(git_RT_folder).parent.parent) + fs + "Database_KS" + fs
+# For personal Computer:
+# root = str(Path(git_RT_folder).parent.parent) + fs + "Database_KS" + fs
+# For Server Computer:
+root = str(Path(git_RT_folder).parent.parent) + "Database_KS" + fs
 
 region = param["region"]
 year = str(param["year"])
@@ -233,9 +236,15 @@ paths["GWA"] = PathTemp + "Global Wind Atlas" + fs + fs + "windSpeed.csv"
 
 # Shapefiles
 PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
-paths["SHP"] = PathTemp + "Magda.shp"
-# for eventual correction with the Global Wind Atlas
-# paths["Countries"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
+
+paths["Countries"] = PathTemp + "Europe_NUTS0_w_Balkans_with_EEZ.shp"
+# WindOn Testing:
+paths["SHP"] = paths["Countries"]
+
+# Pv orientation Testing:
+paths["SHP"] = PathTemp + "PV orientation test.shp"
+
+# CSP capacity factor testing
 paths["Countries"] = PathTemp + "Germany_with_EEZ.shp"
 paths["SHP"] = paths["Countries"]
 
@@ -259,8 +268,8 @@ paths["CORR"] = PathTemp + "_Wind_Correction_" + turbine_height_on + '_' + turbi
 
 # Ouput Folders
 timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
-# timestamp = "20190714T213540"
-timestamp = 'Magda_Timeseries'
+timestamp = 'Europe_no_correction'
+
 paths["OUT"] = root + "03 Intermediate files" + fs + "Files " + region + fs + "Renewable energy" + fs + timestamp + fs
 if not os.path.isdir(paths["OUT"]):
     os.mkdir(paths["OUT"])

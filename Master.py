@@ -81,10 +81,10 @@ def generate_weather_files(paths, param):
         root = paths["MERRA_IN"]
         crd = param["Crd_all"]
         res = param["res_weather"]
-        northlim = int((90 / res[0] + 1) - m.ceil(crd[0]/res[0]))
-        eastlim = int((180 / res[1]) + m.ceil(crd[1]/res[1]))
-        southlim = int((90 / res[0] + 1) - m.floor(crd[2]/res[0]))
-        westlim = int((180 / res[1]) + m.floor(crd[3]/res[1]))
+        northlim = int(m.ceil((90 / res[0]) + 1 - (crd[0] / res[0])))
+        eastlim = int(m.ceil((180 / res[1]) + (crd[1] / res[1])))
+        southlim = int(m.floor((90 / res[0]) + 1 - (crd[2] / res[0])))
+        westlim = int(m.ceil((180 / res[1]) + m.ceil(crd[3] / res[1])))
         subset = (northlim, southlim, westlim, eastlim)
         SWGDN = np.array([])
         SWTDN = np.array([])
@@ -103,20 +103,20 @@ def generate_weather_files(paths, param):
             # Read NetCDF file, extract hourly tables
             with h5netcdf.File(name, 'r') as f:
                 # [time, lat 361, lon 576]
-                swgdn = np.transpose(f['SWGDN'][:, subset[0]:subset[1], subset[2]:subset[3]], [1, 2, 0])
+                swgdn = np.transpose(f['SWGDN'][:, subset[0]:subset[1]+1, subset[2]:subset[3]], [1, 2, 0])
                 if SWGDN.size == 0:
                     SWGDN = swgdn
                 else:
                     SWGDN = np.concatenate((SWGDN, swgdn), axis=2)
 
-                swtdn = np.transpose(f['SWTDN'], [1, 2, 0])
+                swtdn = np.transpose(f['SWTDN'][:, subset[0]:subset[1]+1, subset[2]:subset[3]], [1, 2, 0])
                 if SWTDN.size == 0:
                     SWTDN = swtdn
                 else:
                     SWTDN = np.concatenate((SWTDN, swtdn), axis=2)
 
             with h5netcdf.File(name2, 'r') as f:
-                t2m = np.transpose(f['T2M'], [1, 2, 0])
+                t2m = np.transpose(f['T2M'][:, subset[0]:subset[1]+1, subset[2]:subset[3]], [1, 2, 0])
                 if T2M.size == 0:
                     T2M = t2m
                 else:

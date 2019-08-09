@@ -8,9 +8,10 @@ from pathlib import Path
 ###########################
 
 param = {}
-param["region"] = 'World'
+param["region"] = 'Europe'
+param["MERRA_coverage"] = 'World'
 param["year"] = 2015
-param["technology"] = ['PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['WindOn']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 # param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30, 0])
 # param["quantiles"] = np.array([100, 95, 90, 85, 80, 70, 60, 50, 40, 35, 20, 0])
 param["quantiles"] = np.array([100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0])
@@ -197,12 +198,13 @@ git_RT_folder = os.path.dirname(os.path.abspath(__file__))
 root = str(Path(git_RT_folder).parent.parent) + "Database_KS" + fs
 
 region = param["region"]
+MERRA_coverage = param["MERRA_coverage"]
 year = str(param["year"])
 
 paths = {}
 
 # MERRA2
-paths["MERRA_IN"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + region + " " + year + fs
+paths["MERRA_IN"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + MERRA_coverage + " " + year + fs
 PathTemp = root + "03 Intermediate files" + fs + "Files " + region + fs + "Renewable energy" + fs + "MERRA2 " + year + fs
 paths["U50M"] = PathTemp + "u50m_" + year + ".mat"
 paths["V50M"] = PathTemp + "v50m_" + year + ".mat"
@@ -242,11 +244,11 @@ paths["Countries"] = PathTemp + "Europe_NUTS0_w_Balkans_with_EEZ.shp"
 paths["SHP"] = paths["Countries"]
 
 # Pv orientation Testing:
-paths["SHP"] = PathTemp + "PV orientation test.shp"
+#paths["SHP"] = PathTemp + "PV orientation test.shp"
 
 # CSP capacity factor testing
-paths["Countries"] = PathTemp + "Germany_with_EEZ.shp"
-paths["SHP"] = paths["Countries"]
+#paths["Countries"] = PathTemp + "Germany_with_EEZ.shp"
+#paths["SHP"] = paths["Countries"]
 
 # Local maps
 PathTemp = root + "03 Intermediate files" + fs + "Files " + region + fs + "Maps" + fs + region

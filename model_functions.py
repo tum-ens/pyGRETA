@@ -112,6 +112,9 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
         w2m_h = resizem(merraData["W50M"][:, :, hour], m_high, n_high)
         w2m_h = w2m_h[reg_ind] * rasterData["A_WindSpeed_Corr"][reg_ind]
 
+        # Wind Speed cutoff filter:
+        windfilter = w2m_h >= csp["Wind_cutoff"]
+
         # For CSP: tracking like pv.tracking = 1
         A_beta = 90 - A_alpha
         aux = np.maximum(np.minimum((sind(A_delta) * sind(A_phi) * cosd(A_beta)
@@ -129,6 +132,9 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
         CF_csp = Qu / 1000
         CF_csp[CF_csp < 0] = 0
         CF_csp[CF_csp > 1] = 1
+
+        if windfilter.any():
+            CF_csp[windfilter] = 0
 
         aux = np.zeros(len(reg_ind[0]))
         aux[filter] = CF_csp

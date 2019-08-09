@@ -41,7 +41,6 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
 
     # If all TOA values are zero, return to main function
     if not TOA_h.all():
-        print(' H: ' + str(hour))
         CF_pv = np.zeros(reg_ind[0].shape)
         CF_csp = np.zeros(reg_ind[0].shape)
         return CF_pv, CF_csp

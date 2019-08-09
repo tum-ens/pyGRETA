@@ -121,7 +121,8 @@ csp["technical"] = {"T_avg_HTF": 350,  # °C
                     "loss_coeff": 1.06,  # Heat Loss coefficient W/m².K Independent on Wind Speed
                     "loss_coeff_wind": 1.19,  # Multiplied with (Wind speed)^(0.6)
                     "Flow_coeff": 0.95,  # heat transfer to the HTF factor (Flow or heat removal factor)
-                    "AbRe_ratio": 0.00079  # Receiver Area / Concentrator aperture (90mm diameter/8m aperture)
+                    "AbRe_ratio": 0.00079,  # Receiver Area / Concentrator aperture (90mm diameter/8m aperture)
+                    "Wind_cutoff": 22  # (m/s)  Maximum Wind Speed for effective tracking (Source:NREL)
                     }
 csp["mask"] = {"slope": 20,
                "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),

@@ -14,11 +14,11 @@ def calc_ext(regb, ext, res):
 
 
 def crd_merra(Crd_regions, res_weather):
-    ''' Calculates coordinates of MERRA2 centroids '''
-    Crd = np.array([(np.ceil((Crd_regions[:, 0] + res_weather[0] / 2) / res_weather[0]) * res_weather[0]),
-                    np.ceil(Crd_regions[:, 1] / res_weather[1]) * res_weather[1] - res_weather[1] / 2,
-                    (np.floor((Crd_regions[:, 2] + res_weather[0] / 2) / res_weather[0]) * res_weather[0]),
-                    np.floor((Crd_regions[:, 3] / res_weather[1]) * res_weather[1] + res_weather[1] / 2)])
+    ''' Calculates coordinates of box covering MERRA2 data (centroids + half resolution)'''
+    Crd = np.array([np.ceil((Crd_regions[:, 0] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
+                    np.ceil(Crd_regions[:, 1] / res_weather[1]) * res_weather[1],
+                    np.floor((Crd_regions[:, 2] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
+                    np.floor(Crd_regions[:, 3] / res_weather[1]) * res_weather[1]])
     Crd = Crd.T
     return Crd
 
@@ -58,14 +58,14 @@ def subset(A, param):
     return subset
 
 
-def ind_merra(Crd, Crd_all, res, res_weather):
+def ind_merra(Crd, Crd_all, res):
     ''' description '''
     if len(Crd.shape) == 1:
         Crd = Crd[np.newaxis]
     Ind = np.array([(Crd[:, 0] - Crd_all[2]) / res[0],
-                    (Crd[:, 1] - Crd_all[3] + res_weather[1]/2) / res[1],
+                    (Crd[:, 1] - Crd_all[3]) / res[1],
                     (Crd[:, 2] - Crd_all[2]) / res[0] + 1,
-                    (Crd[:, 3] - Crd_all[3] + res_weather[1]/2) / res[1] + 1])
+                    (Crd[:, 3] - Crd_all[3]) / res[1] + 1])
     Ind = np.transpose(Ind.astype(int))
     return Ind
 

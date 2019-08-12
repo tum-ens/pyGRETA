@@ -49,11 +49,11 @@ def initialization():
         param["Crd_countries"] = Crd_countries
 
     # Indices and matrix dimensions
-    Ind_low = ind_merra(Crd_regions, Crd_all, res_weather, res_weather)  # Range indices for MERRA2 data (centroids)
+    Ind_low = ind_merra(Crd_regions, Crd_all, res_weather)  # Range indices for MERRA2 data (centroids)
     Ind_high = ind_merra(Crd_regions, Crd_all,
-                         res_desired, res_weather)  # Range indices for high resolution matrices, superposed to MERRA2 data
-    Ind_all_low = ind_merra(Crd_all, Crd_all, res_weather, res_weather)
-    Ind_all_high = ind_merra(Crd_all, Crd_all, res_desired, res_weather)
+                         res_desired)  # Range indices for high resolution matrices, superposed to MERRA2 data
+    Ind_all_low = ind_merra(Crd_all, Crd_all, res_weather)
+    Ind_all_high = ind_merra(Crd_all, Crd_all, res_desired)
 
     param["m_high"] = (Ind_all_high[:, 0] - Ind_all_high[:, 2] + 1).astype(int)[0]  # number of rows
     param["n_high"] = (Ind_all_high[:, 1] - Ind_all_high[:, 3] + 1).astype(int)[0]  # number of rows
@@ -61,7 +61,6 @@ def initialization():
     param["n_low"] = (Ind_all_low[:, 1] - Ind_all_low[:, 3] + 1).astype(int)[0]  # number of columns
     param["GeoRef"] = calc_geotiff(Crd_all, res_desired)
     timecheck('End')
-    import pdb; pdb.set_trace()
     return paths, param
 
 
@@ -495,7 +494,6 @@ def generate_wind_correction(paths, param):
         res_desired = param["res_desired"]
         A_gradient_height = changem(A_lu.astype(float), landuse["height"], landuse["type"])
         Sigma = sumnorm_MERRA2((50 / A_gradient_height) ** A_hellmann, m_low, n_low, res_weather, res_desired)
-        import pdb; pdb.set_trace()
         A_cf_on = ((turbine_height_on / 50) * turbine_height_on /
                    A_gradient_height) ** A_hellmann / resizem(Sigma, m_high, n_high)
         del A_gradient_height, Sigma

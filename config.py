@@ -11,7 +11,7 @@ param = {}
 param["region"] = 'Europe'
 param["MERRA_coverage"] = 'World'
 param["year"] = 2015
-param["technology"] = ['WindOn']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['WindOn', 'WindOff']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 # param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30, 0])
 # param["quantiles"] = np.array([100, 95, 90, 85, 80, 70, 60, 50, 40, 35, 20, 0])
 param["quantiles"] = np.array([100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0])
@@ -145,7 +145,7 @@ windon["technical"] = {"w_in": 4,
                        "w_r": 15,
                        "w_off": 25,
                        "P_r": 3,
-                       "hub_height": 60
+                       "hub_height": 140
                        }
 windon["mask"] = {"slope": 20,
                   "lu_suitability": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1]),
@@ -167,7 +167,7 @@ windoff["technical"] = {"w_in": 3,
                         "w_r": 16.5,
                         "w_off": 34,
                         "P_r": 7.58,
-                        "hub_height": 80
+                        "hub_height": 120
                         }
 windoff["mask"] = {"depth": -40,
                    "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
@@ -239,7 +239,7 @@ paths["GWA"] = PathTemp + "Global Wind Atlas" + fs + fs + "windSpeed.csv"
 # Shapefiles
 PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
 
-paths["Countries"] = PathTemp + "Europe_NUTS0_w_Balkans_with_EEZ.shp"
+paths["Countries"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
 # WindOn Testing:
 paths["SHP"] = paths["Countries"]
 
@@ -270,7 +270,7 @@ paths["CORR"] = PathTemp + "_Wind_Correction_" + turbine_height_on + '_' + turbi
 
 # Ouput Folders
 timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
-timestamp = 'Europe_no_correction'
+timestamp = '20190810T104720'
 
 paths["OUT"] = root + "03 Intermediate files" + fs + "Files " + region + fs + "Renewable energy" + fs + timestamp + fs
 if not os.path.isdir(paths["OUT"]):

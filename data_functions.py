@@ -14,15 +14,11 @@ def calc_ext(regb, ext, res):
 
 
 def crd_merra(Crd_regions, res_weather):
-    ''' description '''
-    Crd = np.array([(np.ceil((Crd_regions[:, 0] - res_weather[0] / 2) / res_weather[0])
-                     * res_weather[0] + res_weather[0] / 2),
-                    (np.ceil((Crd_regions[:, 1] - res_weather[1] / 2) / res_weather[1])
-                     * res_weather[1] + res_weather[1] / 2),
-                    (np.floor((Crd_regions[:, 2] + res_weather[0] / 2) / res_weather[0])
-                     * res_weather[0] - res_weather[0] / 2),
-                    (np.floor((Crd_regions[:, 3] + res_weather[1] / 2) / res_weather[1])
-                     * res_weather[1] - res_weather[1] / 2)])
+    ''' Calculates coordinates of box covering MERRA2 data (centroids + half resolution)'''
+    Crd = np.array([np.ceil((Crd_regions[:, 0] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
+                    np.ceil(Crd_regions[:, 1] / res_weather[1]) * res_weather[1],
+                    np.floor((Crd_regions[:, 2] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
+                    np.floor(Crd_regions[:, 3] / res_weather[1]) * res_weather[1]])
     Crd = Crd.T
     return Crd
 
@@ -46,6 +42,20 @@ def crd_exact_points(Ind_points, Crd_all, res):
     Crd_points = [Ind_points[0] * res[0] + Crd_all[2],
                   Ind_points[1] * res[1] + Crd_all[3]]
     return Crd_points
+    
+    
+def subset(A, param):
+    if param["MERRA_coverage"] == 'World':
+        crd = param["Crd_all"]
+        res = param["res_weather"]
+        southlim = int(m.floor((crd[2] + res[0]/10 + 90 + res[0]/2) / res[0]))
+        northlim = int(m.ceil((crd[0] - res[0]/10 + 90 + res[0]/2) / res[0]))
+        westlim = int(m.floor((crd[3] + res[1]/10 + 180) / res[1]))
+        eastlim = int(m.ceil((crd[1] - res[1]/10 + 180) / res[1]))
+        subset = A[:, southlim:northlim, westlim:eastlim]
+    else:
+        subset = A
+    return subset
 
 
 def ind_merra(Crd, Crd_all, res):

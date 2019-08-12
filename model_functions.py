@@ -40,7 +40,7 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
     TOA_h = toa_hourly(A_alpha, hour)
 
     # If all TOA values are zero, return to main function
-    if not TOA_h.all():
+    if (TOA_h == 0).all():
         CF_pv = np.zeros(reg_ind[0].shape)
         CF_csp = np.zeros(reg_ind[0].shape)
         return CF_pv, CF_csp
@@ -77,7 +77,6 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
                                      + cosd(A_delta) * sind(A_beta) * sind(A_orientation) * sind(A_omega)),
                                     1), -1)
         A_incidence = arccosd(aux)
-
         # Compute the coefficients for the HDKR model
         R_b = cosd(A_incidence) / sind(A_alpha)
         R_b[A_alpha <= 5] = cosd(A_incidence[A_alpha <= 5]) / sind(5)

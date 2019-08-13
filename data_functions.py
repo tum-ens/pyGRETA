@@ -1,12 +1,4 @@
-import os
 from util import *
-import math as m
-import numpy as np
-import rasterio
-from rasterio import windows, mask, MemoryFile
-import pandas as pd
-import hdf5storage
-from itertools import product
 
 
 def calc_ext(regb, ext, res):
@@ -22,15 +14,11 @@ def calc_ext(regb, ext, res):
 
 
 def crd_merra(Crd_regions, res_weather):
-    ''' description '''
-    Crd = np.array([(np.ceil((Crd_regions[:, 0] - res_weather[0] / 2) / res_weather[0])
-                     * res_weather[0] + res_weather[0] / 2),
-                    (np.ceil((Crd_regions[:, 1] - res_weather[1] / 2) / res_weather[1])
-                     * res_weather[1] + res_weather[1] / 2),
-                    (np.floor((Crd_regions[:, 2] + res_weather[0] / 2) / res_weather[0])
-                     * res_weather[0] - res_weather[0] / 2),
-                    (np.floor((Crd_regions[:, 3] + res_weather[1] / 2) / res_weather[1])
-                     * res_weather[1] - res_weather[1] / 2)])
+    ''' Calculates coordinates of box covering MERRA2 data (centroids + half resolution)'''
+    Crd = np.array([np.ceil((Crd_regions[:, 0] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
+                    np.ceil(Crd_regions[:, 1] / res_weather[1]) * res_weather[1],
+                    np.floor((Crd_regions[:, 2] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
+                    np.floor(Crd_regions[:, 3] / res_weather[1]) * res_weather[1]])
     Crd = Crd.T
     return Crd
 
@@ -54,6 +42,20 @@ def crd_exact_points(Ind_points, Crd_all, res):
     Crd_points = [Ind_points[0] * res[0] + Crd_all[2],
                   Ind_points[1] * res[1] + Crd_all[3]]
     return Crd_points
+    
+    
+def subset(A, param):
+    if param["MERRA_coverage"] == 'World':
+        crd = param["Crd_all"]
+        res = param["res_weather"]
+        southlim = int(m.floor((crd[2] + res[0]/10 + 90 + res[0]/2) / res[0]))
+        northlim = int(m.ceil((crd[0] - res[0]/10 + 90 + res[0]/2) / res[0]))
+        westlim = int(m.floor((crd[3] + res[1]/10 + 180) / res[1]))
+        eastlim = int(m.ceil((crd[1] - res[1]/10 + 180) / res[1]))
+        subset = A[:, southlim:northlim, westlim:eastlim]
+    else:
+        subset = A
+    return subset
 
 
 def ind_merra(Crd, Crd_all, res):
@@ -168,7 +170,7 @@ def calc_gwa_correction(param, paths):
         topo_reg = TOPO[Ind_reg]
 
         # Get the sampled frequencies from the GWA
-        w50m_gwa = pd.read_csv(paths["GWA"][:-14] + reg_name + paths["GWA"][-14:], usecols=['gwa_ws']).to_numpy()[:,0]
+        w50m_gwa = pd.read_csv(paths["GWA"][:-14] + reg_name + paths["GWA"][-14:], usecols=['gwa_ws']).to_numpy()[:, 0]
 
         i = 0
         for combi in combi_list:
@@ -177,7 +179,7 @@ def calc_gwa_correction(param, paths):
             w50m_sorted = np.sort(w50m_corrected)
             w50m_sampled = np.flipud(w50m_sorted[::(len(w50m_sorted) // 50 + 1)])
             w50m_diff = w50m_sampled - w50m_gwa
-            errors[i, reg] = np.sqrt((w50m_diff**2).sum())
+            errors[i, reg] = np.sqrt((w50m_diff ** 2).sum())
             i = i + 1
 
     w_size = np.tile(w_size / w_size.sum(), (1, len(combi_list))).transpose()
@@ -195,13 +197,13 @@ def calc_gwa_correction(param, paths):
     correction_capacity = np.zeros(TOPO.shape)
     correction_capacity = np.minimum(np.exp(a_cap * TOPO + b_cap), 3.5)
 
-    hdf5storage.writes({'correction_none': correction_none, 'correction_size': correction_size, 'correction_capacity': correction_capacity,}, paths["CORR_GWA"],
+    hdf5storage.writes({'correction_none': correction_none, 'correction_size': correction_size,
+                        'correction_capacity': correction_capacity, }, paths["CORR_GWA"],
                        store_python_metadata=True, matlab_compatible=True)
     return
 
 
 def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
-
     """
     This function creates a GCR weighting matrix for the desired geographic extent.
     The sizing of the PV system is conducted on a user-defined day for a shade-free exposure
@@ -285,7 +287,6 @@ def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
 
 
 def sampled_sorting(Raster, sampling):
-
     # Flatten the raster and sort raster from highest to lowest
     Sorted_FLH = np.sort(Raster.flatten(order='F'))
     Sorted_FLH = np.flipud(Sorted_FLH)
@@ -352,12 +353,8 @@ def regmodel_load_data(paths, param, tech, hubheights, region):
     # Setup the data dataframe for generated TS for each quantile
     GenTS = {}
     for hub in hubheights:
-        if hubheights != [0]:
-            TS_Temp = pd.read_csv(paths[tech]["TS_height"] + '_' + str(hub) + '_TS_' + str(param["year"]) + '.csv',
-                                  sep=';', decimal=',', dtype=str)
-        else:
-            TS_Temp = pd.read_csv(paths[tech]["TS_height"] + '_TS_' + str(param["year"]) + '.csv',
-                                  sep=';', decimal=',', dtype=str)
+        TS_Temp = pd.read_csv(paths[tech]["TS_param"] + '_' + str(hub) + '_TS_' + str(param["year"]) + '.csv',
+                              sep=';', decimal=',', dtype=str)
 
         # Remove undesired regions
         filter_reg = [col for col in TS_Temp if col.startswith(region)]
@@ -366,7 +363,7 @@ def regmodel_load_data(paths, param, tech, hubheights, region):
         # Exit function if region is not present in TS files
         if TS_Temp.empty:
             return None
-       
+
         TS_Temp.columns = TS_Temp.iloc[0]
         TS_Temp = TS_Temp.drop(0)
         # Replace ',' with '.' for float conversion
@@ -374,24 +371,40 @@ def regmodel_load_data(paths, param, tech, hubheights, region):
             TS_Temp[q] = TS_Temp[q].str.replace(',', '.')
         GenTS[str(hub)] = TS_Temp.astype(float)
 
-    GenTS["TS_Max"] = np.nansum(GenTS[str(np.max(hubheights))]["q" + str(np.max(param["quantiles"]))])
-    GenTS["TS_Min"] = np.nansum(GenTS[str(np.min(hubheights))]["q" + str(np.min(param["quantiles"]))])
+    # reorder hubheights to go from max TS to min TS:
+    hubheights = np.array(pd.DataFrame((np.nansum(GenTS[key])
+                                        for key in GenTS.keys()),
+                                       index=hubheights,
+                                       columns=['FLH_all_quant']).sort_values(by='FLH_all_quant', ascending=0).index)
 
-    # Prepare Timeseries dictionary indexing by height and quantile
-    Timeseries = {}
-    for h in hubheights:
-        for q in param["quantiles"]:
-            for t in time:
-                Timeseries[(h, q, t)] = np.array(GenTS[str(h)]['q'+str(q)])[t-1]
+    GenTS["TS_Max"] = np.nansum(GenTS[str(hubheights[0])]["q" + str(np.max(param["quantiles"]))])
+    GenTS["TS_Min"] = np.nansum(GenTS[str(hubheights[-1])]["q" + str(np.min(param["quantiles"]))])
 
     # Setup dataframe for IRENA
     IRENA = param["IRENA"]
     IRENA_FLH = IRENA[region].loc[tech]
 
+    solution_check = (GenTS["TS_Max"] > IRENA_FLH, GenTS["TS_Min"] < IRENA_FLH)
+
+    # Prepare Timeseries dictionary indexing by height and quantile
+
+    if solution_check == (False, True):
+        Timeseries = GenTS[str(np.max(hubheights))]["q" + str(np.max(param["quantiles"]))]
+
+    elif solution_check == (True, False):
+        Timeseries = GenTS[str(np.min(hubheights))]["q" + str(np.min(param["quantiles"]))]
+
+    elif solution_check == (True, True):
+        Timeseries = {}
+        for h in hubheights:
+            for q in param["quantiles"]:
+                for t in time:
+                    Timeseries[(h, q, t)] = np.array(GenTS[str(h)]['q' + str(q)])[t - 1]
+
     # Setup dataframe for EMHIRES DATA
     EMHIRES = param["EMHIRES"]
     ts = np.array(EMHIRES[region].values)
-    ts = ts * IRENA_FLH/np.sum(ts)
+    ts = ts * IRENA_FLH / np.sum(ts)
     TS = {}
     for t in time:
         TS[(t,)] = ts[t - 1]
@@ -404,9 +417,8 @@ def regmodel_load_data(paths, param, tech, hubheights, region):
         "shape": TS,
         "t": {None: np.array(time)},
         "TS": Timeseries,
-        "IRENA_best_worst": (GenTS["TS_Max"] > IRENA_FLH, GenTS["TS_Min"] < IRENA_FLH),
+        "IRENA_best_worst": solution_check,
         "GenTS": GenTS
-            }}
+    }}
 
     return data
-

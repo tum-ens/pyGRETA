@@ -208,8 +208,8 @@ paths = {}
 
 # Regionalization
 paths["region"] = root + "03 Intermediate files" + fs + "Files " + region + fs
-if not os.path.isdir(paths["Region"]):
-    os.mkdir(paths["Region"])
+if not os.path.isdir(paths["region"]):
+    os.makedirs(paths["region"] + "Renewable energy" + fs)
 
 # MERRA2
 paths["MERRA_IN"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + MERRA_coverage + " " + year + fs
@@ -264,7 +264,7 @@ paths["SHP"] = paths["Countries"]
 # paths["SHP"] = paths["Countries"]
 
 # Local maps
-paths["maps"] = paths["region"] + "Maps" + fs + region
+paths["maps"] = paths["region"] + "Maps" + fs
 if not os.path.isdir(paths["maps"]):
     os.mkdir(paths["maps"])
 paths["LAND"] = paths["maps"] + "_Land.tif"  # Land pixels

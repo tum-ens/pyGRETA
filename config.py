@@ -8,7 +8,7 @@ from pathlib import Path
 ###########################
 
 param = {}
-param["region"] = 'Europe'
+param["region"] = 'Europe_wo_balkans'
 param["MERRA_coverage"] = 'World'
 param["year"] = 2015
 param["technology"] = ['PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
@@ -21,7 +21,6 @@ param["CPU_limit"] = True
 param["report_sampling"] = 100
 # Custom timestamp
 timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
-timestamp = 'Portugal_no_correction'
 
 # Regression Coefficient
 regression = {
@@ -96,7 +95,7 @@ pv["resource"] = {"clearness_correction": 1
 pv["technical"] = {"T_r": 25,
                    "loss_coeff": 0.37,
                    "tracking": 0,
-                   "orientation": 180  # 0: South; 90: West ; 180: North; -90: East
+                   "orientation": 0  # | 0: South | 90: West | 180: North | -90: East |
                    }
 pv["mask"] = {"slope": 20,
               "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
@@ -216,7 +215,7 @@ if not os.path.isdir(paths["Region"]):
 paths["MERRA_IN"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + MERRA_coverage + " " + year + fs
 paths["weather_dat"] = paths["region"] + "Renewable energy" + fs + "MERRA2 " + year + fs
 if not os.path.isdir(paths["weather_dat"]):
-    os.mkdir(paths["Region"])
+    os.mkdir(paths["weather_dat"])
 paths["U50M"] = paths["weather_dat"] + "u50m_" + year + ".mat"
 paths["V50M"] = paths["weather_dat"] + "v50m_" + year + ".mat"
 paths["W50M"] = paths["weather_dat"] + "w50m_" + year + ".mat"
@@ -251,32 +250,33 @@ paths["GWA"] = PathTemp + "Global Wind Atlas" + fs + fs + "windSpeed.csv"
 PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
 
 paths["Countries"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
-# WindOn Testing:
 paths["SHP"] = paths["Countries"]
 
 # Pv orientation Testing:
-paths["SHP"] = PathTemp + "PV orientation test.shp"
+# paths["SHP"] = PathTemp + "PV orientation test.shp"
 
 # CSP capacity factor testing
-#paths["Countries"] = PathTemp + "Germany_with_EEZ.shp"
-#paths["SHP"] = paths["Countries"]
+# paths["Countries"] = PathTemp + "Germany_with_EEZ.shp"
+# paths["SHP"] = paths["Countries"]
 
 # Chille PV
-paths["Countries"] = PathTemp + 'Chille region.shp'
-paths["SHP"] = paths["Countries"]
+# paths["Countries"] = PathTemp + 'Chille region.shp'
+# paths["SHP"] = paths["Countries"]
 
 # Local maps
-PathTemp = root + "03 Intermediate files" + fs + "Files " + region + fs + "Maps" + fs + region
-paths["LAND"] = PathTemp + "_Land.tif"  # Land pixels
-paths["EEZ"] = PathTemp + "_EEZ.tif"  # Sea pixels
-paths["LU"] = PathTemp + "_Landuse.tif"  # Land use types
-paths["TOPO"] = PathTemp + "_Topography.tif"  # Topography
-paths["PA"] = PathTemp + "_Protected_areas.tif"  # Protected areas
-paths["SLOPE"] = PathTemp + "_Slope.tif"  # Slope
-paths["BATH"] = PathTemp + "_Bathymetry.tif"  # Bathymetry
-paths["POP"] = PathTemp + "_Population.tif"  # Population
-paths["BUFFER"] = PathTemp + "_Population_Buffered.tif"  # Buffered population
-paths["CORR_GWA"] = PathTemp + "_GWA_Correction.mat"  # Correction factors based on the GWA
+paths["maps"] = paths["region"] + "Maps" + fs + region
+if not os.path.isdir(paths["maps"]):
+    os.mkdir(paths["maps"])
+paths["LAND"] = paths["maps"] + "_Land.tif"  # Land pixels
+paths["EEZ"] = paths["maps"] + "_EEZ.tif"  # Sea pixels
+paths["LU"] = paths["maps"] + "_Landuse.tif"  # Land use types
+paths["TOPO"] = paths["maps"] + "_Topography.tif"  # Topography
+paths["PA"] = paths["maps"] + "_Protected_areas.tif"  # Protected areas
+paths["SLOPE"] = paths["maps"] + "_Slope.tif"  # Slope
+paths["BATH"] = paths["maps"] + "_Bathymetry.tif"  # Bathymetry
+paths["POP"] = paths["maps"] + "_Population.tif"  # Population
+paths["BUFFER"] = paths["maps"] + "_Population_Buffered.tif"  # Buffered population
+paths["CORR_GWA"] = paths["maps"] + "_GWA_Correction.mat"  # Correction factors based on the GWA
 
 # Correction factors for wind speeds
 turbine_height_on = str(param["WindOn"]["technical"]["hub_height"])

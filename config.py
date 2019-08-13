@@ -11,7 +11,7 @@ param = {}
 param["region"] = 'Europe'
 param["MERRA_coverage"] = 'World'
 param["year"] = 2015
-param["technology"] = ['WindOn', 'WindOff']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 # param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30, 0])
 # param["quantiles"] = np.array([100, 95, 90, 85, 80, 70, 60, 50, 40, 35, 20, 0])
 param["quantiles"] = np.array([100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0])
@@ -19,6 +19,9 @@ param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
 param["nproc"] = 20
 param["CPU_limit"] = True
 param["report_sampling"] = 100
+# Custom timestamp
+timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
+timestamp = 'Portugal_no_correction'
 
 # Regression Coefficient
 regression = {
@@ -93,7 +96,7 @@ pv["resource"] = {"clearness_correction": 1
 pv["technical"] = {"T_r": 25,
                    "loss_coeff": 0.37,
                    "tracking": 0,
-                   "orientation": -90
+                   "orientation": 180  # 0: South; 90: West ; 180: North; -90: East
                    }
 pv["mask"] = {"slope": 20,
               "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
@@ -204,19 +207,26 @@ year = str(param["year"])
 
 paths = {}
 
+# Regionalization
+paths["region"] = root + "03 Intermediate files" + fs + "Files " + region + fs
+if not os.path.isdir(paths["Region"]):
+    os.mkdir(paths["Region"])
+
 # MERRA2
 paths["MERRA_IN"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + MERRA_coverage + " " + year + fs
-PathTemp = root + "03 Intermediate files" + fs + "Files " + region + fs + "Renewable energy" + fs + "MERRA2 " + year + fs
-paths["U50M"] = PathTemp + "u50m_" + year + ".mat"
-paths["V50M"] = PathTemp + "v50m_" + year + ".mat"
-paths["W50M"] = PathTemp + "w50m_" + year + ".mat"
-paths["GHI"] = PathTemp + "swgdn_" + year + ".mat"
-paths["GHI_net"] = PathTemp + "swgnt_" + year + ".mat"
-paths["TOA"] = PathTemp + "swtdn_" + year + ".mat"
-paths["TOA_net"] = PathTemp + "swtnt_" + year + ".mat"
-paths["CLEARNESS"] = PathTemp + "clearness_" + year + ".mat"
-paths["CLEARNESS_net"] = PathTemp + "clearness_net_" + year + ".mat"
-paths["T2M"] = PathTemp + "t2m_" + year + ".mat"
+paths["weather_dat"] = paths["region"] + "Renewable energy" + fs + "MERRA2 " + year + fs
+if not os.path.isdir(paths["weather_dat"]):
+    os.mkdir(paths["Region"])
+paths["U50M"] = paths["weather_dat"] + "u50m_" + year + ".mat"
+paths["V50M"] = paths["weather_dat"] + "v50m_" + year + ".mat"
+paths["W50M"] = paths["weather_dat"] + "w50m_" + year + ".mat"
+paths["GHI"] = paths["weather_dat"] + "swgdn_" + year + ".mat"
+paths["GHI_net"] = paths["weather_dat"] + "swgnt_" + year + ".mat"
+paths["TOA"] = paths["weather_dat"] + "swtdn_" + year + ".mat"
+paths["TOA_net"] = paths["weather_dat"] + "swtnt_" + year + ".mat"
+paths["CLEARNESS"] = paths["weather_dat"] + "clearness_" + year + ".mat"
+paths["CLEARNESS_net"] = paths["weather_dat"] + "clearness_net_" + year + ".mat"
+paths["T2M"] = paths["weather_dat"] + "t2m_" + year + ".mat"
 
 # IRENA
 paths[
@@ -245,11 +255,15 @@ paths["Countries"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
 paths["SHP"] = paths["Countries"]
 
 # Pv orientation Testing:
-#paths["SHP"] = PathTemp + "PV orientation test.shp"
+paths["SHP"] = PathTemp + "PV orientation test.shp"
 
 # CSP capacity factor testing
 #paths["Countries"] = PathTemp + "Germany_with_EEZ.shp"
 #paths["SHP"] = paths["Countries"]
+
+# Chille PV
+paths["Countries"] = PathTemp + 'Chille region.shp'
+paths["SHP"] = paths["Countries"]
 
 # Local maps
 PathTemp = root + "03 Intermediate files" + fs + "Files " + region + fs + "Maps" + fs + region
@@ -270,9 +284,6 @@ turbine_height_off = str(param["WindOff"]["technical"]["hub_height"])
 paths["CORR"] = PathTemp + "_Wind_Correction_" + turbine_height_on + '_' + turbine_height_off + '.tif'
 
 # Ouput Folders
-timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
-timestamp = '20190810T104720'
-
 paths["OUT"] = root + "03 Intermediate files" + fs + "Files " + region + fs + "Renewable energy" + fs + timestamp + fs
 if not os.path.isdir(paths["OUT"]):
     os.mkdir(paths["OUT"])

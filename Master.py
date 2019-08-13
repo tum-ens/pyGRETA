@@ -61,6 +61,9 @@ def initialization():
     param["n_low"] = (Ind_all_low[:, 1] - Ind_all_low[:, 3] + 1).astype(int)[0]  # number of columns
     param["GeoRef"] = calc_geotiff(Crd_all, res_desired)
     timecheck('End')
+    # Display Intial Information
+    print('\nRegion: ' + param["region"] + ' - Year: ' + str(param["year"]))
+    print('Folder Path: ' + paths["region"] + '\n')
     return paths, param
 
 
@@ -1338,16 +1341,16 @@ def regression_coefficient(paths, param, tech):
 
 if __name__ == '__main__':
     paths, param = initialization()
-    #generate_weather_files(paths, param)
-    #generate_landsea(paths, param)  # Land and Sea
-    #generate_landuse(paths, param)  # Landuse
-    #generate_bathymetry(paths, param)  # Bathymetry
-    #generate_topography(paths, param)  # Topography
-    #generate_slope(paths, param)  # Slope
-    #generate_population(paths, param)  # Population
-    #generate_protected_areas(paths, param)  # Protected areas
-    #generate_buffered_population(paths, param)  # Buffered Population
-    generate_wind_correction(paths, param)  # Correction factors for wind speeds
+    generate_weather_files(paths, param)
+    generate_landsea(paths, param)  # Land and Sea
+    generate_landuse(paths, param)  # Landuse
+    generate_bathymetry(paths, param)  # Bathymetry
+    generate_topography(paths, param)  # Topography
+    generate_slope(paths, param)  # Slope
+    generate_population(paths, param)  # Population
+    generate_protected_areas(paths, param)  # Protected areas
+    generate_buffered_population(paths, param)  # Buffered Population
+    # generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
         print("Tech: " + tech)
         calculate_FLH(paths, param, tech)

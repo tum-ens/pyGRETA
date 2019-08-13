@@ -334,7 +334,7 @@ def angles(hour, reg_ind, Crd_all, res_desired, orient):
 
     # Orientation (in degrees)
     orientation = np.full(alpha.shape, orient)  # Azimuth of the PV panel is zero for the Northern hemisphere
-    # orientation[phi < 0] = 180 - orient  # Azimuth of the PV panel is 180° for the Southern hemisphere
+    orientation[phi < 0] = 180 - orient  # Azimuth of the PV panel is 180° for the Southern hemisphere
 
     # Sunrise and sunset hours in GMT
 

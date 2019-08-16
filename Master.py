@@ -589,14 +589,14 @@ def calculate_FLH(paths, param, tech):
         # A_Ross (Temperature coefficients for heating losses)
         rasterData["A_Ross"] = changem(rasterData["A_lu"], param["landuse"]["Ross_coeff"],
                                        param["landuse"]["type"]).astype(
-            float)
+            'float16')
         # A_albedo (Reflectivity coefficients)
         rasterData["A_albedo"] = changem(rasterData["A_lu"], param["landuse"]["albedo"],
                                          param["landuse"]["type"]).astype(
-            float)
+            'float16')
 
         # A_WS_Coef wind Speed at 2m above the ground
-        A_hellmann = changem(rasterData["A_lu"], landuse["hellmann"], landuse["type"]).astype(float)
+        A_hellmann = changem(rasterData["A_lu"], landuse["hellmann"], landuse["type"]).astype('float16')
         rasterData["A_WindSpeed_Corr"] = (2 / 50) ** A_hellmann
         del A_hellmann
 
@@ -627,7 +627,7 @@ def calculate_FLH(paths, param, tech):
         # A_cf
         with rasterio.open(paths["CORR"]) as src:
             w = src.read(1)
-        rasterData["A_cf"] = np.flipud(w)
+        rasterData["A_cf"] = np.flipud(w).astype('float16')
         rasterData["A_cf"] = rasterData["A_cf"][reg_ind]
         del w
 

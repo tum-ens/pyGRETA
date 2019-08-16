@@ -11,12 +11,12 @@ param = {}
 param["region"] = 'Europe_wo_balkans'
 param["MERRA_coverage"] = 'World'
 param["year"] = 2015
-param["technology"] = ['PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['WindOff']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 # param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30, 0])
 # param["quantiles"] = np.array([100, 95, 90, 85, 80, 70, 60, 50, 40, 35, 20, 0])
 param["quantiles"] = np.array([100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
-param["nproc"] = 20
+param["nproc"] = 18
 param["CPU_limit"] = True
 param["report_sampling"] = 100
 # Custom timestamp
@@ -95,7 +95,7 @@ pv["resource"] = {"clearness_correction": 1
 pv["technical"] = {"T_r": 25,
                    "loss_coeff": 0.37,
                    "tracking": 0,
-                   "orientation": 0  # | 0: South | 90: West | 180: North | -90: East |
+                   "orientation": -90  # | 0: South | 90: West | 180: North | -90: East |
                    }
 pv["mask"] = {"slope": 20,
               "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
@@ -281,7 +281,7 @@ paths["CORR_GWA"] = paths["maps"] + "_GWA_Correction.mat"  # Correction factors 
 # Correction factors for wind speeds
 turbine_height_on = str(param["WindOn"]["technical"]["hub_height"])
 turbine_height_off = str(param["WindOff"]["technical"]["hub_height"])
-paths["CORR"] = PathTemp + "_Wind_Correction_" + turbine_height_on + '_' + turbine_height_off + '.tif'
+paths["CORR"] = paths["maps"] + "_Wind_Correction_" + turbine_height_on + '_' + turbine_height_off + '.tif'
 
 # Ouput Folders
 paths["OUT"] = root + "03 Intermediate files" + fs + "Files " + region + fs + "Renewable energy" + fs + timestamp + fs

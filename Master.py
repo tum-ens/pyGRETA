@@ -571,32 +571,77 @@ def calculate_FLH(paths, param, tech):
     param["Ind_nz"] = np.nonzero(np.flipud(w))
     del w
 
-
+    # Obtain weather matrices for Wind
+    merraData = {}
+    # Wind speed at 50m
+    merraData["W50M"] = hdf5storage.read('W50M', paths["W50M"])
     if tech in ['PV', 'CSP']:
+
+        # Calculate A matrices
+        landuse = param["landuse"]
+        reg_ind = param["Ind_nz"]
+        rasterData = {}
+        # A_lu
+        with rasterio.open(paths["LU"]) as src:
+            w = src.read(1)
+        rasterData["A_lu"] = np.flipud(w)
+        # rasterData["A_lu"] = rasterData["A_lu"][reg_ind]
+        # A_Ross (Temperature coefficients for heating losses)
+        rasterData["A_Ross"] = changem(rasterData["A_lu"], param["landuse"]["Ross_coeff"],
+                                       param["landuse"]["type"]).astype(
+            float)
+        # A_albedo (Reflectivity coefficients)
+        rasterData["A_albedo"] = changem(rasterData["A_lu"], param["landuse"]["albedo"],
+                                         param["landuse"]["type"]).astype(
+            float)
+
+        # A_WS_Coef wind Speed at 2m above the ground
+        A_hellmann = changem(rasterData["A_lu"], landuse["hellmann"], landuse["type"]).astype(float)
+        rasterData["A_WindSpeed_Corr"] = (2 / 50) ** A_hellmann
+        del A_hellmann
+
+        # Obtain other weather matrices
+        # Clearness index - stored variable CLEARNESS
+        merraData["CLEARNESS"] = hdf5storage.read('CLEARNESS', paths["CLEARNESS"])
+
+        # Temperature 2m above the ground - stored variable T2M
+        merraData["T2M"] = hdf5storage.read('T2M', paths["T2M"])
+
         CLEARNESS = hdf5storage.read('CLEARNESS', paths["CLEARNESS"])
         day_filter = np.nonzero(CLEARNESS[Ind[2] - 1:Ind[0], Ind[3] - 1:Ind[1], :].sum(axis=(0, 1)))
         list_hours = np.arange(0, 8760)
         if nproc == 1:
             param["status_bar_limit"] = list_hours[-1]
-            results = calc_FLH_solar(list_hours[day_filter], [paths, param, tech])
+            results = calc_FLH_solar(list_hours[day_filter], [paths, param, tech, rasterData["A_lu"], rasterData, merraData])
         else:
             list_hours = np.array_split(list_hours[day_filter], nproc)
             param["status_bar_limit"] = list_hours[0][-1]
             results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(calc_FLH_solar,
                                                                                                product(list_hours,
                                                                                                        [[paths, param,
-                                                                                                         tech]]))
+                                                                                                         tech, rasterData, merraData]]))
     elif tech in ['WindOn', 'WindOff']:
+        # Calculate A matrices
+        reg_ind = param["Ind_nz"]
+        rasterData = {}
+        # A_cf
+        with rasterio.open(paths["CORR"]) as src:
+            w = src.read(1)
+        rasterData["A_cf"] = np.flipud(w)
+        rasterData["A_cf"] = rasterData["A_cf"][reg_ind]
+        del w
+
+        # Obtain weather matrices
+        merraData = {}
+
+        rasterData = {}
         list_hours = np.array_split(np.arange(0, 8760), nproc)
         param["status_bar_limit"] = list_hours[0][-1]
         results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(calc_FLH_wind,
                                                                                            product(list_hours,
                                                                                                    [[paths, param,
                                                                                                      tech]]))
-    print('\n')
-
     # Collecting results
-
     FLH = np.zeros((m_high, n_high))
     if nproc > 1:
         for p in range(len(results)):
@@ -1350,7 +1395,7 @@ if __name__ == '__main__':
     generate_population(paths, param)  # Population
     generate_protected_areas(paths, param)  # Protected areas
     generate_buffered_population(paths, param)  # Buffered Population
-    # generate_wind_correction(paths, param)  # Correction factors for wind speeds
+    generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
         print("Tech: " + tech)
         calculate_FLH(paths, param, tech)

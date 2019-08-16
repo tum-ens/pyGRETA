@@ -611,7 +611,7 @@ def calculate_FLH(paths, param, tech):
         list_hours = np.arange(0, 8760)
         if nproc == 1:
             param["status_bar_limit"] = list_hours[-1]
-            results = calc_FLH_solar(list_hours[day_filter], [paths, param, tech, rasterData["A_lu"], rasterData, merraData])
+            results = calc_FLH_solar(list_hours[day_filter], [paths, param, tech, rasterData, merraData])
         else:
             list_hours = np.array_split(list_hours[day_filter], nproc)
             param["status_bar_limit"] = list_hours[0][-1]
@@ -630,16 +630,12 @@ def calculate_FLH(paths, param, tech):
         rasterData["A_cf"] = rasterData["A_cf"][reg_ind]
         del w
 
-        # Obtain weather matrices
-        merraData = {}
-
-        rasterData = {}
         list_hours = np.array_split(np.arange(0, 8760), nproc)
         param["status_bar_limit"] = list_hours[0][-1]
         results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(calc_FLH_wind,
                                                                                            product(list_hours,
                                                                                                    [[paths, param,
-                                                                                                     tech]]))
+                                                                                                     tech, rasterData, merraData]]))
     # Collecting results
     FLH = np.zeros((m_high, n_high))
     if nproc > 1:
@@ -1383,16 +1379,16 @@ def regression_coefficient(paths, param, tech):
 
 if __name__ == '__main__':
     paths, param = initialization()
-    generate_weather_files(paths, param)
-    generate_landsea(paths, param)  # Land and Sea
-    generate_landuse(paths, param)  # Landuse
-    generate_bathymetry(paths, param)  # Bathymetry
-    generate_topography(paths, param)  # Topography
-    generate_slope(paths, param)  # Slope
-    generate_population(paths, param)  # Population
-    generate_protected_areas(paths, param)  # Protected areas
-    generate_buffered_population(paths, param)  # Buffered Population
-    generate_wind_correction(paths, param)  # Correction factors for wind speeds
+    # generate_weather_files(paths, param)
+    # generate_landsea(paths, param)  # Land and Sea
+    # generate_landuse(paths, param)  # Landuse
+    # generate_bathymetry(paths, param)  # Bathymetry
+    # generate_topography(paths, param)  # Topography
+    # generate_slope(paths, param)  # Slope
+    # generate_population(paths, param)  # Population
+    # generate_protected_areas(paths, param)  # Protected areas
+    # generate_buffered_population(paths, param)  # Buffered Population
+    # generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
         print("Tech: " + tech)
         calculate_FLH(paths, param, tech)

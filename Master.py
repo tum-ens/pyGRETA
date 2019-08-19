@@ -1238,7 +1238,7 @@ def regression_coefficient(paths, param, tech):
             settings = sorted(param["regression"]["orientations"], reverse=True)
 
     st = ''
-    for set in settings:
+    for set in np.sort(np.array(settings)):
         st = st + str(set) + '_'
 
     # Copy EMHIRES and IRENA files to regression folder not present

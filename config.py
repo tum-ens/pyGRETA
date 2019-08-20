@@ -18,10 +18,10 @@ root = str(Path(git_RT_folder).parent.parent) + "Database_KS" + fs
 
 # Custom timestamp
 timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
-timestamp = '4NEMO'
+timestamp = 'test'
 
 # Important settings
-param["region"] = 'Europe_wo_balkans'
+param["region"] = 'Europe_wo_Balkans' # Name of the spatial scope, and define path to shapefile below!
 param["year"] = 2015
 param["technology"] = ['WindOff']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 
@@ -247,11 +247,13 @@ paths["Pop_tiles"] = PathTemp + "Population" + fs
 paths["Bathym_global"] = PathTemp + "Bathymetry" + fs + "ETOPO1_Ice_c_geotiff.tif"
 paths["Protected"] = PathTemp + "Protected Areas" + fs + "WDPA_Nov2018-shapefile-polygons.shp"
 paths["GWA"] = PathTemp + "Global Wind Atlas" + fs + fs + "windSpeed.csv"
+paths["Countries"] = PathTemp + "Countries" + fs + "gadm36_0.shp"
+paths["EEZ_global"] = PathTemp + "EEZ" + fs + "eez_v10.shp"
 
 # Shapefiles
 PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
-paths["Countries"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
-paths["SHP"] = paths["Countries"]
+paths["spatial_scope"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
+paths["subregions"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
 
 # Local maps
 PathTemp = paths["region"] + "Maps" + fs + param["region"]

@@ -3,76 +3,49 @@ from model_functions import *
 
 def initialization():
     timecheck('Start')
+    
     # import param and paths
     from config import paths, param
-    
-    def create_folders(paths):
-        if not os.path.isdir(paths["region"]):
-            os.makedirs(paths["region"] + "Renewable energy" + fs)
-            os.makedirs(paths["region"] + "Maps" + fs)
-        if not os.path.isdir(paths["weather_dat"]):
-            os.makedirs(paths["weather_dat"])
-        if not os.path.isdir(paths["OUT"]):
-            os.makedirs(paths["OUT"])
         
     create_folders(paths)
+    
+    # Read shapefile of scope
+    scope_shp = gpd.read_file(paths["spatial_scope"])
+    param["spatial_scope"] = define_spatial_scope(scope_shp)
+
     res_weather = param["res_weather"]
     res_desired = param["res_desired"]
-
-    # read shapefile of regions
-    regions_shp = gpd.read_file(paths["SHP"])
-    # Extract onshore and offshore areas separately
-    param["regions_land"] = regions_shp.drop(regions_shp[regions_shp["Population"] == 0].index)
-    param["regions_eez"] = regions_shp.drop(regions_shp[regions_shp["Population"] != 0].index)
-    # Recombine the maps in this order: onshore then offshore
-
-    regions_all = gpd.GeoDataFrame(pd.concat([param["regions_land"], param["regions_eez"]],
-                                             ignore_index=True), crs=param["regions_land"].crs)
-
-    param["nRegions_land"] = len(param["regions_land"])
-    param["nRegions_eez"] = len(param["regions_eez"])
-
-    nRegions = param["nRegions_land"] + param["nRegions_eez"]
-    Crd_regions = np.zeros((nRegions, 4))
-    for reg in range(0, nRegions):
-        # Box coordinates for MERRA2 data
-        r = regions_all.bounds.iloc[reg]
-        box = np.array([r["maxy"], r["maxx"], r["miny"], r["minx"]])[np.newaxis]
-        Crd_regions[reg, :] = crd_merra(box, res_weather)
-    Crd_all = np.array([max(Crd_regions[:, 0]), max(Crd_regions[:, 1]), min(Crd_regions[:, 2]), min(Crd_regions[:, 3])])
-    param["Crd_regions"] = Crd_regions
+    Crd_all = crd_merra(param["spatial_scope"], res_weather)[0]
     param["Crd_all"] = Crd_all
 
-    # Do the same for countries, if wind correction is to be calculated
-    if (not os.path.isfile(paths["CORR_GWA"])) and param["WindOn"]["resource"]["topo_correction"] and (
-            "WindOn" in param["technology"]):
-        # read shapefile of countries
-        countries_shp = gpd.read_file(paths["Countries"])
-        param["countries"] = countries_shp.drop(countries_shp[countries_shp["Population"] == 0].index)
-        param["nCountries"] = len(param["countries"])
-        nCountries = param["nCountries"]
-        Crd_countries = np.zeros((nCountries, 4))
-        for reg in range(0, nCountries):
-            # Box coordinates for MERRA2 data
-            r = countries_shp.bounds.iloc[reg]
-            box = np.array([r["maxy"], r["maxx"], r["miny"], r["minx"]])[np.newaxis]
-            Crd_countries[reg, :] = crd_merra(box, res_weather)
-        param["Crd_countries"] = Crd_countries
+    # # Do the same for countries, if wind correction is to be calculated
+    # if (not os.path.isfile(paths["CORR_GWA"])) and param["WindOn"]["resource"]["topo_correction"] and (
+            # "WindOn" in param["technology"]):
+        # # read shapefile of countries
+        # countries_shp = gpd.read_file(paths["Countries"])
+        # param["countries"] = countries_shp.drop(countries_shp[countries_shp["Population"] == 0].index)
+        # param["nCountries"] = len(param["countries"])
+        # nCountries = param["nCountries"]
+        # Crd_countries = np.zeros((nCountries, 4))
+        # for reg in range(0, nCountries):
+            # # Box coordinates for MERRA2 data
+            # r = countries_shp.bounds.iloc[reg]
+            # box = np.array([r["maxy"], r["maxx"], r["miny"], r["minx"]])[np.newaxis]
+            # Crd_countries[reg, :] = crd_merra(box, res_weather)
+        # param["Crd_countries"] = Crd_countries
 
     # Indices and matrix dimensions
-    Ind_low = ind_merra(Crd_regions, Crd_all, res_weather)  # Range indices for MERRA2 data (centroids)
-    Ind_high = ind_merra(Crd_regions, Crd_all,
-                         res_desired)  # Range indices for high resolution matrices, superposed to MERRA2 data
     Ind_all_low = ind_merra(Crd_all, Crd_all, res_weather)
     Ind_all_high = ind_merra(Crd_all, Crd_all, res_desired)
 
     param["m_high"] = (Ind_all_high[:, 0] - Ind_all_high[:, 2] + 1).astype(int)[0]  # number of rows
-    param["n_high"] = (Ind_all_high[:, 1] - Ind_all_high[:, 3] + 1).astype(int)[0]  # number of rows
-    param["m_low"] = (Ind_all_low[:, 0] - Ind_all_low[:, 2] + 1).astype(int)[0]  # number of columns
+    param["n_high"] = (Ind_all_high[:, 1] - Ind_all_high[:, 3] + 1).astype(int)[0]  # number of columns
+    param["m_low"] = (Ind_all_low[:, 0] - Ind_all_low[:, 2] + 1).astype(int)[0]  # number of rows
     param["n_low"] = (Ind_all_low[:, 1] - Ind_all_low[:, 3] + 1).astype(int)[0]  # number of columns
     param["GeoRef"] = calc_geotiff(Crd_all, res_desired)
     timecheck('End')
-    # Display Initial Information
+    
+    # Display initial information
     print('\nRegion: ' + param["region"] + ' - Year: ' + str(param["year"]))
     print('Folder Path: ' + paths["region"] + '\n')
     return paths, param
@@ -90,7 +63,6 @@ def generate_weather_files(paths, param):
     timecheck('Start')
     start = datetime.date(param["year"], 1, 1)
     end = datetime.date(param["year"], 12, 31)
-    root = paths["MERRA_IN"]
     
     SWGDN = np.array([])
     SWTDN = np.array([])
@@ -112,8 +84,8 @@ def generate_weather_files(paths, param):
             continue
 
         # Name and path of the NetCDF file to be read
-        name = root + 'MERRA2_400.tavg1_2d_rad_Nx.' + date.strftime('%Y%m%d') + '.SUB.nc'
-        name2 = root + 'MERRA2_400.tavg1_2d_slv_Nx.' + date.strftime('%Y%m%d') + '.SUB.nc'
+        name = paths["MERRA_IN"] + 'MERRA2_400.tavg1_2d_rad_Nx.' + date.strftime('%Y%m%d') + '.SUB.nc'
+        name2 = paths["MERRA_IN"] + 'MERRA2_400.tavg1_2d_slv_Nx.' + date.strftime('%Y%m%d') + '.SUB.nc'
 
         # Read NetCDF file, extract hourly tables
         with h5netcdf.File(name, 'r') as f:
@@ -149,21 +121,17 @@ def generate_weather_files(paths, param):
             else:
                 V50M = np.concatenate((V50M, v50m), axis=2)
         if date.year != tomorrow.year:
-            sys.stdout.write('\n')
-            timecheck('Start Writing Files: GHI, TOA, T2M, W50M')
-            hdf5storage.writes({'SWGDN': SWGDN}, paths["GHI"], store_python_metadata=True, matlab_compatible=True)
-            hdf5storage.writes({'SWTDN': SWTDN}, paths["TOA"], store_python_metadata=True, matlab_compatible=True)
-            hdf5storage.writes({'T2M': T2M}, paths["T2M"], store_python_metadata=True, matlab_compatible=True)
-            hdf5storage.writes({'U50M': U50M}, paths["U50M"], store_python_metadata=True, matlab_compatible=True)
-            hdf5storage.writes({'V50M': V50M}, paths["V50M"], store_python_metadata=True, matlab_compatible=True)
             # Create the overall wind speed
             W50M = abs(U50M + (1j * V50M))
-            hdf5storage.writes({'W50M': W50M}, paths["W50M"], store_python_metadata=True, matlab_compatible=True)
             # Calculate the clearness index
             CLEARNESS = np.divide(SWGDN, SWTDN, where=SWTDN != 0)
+            
+            sys.stdout.write('\n')
+            timecheck('Writing Files: T2M, W50M, CLEARNESS')
+            hdf5storage.writes({'T2M': T2M}, paths["T2M"], store_python_metadata=True, matlab_compatible=True)
+            hdf5storage.writes({'W50M': W50M}, paths["W50M"], store_python_metadata=True, matlab_compatible=True)
             hdf5storage.writes({'CLEARNESS': CLEARNESS}, paths["CLEARNESS"], store_python_metadata=True,
                                matlab_compatible=True)
-            timecheck('Finish Writing Files: GHI, TOA, T2M, W50M')
     timecheck('End')
 
 
@@ -172,41 +140,84 @@ def generate_landsea(paths, param):
     n_high = param["n_high"]
     Crd_all = param["Crd_all"]
     res_desired = param["res_desired"]
+    res_weather = param["res_weather"]
     GeoRef = param["GeoRef"]
 
-    timecheck('Start_Land')
-    nRegions = param["nRegions_land"]
-    regions_shp = param["regions_land"]
-    Crd_regions = param["Crd_regions"][0:nRegions, :]
-    Ind = ind_merra(Crd_regions, Crd_all, res_desired)
+    timecheck('Start')
+    # Read shapefile of scope
+    scope_shp = gpd.read_file(paths["spatial_scope"])
+    param["spatial_scope"] = define_spatial_scope(scope_shp)
+
+    # Read shapefile of regions
+    regions_shp = gpd.read_file(paths["subregions"], bbox=scope_shp)
+    regions_shp = regions_shp.to_crs({'init': 'epsg:4326'})
+    nRegions = len(regions_shp)
+    
+    # Extract land areas
+    countries_shp = gpd.read_file(paths["Countries"], bbox=scope_shp)
+    countries_shp = countries_shp.to_crs({'init': 'epsg:4326'})
+    
+    # Extract sea areas
+    eez_shp = gpd.read_file(paths["EEZ_global"], bbox=scope_shp)
+    eez_shp = eez_shp.to_crs({'init': 'epsg:4326'})
+    
+    Crd_regions = np.zeros((nRegions, 4))
+    Ind = np.zeros((nRegions, 4)).astype('int')
     A_land = np.zeros((m_high, n_high))
-
+    A_sea = np.zeros((m_high, n_high))
+    param["regions_land"] = gpd.GeoDataFrame()
+    param["regions_sea"] = gpd.GeoDataFrame()
     for reg in range(0, nRegions):
+        # Box coordinates for MERRA2 data
+        r = regions_shp.bounds.iloc[reg]
+        box = np.array([r["maxy"], r["maxx"], r["miny"], r["minx"]])[np.newaxis]
+        Crd_regions[reg, :] = crd_merra(box, res_weather)
+        Ind[reg, :] = ind_merra(Crd_regions[reg, :], Crd_all, res_desired)
+        
+        # Calculate A_region
         A_region = calc_region(regions_shp.iloc[reg], Crd_regions[reg, :], res_desired, GeoRef)
-        A_land[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] = \
-            A_land[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] + A_region
+        
+        # Check whether it is a land or sea region
+        print(reg)
+        poly = gpd.GeoDataFrame(regions_shp.iloc[reg]).T
+        countries_shp.index = len(countries_shp) * [reg]
+        
+        if poly.representative_point().within(countries_shp).any(): # Land
+            param["regions_land"] = param["regions_land"].append(poly)
+            A_land[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] = \
+                A_land[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] + A_region
+        else: # Sea
+            param["regions_sea"] = param["regions_sea"].append(poly)
+            A_sea[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] = \
+                A_sea[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] + A_region
+            
+    # Fixing pixels on the borders to avoid duplicates
+    A_sea = A_sea * (1 - A_land)
+    
     array2raster(paths["LAND"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_land)
-
     print("files saved: " + paths["LAND"])
-    timecheck('Finish_Land')
-
-    timecheck('Start_EEZ')
-    nRegions = param["nRegions_eez"]
-    regions_shp = param["regions_eez"]
-    Crd_regions = param["Crd_regions"][- nRegions:, :]
-    Ind = ind_merra(Crd_regions, Crd_all, res_desired)
-    A_eez = np.zeros((m_high, n_high))
-
-    for reg in range(0, nRegions):
-        A_region = calc_region(regions_shp.iloc[reg], Crd_regions[reg, :], res_desired, GeoRef)
-        A_eez[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] = \
-            A_eez[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] + A_region
-    with rasterio.open(paths["LAND"]) as src:
-        A_land = np.flipud(src.read(1)).astype(int)
-    A_eez = A_eez * (1 - A_land)
-    array2raster(paths["EEZ"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_eez)
+    array2raster(paths["EEZ"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_sea)
     print("files saved: " + paths["EEZ"])
-    timecheck('Finish_EEZ')
+    
+    # Saving parameters
+    param["nRegions_land"] = len(param["regions_land"])
+    param["nRegions_sea"] = len(param["regions_sea"])
+    param["Crd_regions"] = Crd_regions
+    
+    # THIS PART MIGHT BE NOT NECESSARY (SORTING)
+    # Recombine the maps in this order: onshore then offshore
+    regions_all = gpd.GeoDataFrame(pd.concat([param["regions_land"], param["regions_sea"]],
+                                             ignore_index=True), crs=param["regions_land"].crs)
+                                             
+    for reg in range(0, nRegions):
+        # Box coordinates for MERRA2 data
+        r = regions_all.bounds.iloc[reg]
+        box = np.array([r["maxy"], r["maxx"], r["miny"], r["minx"]])[np.newaxis]
+        Crd_regions[reg, :] = crd_merra(box, res_weather)
+    param["Crd_regions"] = Crd_regions
+
+    timecheck('End')
+    return param
 
 
 def generate_landuse(paths, param):
@@ -566,13 +577,13 @@ def calculate_FLH(paths, param, tech):
     n_high = param["n_high"]
 
     if tech == "WindOff":
-        regions_shp = param["regions_eez"]
-        nRegions = param["nRegions_eez"]
+        #regions_shp = param["regions_eez"]
+        #nRegions = param["nRegions_eez"]
         with rasterio.open(paths["EEZ"]) as src:
             w = src.read(1)
     else:
-        regions_shp = param["regions_land"]
-        nRegions = param["nRegions_land"]
+        #regions_shp = param["regions_land"]
+        #nRegions = param["nRegions_land"]
         res_weather = param["res_weather"]
         Crd_all = param["Crd_all"]
         Ind = ind_merra(Crd_all, Crd_all, res_weather)[0]
@@ -1393,7 +1404,7 @@ def regression_coefficient(paths, param, tech):
 if __name__ == '__main__':
     paths, param = initialization()
     # generate_weather_files(paths, param)
-    # generate_landsea(paths, param)  # Land and Sea
+    param = generate_landsea(paths, param)  # Land and Sea
     # generate_landuse(paths, param)  # Landuse
     # generate_bathymetry(paths, param)  # Bathymetry
     # generate_topography(paths, param)  # Topography
@@ -1410,7 +1421,7 @@ if __name__ == '__main__':
         #reporting(paths, param, tech)
         #find_locations_quantiles(paths, param, tech)
         #generate_time_series(paths, param, tech)
-        regression_coefficient(paths, param, tech)
-        # cProfile.run('reporting(paths, param, tech)', 'cprofile_test.txt')
-        # p = pstats.Stats('cprofile_test.txt')
-        # p.sort_stats('cumulative').print_stats(20)
+        #regression_coefficient(paths, param, tech)
+    # cProfile.run('initialization()', 'cprofile_test.txt')
+    # p = pstats.Stats('cprofile_test.txt')
+    # p.sort_stats('cumulative').print_stats(20)

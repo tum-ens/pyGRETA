@@ -1,5 +1,6 @@
 from util import *
 
+
 def create_folders(paths):
     if not os.path.isdir(paths["region"]):
         os.makedirs(paths["region"] + "Renewable energy" + fs)
@@ -8,13 +9,15 @@ def create_folders(paths):
         os.makedirs(paths["weather_dat"])
     if not os.path.isdir(paths["OUT"]):
         os.makedirs(paths["OUT"])
-            
+
+
 def define_spatial_scope(scope_shp):
         scope_shp = scope_shp.to_crs({'init': 'epsg:4326'})
         r = scope_shp.total_bounds
         box = r[::-1][np.newaxis]
         return box
-        
+
+
 def calc_ext(regb, ext, res):
     minRow = m.floor(regb["miny"] / res[1, 0]) * res[1, 0]
     maxRow = m.ceil(regb["maxy"] / res[1, 0]) * res[1, 0]

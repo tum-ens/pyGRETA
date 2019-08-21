@@ -21,7 +21,7 @@ timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
 timestamp = 'test'
 
 # Important settings
-param["region"] = 'Europe_wo_Balkans' # Name of the spatial scope, and define path to shapefile below!
+param["region"] = 'Europe_wo_Balkans'  # Name of the spatial scope, and define path to shapefile below!
 param["year"] = 2015
 param["technology"] = ['WindOn']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 

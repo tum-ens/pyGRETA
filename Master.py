@@ -1522,7 +1522,8 @@ def regression_coefficient(paths, param, tech):
 if __name__ == '__main__':
     paths, param = initialization()
     # generate_weather_files(paths, param)
-    param = generate_landsea(paths, param)  # Land and Sea
+    # generate_landsea(paths, param)  # Land and Sea
+    # generate_subregions(paths, param)  # Subregions
     # generate_landuse(paths, param)  # Landuse
     # generate_bathymetry(paths, param)  # Bathymetry
     # generate_topography(paths, param)  # Topography

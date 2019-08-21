@@ -2,6 +2,7 @@ from util import *
 
 
 def create_folders(paths):
+    fs = os.path.sep
     if not os.path.isdir(paths["region"]):
         os.makedirs(paths["region"] + "Renewable energy" + fs)
         os.makedirs(paths["region"] + "Maps" + fs)

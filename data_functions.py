@@ -1,6 +1,20 @@
 from util import *
 
-
+def create_folders(paths):
+    if not os.path.isdir(paths["region"]):
+        os.makedirs(paths["region"] + "Renewable energy" + fs)
+        os.makedirs(paths["region"] + "Maps" + fs)
+    if not os.path.isdir(paths["weather_dat"]):
+        os.makedirs(paths["weather_dat"])
+    if not os.path.isdir(paths["OUT"]):
+        os.makedirs(paths["OUT"])
+            
+def define_spatial_scope(scope_shp):
+        scope_shp = scope_shp.to_crs({'init': 'epsg:4326'})
+        r = scope_shp.total_bounds
+        box = r[::-1][np.newaxis]
+        return box
+        
 def calc_ext(regb, ext, res):
     minRow = m.floor(regb["miny"] / res[1, 0]) * res[1, 0]
     maxRow = m.ceil(regb["maxy"] / res[1, 0]) * res[1, 0]
@@ -136,9 +150,9 @@ def calc_gwa_correction(param, paths):
     m_high = param["m_high"]
     n_high = param["n_high"]
     res_desired = param["res_desired"]
-    nCountries = param["nCountries"]
-    countries_shp = param["countries"]
-    Crd_countries = param["Crd_countries"][0:nCountries, :]
+    nCountries = param["nRegions_land"]
+    countries_shp = param["regions_land"]
+    Crd_countries = param["Crd_regions"][0:nCountries, :]
     GeoRef = param["GeoRef"]
 
     # Obtain wind speed at 50m
@@ -161,7 +175,7 @@ def calc_gwa_correction(param, paths):
     errors = np.zeros((len(combi_list), nCountries))
     for reg in range(0, nCountries):
         A_region = calc_region(countries_shp.iloc[reg], Crd_countries[reg, :], res_desired, GeoRef)
-        reg_name = countries_shp.iloc[reg]["NAME_SHORT"]
+        reg_name = countries_shp.iloc[reg]["GID_0"]
         Ind_reg = np.nonzero(A_region)
         w_size[reg] = len(Ind_reg[0])
         w_cap[reg] = inst_cap.loc[reg_name, 'WindOn']

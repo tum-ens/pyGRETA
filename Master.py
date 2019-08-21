@@ -64,7 +64,7 @@ def initialization():
     param["regions_sub"] = regions_shp
     param["nRegions_sub"] = len(param["regions_sub"])
     Crd_regions_sub = np.zeros((param["nRegions_sub"], 4))
-    
+
     for reg in range(0, param["nRegions_sub"]):
         # Box coordinates for MERRA2 data
         r = regions_shp.bounds.iloc[reg]
@@ -181,27 +181,16 @@ def generate_landsea(paths, param):
     n_high = param["n_high"]
     Crd_all = param["Crd_all"]
     res_desired = param["res_desired"]
-    res_weather = param["res_weather"]
     GeoRef = param["GeoRef"]
+    nRegions_land = param["nRegions_land"]
+    nRegions_sea = param["nRegions_sea"]
 
     timecheck('Start')
     timecheck('Start Land')
-    # Read shapefile of scope
-    scope_shp = gpd.read_file(paths["spatial_scope"])
-    param["spatial_scope"] = define_spatial_scope(scope_shp)
-    ymax, xmax, ymin, xmin = Crd_all
-    bounds_box = Polygon([(xmin, ymin), (xmin, ymax), (xmax, ymax), (xmax, ymin)])
-
     # Extract land areas
-    countries_shp = gpd.read_file(paths["Countries"], bbox=scope_shp)
-    countries_shp = countries_shp.to_crs({'init': 'epsg:4326'})
-    # Crop all polygons and take the part inside the bounding box
-    countries_shp['geometry'] = countries_shp['geometry'].intersection(bounds_box)
-    countries_shp = countries_shp[countries_shp.geometry.area > 0]
-    param["regions_land"] = countries_shp
-    param["nRegions_land"] = len(param["regions_land"])
-    Crd_regions_land = np.zeros((param["nRegions_land"], 4))
-    Ind = np.zeros((param["nRegions_land"], 4)).astype('int')
+    countries_shp = param["regions_land"]
+    Crd_regions_land = param["Crd_regions"][:nRegions_land]
+    Ind = ind_merra(Crd_regions_land, Crd_all, res_desired)
     A_land = np.zeros((m_high, n_high))
     status = 0
     for reg in range(0, param["nRegions_land"]):
@@ -209,19 +198,15 @@ def generate_landsea(paths, param):
         status = status + 1
         sys.stdout.write('\r')
         sys.stdout.write('Creating A_land ' + '[%-50s] %d%%' % (
-            '=' * ((status * 50) // param["nRegions_land"]), (status * 100) // param["nRegions_land"]))
+            '=' * ((status * 50) // nRegions_land), (status * 100) // nRegions_land))
         sys.stdout.flush()
-        # Box coordinates for MERRA2 data
-        r = countries_shp.bounds.iloc[reg]
-        box = np.array([r["maxy"], r["maxx"], r["miny"], r["minx"]])[np.newaxis]
-        Crd_regions_land[reg, :] = crd_merra(box, res_weather)
-        Ind[reg, :] = ind_merra(Crd_regions_land[reg, :], Crd_all, res_desired)
+
         # Calculate A_region
         A_region = calc_region(countries_shp.iloc[reg], Crd_regions_land[reg, :], res_desired, GeoRef)
+
         # Include A_region in A_land
         A_land[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] = \
             A_land[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] + A_region
-
     # Saving file
     array2raster(paths["LAND"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_land)
     print('\nfiles saved: ' + paths["LAND"])
@@ -229,15 +214,9 @@ def generate_landsea(paths, param):
 
     timecheck('Start Sea')
     # Extract sea areas
-    eez_shp = gpd.read_file(paths["EEZ_global"], bbox=scope_shp)
-    eez_shp = eez_shp.to_crs({'init': 'epsg:4326'})
-    # Crop all polygons and take the part inside the bounding box
-    eez_shp['geometry'] = eez_shp['geometry'].intersection(bounds_box)
-    eez_shp = eez_shp[eez_shp.geometry.area > 0]
-    param["regions_sea"] = eez_shp
-    param["nRegions_sea"] = len(param["regions_sea"])
-    Crd_regions_sea = np.zeros((param["nRegions_sea"], 4))
-    Ind = np.zeros((param["nRegions_sea"], 4)).astype('int')
+    eez_shp = param["regions_sea"]
+    Crd_regions_sea = param["Crd_regions"][:-nRegions_sea]
+    Ind = ind_merra(Crd_regions_sea, Crd_all, res_desired)
     A_sea = np.zeros((m_high, n_high))
     status = 0
     for reg in range(0, param["nRegions_sea"]):
@@ -247,13 +226,10 @@ def generate_landsea(paths, param):
         sys.stdout.write('Creating A_sea ' + '[%-50s] %d%%' % (
             '=' * ((status * 50) // param["nRegions_sea"]), (status * 100) // param["nRegions_sea"]))
         sys.stdout.flush()
-        # Box coordinates for MERRA2 data
-        r = eez_shp.bounds.iloc[reg]
-        box = np.array([r["maxy"], r["maxx"], r["miny"], r["minx"]])[np.newaxis]
-        Crd_regions_sea[reg, :] = crd_merra(box, res_weather)
-        Ind[reg, :] = ind_merra(Crd_regions_sea[reg, :], Crd_all, res_desired)
+
         # Calculate A_region
         A_region = calc_region(eez_shp.iloc[reg], Crd_regions_sea[reg, :], res_desired, GeoRef)
+
         # Include A_region in A_sea
         A_sea[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] = \
             A_sea[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] + A_region
@@ -272,41 +248,24 @@ def generate_subregions(paths, param):
     n_high = param["n_high"]
     Crd_all = param["Crd_all"]
     res_desired = param["res_desired"]
-    res_weather = param["res_weather"]
     GeoRef = param["GeoRef"]
-
-    # Read shapefile of scope
-    scope_shp = gpd.read_file(paths["spatial_scope"])
-    param["spatial_scope"] = define_spatial_scope(scope_shp)
-    ymax, xmax, ymin, xmin = Crd_all
-    bounds_box = Polygon([(xmin, ymin), (xmin, ymax), (xmax, ymax), (xmax, ymin)])
+    nRegions_sub = param["nRegions_sub"]
 
     timecheck('Start Subregions')
     # Read shapefile of regions
-    regions_shp = gpd.read_file(paths["subregions"], bbox=scope_shp)
-    regions_shp = regions_shp.to_crs({'init': 'epsg:4326'})
-    # Crop all polygons and take the part inside the bounding box
-    regions_shp['geometry'] = regions_shp['geometry'].intersection(bounds_box)
-    regions_shp = regions_shp[regions_shp.geometry.area > 0]
-    param["regions_sub"] = regions_shp
-    param["nRegions_sub"] = len(param["regions_sub"])
-    Crd_regions_sub = np.zeros((param["nRegions_sub"], 4))
-    Ind = np.zeros((param["nRegions_sub"], 4)).astype('int')
+    regions_shp = param["regions_sub"]
+    Crd_regions_sub = param["Crd_subregions"]
+    Ind = ind_merra(Crd_regions_sub, Crd_all, res_desired)
     A_sub = np.zeros((m_high, n_high))
     status = 0
-    for reg in range(0, param["nRegions_sub"]):
+    for reg in range(0, nRegions_sub):
         # Show status bar
         status = status + 1
         sys.stdout.write('\r')
         sys.stdout.write('Creating A_subregions ' + '[%-50s] %d%%' % (
-            '=' * ((status * 50) // param["nRegions_sub"]), (status * 100) // param["nRegions_sub"]))
+            '=' * ((status * 50) // nRegions_sub), (status * 100) // nRegions_sub))
         sys.stdout.flush()
-        # Box coordinates for MERRA2 data
-        r = regions_shp.bounds.iloc[reg]
-        box = np.array([r["maxy"], r["maxx"], r["miny"], r["minx"]])[np.newaxis]
-        Crd_regions_sub[reg, :] = crd_merra(box, res_weather)
-        Ind[reg, :] = ind_merra(Crd_regions_sub[reg, :], Crd_all, res_desired)
-        
+
         # Calculate A_region
         A_region = calc_region(regions_shp.iloc[reg], Crd_regions_sub[reg, :], res_desired, GeoRef)
         

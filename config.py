@@ -23,7 +23,7 @@ timestamp = 'test'
 # Important settings
 param["region"] = 'Europe_wo_Balkans' # Name of the spatial scope, and define path to shapefile below!
 param["year"] = 2015
-param["technology"] = ['WindOff']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['WindOn']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 
 # Computation
 param["nproc"] = 18
@@ -259,6 +259,7 @@ paths["subregions"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
 PathTemp = paths["region"] + "Maps" + fs + param["region"]
 paths["LAND"] = PathTemp + "_Land.tif"  # Land pixels
 paths["EEZ"] = PathTemp + "_EEZ.tif"  # Sea pixels
+paths["SUB"] = PathTemp + "_Subregions.tif"  # Subregions pixels
 paths["LU"] = PathTemp + "_Landuse.tif"  # Land use types
 paths["TOPO"] = PathTemp + "_Topography.tif"  # Topography
 paths["PA"] = PathTemp + "_Protected_areas.tif"  # Protected areas
@@ -271,7 +272,8 @@ paths["CORR_GWA"] = PathTemp + "_GWA_Correction.mat"  # Correction factors based
 # Correction factors for wind speeds
 turbine_height_on = str(param["WindOn"]["technical"]["hub_height"])
 turbine_height_off = str(param["WindOff"]["technical"]["hub_height"])
-paths["CORR"] = PathTemp + "_Wind_Correction_" + turbine_height_on + '_' + turbine_height_off + '.tif'
+paths["CORR_ON"] = PathTemp + "_WindOn_Correction_" + turbine_height_on + '.tif'
+paths["CORR_OFF"] = PathTemp + "_WindOff_Correction_" + turbine_height_off + '.tif'
 
 # Ouput Folders
 paths["OUT"] = root + "03 Intermediate files" + fs + "Files " + region + fs + "Renewable energy" + fs + timestamp + fs

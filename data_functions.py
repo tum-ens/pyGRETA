@@ -150,9 +150,9 @@ def calc_gwa_correction(param, paths):
     m_high = param["m_high"]
     n_high = param["n_high"]
     res_desired = param["res_desired"]
-    nCountries = param["nCountries"]
-    countries_shp = param["countries"]
-    Crd_countries = param["Crd_countries"][0:nCountries, :]
+    nCountries = param["nRegions_land"]
+    countries_shp = param["regions_land"]
+    Crd_countries = param["Crd_regions"][0:nCountries, :]
     GeoRef = param["GeoRef"]
 
     # Obtain wind speed at 50m
@@ -175,7 +175,7 @@ def calc_gwa_correction(param, paths):
     errors = np.zeros((len(combi_list), nCountries))
     for reg in range(0, nCountries):
         A_region = calc_region(countries_shp.iloc[reg], Crd_countries[reg, :], res_desired, GeoRef)
-        reg_name = countries_shp.iloc[reg]["NAME_SHORT"]
+        reg_name = countries_shp.iloc[reg]["GID_0"]
         Ind_reg = np.nonzero(A_region)
         w_size[reg] = len(Ind_reg[0])
         w_cap[reg] = inst_cap.loc[reg_name, 'WindOn']

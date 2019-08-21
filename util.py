@@ -19,7 +19,7 @@ from scipy.ndimage import convolve
 import datetime
 import geopandas as gpd
 from rasterio import windows
-from shapely.geometry import mapping, Point
+from shapely.geometry import mapping, Point, Polygon
 import fiona
 import hdf5storage
 from multiprocessing import Pool

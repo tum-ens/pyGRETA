@@ -30,14 +30,12 @@ def initialization():
     param["regions_land"] = countries_shp
     param["nRegions_land"] = len(param["regions_land"])
     Crd_regions_land = np.zeros((param["nRegions_land"], 4))
-    Ind = np.zeros((param["nRegions_land"], 4)).astype('int')
 
     for reg in range(0, param["nRegions_land"]):
         # Box coordinates for MERRA2 data
         r = countries_shp.bounds.iloc[reg]
         box = np.array([r["maxy"], r["maxx"], r["miny"], r["minx"]])[np.newaxis]
         Crd_regions_land[reg, :] = crd_merra(box, res_weather)
-        Ind[reg, :] = ind_merra(Crd_regions_land[reg, :], Crd_all, res_desired)
 
     # Extract sea areas
     eez_shp = gpd.read_file(paths["EEZ_global"], bbox=scope_shp)
@@ -49,14 +47,12 @@ def initialization():
     param["regions_sea"] = eez_shp
     param["nRegions_sea"] = len(param["regions_sea"])
     Crd_regions_sea = np.zeros((param["nRegions_sea"], 4))
-    Ind = np.zeros((param["nRegions_sea"], 4)).astype('int')
 
     for reg in range(0, param["nRegions_sea"]):
         # Box coordinates for MERRA2 data
         r = eez_shp.bounds.iloc[reg]
         box = np.array([r["maxy"], r["maxx"], r["miny"], r["minx"]])[np.newaxis]
         Crd_regions_sea[reg, :] = crd_merra(box, res_weather)
-        Ind[reg, :] = ind_merra(Crd_regions_sea[reg, :], Crd_all, res_desired)
 
     # Read shapefile of regions
     regions_shp = gpd.read_file(paths["subregions"], bbox=scope_shp)
@@ -68,13 +64,12 @@ def initialization():
     param["regions_sub"] = regions_shp
     param["nRegions_sub"] = len(param["regions_sub"])
     Crd_regions_sub = np.zeros((param["nRegions_sub"], 4))
-    Ind = np.zeros((param["nRegions_sub"], 4)).astype('int')
+    
     for reg in range(0, param["nRegions_sub"]):
         # Box coordinates for MERRA2 data
         r = regions_shp.bounds.iloc[reg]
         box = np.array([r["maxy"], r["maxx"], r["miny"], r["minx"]])[np.newaxis]
         Crd_regions_sub[reg, :] = crd_merra(box, res_weather)
-        Ind[reg, :] = ind_merra(Crd_regions_sub[reg, :], Crd_all, res_desired)
 
     # Saving parameters
     param["Crd_subregions"] = Crd_regions_sub

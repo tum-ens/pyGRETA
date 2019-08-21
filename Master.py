@@ -144,77 +144,130 @@ def generate_landsea(paths, param):
     GeoRef = param["GeoRef"]
 
     timecheck('Start')
+    timecheck('Start Land')
     # Read shapefile of scope
     scope_shp = gpd.read_file(paths["spatial_scope"])
     param["spatial_scope"] = define_spatial_scope(scope_shp)
+    ymax, xmax, ymin, xmin = Crd_all
+    bounds_box = Polygon([(xmin,ymin), (xmin, ymax), (xmax, ymax), (xmax,ymin)])
 
-    # Read shapefile of regions
-    regions_shp = gpd.read_file(paths["subregions"], bbox=scope_shp)
-    regions_shp = regions_shp.to_crs({'init': 'epsg:4326'})
-    nRegions = len(regions_shp)
-    
     # Extract land areas
     countries_shp = gpd.read_file(paths["Countries"], bbox=scope_shp)
     countries_shp = countries_shp.to_crs({'init': 'epsg:4326'})
-    
+    # Crop all polygons and take the part inside the bounding box
+    countries_shp['geometry'] = countries_shp['geometry'].intersection(bounds_box)
+    countries_shp = countries_shp[countries_shp.geometry.area>0]
+    param["regions_land"] = countries_shp
+    param["nRegions_land"] = len(param["regions_land"])
+    Crd_regions_land = np.zeros((param["nRegions_land"], 4))
+    Ind = np.zeros((param["nRegions_land"], 4)).astype('int')
+    A_land = np.zeros((m_high, n_high))
+    status = 0
+    for reg in range(0, param["nRegions_land"]):
+        # Show status bar
+        status = status + 1
+        sys.stdout.write('\r')
+        sys.stdout.write('Creating A_land ' + '[%-50s] %d%%' % (
+            '=' * ((status * 50) // param["nRegions_land"]), (status * 100) // param["nRegions_land"]))
+        sys.stdout.flush()
+        # Box coordinates for MERRA2 data
+        r = countries_shp.bounds.iloc[reg]
+        box = np.array([r["maxy"], r["maxx"], r["miny"], r["minx"]])[np.newaxis]
+        Crd_regions_land[reg, :] = crd_merra(box, res_weather)
+        Ind[reg, :] = ind_merra(Crd_regions_land[reg, :], Crd_all, res_desired)
+        # Calculate A_region
+        A_region = calc_region(countries_shp.iloc[reg], Crd_regions_land[reg, :], res_desired, GeoRef)
+        # Include A_region in A_land
+        A_land[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] = \
+            A_land[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] + A_region
+
+    # Saving file
+    array2raster(paths["LAND"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_land)
+    print('\nfiles saved: ' + paths["LAND"])
+    timecheck('Finish Land')
+
+    timecheck('Start Sea')
     # Extract sea areas
     eez_shp = gpd.read_file(paths["EEZ_global"], bbox=scope_shp)
     eez_shp = eez_shp.to_crs({'init': 'epsg:4326'})
-    
-    Crd_regions = np.zeros((nRegions, 4))
-    Ind = np.zeros((nRegions, 4)).astype('int')
-    A_land = np.zeros((m_high, n_high))
+    # Crop all polygons and take the part inside the bounding box
+    eez_shp['geometry'] = eez_shp['geometry'].intersection(bounds_box)
+    eez_shp = eez_shp[eez_shp.geometry.area>0]
+    param["regions_sea"] = eez_shp
+    param["nRegions_sea"] = len(param["regions_sea"])
+    Crd_regions_sea = np.zeros((param["nRegions_sea"], 4))
+    Ind = np.zeros((param["nRegions_sea"], 4)).astype('int')
     A_sea = np.zeros((m_high, n_high))
-    param["regions_land"] = gpd.GeoDataFrame()
-    param["regions_sea"] = gpd.GeoDataFrame()
-    for reg in range(0, nRegions):
+    status = 0
+    for reg in range(0, param["nRegions_sea"]):
+        # Show status bar
+        status = status + 1
+        sys.stdout.write('\r')
+        sys.stdout.write('Creating A_sea ' + '[%-50s] %d%%' % (
+            '=' * ((status * 50) // param["nRegions_sea"]), (status * 100) // param["nRegions_sea"]))
+        sys.stdout.flush()
+        # Box coordinates for MERRA2 data
+        r = eez_shp.bounds.iloc[reg]
+        box = np.array([r["maxy"], r["maxx"], r["miny"], r["minx"]])[np.newaxis]
+        Crd_regions_sea[reg, :] = crd_merra(box, res_weather)
+        Ind[reg, :] = ind_merra(Crd_regions_sea[reg, :], Crd_all, res_desired)
+        # Calculate A_region
+        A_region = calc_region(eez_shp.iloc[reg], Crd_regions_sea[reg, :], res_desired, GeoRef)
+        # Include A_region in A_sea
+        A_sea[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] = \
+            A_sea[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] + A_region
+                           
+    # Fixing pixels on the borders to avoid duplicates
+    A_sea[A_sea>0] = 1
+    A_sea[A_land>0] = 0
+    # Saving file
+    array2raster(paths["EEZ"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_sea)
+    print('\nfiles saved: ' + paths["EEZ"])
+    timecheck('Finish Sea')
+    
+    timecheck('Start Subregions')
+    # Read shapefile of regions
+    regions_shp = gpd.read_file(paths["subregions"], bbox=scope_shp)
+    regions_shp = regions_shp.to_crs({'init': 'epsg:4326'})
+    # Crop all polygons and take the part inside the bounding box
+    regions_shp['geometry'] = regions_shp['geometry'].intersection(bounds_box)
+    regions_shp = regions_shp[regions_shp.geometry.area>0]
+    param["regions_sub"] = regions_shp
+    param["nRegions_sub"] = len(param["regions_sub"])
+    Crd_regions_sub = np.zeros((param["nRegions_sub"], 4))
+    Ind = np.zeros((param["nRegions_sub"], 4)).astype('int')
+    A_sub = np.zeros((m_high, n_high))
+    status = 0
+    for reg in range(0, param["nRegions_sub"]):
+        # Show status bar
+        status = status + 1
+        sys.stdout.write('\r')
+        sys.stdout.write('Creating A_subregions ' + '[%-50s] %d%%' % (
+            '=' * ((status * 50) // param["nRegions_sub"]), (status * 100) // param["nRegions_sub"]))
+        sys.stdout.flush()
         # Box coordinates for MERRA2 data
         r = regions_shp.bounds.iloc[reg]
         box = np.array([r["maxy"], r["maxx"], r["miny"], r["minx"]])[np.newaxis]
-        Crd_regions[reg, :] = crd_merra(box, res_weather)
-        Ind[reg, :] = ind_merra(Crd_regions[reg, :], Crd_all, res_desired)
+        Crd_regions_sub[reg, :] = crd_merra(box, res_weather)
+        Ind[reg, :] = ind_merra(Crd_regions_sub[reg, :], Crd_all, res_desired)
         
         # Calculate A_region
-        A_region = calc_region(regions_shp.iloc[reg], Crd_regions[reg, :], res_desired, GeoRef)
+        A_region = calc_region(regions_shp.iloc[reg], Crd_regions_sub[reg, :], res_desired, GeoRef)
         
-        # Check whether it is a land or sea region
-        print(reg)
-        poly = gpd.GeoDataFrame(regions_shp.iloc[reg]).T
-        countries_shp.index = len(countries_shp) * [reg]
-        
-        if poly.representative_point().within(countries_shp).any(): # Land
-            param["regions_land"] = param["regions_land"].append(poly)
-            A_land[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] = \
-                A_land[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] + A_region
-        else: # Sea
-            param["regions_sea"] = param["regions_sea"].append(poly)
-            A_sea[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] = \
-                A_sea[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] + A_region
-            
-    # Fixing pixels on the borders to avoid duplicates
-    A_sea = A_sea * (1 - A_land)
-    
-    array2raster(paths["LAND"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_land)
-    print("files saved: " + paths["LAND"])
-    array2raster(paths["EEZ"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_sea)
-    print("files saved: " + paths["EEZ"])
+        # Include A_region in A_sub
+        A_sub[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] = \
+            A_sub[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] + A_region
+    # Fixing pixels on the borders
+    A_sub[A_sub>0] = 1
+    A_sub = A_sub * (A_land + A_sea)
+    # Saving file
+    array2raster(paths["SUB"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_sub)
+    print('\nfiles saved: ' + paths["SUB"])
+    timecheck('Finish Subregions')
     
     # Saving parameters
-    param["nRegions_land"] = len(param["regions_land"])
-    param["nRegions_sea"] = len(param["regions_sea"])
-    param["Crd_regions"] = Crd_regions
-    
-    # THIS PART MIGHT BE NOT NECESSARY (SORTING)
-    # Recombine the maps in this order: onshore then offshore
-    regions_all = gpd.GeoDataFrame(pd.concat([param["regions_land"], param["regions_sea"]],
-                                             ignore_index=True), crs=param["regions_land"].crs)
-                                             
-    for reg in range(0, nRegions):
-        # Box coordinates for MERRA2 data
-        r = regions_all.bounds.iloc[reg]
-        box = np.array([r["maxy"], r["maxx"], r["miny"], r["minx"]])[np.newaxis]
-        Crd_regions[reg, :] = crd_merra(box, res_weather)
-    param["Crd_regions"] = Crd_regions
+    param["Crd_regions"] = np.concatenate((Crd_regions_land, Crd_regions_sea), axis=0)
+    param["Crd_subregions"] = Crd_regions_sub
 
     timecheck('End')
     return param
@@ -508,58 +561,63 @@ def generate_wind_correction(paths, param):
     A_hellmann = changem(A_lu, landuse["hellmann"], landuse["type"]).astype(float)
 
     # Onshore resolution correction
-    turbine_height_on = param["WindOn"]["technical"]["hub_height"]
-
-    if res_correction_on:
-        m_low = param["m_low"]
-        n_low = param["n_low"]
-        m_high = param["m_high"]
-        n_high = param["n_high"]
-        res_weather = param["res_weather"]
-        res_desired = param["res_desired"]
-        A_gradient_height = changem(A_lu.astype(float), landuse["height"], landuse["type"])
-        Sigma = sumnorm_MERRA2((50 / A_gradient_height) ** A_hellmann, m_low, n_low, res_weather, res_desired)
-        A_cf_on = ((turbine_height_on / 50) * turbine_height_on /
-                   A_gradient_height) ** A_hellmann / resizem(Sigma, m_high, n_high)
-        del A_gradient_height, Sigma
-    else:
-        A_cf_on = (turbine_height_on / 50) ** A_hellmann
+    if 'WindOn' in param["technology"]:
+        turbine_height_on = param["WindOn"]["technical"]["hub_height"]
+        
+        if res_correction_on:
+            m_low = param["m_low"]
+            n_low = param["n_low"]
+            m_high = param["m_high"]
+            n_high = param["n_high"]
+            res_weather = param["res_weather"]
+            res_desired = param["res_desired"]
+            A_gradient_height = changem(A_lu.astype(float), landuse["height"], landuse["type"])
+            Sigma = sumnorm_MERRA2((50 / A_gradient_height) ** A_hellmann, m_low, n_low, res_weather, res_desired)
+            A_cf_on = ((turbine_height_on / 50) * turbine_height_on /
+                       A_gradient_height) ** A_hellmann / resizem(Sigma, m_high, n_high)
+            del A_gradient_height, Sigma
+        else:
+            A_cf_on = (turbine_height_on / 50) ** A_hellmann
+            
+        # Topographic correction (only onshore)
+        with rasterio.open(paths["LAND"]) as src:
+            A_land = np.flipud(src.read(1)).astype(int)
+        A_cf_on = A_cf_on * A_land
+        del A_land
+        if topo_correction:
+            if not os.path.isfile(paths["CORR_GWA"]):
+                calc_gwa_correction(param, paths)
+            gwa_correction = hdf5storage.read('correction_' + param["WindOn"]["resource"]["topo_weight"],
+                                              paths["CORR_GWA"])
+            A_cf_on = A_cf_on * gwa_correction
+        array2raster(paths["CORR_ON"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf_on)
+        print("files saved: " + paths["CORR_ON"])
 
     # Offshore resolution correction
-    turbine_height_off = param["WindOff"]["technical"]["hub_height"]
-
-    if res_correction_off:
-        m_low = param["m_low"]
-        n_low = param["n_low"]
-        m_high = param["m_high"]
-        n_high = param["n_high"]
-        res_weather = param["res_weather"]
-        res_desired = param["res_desired"]
-        A_gradient_height = changem(A_lu.astype(float), landuse["height"], landuse["type"])
-        Sigma = sumnorm_MERRA2((50 / A_gradient_height) ** A_hellmann, m_low, n_low, res_weather, res_desired)
-        A_cf_off = ((turbine_height_off / 50) * turbine_height_off /
-                    A_gradient_height) ** A_hellmann / resizem(Sigma, m_high, n_high)
-        del A_gradient_height, Sigma
-    else:
-        A_cf_off = (turbine_height_off / 50) ** A_hellmann
-    del A_hellmann
-
-    # Topographic correction (only onshore)
-    with rasterio.open(paths["LAND"]) as src:
-        A_land = np.flipud(src.read(1)).astype(int)
-    A_cf_on = A_cf_on * A_land
-    del A_land
-    if topo_correction:
-        if not os.path.isfile(paths["CORR_GWA"]):
-            calc_gwa_correction(param, paths)
-        gwa_correction = hdf5storage.read('correction_' + param["WindOn"]["resource"]["topo_weight"],
-                                          paths["CORR_GWA"])
-        A_cf_on = A_cf_on * gwa_correction
-    with rasterio.open(paths["EEZ"]) as src:
-        A_eez = np.flipud(src.read(1)).astype(int)
-    A_cf = A_cf_off * A_eez + A_cf_on
-    array2raster(paths["CORR"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf)
-    print("files saved: " + paths["CORR"])
+    if 'WindOff' in param["technology"]:
+        turbine_height_off = param["WindOff"]["technical"]["hub_height"]
+        
+        if res_correction_off:
+            m_low = param["m_low"]
+            n_low = param["n_low"]
+            m_high = param["m_high"]
+            n_high = param["n_high"]
+            res_weather = param["res_weather"]
+            res_desired = param["res_desired"]
+            A_gradient_height = changem(A_lu.astype(float), landuse["height"], landuse["type"])
+            Sigma = sumnorm_MERRA2((50 / A_gradient_height) ** A_hellmann, m_low, n_low, res_weather, res_desired)
+            A_cf_off = ((turbine_height_off / 50) * turbine_height_off /
+                        A_gradient_height) ** A_hellmann / resizem(Sigma, m_high, n_high)
+            del A_gradient_height, Sigma
+        else:
+            A_cf_off = (turbine_height_off / 50) ** A_hellmann
+        del A_hellmann
+        with rasterio.open(paths["EEZ"]) as src:
+            A_eez = np.flipud(src.read(1)).astype(int)
+        A_cf_off = A_cf_off * A_eez
+        
+        array2raster(paths["CORR_OFF"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf_off)
+        print("files saved: " + paths["CORR_OFF"])
     timecheck('End')
 
 
@@ -578,13 +636,9 @@ def calculate_FLH(paths, param, tech):
     CPU_limit = np.full((1, nproc), param["CPU_limit"])
 
     if tech == "WindOff":
-        #regions_shp = param["regions_eez"]
-        #nRegions = param["nRegions_eez"]
         with rasterio.open(paths["EEZ"]) as src:
             w = src.read(1)
     else:
-        #regions_shp = param["regions_land"]
-        #nRegions = param["nRegions_land"]
         res_weather = param["res_weather"]
         Crd_all = param["Crd_all"]
         Ind = ind_merra(Crd_all, Crd_all, res_weather)[0]
@@ -601,21 +655,17 @@ def calculate_FLH(paths, param, tech):
 
         # Calculate A matrices
         landuse = param["landuse"]
-        reg_ind = param["Ind_nz"]
         rasterData = {}
         # A_lu
         with rasterio.open(paths["LU"]) as src:
             w = src.read(1)
         rasterData["A_lu"] = np.flipud(w)
-        # rasterData["A_lu"] = rasterData["A_lu"][reg_ind]
         # A_Ross (Temperature coefficients for heating losses)
         rasterData["A_Ross"] = changem(rasterData["A_lu"], param["landuse"]["Ross_coeff"],
-                                       param["landuse"]["type"]).astype(
-            'float16')
+                                       param["landuse"]["type"]).astype('float16')
         # A_albedo (Reflectivity coefficients)
         rasterData["A_albedo"] = changem(rasterData["A_lu"], param["landuse"]["albedo"],
-                                         param["landuse"]["type"]).astype(
-            'float16')
+                                         param["landuse"]["type"]).astype('float16')
 
         # A_WS_Coef wind Speed at 2m above the ground
         A_hellmann = changem(rasterData["A_lu"], landuse["hellmann"], landuse["type"]).astype('float16')
@@ -647,7 +697,11 @@ def calculate_FLH(paths, param, tech):
         reg_ind = param["Ind_nz"]
         rasterData = {}
         # A_cf
-        with rasterio.open(paths["CORR"]) as src:
+        if tech == 'WindOn':
+            paths_corr = paths["CORR_ON"]
+        else:
+            paths_corr = paths["CORR_OFF"]
+        with rasterio.open(paths_corr) as src:
             w = src.read(1)
         rasterData["A_cf"] = np.flipud(w).astype('float16')
         rasterData["A_cf"] = rasterData["A_cf"][reg_ind]
@@ -855,7 +909,7 @@ def weighting(paths, param, tech):
 def reporting(paths, param, tech):
 
     timecheck('Start')
-    # read FLH, Masking, area, and weighting matrix
+    # read FLH, masking, area, and weighting matrix
     FLH = hdf5storage.read('FLH', paths[tech]["FLH"])
     A_mask = hdf5storage.read('A_mask', paths[tech]["mask"])
     A_weight = hdf5storage.read('A_weight', paths[tech]["weight"])
@@ -888,7 +942,7 @@ def reporting(paths, param, tech):
         status += 1
         display_progress('Reporting ', (nRegions, status))
 
-        # Intitialize region stats
+        # Initialize region stats
         region_stats = {}
         region_stats["Region"] = regions_shp.iloc[reg]["NAME_SHORT"] + "_" + location
 
@@ -1413,7 +1467,7 @@ if __name__ == '__main__':
     # generate_population(paths, param)  # Population
     # generate_protected_areas(paths, param)  # Protected areas
     # generate_buffered_population(paths, param)  # Buffered Population
-    # generate_wind_correction(paths, param)  # Correction factors for wind speeds
+    generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
         print("Tech: " + tech)
         #calculate_FLH(paths, param, tech)

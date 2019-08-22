@@ -20,6 +20,7 @@ def initialization():
     ymax, xmax, ymin, xmin = Crd_all
     bounds_box = Polygon([(xmin, ymin), (xmin, ymax), (xmax, ymax), (xmax, ymin)])
 
+    timecheck('Read shapefile of countries')
     # Extract land areas
     countries_shp = gpd.read_file(paths["Countries"], bbox=scope_shp)
     countries_shp = countries_shp.to_crs({'init': 'epsg:4326'})
@@ -37,6 +38,7 @@ def initialization():
         box = np.array([r["maxy"], r["maxx"], r["miny"], r["minx"]])[np.newaxis]
         Crd_regions_land[reg, :] = crd_merra(box, res_weather)
 
+    timecheck('Read shapefile of EEZ')
     # Extract sea areas
     eez_shp = gpd.read_file(paths["EEZ_global"], bbox=scope_shp)
     eez_shp = eez_shp.to_crs({'init': 'epsg:4326'})
@@ -54,6 +56,7 @@ def initialization():
         box = np.array([r["maxy"], r["maxx"], r["miny"], r["minx"]])[np.newaxis]
         Crd_regions_sea[reg, :] = crd_merra(box, res_weather)
 
+    timecheck('Read shapefile of subregions')
     # Read shapefile of regions
     regions_shp = gpd.read_file(paths["subregions"], bbox=scope_shp)
     regions_shp = regions_shp.to_crs({'init': 'epsg:4326'})
@@ -89,6 +92,7 @@ def initialization():
     # Display initial information
     print('\nRegion: ' + param["region"] + ' - Year: ' + str(param["year"]))
     print('Folder Path: ' + paths["region"] + '\n')
+    
     return paths, param
 
 
@@ -935,21 +939,27 @@ def reporting(paths, param, tech):
     if tech in ['PV', 'CSP', 'WindOn']:
         location = "land"
     elif tech in ['WindOff']:
-        location = "eez"
+        location = "sea"
 
     # Initialize region masking parameters
     Crd_all = param["Crd_all"]
     GeoRef = param["GeoRef"]
     res_desired = param["res_desired"]
-    nRegions = param["nRegions_" + location]
-    regions_shp = param["regions_" + location]
-    regions = [None] * nRegions
+    nRegions = param["nRegions_sub"]
+    regions_shp = param["regions_sub"]
 
     # Initialize regions list of sorted FLH, FLH_M, and FLH_W
     sorted_FLH_list = {}
 
     # Define sampling for sorted lists
     sampling = param["report_sampling"]
+    
+    # Initialize dataframe
+    regions = pd.DataFrame(0, index = range(0, nRegions),
+                           columns = ['Region', 'Available', 'Available_Masked', 'Available_Area_km2', 'FLH_Mean', 'FLH_Median',
+                                      'FLH_Max', 'FLH_Min', 'FLH_Mean_Masked', 'FLH_Median_Masked', 'FLH_Max_Masked',
+                                      'FLH_Min_Masked', 'FLH_Std_Masked', 'Power_Potential_GW', 'Power_Potential_Weighted_GW',
+                                      'Energy_Potential_TWh', 'Energy_Potential_Weighted_TWh', 'Energy_Potential_Weighted_Masked_TWh'])
     status = 0
     # Loop over each region
     for reg in range(0, nRegions):
@@ -957,69 +967,72 @@ def reporting(paths, param, tech):
         status += 1
         display_progress('Reporting ', (nRegions, status))
 
-        # Initialize region stats
-        region_stats = {}
-        region_stats["Region"] = regions_shp.iloc[reg]["NAME_SHORT"] + "_" + location
+        # Get name of region
+        regions.loc[reg, "Region"] = regions_shp.iloc[reg]["NAME_SHORT"] + "_" + location
 
         # Compute region_mask
         A_region_extended = calc_region(regions_shp.iloc[reg], Crd_all, res_desired, GeoRef)
 
         # Sum available : available pixels
         available = np.sum(A_region_extended)
-        region_stats["Available"] = int(available)
+        regions.loc[reg, "Available"] = int(available)
 
         # Sum availabe_masked : available pixels after masking
         A_masked = A_region_extended * A_mask
         available_masked = np.nansum(A_masked)
-        region_stats["Available_Masked"] = int(available_masked)
+        regions.loc[reg, "Available_Masked"] = int(available_masked)
+        
+        # Interrupt reporting of region if no available pixels
+        if int(available_masked) == 0:
+            continue
 
         # Sum area: available area in km2
         A_area_region = A_region_extended * A_area
         Total_area = np.nansum(A_area_region) / (10 ** 6)
-        region_stats["Available_Area_km2"] = Total_area
+        regions.loc[reg, "Available_Area_km2"] = Total_area
 
         # Stats for FLH
         FLH_region = A_region_extended * FLH
         FLH_region[FLH_region == 0] = np.nan
-        region_stats["FLH_Mean"] = np.nanmean(FLH_region)
-        region_stats["FLH_Median"] = np.nanmedian(FLH_region)
-        region_stats["FLH_Max"] = np.nanmax(FLH_region)
-        region_stats["FLH_Min"] = np.nanmin(FLH_region)
-        region_stats["FLH_Std"] = np.nanstd(FLH_region)
+        regions.loc[reg, "FLH_Mean"] = np.nanmean(FLH_region)
+        regions.loc[reg, "FLH_Median"] = np.nanmedian(FLH_region)
+        regions.loc[reg, "FLH_Max"] = np.nanmax(FLH_region)
+        regions.loc[reg, "FLH_Min"] = np.nanmin(FLH_region)
+        regions.loc[reg, "FLH_Std"] = np.nanstd(FLH_region)
 
         # Stats for FLH_masked
         FLH_region_masked = A_masked * FLH_region
         FLH_region_masked[FLH_region_masked == 0] = np.nan
-        region_stats["FLH_Mean_Masked"] = np.nanmean(FLH_region_masked)
-        region_stats["FLH_Median_Masked"] = np.nanmedian(FLH_region_masked)
-        region_stats["FLH_Max_Masked"] = np.nanmax(FLH_region_masked)
-        region_stats["FLH_Min_Masked"] = np.nanmin(FLH_region_masked)
-        region_stats["FLH_Std_Masked"] = np.nanstd(FLH_region_masked)
+        regions.loc[reg, "FLH_Mean_Masked"] = np.nanmean(FLH_region_masked)
+        regions.loc[reg, "FLH_Median_Masked"] = np.nanmedian(FLH_region_masked)
+        regions.loc[reg, "FLH_Max_Masked"] = np.nanmax(FLH_region_masked)
+        regions.loc[reg, "FLH_Min_Masked"] = np.nanmin(FLH_region_masked)
+        regions.loc[reg, "FLH_Std_Masked"] = np.nanstd(FLH_region_masked)
 
         # Power Potential
         A_P_potential = A_area_region * density
         power_potential = np.nansum(A_P_potential)
-        region_stats["Power_Potential_GW"] = power_potential / (10 ** 3)
+        regions.loc[reg, "Power_Potential_GW"] = power_potential / (10 ** 3)
 
         # Power Potential after weighting
         A_P_W_potential = A_region_extended * A_weight
         power_potential_weighted = np.nansum(A_P_W_potential)
-        region_stats["Power_Potential_Weighted_GW"] = power_potential_weighted / (10 ** 3)
+        regions.loc[reg, "Power_Potential_Weighted_GW"] = power_potential_weighted / (10 ** 3)
 
         # Energy Potential
         A_E_potential = A_P_potential * FLH_region
         energy_potential = np.nansum(A_E_potential)
-        region_stats["Energy_Potential_TWh"] = energy_potential / (10 ** 6)
+        regions.loc[reg, "Energy_Potential_TWh"] = energy_potential / (10 ** 6)
 
         # Energy Potential after weighting
         A_E_W_potential = FLH_region * A_weight
         energy_potential_weighted = np.nansum(A_E_W_potential)
-        region_stats["Energy_Potential_Weighted_TWh"] = energy_potential_weighted / (10 ** 6)
+        regions.loc[reg, "Energy_Potential_Weighted_TWh"] = energy_potential_weighted / (10 ** 6)
 
         # Energy Potential After weighting and masking
         A_E_W_M_potential = A_E_W_potential * A_masked
         energy_potential_weighted_masked = np.nansum(A_E_W_M_potential)
-        region_stats["Energy_Potential_Weighted_Masked_TWh"] = energy_potential_weighted_masked / (10 ** 6)
+        regions.loc[reg, "Energy_Potential_Weighted_Masked_TWh"] = energy_potential_weighted_masked / (10 ** 6)
 
         sort = {}
         # Sorted FLH Sampling
@@ -1040,20 +1053,8 @@ def reporting(paths, param, tech):
 
         sorted_FLH_list[region_stats["Region"]] = sort
 
-        # Add region to list
-        regions[reg] = region_stats
-
-    # Create Dataframe
-    df = pd.DataFrame.from_dict(regions)
-
-    # Reorder dataframe columns
-    df = df[['Region', 'Available', 'Available_Masked', 'Available_Area_km2', 'FLH_Mean', 'FLH_Median',
-             'FLH_Max', 'FLH_Min', 'FLH_Mean_Masked', 'FLH_Median_Masked', 'FLH_Max_Masked',
-             'FLH_Min_Masked', 'FLH_Std_Masked', 'Power_Potential_GW', 'Power_Potential_Weighted_GW',
-             'Energy_Potential_TWh', 'Energy_Potential_Weighted_TWh', 'Energy_Potential_Weighted_Masked_TWh']]
-
     # Export the dataframe as CSV
-    df.to_csv(paths[tech]["Region_Stats"], sep=';', decimal=',')
+    regions.to_csv(paths[tech]["Region_Stats"], sep=';', decimal=',')
     print("files saved: " + paths[tech]["Region_Stats"])
 
     # Save Sorted lists to .mat file
@@ -1488,10 +1489,10 @@ if __name__ == '__main__':
     generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
         print("Tech: " + tech)
-        #calculate_FLH(paths, param, tech)
-        #masking(paths, param, tech)
-        #weighting(paths, param, tech)
-        #reporting(paths, param, tech)
+        calculate_FLH(paths, param, tech)
+        masking(paths, param, tech)
+        weighting(paths, param, tech)
+        reporting(paths, param, tech)
         #find_locations_quantiles(paths, param, tech)
         #generate_time_series(paths, param, tech)
         #regression_coefficient(paths, param, tech)

@@ -259,9 +259,15 @@ def calc_gwa_correction(param, paths):
             ai, bi = combi
             w50m_corrected = w50m_reg * np.minimum(np.exp(ai * topo_reg + bi), 3.5)
             w50m_sorted = np.sort(w50m_corrected)
-            w50m_sampled = np.flipud(w50m_sorted[::(len(w50m_sorted) // 50 + 1)])
-            w50m_diff = w50m_sampled - w50m_gwa
-            errors[i, reg] = np.sqrt((w50m_diff ** 2).sum())
+            w50m_sampled = np.flipud(w50m_sorted[::(len(w50m_sorted) // len(w50m_gwa) + 1)])
+            if len(w50m_sampled) != len(w50m_gwa):
+                len_diff = len(w50m_gwa) - len(w50m_sampled)
+                w50m_sampled = np.append(w50m_sampled, w50m_sorted[:len_diff])
+            try:
+                w50m_diff = w50m_sampled - w50m_gwa
+                errors[i, reg] = np.sqrt((w50m_diff ** 2).sum())
+            except ValueError:
+                errors[i, reg] = 0
             i = i + 1
 
     w_size = np.tile(w_size / w_size.sum(), (1, len(combi_list))).transpose()

@@ -21,12 +21,17 @@ timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
 timestamp = 'test'
 
 # Important settings
-param["region"] = 'Europe_wo_Balkans'  # Name of the spatial scope, and define path to shapefile below!
+param["region"] = 'Europe_wo_Balkans'  #'Chile' #'Europe_wo_Balkans'  # Name of the spatial scope, and define path to shapefile below!
 param["year"] = 2015
-param["technology"] = ['WindOn', 'WindOff', 'PV', 'CSP']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['WindOn', 'WindOff', 'PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+
+# Shapefiles
+PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
+paths["spatial_scope"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp" # "Chile_regions.shp" # 
+paths["subregions"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp" # "Chile_regions.shp" # 
 
 # Computation
-param["nproc"] = 18
+param["nproc"] = 36
 param["CPU_limit"] = True
 
 # Data resolution
@@ -164,7 +169,7 @@ windon["technical"] = {"w_in": 4,
                        "w_r": 15,
                        "w_off": 25,
                        "P_r": 3,
-                       "hub_height": 100
+                       "hub_height": 60
                        }
 windon["mask"] = {"slope": 20,
                   "lu_suitability": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1]),
@@ -186,7 +191,7 @@ windoff["technical"] = {"w_in": 3,
                         "w_r": 16.5,
                         "w_off": 34,
                         "P_r": 7.58,
-                        "hub_height": 120
+                        "hub_height": 100
                         }
 windoff["mask"] = {"depth": -40,
                    "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
@@ -243,11 +248,6 @@ paths["Protected"] = PathTemp + "Protected Areas" + fs + "WDPA_Nov2018-shapefile
 paths["GWA"] = PathTemp + "Global Wind Atlas" + fs + fs + "windSpeed.csv"
 paths["Countries"] = PathTemp + "Countries" + fs + "gadm36_0.shp"
 paths["EEZ_global"] = PathTemp + "EEZ" + fs + "eez_v10.shp"
-
-# Shapefiles
-PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
-paths["spatial_scope"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp" #"Chile_regions.shp"
-paths["subregions"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp" #"Chile_regions.shp"
 
 # Local maps
 PathTemp = paths["region"] + "Maps" + fs + param["region"]

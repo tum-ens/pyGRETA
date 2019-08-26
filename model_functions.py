@@ -567,8 +567,12 @@ def calc_TS_wind(hours, args):
     rasterData = {}
     # Calculate A matrices
     # A_cf
-    with rasterio.open(paths["CORR"]) as src:
-        w = src.read(1)
+    if tech == 'WindOn':
+        with rasterio.open(paths["CORR_ON"]) as src:
+            w = src.read(1)
+    if tech == 'WindOff':
+        with rasterio.open(paths["CORR_OFF"]) as src:
+            w = src.read(1)
     rasterData["A_cf"] = np.flipud(w)
     rasterData["A_cf"] = rasterData["A_cf"][reg_ind]
     del w

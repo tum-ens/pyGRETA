@@ -64,6 +64,8 @@ def initialization():
     # Crop all polygons and take the part inside the bounding box
     regions_shp['geometry'] = regions_shp['geometry'].intersection(bounds_box)
     regions_shp = regions_shp[regions_shp.geometry.area > 0]
+    regions_shp.sort_values(by=['NAME_SHORT'], inplace=True)
+    regions_shp.reset_index(inplace=True)
     param["regions_sub"] = regions_shp
     param["nRegions_sub"] = len(param["regions_sub"])
     Crd_regions_sub = np.zeros((param["nRegions_sub"], 4))
@@ -797,6 +799,9 @@ def masking(paths, param, tech):
         A_bathymetry = 1
 
     if tech == 'WindOff':
+        with rasterio.open(paths["EEZ"]) as src:
+            A_suitability_lu = src.read(1)
+            A_suitability_lu = np.flipud(A_suitability_lu).astype(int)
         with rasterio.open(paths["PA"]) as src:
             A_protect = src.read(1)
             A_protect = np.flipud(A_protect).astype(int)  # Protection categories 0-10, to be classified
@@ -808,7 +813,6 @@ def masking(paths, param, tech):
             A_bathymetry = np.flipud(A_bathymetry)  # Bathymetry (depth) in meter
             A_bathymetry = (A_bathymetry >= mask["depth"]).astype(int)  # (boolean)
         # Irrelevant parameters
-        A_suitability_lu = 1
         A_slope = 1
         A_notPopulated = 1
 
@@ -968,10 +972,10 @@ def reporting(paths, param, tech):
         display_progress('Reporting ', (nRegions, status))
 
         # Get name of region
-        regions.loc[reg, "Region"] = regions_shp.iloc[reg]["NAME_SHORT"] + "_" + location
+        regions.loc[reg, "Region"] = regions_shp.loc[reg]["NAME_SHORT"] + "_" + location
 
         # Compute region_mask
-        A_region_extended = calc_region(regions_shp.iloc[reg], Crd_all, res_desired, GeoRef)
+        A_region_extended = calc_region(regions_shp.loc[reg], Crd_all, res_desired, GeoRef)
 
         # Sum available : available pixels
         available = np.sum(A_region_extended)
@@ -983,9 +987,19 @@ def reporting(paths, param, tech):
         regions.loc[reg, "Available_Masked"] = int(available_masked)
         
         # Interrupt reporting of region if no available pixels
-        if int(available_masked) == 0:
+        if (int(available_masked) == 0):
+            regions.drop([reg], axis=0, inplace=True)
             continue
 
+        # Interrupt reporting of region already reported (may occur due to discrepancy in borders)
+        if (regions.loc[reg, "Region"] in regions.loc[:reg-1, "Region"].to_list()):
+            ind_prev = regions.loc[regions["Region"]==regions.loc[reg, "Region"]].index[0]
+            if regions.loc[ind_prev, "Available_Masked"] > int(available_masked):
+                regions.drop([reg], axis=0, inplace=True)
+                continue
+            else:
+                regions.drop([ind_prev], axis=0, inplace=True)  
+        
         # Sum area: available area in km2
         A_area_region = A_region_extended * A_area
         Total_area = np.nansum(A_area_region) / (10 ** 6)
@@ -1003,6 +1017,8 @@ def reporting(paths, param, tech):
         # Stats for FLH_masked
         FLH_region_masked = A_masked * FLH_region
         FLH_region_masked[FLH_region_masked == 0] = np.nan
+        if int(np.nansum(FLH_region_masked)) == 0:
+            continue
         regions.loc[reg, "FLH_Mean_Masked"] = np.nanmean(FLH_region_masked)
         regions.loc[reg, "FLH_Median_Masked"] = np.nanmedian(FLH_region_masked)
         regions.loc[reg, "FLH_Max_Masked"] = np.nanmax(FLH_region_masked)
@@ -1051,10 +1067,10 @@ def reporting(paths, param, tech):
             sampled_sorting(FLH_region_masked_weighted[~np.isnan(FLH_region_masked_weighted)], sampling)
         sort["FLH_M_W"] = sorted_sampled_FLH_masked_weighted
 
-        sorted_FLH_list[region_stats["Region"]] = sort
+        sorted_FLH_list[regions.loc[reg, "Region"]] = sort
 
     # Export the dataframe as CSV
-    regions.to_csv(paths[tech]["Region_Stats"], sep=';', decimal=',')
+    regions.to_csv(paths[tech]["Region_Stats"], sep=';', decimal=',', index=True)
     print("files saved: " + paths[tech]["Region_Stats"])
 
     # Save Sorted lists to .mat file
@@ -1075,23 +1091,20 @@ def find_locations_quantiles(paths, param, tech):
     res_desired = param["res_desired"]
     Crd_all = param["Crd_all"]
     GeoRef = param["GeoRef"]
-
-    if tech == "WindOff":
-        regions_shp = param["regions_eez"]
-        nRegions = param["nRegions_eez"]
-        Crd_regions = param["Crd_regions"][-nRegions:, :]
-    else:
-        regions_shp = param["regions_land"]
-        nRegions = param["nRegions_land"]
-        Crd_regions = param["Crd_regions"][0:nRegions, :]
+    # Select only indices in the report
+    filter = pd.read_csv(paths[tech]["Region_Stats"], sep=';', decimal=',', index_col=0).index
+    regions_shp = param["regions_sub"].loc[filter]
+    nRegions = len(regions_shp)
+    Crd_regions = param["Crd_subregions"]
     Ind = ind_merra(Crd_regions, Crd_all, res_desired)
 
     reg_ind = np.zeros((nRegions, len(quantiles), 2))
+    k = 0
     list_names = []
     list_quantiles = []
-    for reg in range(0, nRegions):
+    for reg in filter:
         # A_region
-        A_region = calc_region(regions_shp.iloc[reg], Crd_regions[reg, :], res_desired, GeoRef)
+        A_region = calc_region(regions_shp.loc[reg], Crd_regions[reg, :], res_desired, GeoRef)
 
         FLH_reg = A_region * FLH_mask[Ind[reg, 2] - 1:Ind[reg, 0], Ind[reg, 3] - 1:Ind[reg, 1]]
         FLH_reg[FLH_reg == 0] = np.nan
@@ -1104,7 +1117,7 @@ def find_locations_quantiles(paths, param, tech):
             continue
 
         for q in range(0, len(quantiles)):
-            list_names.append(regions_shp["NAME_SHORT"].iloc[reg])
+            list_names.append(regions_shp["NAME_SHORT"].loc[reg])
             list_quantiles.append('q' + str(quantiles[q]))
             if quantiles[q] == 100:
                 I = I_old[(len(X) - 1) - sum(np.isnan(X).astype(int))]
@@ -1114,7 +1127,8 @@ def find_locations_quantiles(paths, param, tech):
                 I = I_old[int(np.round(quantiles[q] / 100 * (len(X) - 1 - sum(np.isnan(X).astype(int)))))]
             # Convert the indices to row-column indices
             I, J = ind2sub(FLH_reg.shape, I)
-            reg_ind[reg, q, :] = np.array([I + Ind[reg, 2], J + Ind[reg, 3]]).astype(int)
+            reg_ind[k, q, :] = np.array([I + Ind[reg, 2], J + Ind[reg, 3]]).astype(int)
+        k = k + 1
 
     reg_ind = np.reshape(reg_ind, (-1, 2), 'C').astype(int)
     reg_ind = (reg_ind[:, 0], reg_ind[:, 1])
@@ -1493,8 +1507,8 @@ if __name__ == '__main__':
         masking(paths, param, tech)
         weighting(paths, param, tech)
         reporting(paths, param, tech)
-        #find_locations_quantiles(paths, param, tech)
-        #generate_time_series(paths, param, tech)
+        find_locations_quantiles(paths, param, tech)
+        generate_time_series(paths, param, tech)
         #regression_coefficient(paths, param, tech)
     # cProfile.run('initialization()', 'cprofile_test.txt')
     # p = pstats.Stats('cprofile_test.txt')

@@ -176,6 +176,16 @@ def generate_weather_files(paths, param):
     timecheck('End')
 
 
+def smooth_weather_data(paths, param):
+    timecheck('Start')
+
+    W50M = hdf5storage.read('W50M', paths["W50M"])
+    for t in range(0, W50M.shape[2]):
+        print("bloup")
+
+    timecheck('End')
+
+
 def generate_landsea(paths, param):
     m_high = param["m_high"]
     n_high = param["n_high"]
@@ -1475,6 +1485,7 @@ def regression_coefficient(paths, param, tech):
 
 if __name__ == '__main__':
     paths, param = initialization()
+    smooth_weather_data(paths, param)
     # generate_weather_files(paths, param)
     # generate_landsea(paths, param)  # Land and Sea
     # generate_subregions(paths, param)  # Subregions

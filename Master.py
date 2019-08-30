@@ -175,13 +175,20 @@ def generate_weather_files(paths, param):
                                matlab_compatible=True)
     timecheck('End')
 
-
-def smooth_weather_data(paths, param):
+def clean_weather_data(paths, param):
     timecheck('Start')
 
     W50M = hdf5storage.read('W50M', paths["W50M"])
-    for t in range(0, W50M.shape[2]):
-        print("bloup")
+    wind = np.mean(W50M, 2)
+    mask = np.ones((3, 3))
+    mask[1, 1] = 0
+    averagewind = ndimage.generic_filter(wind, np.nanmean, footprint=mask, mode='constant', cval=np.NaN)
+    ratio = wind / averagewind
+    # hdf5storage.writes({'ratio': ratio}, 'ratio.mat', store_python_metadata=True, matlab_compatible=True)
+    points = np.where(ratio > param["MERRA_correction"])
+
+    for t in range(W50M.shape[2]):
+        W50M[points[0], points[1], t] = W50M[points[0], points[1], t] / ratio[points[0], points[1]]
 
     timecheck('End')
 
@@ -1485,8 +1492,8 @@ def regression_coefficient(paths, param, tech):
 
 if __name__ == '__main__':
     paths, param = initialization()
-    smooth_weather_data(paths, param)
-    # generate_weather_files(paths, param)
+    generate_weather_files(paths, param)
+    clean_weather_data(paths, param)
     # generate_landsea(paths, param)  # Land and Sea
     # generate_subregions(paths, param)  # Subregions
     # generate_landuse(paths, param)  # Landuse
@@ -1499,6 +1506,7 @@ if __name__ == '__main__':
     generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
         print("Tech: " + tech)
+
         #calculate_FLH(paths, param, tech)
         #masking(paths, param, tech)
         #weighting(paths, param, tech)
@@ -1509,4 +1517,3 @@ if __name__ == '__main__':
     # cProfile.run('initialization()', 'cprofile_test.txt')
     # p = pstats.Stats('cprofile_test.txt')
     # p.sort_stats('cumulative').print_stats(20)
-

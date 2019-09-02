@@ -6,7 +6,6 @@ def initialization():
     
     # import param and paths
     from config import paths, param
-        
     create_folders(paths)
     
     # Read shapefile of scope
@@ -182,13 +181,22 @@ def generate_weather_files(paths, param):
     timecheck('End')
 
 
-def smooth_weather_data(paths, param):
+def clean_weather_data(paths, param):
     timecheck('Start')
 
     W50M = hdf5storage.read('W50M', paths["W50M"])
-    for t in range(0, W50M.shape[2]):
-        print("bloup")
+    wind = np.mean(W50M, 2)
+    mask = np.ones((3, 3))
+    mask[1, 1] = 0
+    averagewind = ndimage.generic_filter(wind, np.nanmean, footprint=mask, mode='constant', cval=np.NaN)
+    ratio = wind / averagewind
+    points = np.where(np.sqrt((ratio - np.mean(ratio)) ^ 2) > param["MERRA_correction"])
 
+    for t in range(W50M.shape[2]):
+        W50M[points[0], points[1], t] = W50M[points[0], points[1], t] / ratio[points[0], points[1]]
+
+    hdf5storage.writes({'W50M': W50M}, paths["W50M"], store_python_metadata=True, matlab_compatible=True)
+    
     timecheck('End')
 
 
@@ -1498,8 +1506,8 @@ def regression_coefficient(paths, param, tech):
 
 if __name__ == '__main__':
     paths, param = initialization()
-    smooth_weather_data(paths, param)
-    # generate_weather_files(paths, param)
+    generate_weather_files(paths, param)
+    clean_weather_data(paths, param)
     # generate_landsea(paths, param)  # Land and Sea
     # generate_subregions(paths, param)  # Subregions
     # generate_landuse(paths, param)  # Landuse

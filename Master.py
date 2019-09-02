@@ -178,17 +178,26 @@ def generate_weather_files(paths, param):
 def clean_weather_data(paths, param):
     timecheck('Start')
 
+    # Read Wind Data
     W50M = hdf5storage.read('W50M', paths["W50M"])
     wind = np.mean(W50M, 2)
+
+    # Set convolution mask
     mask = np.ones((3, 3))
     mask[1, 1] = 0
+
+    # Compute average Convolution
     averagewind = ndimage.generic_filter(wind, np.nanmean, footprint=mask, mode='constant', cval=np.NaN)
     ratio = wind / averagewind
+
+    # Extract over threshold Points
     points = np.where(np.sqrt((ratio - np.mean(ratio)) ^ 2) > param["MERRA_correction"])
 
+    # Correct points hourly
     for t in range(W50M.shape[2]):
         W50M[points[0], points[1], t] = W50M[points[0], points[1], t] / ratio[points[0], points[1]]
 
+    # Save corrected Wind
     hdf5storage.writes({'W50M': W50M}, paths["W50M"], store_python_metadata=True, matlab_compatible=True)
     
     timecheck('End')
@@ -1507,6 +1516,7 @@ if __name__ == '__main__':
     generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
         print("Tech: " + tech)
+
         #calculate_FLH(paths, param, tech)
         #masking(paths, param, tech)
         #weighting(paths, param, tech)
@@ -1517,4 +1527,3 @@ if __name__ == '__main__':
     # cProfile.run('initialization()', 'cprofile_test.txt')
     # p = pstats.Stats('cprofile_test.txt')
     # p.sort_stats('cumulative').print_stats(20)
-

@@ -10,6 +10,7 @@ import datetime
 import inspect
 import sys
 from numpy.matlib import repmat, sin, cos
+from scipy import ndimage
 import math as m
 import rasterio
 from rasterio import windows, mask, MemoryFile

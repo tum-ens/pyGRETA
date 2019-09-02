@@ -35,6 +35,7 @@ param["res_desired"] = np.array([1 / 240, 1 / 240])
 
 # Weather
 param["MERRA_coverage"] = 'World'
+param["MERRA_correction"] = 0.35
 
 # Mask / Weight
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters

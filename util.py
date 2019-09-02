@@ -17,6 +17,7 @@ import pandas as pd
 import numpy as np
 from scipy.ndimage import convolve
 import datetime
+from scipy import ndimage
 import geopandas as gpd
 from rasterio import windows
 from shapely.geometry import mapping, Point, Polygon

@@ -15,7 +15,7 @@ import rasterio
 from rasterio import windows, mask, MemoryFile
 import pandas as pd
 import numpy as np
-from scipy.ndimage import convolve
+from scipy.ndimage import generic_filter
 import datetime
 import geopandas as gpd
 from rasterio import windows

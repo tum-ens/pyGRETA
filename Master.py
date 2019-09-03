@@ -198,7 +198,7 @@ def clean_weather_data(paths, param):
     ratio = wind / averagewind
 
     # Extract over threshold Points
-    points = np.where(np.sqrt((ratio - np.mean(ratio)) ^ 2) > param["MERRA_correction"])
+    points = np.where(np.sqrt((ratio - np.mean(ratio)) ** 2) > param["MERRA_correction"])
 
     # Correct points hourly
     for t in range(W50M.shape[2]):
@@ -249,7 +249,7 @@ def generate_landsea(paths, param):
     timecheck('Start Sea')
     # Extract sea areas
     eez_shp = param["regions_sea"]
-    Crd_regions_sea = param["Crd_regions"][:-nRegions_sea]
+    Crd_regions_sea = param["Crd_regions"][-nRegions_sea:]
     Ind = ind_merra(Crd_regions_sea, Crd_all, res_desired)
     A_sea = np.zeros((m_high, n_high))
     status = 0
@@ -263,7 +263,7 @@ def generate_landsea(paths, param):
 
         # Calculate A_region
         A_region = calc_region(eez_shp.iloc[reg], Crd_regions_sea[reg, :], res_desired, GeoRef)
-
+    
         # Include A_region in A_sea
         A_sea[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] = \
             A_sea[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] + A_region
@@ -1525,19 +1525,19 @@ if __name__ == '__main__':
     # generate_landuse(paths, param)  # Landuse
     # generate_bathymetry(paths, param)  # Bathymetry
     # generate_topography(paths, param)  # Topography
-    # generate_slope(paths, param)  # Slope
-    # generate_population(paths, param)  # Population
-    # generate_protected_areas(paths, param)  # Protected areas
-    # generate_buffered_population(paths, param)  # Buffered Population
-    #generate_wind_correction(paths, param)  # Correction factors for wind speeds
+    generate_slope(paths, param)  # Slope
+    generate_population(paths, param)  # Population
+    generate_protected_areas(paths, param)  # Protected areas
+    generate_buffered_population(paths, param)  # Buffered Population
+    generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
         print("Tech: " + tech)
         calculate_FLH(paths, param, tech)
         masking(paths, param, tech)
         weighting(paths, param, tech)
         reporting(paths, param, tech)
-        find_locations_quantiles(paths, param, tech)
-        generate_time_series(paths, param, tech)
+        #find_locations_quantiles(paths, param, tech)
+        #generate_time_series(paths, param, tech)
         #regression_coefficient(paths, param, tech)
     # cProfile.run('initialization()', 'cprofile_test.txt')
     # p = pstats.Stats('cprofile_test.txt')

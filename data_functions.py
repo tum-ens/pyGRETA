@@ -147,6 +147,54 @@ def calc_region(region, Crd_reg, res_desired, GeoRef):
 
     return A_region
 
+def clean_IRENA(param, paths):
+    ''' description'''
+    year = str(param["year"])
+    filter_countries = param["regions_land"]['GID_0'].to_list()
+    IRENA_dict = pd.read_csv(paths["IRENA_dict"], sep=';', index_col=0)
+    IRENA_dict = IRENA_dict['Countries shapefile'].to_dict()
+    IRENA = pd.read_csv(paths["IRENA"], skiprows=7, sep=';', index_col=False, usecols=[0,1,2,3])
+    for i in IRENA.index:
+        if pd.isnull(IRENA.loc[i, 'Country/area']):
+            IRENA.loc[i, 'Country/area'] = IRENA.loc[i-1, 'Country/area']
+        if pd.isnull(IRENA.loc[i, 'Technology']):
+            IRENA.loc[i, 'Technology'] = IRENA.loc[i-1, 'Technology']
+
+    for c in IRENA['Country/area'].unique():
+        IRENA.loc[IRENA['Country/area']==c, 'Country/area'] = IRENA_dict[c]
+        
+    IRENA = IRENA.set_index(['Country/area', 'Technology'])
+    
+    IRENA = IRENA.fillna(0).sort_index()
+
+    for (c, t) in IRENA.index.unique():
+        sub_df = IRENA.loc[(c, t), :]
+        inst_cap = sub_df.loc[sub_df['Indicator']=='Electricity capacity (MW)', year][0]
+        if isinstance(inst_cap, str):
+            inst_cap = int(inst_cap.replace(' ',''))
+            sub_df.loc[sub_df['Indicator']=='Electricity capacity (MW)', year] = inst_cap
+        gen_prod = sub_df.loc[sub_df['Indicator']=='Electricity generation (GWh)', year][0]
+        if isinstance(gen_prod, str):
+            gen_prod = 1000 * int(gen_prod.replace(' ',''))
+            sub_df.loc[sub_df['Indicator']=='Electricity generation (GWh)', year] = gen_prod
+        if inst_cap == 0:
+            FLH = 0
+        else:
+            FLH = gen_prod / inst_cap
+        IRENA = IRENA.append(pd.DataFrame([['FLH (h)', FLH]], index=[(c, t)], columns=['Indicator', year])).sort_index()
+        
+    # Filter countries
+    IRENA = IRENA.reset_index()
+    IRENA = IRENA.set_index(['Country/area']).sort_index()
+    IRENA = IRENA.loc[IRENA.index.isin(filter_countries)]
+    # Reshape
+    IRENA = IRENA.reset_index()
+    IRENA = IRENA.set_index(['Country/area', 'Technology'])
+    IRENA = IRENA.pivot(columns='Indicator')[year].rename(columns={'Electricity capacity (MW)': 'inst-cap (MW)',
+                                                                   'Electricity generation (GWh)': 'prod (MWh)'})
+    IRENA = IRENA.astype(float)
+    IRENA.to_csv(paths['IRENA_out'], sep=';', decimal=',', index=True)
+    
 
 def calc_gwa_correction(param, paths):
     ''' description'''
@@ -169,20 +217,35 @@ def calc_gwa_correction(param, paths):
         w = src.read(1)
     TOPO = np.flipud(w)
 
+    # Clean IRENA data and filter them for desired scope
+    if (not os.path.isfile(paths["IRENA_out"])):
+        clean_IRENA(param, paths)
+    
     # Get the installed capacities
-    inst_cap = pd.read_csv(paths["inst-cap"], skiprows=2, sep=';', index_col=0)
+    inst_cap = pd.read_csv(paths["IRENA_out"], sep=';', decimal=',', index_col=0, usecols=[0,1,2])
+    inst_cap = inst_cap.loc[inst_cap["Technology"]=='Onshore wind energy']
 
     w_size = np.zeros((nCountries, 1))
     w_cap = np.zeros((nCountries, 1))
     # Try different combinations of (a, b)
     combi_list = list(product(np.arange(0.00046, 0.00066, 0.00002), np.arange(-0.3, 0, 0.025)))
     errors = np.zeros((len(combi_list), nCountries))
+    status = 0
     for reg in range(0, nCountries):
+        # Show status bar
+        status = status + 1
+        sys.stdout.write('\rFinding wind correction factors ' + '[%-50s] %d%%' % (
+            '=' * ((status * 50) // nCountries), (status * 100) // nCountries))
+        sys.stdout.flush()
+        
         A_region = calc_region(countries_shp.iloc[reg], Crd_countries[reg, :], res_desired, GeoRef)
         reg_name = countries_shp.iloc[reg]["GID_0"]
         Ind_reg = np.nonzero(A_region)
         w_size[reg] = len(Ind_reg[0])
-        w_cap[reg] = inst_cap.loc[reg_name, 'WindOn']
+        try:
+            w_cap[reg] = inst_cap.loc[reg_name, 'inst-cap (MW)']
+        except KeyError:
+            w_cap[reg] = 0
 
         # Load MERRA data, increase its resolution, and fit it to the extent
         w50m_reg = W50M[Ind_reg]
@@ -196,9 +259,15 @@ def calc_gwa_correction(param, paths):
             ai, bi = combi
             w50m_corrected = w50m_reg * np.minimum(np.exp(ai * topo_reg + bi), 3.5)
             w50m_sorted = np.sort(w50m_corrected)
-            w50m_sampled = np.flipud(w50m_sorted[::(len(w50m_sorted) // 50 + 1)])
-            w50m_diff = w50m_sampled - w50m_gwa
-            errors[i, reg] = np.sqrt((w50m_diff ** 2).sum())
+            w50m_sampled = np.flipud(w50m_sorted[::(len(w50m_sorted) // len(w50m_gwa) + 1)])
+            if len(w50m_sampled) != len(w50m_gwa):
+                len_diff = len(w50m_gwa) - len(w50m_sampled)
+                w50m_sampled = np.append(w50m_sampled, w50m_sorted[:len_diff])
+            try:
+                w50m_diff = w50m_sampled - w50m_gwa
+                errors[i, reg] = np.sqrt((w50m_diff ** 2).sum())
+            except ValueError:
+                errors[i, reg] = 0
             i = i + 1
 
     w_size = np.tile(w_size / w_size.sum(), (1, len(combi_list))).transpose()

@@ -21,12 +21,17 @@ timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
 timestamp = 'test'
 
 # Important settings
-param["region"] = 'Europe_wo_Balkans'  # Name of the spatial scope, and define path to shapefile below!
+param["region"] = 'Europe_wo_Balkans'  #'Chile' #'Europe_wo_Balkans'  # Name of the spatial scope, and define path to shapefile below!
 param["year"] = 2015
-param["technology"] = ['WindOn']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+
+# Shapefiles
+PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
+paths["spatial_scope"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp" # "Chile_regions.shp" # 
+paths["subregions"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp" # "Chile_regions.shp" # 
 
 # Computation
-param["nproc"] = 18
+param["nproc"] = 36
 param["CPU_limit"] = True
 
 # Data resolution
@@ -110,7 +115,7 @@ pv["resource"] = {"clearness_correction": 1
 pv["technical"] = {"T_r": 25,
                    "loss_coeff": 0.37,
                    "tracking": 0,
-                   "orientation": -90  # | 0: South | 90: West | 180: North | -90: East |
+                   "orientation": 180  # | 0: South | 90: West | 180: North | -90: East |
                    }
 pv["mask"] = {"slope": 20,
               "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
@@ -164,7 +169,7 @@ windon["technical"] = {"w_in": 4,
                        "w_r": 15,
                        "w_off": 25,
                        "P_r": 3,
-                       "hub_height": 140
+                       "hub_height": 120
                        }
 windon["mask"] = {"slope": 20,
                   "lu_suitability": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1]),
@@ -218,22 +223,16 @@ paths["region"] = root + "03 Intermediate files" + fs + "Files " + region + fs
 # MERRA2
 paths["MERRA_IN"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + MERRA_coverage + " " + year + fs
 paths["weather_dat"] = paths["region"] + "Renewable energy" + fs + "MERRA2 " + year + fs
-paths["U50M"] = paths["weather_dat"] + "u50m_" + year + ".mat"
-paths["V50M"] = paths["weather_dat"] + "v50m_" + year + ".mat"
 paths["W50M"] = paths["weather_dat"] + "w50m_" + year + ".mat"
-paths["GHI"] = paths["weather_dat"] + "swgdn_" + year + ".mat"
-paths["GHI_net"] = paths["weather_dat"] + "swgnt_" + year + ".mat"
-paths["TOA"] = paths["weather_dat"] + "swtdn_" + year + ".mat"
-paths["TOA_net"] = paths["weather_dat"] + "swtnt_" + year + ".mat"
 paths["CLEARNESS"] = paths["weather_dat"] + "clearness_" + year + ".mat"
-paths["CLEARNESS_net"] = paths["weather_dat"] + "clearness_net_" + year + ".mat"
 paths["T2M"] = paths["weather_dat"] + "t2m_" + year + ".mat"
 
-# IRENA
-paths[
-    "inst-cap"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA " + year + fs + "inst_cap_" + year + ".csv"
-paths[
-    "IRENA_FLH"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA " + year + fs + "IRENA_FLH_" + year + ".csv"
+# IRENA input
+paths["IRENA"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA" + fs + "IRENA_RE_electricity_statistics_allcountries_alltech_" + year + ".csv"
+paths["IRENA_dict"] = root + "00 Assumptions" + fs + "dict_IRENA_countries.csv"
+
+# IRENA output
+paths["IRENA_out"] = paths["region"] + "Renewable energy" + fs + "IRENA_summary_" + year + ".csv"
 
 # Regression input
 paths["Reg_RM"] = git_RT_folder + fs + "Regression_coef" + fs + "README.txt"
@@ -249,11 +248,6 @@ paths["Protected"] = PathTemp + "Protected Areas" + fs + "WDPA_Nov2018-shapefile
 paths["GWA"] = PathTemp + "Global Wind Atlas" + fs + fs + "windSpeed.csv"
 paths["Countries"] = PathTemp + "Countries" + fs + "gadm36_0.shp"
 paths["EEZ_global"] = PathTemp + "EEZ" + fs + "eez_v10.shp"
-
-# Shapefiles
-PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
-paths["spatial_scope"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
-paths["subregions"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
 
 # Local maps
 PathTemp = paths["region"] + "Maps" + fs + param["region"]

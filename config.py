@@ -16,7 +16,6 @@ root = str(Path(git_RT_folder).parent.parent) + "Database_KS" + fs
 #### User preferences #####
 ###########################
 
-
 # Custom timestamp
 timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
 timestamp = 'test'
@@ -24,10 +23,10 @@ timestamp = 'test'
 # Important settings
 param["region"] = 'Europe_wo_Balkans'  # Name of the spatial scope, and define path to shapefile below!
 param["year"] = 2015
-param["technology"] = ['PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['WindOn']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 
 # Computation
-param["nproc"] = 1
+param["nproc"] = 18
 param["CPU_limit"] = True
 
 # Data resolution
@@ -112,11 +111,11 @@ pv["resource"] = {"clearness_correction": 1
 pv["technical"] = {"T_r": 25,
                    "loss_coeff": 0.37,
                    "tracking": 0,
-                   "orientation": 0  # | 0: South | 90: West | 180: North | -90: East |
+                   "orientation": -90  # | 0: South | 90: West | 180: North | -90: East |
                    }
 pv["mask"] = {"slope": 20,
-              "lu_suitability": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]),
-              "pa_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+              "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
+              "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
               }
 GCR = {"shadefree_period": 6,
        "day_north": 79,
@@ -220,10 +219,6 @@ paths["region"] = root + "03 Intermediate files" + fs + "Files " + region + fs
 # MERRA2
 paths["MERRA_IN"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + MERRA_coverage + " " + year + fs
 paths["weather_dat"] = paths["region"] + "Renewable energy" + fs + "MERRA2 " + year + fs
-
-if not os.path.isdir(paths["weather_dat"]):
-    os.makedirs(paths["weather_dat"])
-
 paths["U50M"] = paths["weather_dat"] + "u50m_" + year + ".mat"
 paths["V50M"] = paths["weather_dat"] + "v50m_" + year + ".mat"
 paths["W50M"] = paths["weather_dat"] + "w50m_" + year + ".mat"
@@ -275,36 +270,6 @@ paths["POP"] = PathTemp + "_Population.tif"  # Population
 paths["BUFFER"] = PathTemp + "_Population_Buffered.tif"  # Buffered population
 paths["CORR_GWA"] = PathTemp + "_GWA_Correction.mat"  # Correction factors based on the GWA
 
-# paths["Countries"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
-# paths["SHP"] = paths["Countries"]
-
-# Pv orientation Testing:
-# paths["SHP"] = PathTemp + "PV orientation test.shp"
-
-# CSP capacity factor testing
-# paths["Countries"] = PathTemp + "Germany_with_EEZ.shp"
-# paths["SHP"] = paths["Countries"]
-
-# Chile PV
-paths["Countries"] = PathTemp + 'Chile.shp'
-paths["SHP"] = paths["Countries"]
-
-# Local maps
-paths["maps"] = paths["region"] + "Maps" + fs
-if not os.path.isdir(paths["maps"]):
-    os.makedirs(paths["maps"])
-paths["LAND"] = paths["maps"] + param["region"] + "_Land.tif"  # Land pixels
-paths["EEZ"] = paths["maps"] + param["region"] + "_EEZ.tif"  # Sea pixels
-paths["LU"] = paths["maps"] + param["region"] + "_Landuse.tif"  # Land use types
-paths["TOPO"] = paths["maps"] + param["region"] + "_Topography.tif"  # Topography
-paths["PA"] = paths["maps"] + param["region"] + "_Protected_areas.tif"  # Protected areas
-paths["SLOPE"] = paths["maps"] + param["region"] + "_Slope.tif"  # Slope
-paths["BATH"] = paths["maps"] + param["region"] + "_Bathymetry.tif"  # Bathymetry
-paths["POP"] = paths["maps"] + param["region"] + "_Population.tif"  # Population
-paths["BUFFER"] = paths["maps"] + param["region"] + "_Population_Buffered.tif"  # Buffered population
-paths["CORR_GWA"] = paths["maps"] + param["region"] + "_GWA_Correction.mat"  # Correction factors based on the GWA
-
-
 # Correction factors for wind speeds
 turbine_height_on = str(param["WindOn"]["technical"]["hub_height"])
 turbine_height_off = str(param["WindOff"]["technical"]["hub_height"])
@@ -313,10 +278,6 @@ paths["CORR_OFF"] = PathTemp + "_WindOff_Correction_" + turbine_height_off + '.t
 
 # Ouput Folders
 paths["OUT"] = root + "03 Intermediate files" + fs + "Files " + region + fs + "Renewable energy" + fs + timestamp + fs
-
-if not os.path.isdir(paths["OUT"]):
-    os.makedirs(paths["OUT"])
-
 
 # Regression folders
 paths["regression_in"] = paths["OUT"]
@@ -360,4 +321,6 @@ for tech in param["technology"]:
     paths[tech]["Regression_summary"] = paths["regression_out"] + region + '_' + tech + '_reg_coefficients_'
     paths[tech]["Regression_TS"] = paths["regression_out"] + region + '_' + tech + '_reg_TimeSeries_'
 
+
+        
 del root, PathTemp, fs

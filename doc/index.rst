@@ -3,36 +3,40 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Renewable-timeseries: GIS-based model for renewable energy potential prediction and timeseries genertion
+Renewable-timeseries: GIS-based model for renewable energy potential and timeseries generation
 ========================================================================================================
 
 :Developers: Kais Siala <kais.siala@tum.de>, Houssame Houmy <houmyh@gmail.com>
-:Maintainers: Kais Siala <kais.siala@tum.de>
-:Organization: `Chair of Renewable and Sustainable Energy Systems`_,
+
+:Maintainers: Kais Siala <kais.siala@tum.de> 
+
+:Organization: `Chair of Renewable and Sustainable Energy Systems`_, 
                Technical University of Munich,
-:Version: |version|
-:Date: |today|
+:Version: |version| 
+
+:Date: |today| 
+
 :Copyright:
   The model code is licensed under the `GNU General Public License 3.0
   <http://www.gnu.org/licenses/gpl-3.0>`_.
   This documentation is licensed under a `Creative Commons Attribution 4.0 
-  International <http://creativecommons.org/licenses/by/4.0/>`_ license.
+  International <http://creativecommons.org/licenses/by/4.0/>`_ license. 
 
 Changes:
 ========
 version 1.0.0
--------------
+^^^^^^^^^^^^^
 Changes here
 
 Features
-========
+--------
 * To be completed 
 
 Contents
-========
+--------
 
 User's manual
--------------
+^^^^^^^^^^^^^
 
 These documents give a general overview and help you getting started from after the installation (which is covered in the README.md file on GitHub) to you first running model.
 
@@ -45,10 +49,10 @@ These documents give a general overview and help you getting started from after 
 	
 
 Mathematical documentation
---------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Continue here if you want to understand the theoretical conception of the model,
- the logic behind the equations, and the structure of the features.
+the logic behind the equations, and the structure of the features.
 
 .. toctree::
    :maxdepth: 2
@@ -56,7 +60,7 @@ Continue here if you want to understand the theoretical conception of the model,
    theoretical
 
 Technical documentation
------------------------
+^^^^^^^^^^^^^^^^^^^^^^^
 
 Continue here if you want to understand in detail the model implementation.
 
@@ -67,7 +71,7 @@ Continue here if you want to understand in detail the model implementation.
 
 
 Dependencies
-============
+------------
 
 * `Python`_ versions 2.7 or 3.x are both supported.
 * `pyomo`_ for model equations and as the interface to optimisation solvers.
@@ -76,7 +80,7 @@ Dependencies
 * To be completed...
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`

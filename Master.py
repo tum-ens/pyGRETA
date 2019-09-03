@@ -184,11 +184,11 @@ def clean_weather_data(paths, param):
     wind = np.mean(W50M, 2)
 
     # Set convolution mask
-    mask = np.ones((3, 3))
-    mask[1, 1] = 0
+    kernel = np.ones((3, 3))
+    kernel[1, 1] = 0
 
     # Compute average Convolution
-    averagewind = ndimage.generic_filter(wind, np.nanmean, footprint=mask, mode='constant', cval=np.NaN)
+    averagewind = convolve(wind, kernel, mode='constant')
     ratio = wind / averagewind
 
     # Extract over threshold Points

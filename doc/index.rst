@@ -6,21 +6,26 @@
 Renewable-timeseries: GIS-based model for renewable energy potential and timeseries generation
 ========================================================================================================
 
-:Developers: Kais Siala <kais.siala@tum.de>, Houssame Houmy <houmyh@gmail.com>
+.. glossary::
 
-:Maintainers: Kais Siala <kais.siala@tum.de> 
-
-:Organization: `Chair of Renewable and Sustainable Energy Systems`_, 
-               Technical University of Munich,
-:Version: |version| 
-
-:Date: |today| 
-
-:Copyright:
-  The model code is licensed under the `GNU General Public License 3.0
-  <http://www.gnu.org/licenses/gpl-3.0>`_.
-  This documentation is licensed under a `Creative Commons Attribution 4.0 
-  International <http://creativecommons.org/licenses/by/4.0/>`_ license. 
+	Developers: 
+		Kais Siala <kais.siala@tum.de>, Houssame Houmy <houmyh@gmail.com>
+		
+	Maintainers: 
+		Kais Siala <kais.siala@tum.de>
+		
+	Organization: 
+		`Chair of Renewable and Sustainable Energy Systems`_, Technical University of Munich,
+		
+	Version: 
+		|version|
+		
+	Date:
+		|today|
+		
+	Copyright:
+		The model code is licensed under the `GNU General Public License 3.0  <http://www.gnu.org/licenses/gpl-3.0>`_.  
+		This documentation is licensed under a `Creative Commons Attribution 4.0 International <http://creativecommons.org/licenses/by/4.0/>`_ license. 
 
 Changes:
 ========

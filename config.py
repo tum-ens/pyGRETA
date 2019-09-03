@@ -23,7 +23,7 @@ timestamp = 'test'
 # Important settings
 param["region"] = 'Europe_wo_Balkans'  #'Chile' #'Europe_wo_Balkans'  # Name of the spatial scope, and define path to shapefile below!
 param["year"] = 2015
-param["technology"] = ['WindOn', 'WindOff', 'PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 
 # Shapefiles
 PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
@@ -115,7 +115,7 @@ pv["resource"] = {"clearness_correction": 1
 pv["technical"] = {"T_r": 25,
                    "loss_coeff": 0.37,
                    "tracking": 0,
-                   "orientation": 0  # | 0: South | 90: West | 180: North | -90: East |
+                   "orientation": 180  # | 0: South | 90: West | 180: North | -90: East |
                    }
 pv["mask"] = {"slope": 20,
               "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
@@ -169,7 +169,7 @@ windon["technical"] = {"w_in": 4,
                        "w_r": 15,
                        "w_off": 25,
                        "P_r": 3,
-                       "hub_height": 60
+                       "hub_height": 120
                        }
 windon["mask"] = {"slope": 20,
                   "lu_suitability": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1]),
@@ -191,7 +191,7 @@ windoff["technical"] = {"w_in": 3,
                         "w_r": 16.5,
                         "w_off": 34,
                         "P_r": 7.58,
-                        "hub_height": 100
+                        "hub_height": 120
                         }
 windoff["mask"] = {"depth": -40,
                    "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),

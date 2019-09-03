@@ -182,6 +182,34 @@ def generate_weather_files(paths, param):
     timecheck('End')
 
 
+def clean_weather_data(paths, param):
+    timecheck('Start')
+
+    # Read Wind Data
+    W50M = hdf5storage.read('W50M', paths["W50M"])
+    wind = np.mean(W50M, 2)
+
+    # Set convolution mask
+    kernel = np.ones((3, 3))
+    kernel[1, 1] = 0
+
+    # Compute average Convolution
+    averagewind = generic_filter(wind, np.nanmean, footprint=kernel, mode='constant', cval=np.NaN)
+    ratio = wind / averagewind
+
+    # Extract over threshold Points
+    points = np.where(np.sqrt((ratio - np.mean(ratio)) ^ 2) > param["MERRA_correction"])
+
+    # Correct points hourly
+    for t in range(W50M.shape[2]):
+        W50M[points[0], points[1], t] = W50M[points[0], points[1], t] / ratio[points[0], points[1]]
+
+    # Save corrected Wind
+    hdf5storage.writes({'W50M': W50M}, paths["W50M"], store_python_metadata=True, matlab_compatible=True)
+
+    timecheck('End')
+
+
 def generate_landsea(paths, param):
     m_high = param["m_high"]
     n_high = param["n_high"]
@@ -560,7 +588,7 @@ def generate_buffered_population(paths, param):
     A_lu = A_lu == param["landuse"]["type_urban"]  # Land use type for Urban and built-up
     kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
     kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-    A_lu_buffered = convolve(A_lu, kernel)
+    A_lu_buffered = generic_filter(A_lu, np.nanmean, footprint=kernel, mode='constant', cval=np.NaN)
     A_notPopulated = (~A_lu_buffered).astype(int)
 
     array2raster(paths["BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
@@ -1491,6 +1519,7 @@ def regression_coefficient(paths, param, tech):
 if __name__ == '__main__':
     paths, param = initialization()
     # generate_weather_files(paths, param)
+    # clean_weather_data(paths, param)
     # generate_landsea(paths, param)  # Land and Sea
     # generate_subregions(paths, param)  # Subregions
     # generate_landuse(paths, param)  # Landuse

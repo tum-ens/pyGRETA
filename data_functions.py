@@ -64,7 +64,7 @@ def crd_exact_points(Ind_points, Crd_all, res):
 
 
 def subset(A, param):
-    if param["MERRA_coverage"] == 'World':
+    if param["MERRA_coverage"] == 'World' and param["region"] != 'World':
         crd = param["Crd_all"]
         res = param["res_weather"]
         southlim = int(m.floor((crd[2] + res[0] / 10 + 90 + res[0] / 2) / res[0]))

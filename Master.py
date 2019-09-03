@@ -6,6 +6,7 @@ def initialization():
     
     # import param and paths
     from config import paths, param
+        
     create_folders(paths)
     
     # Read shapefile of scope
@@ -197,7 +198,7 @@ def clean_weather_data(paths, param):
         W50M[points[0], points[1], t] = W50M[points[0], points[1], t] / ratio[points[0], points[1]]
 
     hdf5storage.writes({'W50M': W50M}, paths["W50M"], store_python_metadata=True, matlab_compatible=True)
-    
+
     timecheck('End')
 
 
@@ -1507,8 +1508,8 @@ def regression_coefficient(paths, param, tech):
 
 if __name__ == '__main__':
     paths, param = initialization()
-    generate_weather_files(paths, param)
-    clean_weather_data(paths, param)
+    # generate_weather_files(paths, param)
+    # clean_weather_data(paths, param)
     # generate_landsea(paths, param)  # Land and Sea
     # generate_subregions(paths, param)  # Subregions
     # generate_landuse(paths, param)  # Landuse
@@ -1531,3 +1532,4 @@ if __name__ == '__main__':
     # cProfile.run('initialization()', 'cprofile_test.txt')
     # p = pstats.Stats('cprofile_test.txt')
     # p.sort_stats('cumulative').print_stats(20)
+

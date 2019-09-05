@@ -52,13 +52,13 @@ def crd_exact_points(Ind_points, Crd_all, res):
 
 
 def subset(A, param):
-    if param["MERRA_coverage"] == 'World' and param["region"] != 'World':
+    if param["MERRA_coverage"] == 'World' and param["region_name"] != 'World':
         crd = param["Crd_all"]
         res = param["res_weather"]
-        southlim = int(m.floor((crd[2] + res[0] / 10 + 90 + res[0] / 2) / res[0]))
-        northlim = int(m.ceil((crd[0] - res[0] / 10 + 90 + res[0] / 2) / res[0]))
-        westlim = int(m.floor((crd[3] + res[1] / 10 + 180) / res[1]))
-        eastlim = int(m.ceil((crd[1] - res[1] / 10 + 180) / res[1]))
+        southlim = int(math.floor((crd[2] + res[0] / 10 + 90 + res[0] / 2) / res[0]))
+        northlim = int(math.ceil((crd[0] - res[0] / 10 + 90 + res[0] / 2) / res[0]))
+        westlim = int(math.floor((crd[3] + res[1] / 10 + 180) / res[1]))
+        eastlim = int(math.ceil((crd[1] - res[1] / 10 + 180) / res[1]))
         subset = A[:, southlim:northlim, westlim:eastlim]
     else:
         subset = A
@@ -498,3 +498,28 @@ def regmodel_load_data(paths, param, tech, settings, region):
     }}
 
     return data
+    
+def create_json(filepath, param, param_keys, paths, paths_keys):
+    '''
+    '''
+    new_file = os.path.splitext(filepath)[0] + '.json'
+    new_dict = {}
+    # Add standard keys
+    param_keys = param_keys + ["author", "comment"]
+    for key in param_keys:
+        new_dict[key] = param[key]
+        if type(param[key]) == np.ndarray:
+            new_dict[key] = param[key].tolist()
+        if type(param[key]) == dict:
+            for k, v in param[key].items():
+                if type(v) == np.ndarray:
+                    new_dict[key][k] = v.tolist()
+    for key in paths_keys:
+        new_dict[key] = paths[key]
+    # Add timestamp
+    new_dict["timestamp"] = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
+    # Add caller function's name
+    new_dict["function"] = inspect.stack()[1][3]
+    import pdb; pdb.set_trace()
+    with open(new_file, 'w') as json_file:
+        json.dump(new_dict, json_file)

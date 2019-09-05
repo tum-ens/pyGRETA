@@ -1,22 +1,10 @@
 from util import *
 
-
-def create_folders(paths):
-    fs = os.path.sep
-    if not os.path.isdir(paths["region"]):
-        os.makedirs(paths["region"] + "Renewable energy" + fs)
-        os.makedirs(paths["region"] + "Maps" + fs)
-    if not os.path.isdir(paths["weather_dat"]):
-        os.makedirs(paths["weather_dat"])
-    if not os.path.isdir(paths["OUT"]):
-        os.makedirs(paths["OUT"])
-
-
 def define_spatial_scope(scope_shp):
-        scope_shp = scope_shp.to_crs({'init': 'epsg:4326'})
-        r = scope_shp.total_bounds
-        box = r[::-1][np.newaxis]
-        return box
+    scope_shp = scope_shp.to_crs({'init': 'epsg:4326'})
+    r = scope_shp.total_bounds
+    box = r[::-1][np.newaxis]
+    return box
 
 
 def calc_ext(regb, ext, res):
@@ -120,8 +108,8 @@ def calc_region(region, Crd_reg, res_desired, GeoRef):
     ''' description - why is there a minus sign?'''
     latlim = Crd_reg[2] - Crd_reg[0]
     lonlim = Crd_reg[3] - Crd_reg[1]
-    M = int(m.fabs(latlim) / res_desired[0])
-    N = int(m.fabs(lonlim) / res_desired[1])
+    M = int(math.fabs(latlim) / res_desired[0])
+    N = int(math.fabs(lonlim) / res_desired[1])
     A_region = np.ones((M, N))
     origin = [Crd_reg[3], Crd_reg[2]]
 

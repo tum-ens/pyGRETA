@@ -1,24 +1,51 @@
-import datetime
 import os
 from pathlib import Path
 import numpy as np
 
 def config():
     
-    param, paths, root, current_folder, timestamp, fs = general_settings()
-    param = scope_parameters(param)
-    paths = shapefiles_input_paths(paths, fs, root)
+    paths, param = general_settings()
+    paths, param = scope_paths_and_parameters(paths, param)
+    
     param = computation_parameters(param)
     param = resolution_parameters(param)
+    param = weather_data_parameters(param)
+    param = file_saving_options(param)
+    param = time_series_parameters(param)
+    param = landuse_parameters(param)
+    param = protected_areas_parameters(param)
+    param = pv_parameters(param)
+    param = csp_parameters(param)
+    param = onshore_wind_parameters(param)
+    param = offshore_wind_paramters(param)
+    
+    paths = weather_input_folder(paths, param)
+    paths = global_maps_input_paths(paths)
+    paths = output_folders(paths, param)
+    paths = weather_output_paths(paths, param)
+    paths = local_maps_paths(paths, param)
+    paths = irena_paths(paths, param)
+    paths = regression_input_paths(paths)
+    
+    for tech in param["technology"]:
+        paths[tech] = {}
+        paths = emhires_input_paths(paths, param, tech)
+        paths = potential_output_paths(paths, param, tech)
+        paths = regional_analysis_output_paths(paths, param, tech)
     return paths, param
-    
-    
-    
     
     
 def general_settings():
     ''' '''
+    # These variables will be initialized here, then read in other modules without modifying them.
+    global fs
+    global root
+    global current_folder
+    
     param = {}
+    param["author"] = 'Kais Siala' # the name of the person running the script
+    param["comment"] = 'Testing JSON'
+    
     paths = {}
     fs = os.path.sep
     current_folder = os.path.dirname(os.path.abspath(__file__))
@@ -27,32 +54,31 @@ def general_settings():
     # For Server Computer:
     root = str(Path(current_folder).parent.parent.parent) + "Database_KS" + fs
     
-    # Custom timestamp
-    timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
-    timestamp = 'test'
-    
-    return param, paths, root, current_folder, timestamp, fs
+    return paths, param
     
 ###########################
 #### User preferences #####
 ###########################
     
-def scope_parameters(param):
+def scope_paths_and_parameters(paths, param):
     '''
     '''
-    param["region"] = 'Europe_wo_Balkans'  #'Europe_wo_Balkans'  # Name of the spatial scope, define path to shapefile below!
-    param["year"] = 2015
-    param["technology"] = ['PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
-    return param
-    
-def shapefiles_input_paths(paths, fs, root):
-    '''
-    '''
-    
+    # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
-    paths["spatial_scope"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
-    paths["subregions"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
-    return paths
+    paths["spatial_scope"] = PathTemp + "gadm36_SGP_0.shp"
+    paths["subregions"] = PathTemp + "gadm36_SGP_1.shp"
+    
+    # Name tags for the scope and the subregions
+    param["region_name"] = 'Singapore'  # Name tag of the spatial scope
+    param["subregions_name"] = 'Singapore_districts' # Name tag of the subregions
+    
+    # Year
+    param["year"] = 2015
+    
+    # Technologies
+    param["technology"] = ['WindOn', 'PV', 'WindOff', 'CSP']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+    return paths, param
+  
     
 def computation_parameters(param):
     '''
@@ -61,7 +87,7 @@ def computation_parameters(param):
     param["CPU_limit"] = True
     return param
     
-def resolution_parameters(paths, param, root, current_folder, timestamp, fs):
+def resolution_parameters(param):
     '''
     '''
     
@@ -269,30 +295,24 @@ def offshore_wind_paramters(param):
 ###########################
 ##### Define Paths ########
 ###########################
+
+def weather_input_folder(paths, param):
+    '''
+    '''
+    global root
+    global fs
     
-    region = param["region"]
     MERRA_coverage = param["MERRA_coverage"]
     year = str(param["year"])
-    
-    
-    
-    # MERRA2
     paths["MERRA_IN"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + MERRA_coverage + " " + year + fs
-    paths["weather_dat"] = paths["region"] + "Renewable energy" + fs + "MERRA2 " + year + fs
-    paths["W50M"] = paths["weather_dat"] + "w50m_" + year + ".mat"
-    paths["CLEARNESS"] = paths["weather_dat"] + "clearness_" + year + ".mat"
-    paths["T2M"] = paths["weather_dat"] + "t2m_" + year + ".mat"
     
-    # IRENA input
-    paths["IRENA"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA" + fs + "IRENA_RE_electricity_statistics_allcountries_alltech_" + year + ".csv"
-    paths["IRENA_dict"] = root + "00 Assumptions" + fs + "dict_IRENA_countries.csv"
+    return paths
     
-    # IRENA output
-    paths["IRENA_out"] = paths["region"] + "Renewable energy" + fs + "IRENA_summary_" + year + ".csv"
-    
-    # Regression input
-    paths["Reg_RM"] = current_folder + fs + "Regression_coef" + fs + "README.txt"
-    paths["inst-cap_example"] = current_folder + fs + "Regression_coef" + fs + "IRENA_FLH_example.csv"
+def global_maps_input_paths(paths):
+    '''
+    '''
+    global root
+    global fs
     
     # Global maps
     PathTemp = root + "01 Raw inputs" + fs + "Maps" + fs
@@ -305,8 +325,64 @@ def offshore_wind_paramters(param):
     paths["Countries"] = PathTemp + "Countries" + fs + "gadm36_0.shp"
     paths["EEZ_global"] = PathTemp + "EEZ" + fs + "eez_v10.shp"
     
+    return paths
+
+def output_folders(paths, param):
+    '''
+    '''
+    global root
+    global fs
+    
+    region = param["region_name"]
+    subregions = param["subregions_name"]
+    
+    # Main output folder
+    paths["region"] = root + "03 Intermediate files" + fs + "Files " + region + fs
+    
+    # Output folder for weather data
+    paths["weather_data"] = paths["region"] + "Weather data" + fs
+    if not os.path.isdir(paths["weather_data"]):
+        os.makedirs(paths["weather_data"])
+        
+    # Output folder for local maps of the scope
+    paths["local_maps"] = paths["region"] + "Maps" + fs
+    if not os.path.isdir(paths["local_maps"]):
+        os.makedirs(paths["local_maps"])
+        
+    # Output folder for the potential of the scope
+    paths["potential"] = paths["region"] + "Renewable energy" + fs + "Potential" + fs
+    if not os.path.isdir(paths["potential"]):
+        os.makedirs(paths["potential"])
+        
+    # Output folder for the regional analysis
+    paths["regional_analysis"] = paths["region"] + "Renewable energy" + fs + "Regional analysis" + fs + subregions + fs
+    if not os.path.isdir(paths["regional_analysis"]):
+        os.makedirs(paths["regional_analysis"])
+        
+    # Regression output
+    paths["regression_out"] = paths["regional_analysis"] + "Regression outputs" + fs
+    if not os.path.isdir(paths["regression_out"]):
+        os.makedirs(paths["regression_out"])
+
+    return paths
+    
+
+    
+def weather_output_paths(paths, param):
+    '''
+    '''
+    year = str(param["year"])
+    paths["W50M"] = paths["weather_data"] + "w50m_" + year + ".mat"
+    paths["CLEARNESS"] = paths["weather_data"] + "clearness_" + year + ".mat"
+    paths["T2M"] = paths["weather_data"] + "t2m_" + year + ".mat"
+    
+    return paths
+    
+def local_maps_paths(paths, param):
+    '''
+    '''
     # Local maps
-    PathTemp = paths["region"] + "Maps" + fs + param["region"]
+    PathTemp = paths["local_maps"] + param["region_name"]
     paths["LAND"] = PathTemp + "_Land.tif"  # Land pixels
     paths["EEZ"] = PathTemp + "_EEZ.tif"  # Sea pixels
     paths["SUB"] = PathTemp + "_Subregions.tif"  # Subregions pixels
@@ -318,6 +394,7 @@ def offshore_wind_paramters(param):
     paths["POP"] = PathTemp + "_Population.tif"  # Population
     paths["BUFFER"] = PathTemp + "_Population_Buffered.tif"  # Buffered population
     paths["CORR_GWA"] = PathTemp + "_GWA_Correction.mat"  # Correction factors based on the GWA
+    paths["AREA"] = PathTemp + "_Area.mat" # Area per pixel in m²
     
     # Correction factors for wind speeds
     turbine_height_on = str(param["WindOn"]["technical"]["hub_height"])
@@ -325,41 +402,44 @@ def offshore_wind_paramters(param):
     paths["CORR_ON"] = PathTemp + "_WindOn_Correction_" + turbine_height_on + '.tif'
     paths["CORR_OFF"] = PathTemp + "_WindOff_Correction_" + turbine_height_off + '.tif'
     
+    return paths
     
-    
-    # Regression folders
-    paths["regression_in"] = paths["OUT"]
-    paths["regression_out"] = paths["OUT"] + "Regression_Outputs" + fs
-    
-    for tech in param["technology"]:
-        paths[tech] = {}
-        paths = emhires_input_paths(paths, tech, root, fs, year)
-        paths = technology_specific_output_paths(paths, param, tech, region, year)
-    return paths, param
-    
-def output_folders(paths, root, fs):
+def irena_paths(paths, param):
     '''
     '''
-    # Main output folder
-    paths["region"] = root + "03 Intermediate files" + fs + "Files " + region + fs
-    if not os.path.isdir(paths["region"]):
-        os.makedirs(paths["region"] + "Renewable energy" + fs)
-        os.makedirs(paths["region"] + "Maps" + fs)
-        
-    # Ouput Folders
-    paths["OUT"] = root + "03 Intermediate files" + fs + "Files " + region + fs + "Renewable energy" + fs + timestamp + fs
+    global root
+    global fs
     
-def create_folders(paths):
-    fs = os.path.sep
+    year = str(param["year"])
+    # IRENA input
+    paths["IRENA"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA" + fs + "IRENA_RE_electricity_statistics_allcountries_alltech_" + year + ".csv"
+    paths["IRENA_dict"] = root + "00 Assumptions" + fs + "dict_IRENA_countries.csv"
     
-    if not os.path.isdir(paths["weather_dat"]):
-        os.makedirs(paths["weather_dat"])
-    if not os.path.isdir(paths["OUT"]):
-        os.makedirs(paths["OUT"])
-
-def emhires_input_paths(paths, tech, root, fs, year):
+    # IRENA output
+    paths["IRENA_out"] = paths["region"] + "Renewable energy" + fs + "IRENA_summary_" + year + ".csv"
+    
+    return paths
+    
+def regression_input_paths(paths):
     '''
     '''
+    global current_folder
+    global fs
+    
+    paths["Reg_RM"] = current_folder + fs + "Regression_coef" + fs + "README.txt"
+    paths["inst-cap_example"] = current_folder + fs + "Regression_coef" + fs + "IRENA_FLH_example.csv"
+    paths["regression_in"] = paths["regional_analysis"]
+    
+    return paths
+    
+def emhires_input_paths(paths, param, tech):
+    '''
+    '''
+    global root
+    global fs
+    
+    year = str(param["year"])
+    
     if tech == 'WindOn':
         paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + year + fs + \
                                 "TS.CF.COUNTRY.30yr.date.txt"
@@ -371,22 +451,53 @@ def emhires_input_paths(paths, tech, root, fs, year):
                                 "EMHIRESPV_TSh_CF_Country_19862015.txt"
     return paths
     
-def technology_specific_output_paths(paths, param, tech, region, year):
+def potential_output_paths(paths, param, tech):
     '''
     '''
+    
+    region = param["region_name"]
+    year = str(param["year"])
+    
     if tech in ['WindOn', 'WindOff']:
         hubheight = str(param[tech]["technical"]["hub_height"])
-        PathTemp = paths["OUT"] + region + '_' + tech + '_' + hubheight
+        PathTemp = paths["potential"] + region + '_' + tech + '_' + hubheight
     elif tech in ['PV']:
         if 'orientation' in param["PV"]["technical"].keys():
             orientation = str(param[tech]["technical"]["orientation"])
         else:
             orientation = '0'
-        PathTemp = paths["OUT"] + region + '_' + tech + '_' + orientation
+        PathTemp = paths["potential"] + region + '_' + tech + '_' + orientation
     else:
-        PathTemp = paths["OUT"] + region + '_' + tech
+        PathTemp = paths["potential"] + region + '_' + tech
     
-    paths[tech]["area"] = paths["OUT"] + region + "_area_" + year + ".mat"
+    paths[tech]["FLH"] = PathTemp + '_FLH_' + year + '.mat'
+    paths[tech]["mask"] = PathTemp + "_mask_" + year + ".mat"
+    paths[tech]["FLH_mask"] = PathTemp + "_FLH_mask_" + year + ".mat"
+    paths[tech]["weight"] = PathTemp + "_weight_" + year + ".mat"
+    paths[tech]["FLH_weight"] = PathTemp + "_FLH_weight_" + year + ".mat"
+
+    return paths
+    
+def regional_analysis_output_paths(paths, param, tech):
+    '''
+    '''
+    
+    subregions = param["subregions_name"]
+    year = str(param["year"])
+    
+    if tech in ['WindOn', 'WindOff']:
+        hubheight = str(param[tech]["technical"]["hub_height"])
+        PathTemp = paths["regional_analysis"] + subregions + '_' + tech + '_' + hubheight
+    elif tech in ['PV']:
+        if 'orientation' in param["PV"]["technical"].keys():
+            orientation = str(param[tech]["technical"]["orientation"])
+        else:
+            orientation = '0'
+        PathTemp = paths["regional_analysis"] + subregions + '_' + tech + '_' + orientation
+    else:
+        PathTemp = paths["regional_analysis"] + subregions + '_' + tech
+    
+    
     paths[tech]["FLH"] = PathTemp + '_FLH_' + year + '.mat'
     paths[tech]["mask"] = PathTemp + "_mask_" + year + ".mat"
     paths[tech]["FLH_mask"] = PathTemp + "_FLH_mask_" + year + ".mat"
@@ -396,7 +507,7 @@ def technology_specific_output_paths(paths, param, tech, region, year):
     paths[tech]["TS"] = PathTemp + '_TS_' + year + '.csv'
     paths[tech]["Region_Stats"] = PathTemp + '_Region_stats_' + year + '.csv'
     paths[tech]["Sorted_FLH"] = PathTemp + '_sorted_FLH_sampled_' + year + '.mat'
-    paths[tech]["TS_param"] = paths["regression_in"] + region + '_' + tech
-    paths[tech]["Regression_summary"] = paths["regression_out"] + region + '_' + tech + '_reg_coefficients_'
-    paths[tech]["Regression_TS"] = paths["regression_out"] + region + '_' + tech + '_reg_TimeSeries_'
+    paths[tech]["TS_param"] = paths["regression_in"] + subregions + '_' + tech
+    paths[tech]["Regression_summary"] = paths["regression_out"] + subregions + '_' + tech + '_reg_coefficients_'
+    paths[tech]["Regression_TS"] = paths["regression_out"] + subregions + '_' + tech + '_reg_TimeSeries_'
     return paths

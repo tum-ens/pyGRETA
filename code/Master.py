@@ -18,8 +18,6 @@ def initialization():
     # import param and paths
     from config import config
     paths, param = config()
-        
-    create_folders(paths)
     
     # Read shapefile of scope
     scope_shp = gpd.read_file(paths["spatial_scope"])
@@ -104,7 +102,7 @@ def initialization():
     timecheck('End')
 
     # Display initial information
-    print('\nRegion: ' + param["region"] + ' - Year: ' + str(param["year"]))
+    print('\nRegion: ' + param["region_name"] + ' - Year: ' + str(param["year"]))
     print('Folder Path: ' + paths["region"] + '\n')
     
     return paths, param
@@ -193,9 +191,12 @@ def generate_weather_files(paths, param):
             sys.stdout.write('\n')
             timecheck('Writing Files: T2M, W50M, CLEARNESS')
             hdf5storage.writes({'T2M': T2M}, paths["T2M"], store_python_metadata=True, matlab_compatible=True)
+            create_json(paths["T2M"], param, ["MERRA_coverage", "region_name", "Crd_all", "res_weather"], paths, ["MERRA_IN", "T2M"])
             hdf5storage.writes({'W50M': W50M}, paths["W50M"], store_python_metadata=True, matlab_compatible=True)
+            create_json(paths["W50M"], param, ["MERRA_coverage", "region_name", "Crd_all", "res_weather"], paths, ["MERRA_IN", "W50M"])
             hdf5storage.writes({'CLEARNESS': CLEARNESS}, paths["CLEARNESS"], store_python_metadata=True,
                                matlab_compatible=True)
+            create_json(paths["CLEARNESS"], param, ["MERRA_coverage", "region_name", "Crd_all", "res_weather"], paths, ["MERRA_IN", "CLEARNESS"])
     timecheck('End')
 
 
@@ -488,8 +489,7 @@ def generate_topography(paths, param):
 
     A_TOPO = np.flipud(Topo[Ind[0] - 1:Ind[2], Ind[3] - 1:Ind[1]])
     array2raster(paths["TOPO"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_TOPO)
-    print("\n")
-    print("files saved: " + paths["TOPO"])
+    print("\nfiles saved: " + paths["TOPO"])
     timecheck('End')
 
 
@@ -611,8 +611,7 @@ def generate_population(paths, param):
 
     A_POP = np.flipud(Pop[Ind[0] - 1:Ind[2], Ind[3] - 1:Ind[1]])
     array2raster(paths["POP"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_POP)
-    print("\n")
-    print("files saved: " + paths["POP"])
+    print("\nfiles saved: " + paths["POP"])
     timecheck('End')
 
 
@@ -758,7 +757,7 @@ def generate_wind_correction(paths, param):
                                               paths["CORR_GWA"])
             A_cf_on = A_cf_on * gwa_correction
         array2raster(paths["CORR_ON"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf_on)
-        print("files saved: " + paths["CORR_ON"])
+        print("\nfiles saved: " + paths["CORR_ON"])
 
     # Offshore resolution correction
     if 'WindOff' in param["technology"]:
@@ -790,7 +789,7 @@ def generate_wind_correction(paths, param):
 
 def calculate_FLH(paths, param, tech):
     timecheck('Start')
-    print('Region: ' + param["region"])
+    print('Region: ' + param["region_name"])
 
     if tech in ["WindOn", "WindOff"]:
         print("\n" + tech + " - HUB_HEIGHTS: " + str(param[tech]["technical"]["hub_height"]))
@@ -1040,8 +1039,8 @@ def weighting(paths, param, tech):
     FLH_weight = FLH * A_weight
 
     # Save HDF5 Files
-    hdf5storage.writes({'A_area': A_area}, paths[tech]["area"], store_python_metadata=True, matlab_compatible=True)
-    print("files saved: " + paths[tech]["area"])
+    hdf5storage.writes({'A_area': A_area}, paths["AREA"], store_python_metadata=True, matlab_compatible=True)
+    print("files saved: " + paths["AREA"])
     hdf5storage.writes({'A_weight': A_weight}, paths[tech]["weight"], store_python_metadata=True,
                        matlab_compatible=True)
     print("files saved: " + paths[tech]["weight"])
@@ -1051,12 +1050,12 @@ def weighting(paths, param, tech):
 
     # Save GEOTIFF files
     if param["savetiff"]:
-        array2raster(changeExt2tif(paths[tech]["area"]),
+        array2raster(changeExt2tif(paths["AREA"]),
                      GeoRef["RasterOrigin"],
                      GeoRef["pixelWidth"],
                      GeoRef["pixelHeight"],
                      A_area)
-        print("files saved:" + changeExt2tif(paths[tech]["area"]))
+        print("files saved:" + changeExt2tif(paths["AREA"]))
 
         array2raster(changeExt2tif(paths[tech]["weight"]),
                      GeoRef["RasterOrigin"],
@@ -1517,7 +1516,7 @@ def regression_coefficients(paths, param, tech):
     for reg in list_regions:
         # Show progress of the simulation
         status = status + 1
-        display_progress('Regression Coefficients ' + tech + ' ' + param["region"], (len(list_regions), status))
+        display_progress('Regression Coefficients ' + tech + ' ' + param["subregions_name"], (len(list_regions), status))
 
         region_data = regmodel_load_data(paths, param, tech, settings, reg)
 
@@ -1635,7 +1634,7 @@ def regression_coefficients(paths, param, tech):
 if __name__ == '__main__':
     
     paths, param = initialization()
-    # generate_weather_files(paths, param)
+    generate_weather_files(paths, param)
     # clean_weather_data(paths, param)
     # generate_landsea(paths, param)  # Land and Sea
     # generate_subregions(paths, param)  # Subregions
@@ -1654,7 +1653,7 @@ if __name__ == '__main__':
         # weighting(paths, param, tech)
         # reporting(paths, param, tech)
         # find_locations_quantiles(paths, param, tech)
-        generate_time_series(paths, param, tech)
+        # generate_time_series(paths, param, tech)
         #regression_coefficients(paths, param, tech)
     # cProfile.run('initialization()', 'cprofile_test.txt')
     # p = pstats.Stats('cprofile_test.txt')

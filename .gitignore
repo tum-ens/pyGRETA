@@ -1,5 +1,5 @@
 *~
-__pycache__/*
+code/__pycache__/*
 *.xml
 *.iml
 *.tif

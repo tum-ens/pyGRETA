@@ -57,7 +57,7 @@ Contents
 User manual
 ^^^^^^^^^^^^^
 
-These documents give a general overview and help you getting started from after the installation (which is covered in the README.md file on GitHub) to you first running model.
+These documents give a general overview and help you getting started from the installation to you first running model.
 
 .. the following section contains the links to the other parts of the documentation, the 'maxdepth' component define how many sub sections should be displayed
 

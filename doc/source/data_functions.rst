@@ -1,7 +1,5 @@
-data\_functions module
+data\_functions.py
 ======================
 
 .. automodule:: data_functions
    :members:
-   :undoc-members:
-   :show-inheritance:

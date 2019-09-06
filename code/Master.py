@@ -16,8 +16,8 @@ def initialization():
     timecheck('Start')
     
     # import param and paths
-    from config import config
-    paths, param = config()
+    from config import configuration
+    paths, param = configuration()
     
     # Read shapefile of scope
     scope_shp = gpd.read_file(paths["spatial_scope"])

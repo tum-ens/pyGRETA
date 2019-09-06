@@ -3,7 +3,6 @@ from util import *
 
 np.seterr(divide='ignore')  # Repress Invalid value or division by zero error
 
-
 def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
     pv = param["PV"]["technical"]
     csp = param["CSP"]["technical"]
@@ -45,7 +44,7 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
         CF_csp = np.zeros(reg_ind[0].shape)
         return CF_pv, CF_csp
 
-    CLEARNESS_h = CLEARNESS_h[reg_ind_h] * param["PV"]["resource"]["clearness_correction"]
+    CLEARNESS_h = CLEARNESS_h[reg_ind_h] * param[tech]["resource"]["clearness_correction"]
     TEMP_h = merraData["T2M"][:, :, hour]
     TEMP_h = resizem(TEMP_h, m_high, n_high) - 273.15  # Convert to Celsius
     TEMP_h = TEMP_h[reg_ind_h]

@@ -316,13 +316,13 @@ For its popularity and long development history, the parabolic trough technology
 
 Convection Losses
 ^^^^^^^^^^^^^^^^^
-The receiver of parabolic troughs are kept in a vaccum glass tube to prevent convection as much as possible. 
+The receiver of parabolic troughs are kept in a vacuum glass tube to prevent convection as much as possible. 
 Radiative heat losses are still present and ultimatly results in convective losses between the glass tube and the air.
 These heat losses are increased when wind is blowing around the receiver. The typical heat losses for a receiver 
 can be estimated through the following empirical equation:
 
 .. math::
-	Q_{Loss} =  A_r(U_{L_{cst}} + U_{L_{Wind}} \times V_{Wind}^{0.6})(T_i-T_a)
+	Q_{Loss} =  A_r(U_{L_{cst}} + U_{L_{Wind}} \cdot V_{Wind}^{0.6})(T_i-T_a)
 
 where :math:`A_r` is the outer area of the receiver, :math:`U_{L_{cst}}` correspond to a loss coefficient at zero wind speed, 
 :math:`U_{L_{Wind}}` is a loss coefficient dependent on the wind speed :math:`V_{Wind}`, 

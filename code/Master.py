@@ -1,13 +1,23 @@
 from model_functions import *
 
-
 def initialization():
+    """
+    This function reads the user-defined parameters and paths from config.py, then adds additional parameters related
+    to the shapefiles. 
+    First, it saves the spatial scope of the problem.
+    Then, it distinguishes between countries, exclusive economic zones and subregions. For each one of them, 
+    it saves the geodataframes, the number of features, and the coordinates of the bounding boxes of each feature.
+    Finally, it saves the number of rows and columns in the low and righ resolution, and a georeference dictionary
+    used for saving tif files.
+
+    :return: The updated dictionaries param and paths.
+    :rtype: tuple of dict
+    """
     timecheck('Start')
     
     # import param and paths
-    from config import paths, param
-        
-    create_folders(paths)
+    from config import configuration
+    paths, param = configuration()
     
     # Read shapefile of scope
     scope_shp = gpd.read_file(paths["spatial_scope"])
@@ -92,7 +102,7 @@ def initialization():
     timecheck('End')
 
     # Display initial information
-    print('\nRegion: ' + param["region"] + ' - Year: ' + str(param["year"]))
+    print('\nRegion: ' + param["region_name"] + ' - Year: ' + str(param["year"]))
     print('Folder Path: ' + paths["region"] + '\n')
     
     return paths, param
@@ -102,9 +112,14 @@ def generate_weather_files(paths, param):
     """
     This function reads the daily NetCDF data (from MERRA) for SWGDN, SWTDN, T2M, U50m, and V50m,
     and saves them in matrices with yearly time series with low spatial resolution.
-    This code has to be run only once
+    This function has to be run only once.
 
-    :param paths: paths dictionary containing the input file for NetCDF data
+    :param paths: Dictionary including the paths to the MERRA-2 input files (MERRA_IN), and to the desired output locations for T2M, W50M and CLEARNESS.
+    :type paths: dict
+    :param param: Dictionary including the year and the spatial scope.
+    :type param: dict
+    :return: The files T2M.mat, W50M.mat, and CLEARNESS.mat are saved directly in the defined paths, along with their metadata in JSON files.
+    :rtype: None
     """
 
     timecheck('Start')
@@ -176,13 +191,30 @@ def generate_weather_files(paths, param):
             sys.stdout.write('\n')
             timecheck('Writing Files: T2M, W50M, CLEARNESS')
             hdf5storage.writes({'T2M': T2M}, paths["T2M"], store_python_metadata=True, matlab_compatible=True)
+            create_json(paths["T2M"], param, ["MERRA_coverage", "region_name", "Crd_all", "res_weather"], paths, ["MERRA_IN", "T2M"])
             hdf5storage.writes({'W50M': W50M}, paths["W50M"], store_python_metadata=True, matlab_compatible=True)
+            create_json(paths["W50M"], param, ["MERRA_coverage", "region_name", "Crd_all", "res_weather"], paths, ["MERRA_IN", "W50M"])
             hdf5storage.writes({'CLEARNESS': CLEARNESS}, paths["CLEARNESS"], store_python_metadata=True,
                                matlab_compatible=True)
+            create_json(paths["CLEARNESS"], param, ["MERRA_coverage", "region_name", "Crd_all", "res_weather"], paths, ["MERRA_IN", "CLEARNESS"])
     timecheck('End')
 
 
 def clean_weather_data(paths, param):
+    """
+    This function detects data outliers in the wind input file W50M.mat. An outlier is a data point, for which
+    the absolute value of the difference between the yearly average value and the mean of the direct neighbors
+    (Moore neighborhood) is higher than a user-defined threshold (MERRA_correction). It replaces the hourly values
+    with the hourly values of the mean of the neighbors, and overwrites the original W50M.mat file.
+
+    :param paths: Dictionary including the path to the file W50M.mat.
+    :type paths: dict
+    :param param: Dictionary including the threshold value MERRA_coorection.
+    :type param: dict
+    :return: The file W50M.mat is overwritten after the correction, along with its metadata in a JSON file.
+    :rtype: None
+    """
+    
     timecheck('Start')
 
     # Read Wind Data
@@ -198,7 +230,7 @@ def clean_weather_data(paths, param):
     ratio = wind / averagewind
 
     # Extract over threshold Points
-    points = np.where(np.sqrt((ratio - np.mean(ratio)) ^ 2) > param["MERRA_correction"])
+    points = np.where(abs(ratio - np.mean(ratio)) > param["MERRA_correction"])
 
     # Correct points hourly
     for t in range(W50M.shape[2]):
@@ -206,11 +238,22 @@ def clean_weather_data(paths, param):
 
     # Save corrected Wind
     hdf5storage.writes({'W50M': W50M}, paths["W50M"], store_python_metadata=True, matlab_compatible=True)
-
+    create_json(paths["W50M"], param, ["MERRA_coverage", "region_name", "Crd_all", "res_weather", "MERRA_correction"], paths, ["MERRA_IN", "W50M"])
     timecheck('End')
 
 
 def generate_landsea(paths, param):
+    """
+    This function reads the shapefiles of the countries (land areas) and of the exclusive economic zones (sea areas)
+    within the scope, and creates two rasters out of them.
+
+    :param paths: Dictionary including the paths LAND and EEZ.
+    :type paths: dict
+    :param param: Dictionary including the geodataframes of the shapefiles, the number of features, the coordinates of the bounding box of the spatial scope, and the number of rows and columns.
+    :type param: dict
+    :return: The tif files for LAND and EEZ are saved in their respective paths, along with their metadata in JSON files.
+    :rtype: None
+    """
     m_high = param["m_high"]
     n_high = param["n_high"]
     Crd_all = param["Crd_all"]
@@ -243,13 +286,14 @@ def generate_landsea(paths, param):
             A_land[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] + A_region
     # Saving file
     array2raster(paths["LAND"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_land)
+    create_json(paths["LAND"], param, ["region_name", "m_high", "n_high", "Crd_all", "res_desired", "GeoRef", "nRegions_land"], paths, ["Countries", "LAND"])
     print('\nfiles saved: ' + paths["LAND"])
     timecheck('Finish Land')
 
     timecheck('Start Sea')
     # Extract sea areas
     eez_shp = param["regions_sea"]
-    Crd_regions_sea = param["Crd_regions"][:-nRegions_sea]
+    Crd_regions_sea = param["Crd_regions"][-nRegions_sea:]
     Ind = ind_merra(Crd_regions_sea, Crd_all, res_desired)
     A_sea = np.zeros((m_high, n_high))
     status = 0
@@ -263,7 +307,7 @@ def generate_landsea(paths, param):
 
         # Calculate A_region
         A_region = calc_region(eez_shp.iloc[reg], Crd_regions_sea[reg, :], res_desired, GeoRef)
-
+    
         # Include A_region in A_sea
         A_sea[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] = \
             A_sea[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] + A_region
@@ -273,11 +317,22 @@ def generate_landsea(paths, param):
     A_sea[A_land > 0] = 0
     # Saving file
     array2raster(paths["EEZ"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_sea)
+    create_json(paths["EEZ"], param, ["region_name", "m_high", "n_high", "Crd_all", "res_desired", "GeoRef", "nRegions_sea"], paths, ["EEZ_global", "EEZ"])
     print('\nfiles saved: ' + paths["EEZ"])
     timecheck('Finish Sea')
 
 
 def generate_subregions(paths, param):
+    """
+    This function reads the shapefiles of the subregions within the scope, and creates a raster out of it.
+
+    :param paths: Dictionary including the paths SUB, LAND, EEZ.
+    :type paths: dict
+    :param param: Dictionary including the geodataframe of the shapefile, the number of features, the coordinates of the bounding box of the spatial scope, and the number of rows and columns.
+    :type param: dict
+    :return: The tif file for SUB is saved in its respective path, along with its metadata in a JSON file.
+    :rtype: None
+    """
     m_high = param["m_high"]
     n_high = param["n_high"]
     Crd_all = param["Crd_all"]
@@ -316,6 +371,7 @@ def generate_subregions(paths, param):
 
     # Saving file
     array2raster(paths["SUB"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_sub)
+    create_json(paths["SUB"], param, ["subregions_name", "m_high", "n_high", "Crd_all", "res_desired", "GeoRef", "nRegions_sea"], paths, ["subregions", "SUB"])
     print('\nfiles saved: ' + paths["SUB"])
     timecheck('Finish Subregions')
     
@@ -323,6 +379,18 @@ def generate_subregions(paths, param):
 
 
 def generate_landuse(paths, param):
+    """
+    This function reads the global map of land use, and creates a raster out of it for the desired scope.
+    There are 17 discrete possible values from 0 to 16, corresponding to different land use classes.
+    See config.py for more information on the land use map.
+
+    :param paths: Dictionary including the paths to the global land use raster LU_global and to the output path LU.
+    :type paths: dict
+    :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
+    :type param: dict
+    :return: The tif file for LU is saved in its respective path, along with its metadata in a JSON file.
+    :rtype: None
+    """
 
     timecheck('Start')
     res_desired = param["res_desired"]
@@ -334,11 +402,23 @@ def generate_landuse(paths, param):
                                                           slice(Ind[3] - 1, Ind[1])))
     w = np.flipud(w)
     array2raster(paths["LU"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], w)
+    create_json(paths["LU"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["LU_global", "LU"])
     print("files saved: " + paths["LU"])
     timecheck('End')
 
 
 def generate_bathymetry(paths, param):
+    """
+    This function reads the global map of bathymetry, resizes it, and creates a raster out of it for the desired scope.
+    The values are in meter (negative in the sea).
+
+    :param paths: Dictionary including the paths to the global bathymetry raster Bathym_global and to the output path BATH.
+    :type paths: dict
+    :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
+    :type param: dict
+    :return: The tif file for BATH is saved in its respective path, along with its metadata in a JSON file.
+    :rtype: None
+    """
 
     timecheck('Start')
     res_desired = param["res_desired"]
@@ -350,12 +430,24 @@ def generate_bathymetry(paths, param):
     A_BATH = resizem(A_BATH, 180 * 240, 360 * 240)
     A_BATH = np.flipud(A_BATH[Ind[0] - 1: Ind[2], Ind[3] - 1: Ind[1]])
     array2raster(paths['BATH'], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_BATH)
+    create_json(paths["BATH"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["Bathym_global", "BATH"])
     print("files saved: " + paths["BATH"])
     timecheck('End')
 
 
 def generate_topography(paths, param):
+    """
+    This function reads the tiles that make the global map of topography, picks those that lie completely or partially in the scope,
+    and creates a raster out of them for the desired scope. The values are in meter.
 
+    :param paths: Dictionary including the paths to the tiles of the global topography raster Topo_tiles and to the output path TOPO.
+    :type paths: dict
+    :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
+    :type param: dict
+    :return: The tif file for TOPO is saved in its respective path, along with its metadata in a JSON file.
+    :rtype: None
+    """
+    
     timecheck('Start')
     res_desired = param["res_desired"]
     Crd_all = param["Crd_all"]
@@ -402,12 +494,23 @@ def generate_topography(paths, param):
 
     A_TOPO = np.flipud(Topo[Ind[0] - 1:Ind[2], Ind[3] - 1:Ind[1]])
     array2raster(paths["TOPO"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_TOPO)
-    print("\n")
-    print("files saved: " + paths["TOPO"])
+    create_json(paths["TOPO"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["Topo_tiles", "TOPO"])
+    print("\nfiles saved: " + paths["TOPO"])
     timecheck('End')
 
 
 def generate_slope(paths, param):
+    """
+    This function reads the topography raster for the scope, and creates a raster of slope out of it. The slope is calculated in
+    percentage, although this can be changed easily at the end of the code.
+
+    :param paths: Dictionary including the paths to the topography map of the scope TOPO and to the output path SLOPE.
+    :type paths: dict
+    :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
+    :type param: dict
+    :return: The tif file for SLOPE is saved in its respective path, along with its metadata in a JSON file.
+    :rtype: None
+    """
 
     timecheck('Start')
     res_desired = param["res_desired"]
@@ -451,12 +554,23 @@ def generate_slope(paths, param):
 
     A_SLP = np.flipud(slope_pc)
     array2raster(paths["SLOPE"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_SLP)
+    create_json(paths["SLOPE"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["TOPO", "SLOPE"])
     print("files saved: " + paths["SLOPE"])
     timecheck('End')
 
 
 def generate_population(paths, param):
+    """
+    This function reads the tiles that make the global map of population, picks those that lie completely or partially in the scope,
+    and creates a raster out of them for the desired scope. The values are in population by pixel.
 
+    :param paths: Dictionary including the paths to the tiles of the global population raster Pop_tiles and to the output path POP.
+    :type paths: dict
+    :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
+    :type param: dict
+    :return: The tif file for POP is saved in its respective path, along with its metadata in a JSON file.
+    :rtype: None
+    """
     timecheck('Start')
     res_desired = param["res_desired"]
     Crd_all = param["Crd_all"]
@@ -504,13 +618,24 @@ def generate_population(paths, param):
 
     A_POP = np.flipud(Pop[Ind[0] - 1:Ind[2], Ind[3] - 1:Ind[1]])
     array2raster(paths["POP"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_POP)
-    print("\n")
-    print("files saved: " + paths["POP"])
+    create_json(paths["POP"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["Pop_tiles", "POP"])
+    print("\nfiles saved: " + paths["POP"])
     timecheck('End')
 
 
 def generate_protected_areas(paths, param):
+    """
+    This function reads the shapefile of the globally protected areas, adds an attribute whose values are based on the dictionary 
+    of conversion (protected_areas) to identify the protection category, then converts the shapefile into a raster for the scope.
+    The values are integers from 0 to 10.
 
+    :param paths: Dictionary including the paths to the shapefile of the globally protected areas, to the landuse raster of the scope, and to the output path PA.
+    :type paths: dict
+    :param param: Dictionary including the dictionary of conversion of protection categories (protected_areas).
+    :type param: dict
+    :return: The tif file for PA is saved in its respective path, along with its metadata in a JSON file.
+    :rtype: None
+    """
     timecheck('Start')
     protected_areas = param["protected_areas"]
     # set up protected areas dictionary
@@ -570,7 +695,8 @@ def generate_protected_areas(paths, param):
                         ['ALL_TOUCHED=FALSE',  # rasterize all pixels touched by polygons
                          'ATTRIBUTE=Raster']  # put raster values according to the 'Raster' field values
                         )
-
+    create_json(paths["PA"], param, ["region_name", "protected_areas", "Crd_all", "res_desired", "GeoRef"], paths, ["Protected", "PA"])
+    
     # Close dataset
     out_raster_ds = None
     print("files saved: " + paths["PA"])
@@ -578,7 +704,19 @@ def generate_protected_areas(paths, param):
 
 
 def generate_buffered_population(paths, param):
+    """
+    This function reads the land use raster, identifies urban areas, and exclude pixels around them based on a
+    user-defined buffer (buffer_pixel_amount). It creates a masking raster of boolean values (0 or 1) for the scope.
+    Zero means the pixel is excluded, one means it is suitable.
+    The function is useful in case there is a policy to exclude renewable energy projects next to urban settlements.
 
+    :param paths: Dictionary including the path to the land use raster for the scope, and to the output path BUFFER.
+    :type paths: dict
+    :param param: Dictionary including the user-defined buffer (buffer_pixel_amount), the urban type within the land use map (type_urban), and the georeference dictionary.
+    :type param: dict
+    :return: The tif file for BUFFER is saved in its respective path, along with its metadata in a JSON file.
+    :rtype: None
+    """
     timecheck('Start')
     buffer_pixel_amount = param["WindOn"]["mask"]["buffer_pixel_amount"]
     GeoRef = param["GeoRef"]
@@ -593,6 +731,7 @@ def generate_buffered_population(paths, param):
 
     array2raster(paths["BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
                  A_notPopulated)
+    create_json(paths["BUFFER"], param, ["region_name", "landuse", "WindOn", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "BUFFER"])
     print("files saved: " + paths["BUFFER"])
     timecheck('End')
 
@@ -640,7 +779,7 @@ def generate_wind_correction(paths, param):
                                               paths["CORR_GWA"])
             A_cf_on = A_cf_on * gwa_correction
         array2raster(paths["CORR_ON"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf_on)
-        print("files saved: " + paths["CORR_ON"])
+        print("\nfiles saved: " + paths["CORR_ON"])
 
     # Offshore resolution correction
     if 'WindOff' in param["technology"]:
@@ -666,13 +805,13 @@ def generate_wind_correction(paths, param):
         A_cf_off = A_cf_off * A_eez
         
         array2raster(paths["CORR_OFF"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf_off)
-        print("files saved: " + paths["CORR_OFF"])
+        print("\nfiles saved: " + paths["CORR_OFF"])
     timecheck('End')
 
 
 def calculate_FLH(paths, param, tech):
     timecheck('Start')
-    print('Region: ' + param["region"])
+    print('Region: ' + param["region_name"])
 
     if tech in ["WindOn", "WindOff"]:
         print("\n" + tech + " - HUB_HEIGHTS: " + str(param[tech]["technical"]["hub_height"]))
@@ -923,8 +1062,8 @@ def weighting(paths, param, tech):
     FLH_weight = FLH * A_weight
 
     # Save HDF5 Files
-    hdf5storage.writes({'A_area': A_area}, paths[tech]["area"], store_python_metadata=True, matlab_compatible=True)
-    print("files saved: " + paths[tech]["area"])
+    hdf5storage.writes({'A_area': A_area}, paths["AREA"], store_python_metadata=True, matlab_compatible=True)
+    print("files saved: " + paths["AREA"])
     hdf5storage.writes({'A_weight': A_weight}, paths[tech]["weight"], store_python_metadata=True,
                        matlab_compatible=True)
     print("files saved: " + paths[tech]["weight"])
@@ -934,12 +1073,12 @@ def weighting(paths, param, tech):
 
     # Save GEOTIFF files
     if param["savetiff"]:
-        array2raster(changeExt2tif(paths[tech]["area"]),
+        array2raster(changeExt2tif(paths["AREA"]),
                      GeoRef["RasterOrigin"],
                      GeoRef["pixelWidth"],
                      GeoRef["pixelHeight"],
                      A_area)
-        print("files saved:" + changeExt2tif(paths[tech]["area"]))
+        print("files saved:" + changeExt2tif(paths["AREA"]))
 
         array2raster(changeExt2tif(paths[tech]["weight"]),
                      GeoRef["RasterOrigin"],
@@ -1237,7 +1376,7 @@ def generate_time_series(paths, param, tech):
     timecheck('End')
 
 
-def regression_coefficient(paths, param, tech):
+def regression_coefficients(paths, param, tech):
     """
     Solves the following optimization problem:
 
@@ -1401,7 +1540,7 @@ def regression_coefficient(paths, param, tech):
     for reg in list_regions:
         # Show progress of the simulation
         status = status + 1
-        display_progress('Regression Coefficients ' + tech + ' ' + param["region"], (len(list_regions), status))
+        display_progress('Regression Coefficients ' + tech + ' ' + param["subregions_name"], (len(list_regions), status))
 
         region_data = regmodel_load_data(paths, param, tech, settings, reg)
 
@@ -1517,8 +1656,9 @@ def regression_coefficient(paths, param, tech):
 
 
 if __name__ == '__main__':
+    
     paths, param = initialization()
-    # generate_weather_files(paths, param)
+    generate_weather_files(paths, param)
     # clean_weather_data(paths, param)
     # generate_landsea(paths, param)  # Land and Sea
     # generate_subregions(paths, param)  # Subregions
@@ -1529,16 +1669,16 @@ if __name__ == '__main__':
     # generate_population(paths, param)  # Population
     # generate_protected_areas(paths, param)  # Protected areas
     # generate_buffered_population(paths, param)  # Buffered Population
-    #generate_wind_correction(paths, param)  # Correction factors for wind speeds
+    # generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
         print("Tech: " + tech)
-        calculate_FLH(paths, param, tech)
-        masking(paths, param, tech)
-        weighting(paths, param, tech)
-        reporting(paths, param, tech)
-        find_locations_quantiles(paths, param, tech)
-        generate_time_series(paths, param, tech)
-        #regression_coefficient(paths, param, tech)
+        # calculate_FLH(paths, param, tech)
+        # masking(paths, param, tech)
+        # weighting(paths, param, tech)
+        # reporting(paths, param, tech)
+        # find_locations_quantiles(paths, param, tech)
+        # generate_time_series(paths, param, tech)
+        #regression_coefficients(paths, param, tech)
     # cProfile.run('initialization()', 'cprofile_test.txt')
     # p = pstats.Stats('cprofile_test.txt')
     # p.sort_stats('cumulative').print_stats(20)

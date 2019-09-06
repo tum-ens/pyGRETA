@@ -9,16 +9,13 @@ import psutil
 import datetime
 import inspect
 import sys
-from numpy.matlib import repmat, sin, cos
-import math as m
+import math
 import rasterio
 from rasterio import windows, mask, MemoryFile
 import pandas as pd
 import numpy as np
-from scipy.ndimage import generic_filter
-import datetime
+from scipy.ndimage import generic_filter, convolve
 import geopandas as gpd
-from rasterio import windows
 from shapely.geometry import mapping, Point, Polygon
 import fiona
 import hdf5storage
@@ -30,8 +27,7 @@ import pstats
 import shutil
 import pyomo.environ as pyo
 from pyomo.opt import SolverFactory
-import glob
-
+import json
 
 def sind(alpha):
     return sin(np.deg2rad(alpha))

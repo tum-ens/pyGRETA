@@ -3,7 +3,12 @@ from pathlib import Path
 import numpy as np
 
 def config():
-    
+    """
+    This function is the main configuration function that calls all the other modules in the code.
+
+    :return: The dictionary param containing all the user preferences, and the dictionary path containing all the paths to inputs and outputs.
+    :rtype: tuple of dict
+    """
     paths, param = general_settings()
     paths, param = scope_paths_and_parameters(paths, param)
     
@@ -36,7 +41,17 @@ def config():
     
     
 def general_settings():
-    ''' '''
+    """
+    This function creates and initializes the dictionaries param and paths. It also creates global variables for the root folder (root),
+    the current folder (current_folder), and the system-dependent file separator (fs).
+
+    :param paths: Dictionary including the path to the land use raster for the scope, and to the output path BUFFER.
+    :type paths: dict
+    :param param: Dictionary including the user-defined buffer (buffer_pixel_amount), the urban type within the land use map (type_urban), and the georeference dictionary.
+    :type param: dict
+    :return: The empty dictionary paths, and the dictionary param including some general information.
+    :rtype: tuple of dict
+    """
     # These variables will be initialized here, then read in other modules without modifying them.
     global fs
     global root
@@ -61,8 +76,31 @@ def general_settings():
 ###########################
     
 def scope_paths_and_parameters(paths, param):
-    '''
-    '''
+    """
+    This function defines the path of the geographic scope of the output (spatial_scope) and of the subregions of interest (subregions).
+    It also associates two name tags for them, respectively (region_name) and (subregions_name), which define the names of output folders.
+    Both paths should point to shapefiles of polygons or multipolygons.
+    
+    For (spatial_scope), only the bounding box around all the features matters.
+    Example: In case of Europe, whether a shapefile of Europe as one multipolygon, or as a set of multiple features (countries, states, etc.) is used, does not make a difference.
+    Potential maps (theoretical and technical) will be later generated for the whole scope of the bounding box.
+    
+    For (subregions), the shapes of the individual features matter, but not their scope.
+    For each individual feature that lies within the scope, you can later generate a summary report and time series.
+    The shapefile of (subregions) does not have to have the same bounding box as (spatial_scope).
+    In case it is larger, features that lie completely outside the scope will be ignored, whereas those that lie partly inside it will be cropped using the bounding box
+    of (spatial_scope). In case it is smaller, all features are used with no modification.
+    
+    (year) defines the year of the weather data, and (technology) the list of technologies that you are interested in.
+    Currently, four technologies are defined: onshore wind ``WindOn``, offshore wind ``WindOff``, photovoltaics ``PV``, concentrated solar power ``CSP``.
+
+    :param paths: Dictionary including the paths.
+    :type paths: dict
+    :param param: Dictionary including the user preferences.
+    :type param: dict
+    :return: The updated dictionaries paths and param.
+    :rtype: tuple of dict
+    """
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
     paths["spatial_scope"] = PathTemp + "gadm36_SGP_0.shp"
@@ -81,23 +119,50 @@ def scope_paths_and_parameters(paths, param):
   
     
 def computation_parameters(param):
-    '''
-    '''
+    """
+    This function defines parameters related to the processing.
+    Some modules in ``Master.py`` allow parallel processing. The key (nproc), which takes an integer as a value, limits the number of parallel processes.
+    (CPU_limit) is a boolean parameter ?????
+
+    :param param: Dictionary including the user preferences.
+    :type param: dict
+    :return: The updated dictionary param.
+    :rtype: dict
+    """
     param["nproc"] = 36
     param["CPU_limit"] = True
     return param
     
 def resolution_parameters(param):
-    '''
-    '''
+    """
+    This function defines the resolution of weather data (low resolution), and the desired resolution of output rasters (high resolution).
+    Both are numpy array with two numbers. The first number is the resolution in the vertical dimension (in degrees of latitude),
+    the second is for the horizontal dimension (in degrees of longitude).
+
+    :param param: Dictionary including the user preferences.
+    :type param: dict
+    :return: The updated dictionary param.
+    :rtype: dict
+    """
     
     param["res_weather"] = np.array([1 / 2, 5 / 8])
     param["res_desired"] = np.array([1 / 240, 1 / 240])
     return param
     
 def weather_data_parameters(param):
-    '''
-    '''
+    """
+    This function defines the coverage of the weather data (MERRA_coverage), and how outliers should be corrected (MERRA_correction).
+    If you have downloaded the MERRA-2 data for the world, enter the name tag 'World'. The code will later search for the data in the corresponding folder.
+    It is possible to download the MERRA-2 just for the geographic scope of the analysis. In that case, enter another name tag (we recommend using the same one as the spatial scope).
+    
+    MERRA-2 contains some outliers, especially in the wind data. (MERRA_correction) sets the threshold of the relative distance between the yearly mean of the data point
+    to the yearly mean of its neighbors. 
+
+    :param param: Dictionary including the user preferences.
+    :type param: dict
+    :return: The updated dictionary param.
+    :rtype: dict
+    """
     
     param["MERRA_coverage"] = 'World'
     param["MERRA_correction"] = 0.35

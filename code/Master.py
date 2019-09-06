@@ -118,7 +118,7 @@ def generate_weather_files(paths, param):
     :type paths: dict
     :param param: Dictionary including the year and the spatial scope.
     :type param: dict
-    :return: The files T2M.mat, W50M.mat, and CLEARNESS.mat are saved directly in the defined paths.
+    :return: The files T2M.mat, W50M.mat, and CLEARNESS.mat are saved directly in the defined paths, along with their metadata in JSON files.
     :rtype: None
     """
 
@@ -211,7 +211,7 @@ def clean_weather_data(paths, param):
     :type paths: dict
     :param param: Dictionary including the threshold value MERRA_coorection.
     :type param: dict
-    :return: The file W50M.mat is overwritten after the correction.
+    :return: The file W50M.mat is overwritten after the correction, along with its metadata in a JSON file.
     :rtype: None
     """
     
@@ -238,7 +238,7 @@ def clean_weather_data(paths, param):
 
     # Save corrected Wind
     hdf5storage.writes({'W50M': W50M}, paths["W50M"], store_python_metadata=True, matlab_compatible=True)
-
+    create_json(paths["W50M"], param, ["MERRA_coverage", "region_name", "Crd_all", "res_weather", "MERRA_correction"], paths, ["MERRA_IN", "W50M"])
     timecheck('End')
 
 
@@ -251,7 +251,7 @@ def generate_landsea(paths, param):
     :type paths: dict
     :param param: Dictionary including the geodataframes of the shapefiles, the number of features, the coordinates of the bounding box of the spatial scope, and the number of rows and columns.
     :type param: dict
-    :return: The tif files for LAND and EEZ are saved in their respective paths.
+    :return: The tif files for LAND and EEZ are saved in their respective paths, along with their metadata in JSON files.
     :rtype: None
     """
     m_high = param["m_high"]
@@ -286,6 +286,7 @@ def generate_landsea(paths, param):
             A_land[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] + A_region
     # Saving file
     array2raster(paths["LAND"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_land)
+    create_json(paths["LAND"], param, ["region_name", "m_high", "n_high", "Crd_all", "res_desired", "GeoRef", "nRegions_land"], paths, ["Countries", "LAND"])
     print('\nfiles saved: ' + paths["LAND"])
     timecheck('Finish Land')
 
@@ -316,6 +317,7 @@ def generate_landsea(paths, param):
     A_sea[A_land > 0] = 0
     # Saving file
     array2raster(paths["EEZ"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_sea)
+    create_json(paths["EEZ"], param, ["region_name", "m_high", "n_high", "Crd_all", "res_desired", "GeoRef", "nRegions_sea"], paths, ["EEZ_global", "EEZ"])
     print('\nfiles saved: ' + paths["EEZ"])
     timecheck('Finish Sea')
 
@@ -328,7 +330,7 @@ def generate_subregions(paths, param):
     :type paths: dict
     :param param: Dictionary including the geodataframe of the shapefile, the number of features, the coordinates of the bounding box of the spatial scope, and the number of rows and columns.
     :type param: dict
-    :return: The tif file for SUB is saved in its respective path.
+    :return: The tif file for SUB is saved in its respective path, along with its metadata in a JSON file.
     :rtype: None
     """
     m_high = param["m_high"]
@@ -369,6 +371,7 @@ def generate_subregions(paths, param):
 
     # Saving file
     array2raster(paths["SUB"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_sub)
+    create_json(paths["SUB"], param, ["subregions_name", "m_high", "n_high", "Crd_all", "res_desired", "GeoRef", "nRegions_sea"], paths, ["subregions", "SUB"])
     print('\nfiles saved: ' + paths["SUB"])
     timecheck('Finish Subregions')
     
@@ -385,7 +388,7 @@ def generate_landuse(paths, param):
     :type paths: dict
     :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
     :type param: dict
-    :return: The tif file for LU is saved in its respective path.
+    :return: The tif file for LU is saved in its respective path, along with its metadata in a JSON file.
     :rtype: None
     """
 
@@ -399,6 +402,7 @@ def generate_landuse(paths, param):
                                                           slice(Ind[3] - 1, Ind[1])))
     w = np.flipud(w)
     array2raster(paths["LU"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], w)
+    create_json(paths["LU"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["LU_global", "LU"])
     print("files saved: " + paths["LU"])
     timecheck('End')
 
@@ -412,7 +416,7 @@ def generate_bathymetry(paths, param):
     :type paths: dict
     :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
     :type param: dict
-    :return: The tif file for BATH is saved in its respective path.
+    :return: The tif file for BATH is saved in its respective path, along with its metadata in a JSON file.
     :rtype: None
     """
 
@@ -426,6 +430,7 @@ def generate_bathymetry(paths, param):
     A_BATH = resizem(A_BATH, 180 * 240, 360 * 240)
     A_BATH = np.flipud(A_BATH[Ind[0] - 1: Ind[2], Ind[3] - 1: Ind[1]])
     array2raster(paths['BATH'], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_BATH)
+    create_json(paths["BATH"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["Bathym_global", "BATH"])
     print("files saved: " + paths["BATH"])
     timecheck('End')
 
@@ -439,7 +444,7 @@ def generate_topography(paths, param):
     :type paths: dict
     :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
     :type param: dict
-    :return: The tif file for TOPO is saved in its respective path.
+    :return: The tif file for TOPO is saved in its respective path, along with its metadata in a JSON file.
     :rtype: None
     """
     
@@ -489,6 +494,7 @@ def generate_topography(paths, param):
 
     A_TOPO = np.flipud(Topo[Ind[0] - 1:Ind[2], Ind[3] - 1:Ind[1]])
     array2raster(paths["TOPO"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_TOPO)
+    create_json(paths["TOPO"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["Topo_tiles", "TOPO"])
     print("\nfiles saved: " + paths["TOPO"])
     timecheck('End')
 
@@ -502,7 +508,7 @@ def generate_slope(paths, param):
     :type paths: dict
     :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
     :type param: dict
-    :return: The tif file for SLOPE is saved in its respective path.
+    :return: The tif file for SLOPE is saved in its respective path, along with its metadata in a JSON file.
     :rtype: None
     """
 
@@ -548,6 +554,7 @@ def generate_slope(paths, param):
 
     A_SLP = np.flipud(slope_pc)
     array2raster(paths["SLOPE"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_SLP)
+    create_json(paths["SLOPE"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["TOPO", "SLOPE"])
     print("files saved: " + paths["SLOPE"])
     timecheck('End')
 
@@ -561,7 +568,7 @@ def generate_population(paths, param):
     :type paths: dict
     :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
     :type param: dict
-    :return: The tif file for POP is saved in its respective path.
+    :return: The tif file for POP is saved in its respective path, along with its metadata in a JSON file.
     :rtype: None
     """
     timecheck('Start')
@@ -611,6 +618,7 @@ def generate_population(paths, param):
 
     A_POP = np.flipud(Pop[Ind[0] - 1:Ind[2], Ind[3] - 1:Ind[1]])
     array2raster(paths["POP"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_POP)
+    create_json(paths["POP"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["Pop_tiles", "POP"])
     print("\nfiles saved: " + paths["POP"])
     timecheck('End')
 
@@ -625,7 +633,7 @@ def generate_protected_areas(paths, param):
     :type paths: dict
     :param param: Dictionary including the dictionary of conversion of protection categories (protected_areas).
     :type param: dict
-    :return: The tif file for PA is saved in its respective path.
+    :return: The tif file for PA is saved in its respective path, along with its metadata in a JSON file.
     :rtype: None
     """
     timecheck('Start')
@@ -687,7 +695,8 @@ def generate_protected_areas(paths, param):
                         ['ALL_TOUCHED=FALSE',  # rasterize all pixels touched by polygons
                          'ATTRIBUTE=Raster']  # put raster values according to the 'Raster' field values
                         )
-
+    create_json(paths["PA"], param, ["region_name", "protected_areas", "Crd_all", "res_desired", "GeoRef"], paths, ["Protected", "PA"])
+    
     # Close dataset
     out_raster_ds = None
     print("files saved: " + paths["PA"])
@@ -695,7 +704,19 @@ def generate_protected_areas(paths, param):
 
 
 def generate_buffered_population(paths, param):
+    """
+    This function reads the land use raster, identifies urban areas, and exclude pixels around them based on a
+    user-defined buffer (buffer_pixel_amount). It creates a masking raster of boolean values (0 or 1) for the scope.
+    Zero means the pixel is excluded, one means it is suitable.
+    The function is useful in case there is a policy to exclude renewable energy projects next to urban settlements.
 
+    :param paths: Dictionary including the path to the land use raster for the scope, and to the output path BUFFER.
+    :type paths: dict
+    :param param: Dictionary including the user-defined buffer (buffer_pixel_amount), the urban type within the land use map (type_urban), and the georeference dictionary.
+    :type param: dict
+    :return: The tif file for BUFFER is saved in its respective path, along with its metadata in a JSON file.
+    :rtype: None
+    """
     timecheck('Start')
     buffer_pixel_amount = param["WindOn"]["mask"]["buffer_pixel_amount"]
     GeoRef = param["GeoRef"]
@@ -710,6 +731,7 @@ def generate_buffered_population(paths, param):
 
     array2raster(paths["BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
                  A_notPopulated)
+    create_json(paths["BUFFER"], param, ["region_name", "landuse", "WindOn", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "BUFFER"])
     print("files saved: " + paths["BUFFER"])
     timecheck('End')
 

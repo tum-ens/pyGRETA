@@ -514,6 +514,11 @@ def create_json(filepath, param, param_keys, paths, paths_keys):
             for k, v in param[key].items():
                 if type(v) == np.ndarray:
                     new_dict[key][k] = v.tolist()
+                if type(v) == dict:
+                    for k2, v2 in v.items():
+                        if type(v2) == np.ndarray:
+                            new_dict[key][k][k2] = v2.tolist()
+                    
     for key in paths_keys:
         new_dict[key] = paths[key]
     # Add timestamp

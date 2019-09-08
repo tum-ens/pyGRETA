@@ -328,7 +328,7 @@ where :math:`A_r` is the outer area of the receiver, :math:`U_{L_{cst}}` corresp
 :math:`U_{L_{Wind}}` is a loss coefficient dependent on the wind speed :math:`V_{Wind}`, 
 :math:`T_i` is the average heat transfer fluid temperature, and :math:`T_a` is the ambient temperature.
 
-Typical values for the :math:`U_{L_{cst}}` and :math:`U_{L_{Wind}}` are 1.06 :math:`kW/m^{2}K` and 1.19 :math:`kW/m^{2}K(m/s)^{0.6}` respectively
+Typical values for the :math:`U_{L_{cst}}` and :math:`U_{L_{Wind}}` are 1.06 :math:`kW/m^{2}K` and 1.19 :math:`kW/(m^{2}K(m/s)^{0.6})` respectively
 
 Flow Losses
 ^^^^^^^^^^^

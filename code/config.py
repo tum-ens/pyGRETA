@@ -219,17 +219,12 @@ def landuse_parameters(param):
     """
     This function sets the land use parameters in the dictionary *landuse* inside param:
     
-    *type* is a numpy array of integers that associates a number to each land use type.
-    
-    *type_urban* is the number associated to urban areas (useful for :mod:`Master.generate_buffered_population`).
-    
-    *Ross_coeff* is a numpy array of Ross coefficients associated to each land use type (relevant for :mod:`model_functions.loss`).
-    
-    *albedo* is a numpy array of albedo coefficients between 0 and 1 associated to each land use type (relevant for reflected irradiation, see :mod:`model_functions.calc_CF_solar`).
-    
-    *hellmann* is a numpy array of Hellmann coefficients associated to each land use type (relevant for :mod:`Master.generate_wind_correction`).
-    
-    *height* is a numpy array of gradient heights in meter associated to each land use type (relevant for :mod:`Master.generate_wind_correction`).
+      * *type* is a numpy array of integers that associates a number to each land use type.
+      * *type_urban* is the number associated to urban areas (useful for :mod:`Master.generate_buffered_population`).
+      * *Ross_coeff* is a numpy array of Ross coefficients associated to each land use type (relevant for :mod:`model_functions.loss`).
+      * *albedo* is a numpy array of albedo coefficients between 0 and 1 associated to each land use type (relevant for reflected irradiation, see :mod:`model_functions.calc_CF_solar`).
+      * *hellmann* is a numpy array of Hellmann coefficients associated to each land use type (relevant for :mod:`Master.generate_wind_correction`).
+      * *height* is a numpy array of gradient heights in meter associated to each land use type (relevant for :mod:`Master.generate_wind_correction`).
     
     :param param: Dictionary including the user preferences.
     :type param: dict
@@ -251,7 +246,7 @@ def landuse_parameters(param):
         # 10  -- Grasslands
         # 11  -- Permanent wetland
         # 12  -- Croplands
-        # 13  -- URBAN AND BUILT-UP
+        # 13  -- Urban and built-up
         # 14  -- Croplands / natural vegetation mosaic
         # 15  -- Snow and ice
         # 16  -- Barren or sparsely vegetated
@@ -275,9 +270,8 @@ def protected_areas_parameters(param):
     """
     This function sets the parameters for protected areas in the dictionary *protected_areas* inside param:
     
-    *type* is a numpy array of integers that associates a number to each protection type.
-    
-    *IUCN_Category* is an array of strings with names associated to each protection type (for your information).
+      * *type* is a numpy array of integers that associates a number to each protection type.
+      * *IUCN_Category* is an array of strings with names associated to each protection type (for your information).
     
     :param param: Dictionary including the user preferences.
     :type param: dict
@@ -688,8 +682,31 @@ def weather_output_paths(paths, param):
     return paths
     
 def local_maps_paths(paths, param):
-    '''
-    '''
+    """
+    This function defines the paths where the local maps will be saved:
+    
+      * *LAND* for the raster of land areas within the scope
+      * *EEZ* for the raster of sea areas within the scope
+      * *SUB* for the raster of areas covered by subregions (both land and sea) within the scope
+      * *LU* for the land use raster within the scope
+      * *BATH* for the bathymetry raster within the scope
+      * *TOPO* for the topography raster within the scope
+      * *SLOPE* for the slope raster within the scope
+      * *PA* for the raster of protected areas within the scope
+      * *POP* for the population raster within the scope
+      * *BUFFER* for the raster of population buffer areas within the scope
+      * *CORR_GWA* for correction factors based on the Global Wind Atlas (mat file)
+      * *CORR_ON* for the onshore wind correction factors (raster)
+      * *CORR_OFF* for the offshore wind correction factors (raster)
+    
+    :param paths: Dictionary including the paths.
+    :type paths: dict
+    :param param: Dictionary including the user preferences.
+    :type param: dict
+    :return: The updated dictionary paths.
+    :rtype: dict
+    """
+    
     # Local maps
     PathTemp = paths["local_maps"] + param["region_name"]
     paths["LAND"] = PathTemp + "_Land.tif"  # Land pixels
@@ -714,8 +731,20 @@ def local_maps_paths(paths, param):
     return paths
     
 def irena_paths(paths, param):
-    '''
-    '''
+    """
+    This function defines the paths for the IRENA inputs and outputs:
+        
+      * *IRENA* is a csv file containing statistics for all countries and technologies for a specific *year*, created using a query tool of IRENA.
+      * *IRENA_dict* is a csv file to convert the code names of countries from the IRENA database to the database of the shapefile of countries.
+      * *IRENA_out* is a csv file with a summary of onshore wind statistics for the countries within the scope.
+    
+    :param paths: Dictionary including the paths.
+    :type paths: dict
+    :param param: Dictionary including the user preferences.
+    :type param: dict
+    :return: The updated dictionary paths.
+    :rtype: dict
+    """
     global root
     global fs
     
@@ -730,8 +759,14 @@ def irena_paths(paths, param):
     return paths
     
 def regression_input_paths(paths):
-    '''
-    '''
+    """
+    Description ?????
+    
+    :param paths: Dictionary including the paths.
+    :type paths: dict
+    :return: The updated dictionary paths.
+    :rtype: dict
+    """
     global current_folder
     global fs
     
@@ -742,8 +777,18 @@ def regression_input_paths(paths):
     return paths
     
 def emhires_input_paths(paths, param, tech):
-    '''
-    '''
+    """
+    Description ?????
+    
+    :param paths: Dictionary including the paths.
+    :type paths: dict
+    :param param: Dictionary including the user preferences.
+    :type param: dict
+    :param tech: Name of the technology.
+    :type tech: string
+    :return: The updated dictionary paths.
+    :rtype: dict
+    """
     global root
     global fs
     
@@ -761,8 +806,24 @@ def emhires_input_paths(paths, param, tech):
     return paths
     
 def potential_output_paths(paths, param, tech):
-    '''
-    '''
+    """
+    This function defines the paths of the files that will be saved in the folder for the potential outputs:
+    
+      * *FLH* is the file with the full-load hours for all pixels within the scope (mat file).
+      * *mask* is the file with the suitable pixels within the scope (mat file).
+      * *FLH_mask* is the file with the full-load hours for the suitable pixels within the scope (mat file).
+      * *weight* is the power density for all the pixels in the scope (mat file).
+      * *FLH_weight* is the potential energy output for all the pixels in the scope (mat file).
+    
+    :param paths: Dictionary including the paths.
+    :type paths: dict
+    :param param: Dictionary including the user preferences.
+    :type param: dict
+    :param tech: Name of the technology.
+    :type tech: string
+    :return: The updated dictionary paths.
+    :rtype: dict
+    """
     
     region = param["region_name"]
     year = str(param["year"])
@@ -788,8 +849,26 @@ def potential_output_paths(paths, param, tech):
     return paths
     
 def regional_analysis_output_paths(paths, param, tech):
-    '''
-    '''
+    """
+    This function defines the paths of the files that will be saved in the folder for the regional analysis outputs:
+    
+      * *Locations* is the shapefile of points that correspond to the selected quantiles in each subregion, for which the time series will be generated.
+      * *TS* is the csv file with the time series for all subregions and quantiles.
+      * *Region_Stats* is the csv file with the summary report for all subregions.
+      * *Sorted_FLH* is the mat file with the sorted samples of FLH for each subregion.
+      * *TS_param* is ?????
+      * *Regression_summary* is ?????
+      * *Regression_TS* is ?????
+    
+    :param paths: Dictionary including the paths.
+    :type paths: dict
+    :param param: Dictionary including the user preferences.
+    :type param: dict
+    :param tech: Name of the technology.
+    :type tech: string
+    :return: The updated dictionary paths.
+    :rtype: dict
+    """
     
     subregions = param["subregions_name"]
     year = str(param["year"])
@@ -806,17 +885,13 @@ def regional_analysis_output_paths(paths, param, tech):
     else:
         PathTemp = paths["regional_analysis"] + subregions + '_' + tech
     
-    
-    paths[tech]["FLH"] = PathTemp + '_FLH_' + year + '.mat'
-    paths[tech]["mask"] = PathTemp + "_mask_" + year + ".mat"
-    paths[tech]["FLH_mask"] = PathTemp + "_FLH_mask_" + year + ".mat"
-    paths[tech]["weight"] = PathTemp + "_weight_" + year + ".mat"
-    paths[tech]["FLH_weight"] = PathTemp + "_FLH_weight_" + year + ".mat"
     paths[tech]["Locations"] = PathTemp + '_Locations.shp'
     paths[tech]["TS"] = PathTemp + '_TS_' + year + '.csv'
     paths[tech]["Region_Stats"] = PathTemp + '_Region_stats_' + year + '.csv'
     paths[tech]["Sorted_FLH"] = PathTemp + '_sorted_FLH_sampled_' + year + '.mat'
+    
     paths[tech]["TS_param"] = paths["regression_in"] + subregions + '_' + tech
     paths[tech]["Regression_summary"] = paths["regression_out"] + subregions + '_' + tech + '_reg_coefficients_'
     paths[tech]["Regression_TS"] = paths["regression_out"] + subregions + '_' + tech + '_reg_TimeSeries_'
+    
     return paths

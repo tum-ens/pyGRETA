@@ -2,7 +2,7 @@ from model_functions import *
 
 def initialization():
     """
-    This function reads the user-defined parameters and paths from config.py, then adds additional parameters related
+    This function reads the user-defined parameters and paths from :mod:`config.py`, then adds additional parameters related
     to the shapefiles. 
     First, it saves the spatial scope of the problem.
     Then, it distinguishes between countries, exclusive economic zones and subregions. For each one of them, 
@@ -110,11 +110,11 @@ def initialization():
 
 def generate_weather_files(paths, param):
     """
-    This function reads the daily NetCDF data (from MERRA) for SWGDN, SWTDN, T2M, U50m, and V50m,
+    This function reads the daily NetCDF data (from MERRA-2) for SWGDN, SWTDN, T2M, U50m, and V50m,
     and saves them in matrices with yearly time series with low spatial resolution.
     This function has to be run only once.
 
-    :param paths: Dictionary including the paths to the MERRA-2 input files (MERRA_IN), and to the desired output locations for T2M, W50M and CLEARNESS.
+    :param paths: Dictionary including the paths to the MERRA-2 input files *MERRA_IN*, and to the desired output locations for *T2M*, *W50M* and *CLEARNESS*.
     :type paths: dict
     :param param: Dictionary including the year and the spatial scope.
     :type param: dict
@@ -204,12 +204,12 @@ def clean_weather_data(paths, param):
     """
     This function detects data outliers in the wind input file W50M.mat. An outlier is a data point, for which
     the absolute value of the difference between the yearly average value and the mean of the direct neighbors
-    (Moore neighborhood) is higher than a user-defined threshold (MERRA_correction). It replaces the hourly values
+    (Moore neighborhood) is higher than a user-defined threshold *MERRA_correction*. It replaces the hourly values
     with the hourly values of the mean of the neighbors, and overwrites the original W50M.mat file.
 
     :param paths: Dictionary including the path to the file W50M.mat.
     :type paths: dict
-    :param param: Dictionary including the threshold value MERRA_coorection.
+    :param param: Dictionary including the threshold value *MERRA_coorection*.
     :type param: dict
     :return: The file W50M.mat is overwritten after the correction, along with its metadata in a JSON file.
     :rtype: None
@@ -247,11 +247,11 @@ def generate_landsea(paths, param):
     This function reads the shapefiles of the countries (land areas) and of the exclusive economic zones (sea areas)
     within the scope, and creates two rasters out of them.
 
-    :param paths: Dictionary including the paths LAND and EEZ.
+    :param paths: Dictionary including the paths *LAND* and *EEZ*.
     :type paths: dict
     :param param: Dictionary including the geodataframes of the shapefiles, the number of features, the coordinates of the bounding box of the spatial scope, and the number of rows and columns.
     :type param: dict
-    :return: The tif files for LAND and EEZ are saved in their respective paths, along with their metadata in JSON files.
+    :return: The tif files for *LAND* and *EEZ* are saved in their respective paths, along with their metadata in JSON files.
     :rtype: None
     """
     m_high = param["m_high"]
@@ -326,11 +326,11 @@ def generate_subregions(paths, param):
     """
     This function reads the shapefiles of the subregions within the scope, and creates a raster out of it.
 
-    :param paths: Dictionary including the paths SUB, LAND, EEZ.
+    :param paths: Dictionary including the paths *SUB*, *LAND*, *EEZ*.
     :type paths: dict
     :param param: Dictionary including the geodataframe of the shapefile, the number of features, the coordinates of the bounding box of the spatial scope, and the number of rows and columns.
     :type param: dict
-    :return: The tif file for SUB is saved in its respective path, along with its metadata in a JSON file.
+    :return: The tif file for *SUB* is saved in its respective path, along with its metadata in a JSON file.
     :rtype: None
     """
     m_high = param["m_high"]
@@ -382,13 +382,13 @@ def generate_landuse(paths, param):
     """
     This function reads the global map of land use, and creates a raster out of it for the desired scope.
     There are 17 discrete possible values from 0 to 16, corresponding to different land use classes.
-    See config.py for more information on the land use map.
+    See :mod:`config.py` for more information on the land use map.
 
-    :param paths: Dictionary including the paths to the global land use raster LU_global and to the output path LU.
+    :param paths: Dictionary including the paths to the global land use raster *LU_global* and to the output path *LU*.
     :type paths: dict
     :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
     :type param: dict
-    :return: The tif file for LU is saved in its respective path, along with its metadata in a JSON file.
+    :return: The tif file for *LU* is saved in its respective path, along with its metadata in a JSON file.
     :rtype: None
     """
 
@@ -412,11 +412,11 @@ def generate_bathymetry(paths, param):
     This function reads the global map of bathymetry, resizes it, and creates a raster out of it for the desired scope.
     The values are in meter (negative in the sea).
 
-    :param paths: Dictionary including the paths to the global bathymetry raster Bathym_global and to the output path BATH.
+    :param paths: Dictionary including the paths to the global bathymetry raster *Bathym_global* and to the output path *BATH*.
     :type paths: dict
     :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
     :type param: dict
-    :return: The tif file for BATH is saved in its respective path, along with its metadata in a JSON file.
+    :return: The tif file for *BATH* is saved in its respective path, along with its metadata in a JSON file.
     :rtype: None
     """
 

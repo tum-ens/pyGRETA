@@ -28,6 +28,8 @@ import shutil
 import pyomo.environ as pyo
 from pyomo.opt import SolverFactory
 import json
+from warnings import warn
+
 
 def sind(alpha):
     """
@@ -196,7 +198,7 @@ def char_range(c1, c2):
     :param c2: Last character in the iteration (included).
     :type c2: char
     :return: Generator to iterate between the characters *c1* and *c2*.
-    :rtype: generator ?????
+    :rtype: python generator
     """
     for c in range(ord(c1), ord(c2) + 1):
         yield chr(c)
@@ -222,29 +224,6 @@ def changem(A, newval, oldval):
     for i, j in z:
         np.place(Out, A == i, j)
     return Out
-
-
-def list_files(directory, format):
-    """
-    ?????
-    """
-    saved = getcwd()
-    chdir(directory)
-    it = glob(format)
-    chdir(saved)
-    return it
-
-
-def sub2ind(array_shape, rows, cols):
-    """
-    Convert subscripts to linear indices
-
-    :param array_shape: tuple (# of rows, # of columns)
-    :param rows: row values
-    :param cols: column values
-    :return: Index
-    """
-    return np.ravel_multi_index((rows, cols), array_shape, order='F')
 
 
 def ind2sub(array_shape, ind):
@@ -319,19 +298,6 @@ def timecheck(*args):
 
     else:
         raise Exception('Too many arguments have been passed.\nExpected: zero or one \nPassed: ' + format(len(args)))
-
-
-def reg_miss_folder(paths):
-
-    print("\nNo Regression Folder found, It has been created under: \n" + paths["regression_in"])
-    print("\nPlease populate the input folder with the required data. \n"
-          "(look at README.txt in the folder for more information)\n")
-
-
-def reg_miss_files():
-
-    print("\nPlease populate the input folder with the technology corresponding data.\n"
-          "(look at README.txt in the folder for more information)\n")
 
 
 def display_progress(message, progress_stat):

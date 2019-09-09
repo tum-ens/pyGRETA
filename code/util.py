@@ -193,7 +193,7 @@ def char_range(c1, c2):
     
     :param c1: First character in the iteration.
     :type c1: char
-    :param c1: Last character in the iteration (included).
+    :param c2: Last character in the iteration (included).
     :type c2: char
     :return: Generator to iterate between the characters *c1* and *c2*.
     :rtype: generator ?????

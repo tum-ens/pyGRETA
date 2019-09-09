@@ -1,8 +1,3 @@
-.. renewable-timeseries documentation master file, created by
-   sphinx-quickstart on Fri Jul 26 11:33:25 2019.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 renewable-timeseries
 =====================
 GIS-based model for renewable energy potential and time series generation

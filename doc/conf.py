@@ -76,4 +76,6 @@ html_static_path = []
 autodoc_mock_imports = ["gdal", "osr", "osgeo", "numpy", "os", "glob", "psutil", "datetime",
                         "inspect", "sys", "math", "rasterio", "pandas", "scipy", "geopandas",
                         "shapely", "fiona", "hdf5storage", "multiprocessing", "itertools",
-                        "h5netcdf", "cProfile", "pstats", "shutil", "pyomo"]
+                        "h5netcdf", "cProfile", "pstats", "shutil", "pyomo", "pdb", "logging",
+                        "networkx"]
+

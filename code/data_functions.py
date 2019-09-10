@@ -53,6 +53,17 @@ def crd_exact_points(Ind_points, Crd_all, res):
 
 
 def subset(A, param):
+    """
+    Retreives a subset of the global MERRA coverage based on weather resolution and *spatial_scope* bounding box
+    coordinates.
+
+    :param A: Weather Data
+    :type A: 3d array
+    :param param: Dictionary of parameters containing Merra Coverage and region's name.
+    :type param: dict
+    :return subset: The subset of the weather data contained in the bounding box of *spatial_scope*.
+    :rtype subset: 3d array
+    """
     if param["MERRA_coverage"] == 'World' and param["region_name"] != 'World':
         crd = param["Crd_all"]
         res = param["res_weather"]
@@ -187,7 +198,6 @@ def clean_IRENA(param, paths):
 
 
 def calc_gwa_correction(param, paths):
-    ''' description'''
 
     m_high = param["m_high"]
     n_high = param["n_high"]
@@ -208,7 +218,7 @@ def calc_gwa_correction(param, paths):
     TOPO = np.flipud(w)
 
     # Clean IRENA data and filter them for desired scope
-    if (not os.path.isfile(paths["IRENA_out"])):
+    if not os.path.isfile(paths["IRENA_out"]):
         clean_IRENA(param, paths)
 
     # Get the installed capacities
@@ -289,7 +299,7 @@ def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
 
     :param Crd_all: desired geographic extent of the whole region (north, east, south, west)
     :param m_high, n_high: number of rows and columns
-    :param res_desired: high map resolution
+    :param res_desired: map's high resolution
     :param GCR: includes the user-defined day and the duration of the shade-free period
     """
 
@@ -365,6 +375,16 @@ def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
 
 
 def sampled_sorting(Raster, sampling):
+    """
+    Returns a list with a defined length of sorted values from a 2d raster.
+
+    :param Raster: Input raster to be sorted
+    :type Raster:2d array
+    :param sampling: Number of values to be sampled from the raster, defines length of outputted list
+    :type sampling: int
+    :return: List of sorted values sampled from Raster.
+    :rtype: List
+    """
     # Flatten the raster and sort raster from highest to lowest
     Sorted_FLH = np.sort(Raster.flatten(order='F'))
     Sorted_FLH = np.flipud(Sorted_FLH)
@@ -381,10 +401,26 @@ def sampled_sorting(Raster, sampling):
 
 def regmodel_load_data(paths, param, tech, settings, region):
     """
-    This function returns a dictionary used to initialize a pyomo abstract model.
-    The dictionary keys are: hubheights, quantiles, IRENA goal FLH, EMHIRES or Renewable.ninja timeseries,
+    This function returns a dictionary used to initialize a pyomo abstract model for the regression analysis
+    of each region.
+
+
+    :param paths: dictionary of dictionaries containing the paths to the Timeseries csv files
+    :param param: dictionry of dictionaries contating IRENA's region list, FLHs and EMHIRES model timeseries.
+
+    :param tech: name of the technology under study
+    :type tech: str
+
+    :param settings: list of all the settings (hub heights/orientations) to be used in the regression
+    :type settings: list
+
+    :param region: name short of region
+    :type region: str
+
+    :return data: The dictionary keys are: hubheights, quantiles, IRENA goal FLH, EMHIRES or Renewable.ninja timeseries,
     the duration of the timeseries, the input timeseries as regression parameters,
     and tuple of booleans representing the existance of a solution to the optimization problem.
+    :rtype data: dict
     """
 
     # Read data from output folder
@@ -467,6 +503,21 @@ def regmodel_load_data(paths, param, tech, settings, region):
 
 
 def get_merra_raster_Data(paths, param, tech):
+    """
+    Returns tuple of two dictionaries containing weather and correction rasters for specified technology.
+
+    :param paths: dictionary of dictionaries containing the paths to the input weather and raster data
+    :type paths: dict
+
+    :param param: dictionary of dictionaries containing landuse, Ross coefficients, Albedo, and hellman coefficient
+    correspondance.
+    :type param: dict
+
+    :param tech: Technology under study
+    :type tech: str
+    :return: tuple of dictionaries for the weather and correction data
+    :rtype: dict, dict
+    """
     landuse = param["landuse"]
     merraData = {}
     rasterData = {}

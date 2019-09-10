@@ -266,9 +266,14 @@ def sumnorm_MERRA2(A, m, n, res_low, res_desired):
 
 def limit_cpu(check):
     """
-    Is called at every process start to set its priority
-    :return:
+    Set priority of a process for cpu time and ram allocation at two levels: average or below average.
+
+    :param check: If ``True``, the process is set a below average priority rating allowing other programs to run undisturbed.
+    if ``False``, the process is given the same priority as all other user processes currently running on the machine,
+    leading to faster calculation times.
+    :type check: boolean
     """
+
     check = check[0]
     p = psutil.Process(os.getpid())
     if check:
@@ -288,7 +293,14 @@ def limit_cpu(check):
 
 
 def timecheck(*args):
+    """
+    Print information about the progress of the script by displaying the function currently running, and optionally
+    an input message, with a corresponding timestamp.
 
+    :param args: Message to be displayed with the function name and the timestamp.
+    :type args: string (``optional``)
+    :return:
+    """
     if len(args) == 0:
         print(inspect.stack()[1].function + str(datetime.datetime.now().strftime(": %H:%M:%S:%f")))
 
@@ -301,6 +313,14 @@ def timecheck(*args):
 
 
 def display_progress(message, progress_stat):
+    """
+    Display a progress bar for long computations. To be used as part of a loop or with multiprocessing
+
+    :param message: Message to be displayed with the progress bar
+    :type message: string
+    :param progress_stat: tuple containing the total length of the calculation and the current status or progress
+    :type progress_stat: tuple length 2
+    """
     length = progress_stat[0]
     status = progress_stat[1]
     sys.stdout.write('\r')
@@ -311,8 +331,25 @@ def display_progress(message, progress_stat):
 
 
 def create_json(filepath, param, param_keys, paths, paths_keys):
-    '''
-    '''
+    """
+    Creates a metadata json file containing information about the file in filepath by storing the relevant keys from
+    both the param and path dictionaries.
+
+    :param filepath: Path to the file for which the json file will be created
+    :type filepath: string
+
+    :param param: Dictionary of dictionaries containing the user input parameters and intermediate outputs
+    :type param: dict
+
+    :param param_keys: Keys of the parameters to be extracted from the param dictionary and saved into the json file
+    :type param_keys: iterable of strings
+
+    :param paths: Dictionary of dictionaries containing the paths information for all files
+    :type paths: dict
+
+    :param paths_keys: Keys of the paths to be extracted from the paths dictionary and saved into the json file
+    :type paths_keys: iterable of strings
+    """
     new_file = os.path.splitext(filepath)[0] + '.json'
     new_dict = {}
     # Add standard keys

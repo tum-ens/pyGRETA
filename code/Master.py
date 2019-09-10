@@ -12,7 +12,7 @@ def initialization():
     used for saving tif files.
 
     :return: The updated dictionaries param and paths.
-    :rtype: tuple of dict
+    :rtype: dict, dict
     """
     timecheck('Start')
 
@@ -1411,10 +1411,10 @@ def regression_coefficients(paths, param, tech):
 
     :param paths: Dictionary including the paths to the shapefile of the globally protected areas, to the landuse raster of the scope, and to the output path PA.
     :type paths: dict
-    :param param: Dictionary including the dictionary of conversion of protection categories (protected_areas).
+    :param param: Dictionary including the dictionary of regression parameters and year.
     :type param: dict
     :param tech: Name of the technology used for calculations
-    :type tech: string
+    :type tech: str
     :raise Missing Data: No Time-series present for technology tech
     :raise Missing Data for Setting: Missing Time-series with desired settings (hub-heights/orientations)
     """

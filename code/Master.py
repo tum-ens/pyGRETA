@@ -1406,15 +1406,17 @@ def regression_coefficients(paths, param, tech):
     for different Hub-Heights/orientations and Quantiles, while constraining the total sum of
     the obtained TS to the FLH given by IRENA
 
-    Copy the regression parameters : Irena FLH and EMHIRES TS under Regression_Outputs folder
-    Save the regression coefficients, and the result Time-series in a .csv file under Regression_Outputs folder
-
     :param paths: Dictionary including the paths to the shapefile of the globally protected areas, to the landuse raster of the scope, and to the output path PA.
     :type paths: dict
     :param param: Dictionary including the dictionary of regression parameters and year.
     :type param: dict
     :param tech: Name of the technology used for calculations
     :type tech: str
+    :return:
+        Copy the regression parameters Irena FLH and EMHIRES TS under Regression_Outputs folder,
+
+        Save the regression coefficients, and the result Time-series in a .csv file under Regression_Outputs folder
+    :rtype: None
     :raise Missing Data: No Time-series present for technology tech
     :raise Missing Data for Setting: Missing Time-series with desired settings (hub-heights/orientations)
     """

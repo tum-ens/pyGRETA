@@ -6,7 +6,7 @@ np.seterr(divide='ignore')  # Repress Invalid value or division by zero error
 
 def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
     """
-    Computes the hourly capacity factor for PV and CSP technologies based on location, time, and technology parameters
+    Computes the hourly capacity factor for PV and CSP technologies based *spatial_scope*, time, and technology parameters
 
     :param hour: Hour of the year
     :type hour: integer
@@ -206,6 +206,17 @@ def calc_FLH_solar(hours, args):
 
 
 def calc_TS_solar(hours, args):
+    """
+    Computes the hourly PV and CSP capacity factor for desired quantiles.
+
+    :param hours: hour ranks of the year (from 1 to 8760)
+    :type hours: 1d array
+    :param args: tuple containing *param*(dict): dictionary of user parameters, *tech*(str): name of technology,
+    *rasterData*(dict): correction rasters, *merraData*(dict): weather Data raster
+    :type args: dict, str, dict, dict
+    :return: array of timeseries for desired quantiles
+    :rtype: 2d array
+    """
     # Decomposing the tuple args
     param = args[0]
     tech = args[1]
@@ -381,7 +392,7 @@ def coefficients(beta, ratio, R_b, A_i, f):
     :param A_i: 2d array ????
     :param f: 2d array ????
     :return: (F_direct, F_diffuse, F_reflected)
-    :rtype: tuple of three matrices
+    :rtype: array, array, array
     """
 
     F_direct = (1 - ratio + ratio * A_i) * R_b
@@ -438,7 +449,7 @@ def global2diff(k_t, dims):
 
 def calc_CF_wind(hour, reg_ind, turbine, m, n, merraData, rasterData):
     """
-    Computes the hourly capacity factor for Wind Onshore and Offshore technologies based on location, time, and technology parameters.
+    Computes the hourly capacity factor for Wind Onshore and Offshore technologies based on *spatial_scope*, time, and technology parameters.
 
     :param hour: hour rank in a year (from 1 to 8760)
     :type hour: integer
@@ -522,6 +533,17 @@ def calc_FLH_wind(hours, args):
 
 
 def calc_TS_wind(hours, args):
+    """
+    Computes the hourly Wind OnShore or OffShore capacity factor for desired quantiles.
+
+    :param hours: hour ranks of the year (from 1 to 8760)
+    :type hours: 1d array
+    :param args: tuple containing *param*(dict): dictionary of user parameters, *tech*(str): name of technology,
+    *rasterData*(dict): correction rasters, *merraData*(dict): weather Data raster
+    :type args: dict, str, dict, dict
+    :return: array of timeseries for desired quantiles
+    :rtype: 2d array
+    """
     # Decomposing the tuple args
     param = args[0]
     tech = args[1]

@@ -9,7 +9,7 @@ def configuration():
     This function is the main configuration function that calls all the other modules in the code.
 
     :return: The dictionary param containing all the user preferences, and the dictionary path containing all the paths to inputs and outputs.
-    :rtype: tuple of dict
+    :rtype: dict, dict
     """
     paths, param = general_settings()
     paths, param = scope_paths_and_parameters(paths, param)
@@ -48,7 +48,7 @@ def general_settings():
     the current folder ``current_folder``, and the system-dependent file separator ``fs``.
 
     :return: The empty dictionary paths, and the dictionary param including some general information.
-    :rtype: tuple of dict
+    :rtype: dict, dict
     """
     # These variables will be initialized here, then read in other modules without modifying them.
     global fs
@@ -98,7 +98,7 @@ def scope_paths_and_parameters(paths, param):
     :param param: Dictionary including the user preferences.
     :type param: dict
     :return: The updated dictionaries paths and param.
-    :rtype: tuple of dict
+    :rtype: dict, dict
     """
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs

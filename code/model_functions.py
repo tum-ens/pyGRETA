@@ -176,13 +176,13 @@ def calc_FLH_solar(hours, args):
     :type hours: numpy array
 
     :param args:
-        param (dict):
+        ``param`` (dict):
             Dictionary including the dictionary of conversion of protection categories (protected_areas).
-        tech (str):
+        ``tech`` (str):
             Name of the technology
-        rasterData (dict):
+        ``rasterData`` (dict):
             Dictionary of numpy array containing Landuse, Ross coefficients, Albedo, and wind speed correction
-        merraData (dict):
+        ``merraData`` (dict):
             Dictionary of numpy array containing the weather data (Clearness and Wind speed at 50m)
 
     :return FLH: FLH over the year for technology
@@ -226,13 +226,13 @@ def calc_TS_solar(hours, args):
     :type hours: numpy array
 
     :param args:
-        param (dict):
+        ``param`` (dict):
             dictionary of user parameters
-        tech (str):
+        ``tech`` (str):
             name of technology
-        rasterData (dict):
+        ``rasterData`` (dict):
             correction rasters
-        merraData (dict):
+        ``merraData`` (dict):
             weather Data raster
 
     :return TS: numpy array of timeseries for desired quantiles
@@ -589,13 +589,13 @@ def calc_FLH_wind(hours, args):
     :type hours: numpy array
 
     :param args:
-        param (dict):
+        ``param`` (dict):
             Dictionary including the dictionary of conversion of protection categories (protected_areas)
-        tech (str):
+        ``tech`` (str):
             Name of the technology
-        rasterData (dict):
+        ``rasterData`` (dict):
             Dictionary of numpy array containing Landuse, Ross coefficients, Albedo, and wind speed correction
-        merraData (dict):
+        ``merraData`` (dict):
             Dictionary of numpy array containing the weather data (Clearness and Wind speed at 50m)
 
     :return FLH: FLH over the year for wind technologies
@@ -640,13 +640,13 @@ def calc_TS_wind(hours, args):
     :type hours: numpy array
 
     :param args:
-        param (dict):
+        ``param`` (dict):
             Dictionary of user parameters
-        tech (str):
+        ``tech`` (str):
             Name of technology
-        rasterData (dict):
+        ``rasterData`` (dict):
             Correction rasters
-        merraData (dict):
+        ``merraData`` (dict):
             Weather Data raster
 
     :return TS: Array of timeseries for desired quantiles

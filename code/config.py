@@ -1,17 +1,19 @@
 import os
 from pathlib import Path
 import numpy as np
+from warnings import warn
+
 
 def configuration():
     """
     This function is the main configuration function that calls all the other modules in the code.
 
     :return: The dictionary param containing all the user preferences, and the dictionary path containing all the paths to inputs and outputs.
-    :rtype: tuple of dict
+    :rtype: tuple (dict, dict)
     """
     paths, param = general_settings()
     paths, param = scope_paths_and_parameters(paths, param)
-    
+
     param = computation_parameters(param)
     param = resolution_parameters(param)
     param = weather_data_parameters(param)
@@ -23,7 +25,7 @@ def configuration():
     param = csp_parameters(param)
     param = onshore_wind_parameters(param)
     param = offshore_wind_paramters(param)
-    
+
     paths = weather_input_folder(paths, param)
     paths = global_maps_input_paths(paths)
     paths = output_folders(paths, param)
@@ -31,30 +33,30 @@ def configuration():
     paths = local_maps_paths(paths, param)
     paths = irena_paths(paths, param)
     paths = regression_input_paths(paths)
-    
+
     for tech in param["technology"]:
         paths[tech] = {}
         paths = emhires_input_paths(paths, param, tech)
         paths = potential_output_paths(paths, param, tech)
         paths = regional_analysis_output_paths(paths, param, tech)
     return paths, param
-    
-    
+
+
 def general_settings():
     """
     This function creates and initializes the dictionaries param and paths. It also creates global variables for the root folder ``root``,
     the current folder ``current_folder``, and the system-dependent file separator ``fs``.
 
     :return: The empty dictionary paths, and the dictionary param including some general information.
-    :rtype: tuple of dict
+    :rtype: dict, dict
     """
     # These variables will be initialized here, then read in other modules without modifying them.
     global fs
     global root
     global current_folder
-    
+
     param = {}
-    param["author"] = 'Kais Siala' # the name of the person running the script
+    param["author"] = 'Kais Siala'  # the name of the person running the script
     param["comment"] = 'Testing regression'
     
     paths = {}
@@ -64,13 +66,14 @@ def general_settings():
     # root = str(Path(current_folder).parent.parent.parent) + fs + "Database_KS" + fs
     # For Server Computer:
     root = str(Path(current_folder).parent.parent.parent) + "Database_KS" + fs
-    
+
     return paths, param
-    
+
+
 ###########################
 #### User preferences #####
 ###########################
-    
+
 def scope_paths_and_parameters(paths, param):
     """
     This function defines the path of the geographic scope of the output *spatial_scope* and of the subregions of interest *subregions*.
@@ -95,7 +98,7 @@ def scope_paths_and_parameters(paths, param):
     :param param: Dictionary including the user preferences.
     :type param: dict
     :return: The updated dictionaries paths and param.
-    :rtype: tuple of dict
+    :rtype: tuple (dict, dict)
     """
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
@@ -108,17 +111,17 @@ def scope_paths_and_parameters(paths, param):
     
     # Year
     param["year"] = 2015
-    
+
     # Technologies
     param["technology"] = ['WindOn']  # ['PV', 'CSP', 'WindOn', 'WindOff']
     return paths, param
-  
-    
+
+
 def computation_parameters(param):
     """
     This function defines parameters related to the processing.
     Some modules in ``Master.py`` allow parallel processing. The key *nproc*, which takes an integer as a value, limits the number of parallel processes.
-    *CPU_limit* is a boolean parameter that ?????
+    *CPU_limit* is a boolean parameter that sets the level of priority for all processes in the multiprocessesing, leave ``True`` if you plan on using the computer while FLH and TS are being computed, ``False`` for fastest computation time
 
     :param param: Dictionary including the user preferences.
     :type param: dict
@@ -128,7 +131,8 @@ def computation_parameters(param):
     param["nproc"] = 36
     param["CPU_limit"] = True
     return param
-    
+
+
 def resolution_parameters(param):
     """
     This function defines the resolution of weather data (low resolution), and the desired resolution of output rasters (high resolution).
@@ -140,11 +144,12 @@ def resolution_parameters(param):
     :return: The updated dictionary param.
     :rtype: dict
     """
-    
+
     param["res_weather"] = np.array([1 / 2, 5 / 8])
     param["res_desired"] = np.array([1 / 240, 1 / 240])
     return param
-    
+
+
 def weather_data_parameters(param):
     """
     This function defines the coverage of the weather data *MERRA_coverage*, and how outliers should be corrected *MERRA_correction*.
@@ -160,11 +165,12 @@ def weather_data_parameters(param):
     :return: The updated dictionary param.
     :rtype: dict
     """
-    
+
     param["MERRA_coverage"] = 'World'
     param["MERRA_correction"] = 0.35
     return param
-    
+
+
 def file_saving_options(param):
     """
     This function sets some options for saving files.
@@ -179,14 +185,15 @@ def file_saving_options(param):
     :return: The updated dictionary param.
     :rtype: dict
     """
-    
+
     # Mask / Weight
     param["savetiff"] = True  # Save geotiff files of mask and weight rasters
-    
+
     # Reporting
     param["report_sampling"] = 100
     return param
-    
+
+
 def time_series_parameters(param):
     """
     This function determines the time series that will be created.
@@ -205,7 +212,7 @@ def time_series_parameters(param):
     :return: The updated dictionary param.
     :rtype: dict
     """
-    
+
     # Quantiles for time series
     param["quantiles"] = np.array([100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0])
     param["modes"] = {"high": [100, 90, 80],
@@ -222,8 +229,8 @@ def time_series_parameters(param):
         
     param["regression"] = regression
     return param
-    
-    
+
+
 def landuse_parameters(param):
     """
     This function sets the land use parameters in the dictionary *landuse* inside param:
@@ -260,21 +267,24 @@ def landuse_parameters(param):
         # 15  -- Snow and ice
         # 16  -- Barren or sparsely vegetated
     """
-    
+
     landuse = {"type": np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]),
-            "type_urban": 13,
-            "Ross_coeff": np.array(
-                [0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208,
-                    0.0208, 0.0208, 0.0208, 0.0208]),
-            "albedo": np.array(
-                [0.00, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.00, 0.20, 0.20, 0.20, 0.00, 0.20]),
-            "hellmann": np.array(
-                [0.10, 0.25, 0.25, 0.25, 0.25, 0.25, 0.20, 0.20, 0.25, 0.25, 0.15, 0.15, 0.20, 0.40, 0.20, 0.15, 0.15]),
-            "height": np.array([213, 366, 366, 366, 366, 366, 320, 320, 366, 366, 274, 274, 320, 457, 320, 274, 274])
-            }
+               "type_urban": 13,
+               "Ross_coeff": np.array(
+                   [0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208,
+                    0.0208, 0.0208, 0.0208, 0.0208, 0.0208]),
+               "albedo": np.array(
+                   [0.00, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.00, 0.20, 0.20, 0.20, 0.00,
+                    0.20]),
+               "hellmann": np.array(
+                   [0.10, 0.25, 0.25, 0.25, 0.25, 0.25, 0.20, 0.20, 0.25, 0.25, 0.15, 0.15, 0.20, 0.40, 0.20, 0.15,
+                    0.15]),
+               "height": np.array([213, 366, 366, 366, 366, 366, 320, 320, 366, 366, 274, 274, 320, 457, 320, 274, 274])
+               }
     param["landuse"] = landuse
     return param
-    
+
+
 def protected_areas_parameters(param):
     """
     This function sets the parameters for protected areas in the dictionary *protected_areas* inside param:
@@ -288,23 +298,24 @@ def protected_areas_parameters(param):
     :rtype: dict
     """
     protected_areas = {"type": np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
-                    "IUCN_Category": np.array(['Not Protected',  # 0
-                                                'Ia',  # 1
-                                                'Ib',  # 2
-                                                'II',  # 3
-                                                'III',  # 4
-                                                'IV',  # 5
-                                                'V',  # 6
-                                                'VI',  # 7
-                                                'Not Applicable',  # 8
-                                                'Not Assigned',  # 9
-                                                'Not Reported'  # 10
-                                                ])
-                    }
-    
+                       "IUCN_Category": np.array(['Not Protected',  # 0
+                                                  'Ia',  # 1
+                                                  'Ib',  # 2
+                                                  'II',  # 3
+                                                  'III',  # 4
+                                                  'IV',  # 5
+                                                  'V',  # 6
+                                                  'VI',  # 7
+                                                  'Not Applicable',  # 8
+                                                  'Not Assigned',  # 9
+                                                  'Not Reported'  # 10
+                                                  ])
+                       }
+
     param["protected_areas"] = protected_areas
     return param
-    
+
+
 def pv_parameters(param):
     """
     This function sets the parameters for photovoltaics in the dictionary *pv* inside param:
@@ -344,40 +355,43 @@ def pv_parameters(param):
     :type param: dict
     :return: The updated dictionary param.
     :rtype: dict
+    :raise Tracking Warning: If *tracking* is not set to 0 and *orientation* is given as a value other than 0 or 180 (South or North), the orientation is ignored.
+
     """
-    
+
     pv = {}
     pv["resource"] = {"clearness_correction": 1
-                    }
-    pv["technical"] = {"T_r": 25, # °C
-                    "loss_coeff": 0.37,
-                    "tracking": 0, # 0 for no tracking, 1 for one-axis tracking, 2 for two-axes tracking
-                    "orientation": 180  # | 0: South | 90: West | 180: North | -90: East |
-                    }
+                      }
+    pv["technical"] = {"T_r": 25,  # °C
+                       "loss_coeff": 0.37,
+                       "tracking": 1,  # 0 for no tracking, 1 for one-axis tracking, 2 for two-axes tracking
+                       "orientation": 90  # | 0: South | 90: West | 180: North | -90: East |
+                       }
     pv["mask"] = {"slope": 20,
-                "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
-                "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
-                }
+                  "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
+                  "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
+                  }
     GCR = {"shadefree_period": 6,
-        "day_north": 79,
-        "day_south": 263
-        }
+           "day_north": 79,
+           "day_south": 263
+           }
     pv["weight"] = {"GCR": GCR,
                     "lu_availability": np.array(
                         [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.02, 0.00, 0.02, 0.02, 0.02, 0.00,
-                        0.02]),
+                         0.02]),
                     "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
                     "power_density": 0.000160,
                     "f_performance": 0.75
                     }
     del GCR
     if pv["technical"]["tracking"] != 0 and pv["technical"]["orientation"] not in [0, 180]:
-        print('WARNING: ' + str(pv["technical"]["tracking"]) + ' axis tracking, overwrites orientation input: '
-            + str(pv["technical"]["orientation"]))
+        warn('WARNING: ' + str(pv["technical"]["tracking"]) + ' axis tracking, overwrites orientation input: '
+             + str(pv["technical"]["orientation"]))
         pv["technical"]["orientation"] = 'track_' + str(pv["technical"]["tracking"])
     param["PV"] = pv
     return param
-        
+
+
 def csp_parameters(param):
     """
     This function sets the parameters for concentrated solar power in the dictionary *csp* inside param:
@@ -388,7 +402,7 @@ def csp_parameters(param):
     
     * *technical* is a dictionary including the parameters related to the module:
     
-      * *T_avg_HTF* is the average temperature of the heat transfer fluid ????? in °C.
+      * *T_avg_HTF* is the average temperature in °C of the heat transfer fluid between the inlet and outlet of the solar field.
       * *loss_coeff* is the the heat loss coefficient in W/(m²K), which does not depend on wind speed (relevant for :mod:`model_functions.calc_CF_solar`).
       * *loss_coeff_wind* is the the heat loss coefficient in W/(m²K(m/s)^0.6), which depends on wind speed (relevant for :mod:`model_functions.calc_CF_solar`).
       * *Flow_coeff* is a factor smaller than 1 for the heat transfer to the HTF (Flow or heat removal factor).
@@ -415,7 +429,7 @@ def csp_parameters(param):
     """
     csp = {}
     csp["resource"] = {"clearness_correction": 1
-                      }
+                       }
     csp["technical"] = {"T_avg_HTF": 350,  # °C
                         "loss_coeff": 1.06,  # Heat Loss coefficient W/(m².K) independent of Wind Speed
                         "loss_coeff_wind": 1.19,  # Multiplied with (Wind speed)^(0.6)
@@ -424,18 +438,19 @@ def csp_parameters(param):
                         "Wind_cutoff": 22  # (m/s)  Maximum Wind Speed for effective tracking (Source:NREL)
                         }
     csp["mask"] = {"slope": 20,
-                "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
-                "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
-                }
+                   "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
+                   "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
+                   }
     csp["weight"] = {"lu_availability": np.array(
         [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.02, 0.00, 0.02, 0.02, 0.02, 0.00, 0.02]),
-                    "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
-                    "power_density": 0.000160,
-                    "f_performance": 0.9 * 0.75
-                    }
+        "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
+        "power_density": 0.000160,
+        "f_performance": 0.9 * 0.75
+    }
     param["CSP"] = csp
     return param
-    
+
+
 def onshore_wind_parameters(param):
     """
     This function sets the parameters for onshore wind in the dictionary *windon* inside param:
@@ -475,29 +490,30 @@ def onshore_wind_parameters(param):
     """
     windon = {}
     windon["resource"] = {"res_correction": 1,
-                        "topo_correction": 1,
-                        "topo_weight": 'capacity'  # 'none' or 'size' or 'capacity'
-                        }
+                          "topo_correction": 1,
+                          "topo_weight": 'capacity'  # 'none' or 'size' or 'capacity'
+                          }
     windon["technical"] = {"w_in": 4,
-                        "w_r": 13,
-                        "w_off": 25,
-                        "P_r": 3,
-                        "hub_height": 140
-                        }
+                           "w_r": 13,
+                           "w_off": 25,
+                           "P_r": 3,
+                           "hub_height": 80
+                           }
     windon["mask"] = {"slope": 20,
-                    "lu_suitability": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1]),
-                    "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
-                    "buffer_pixel_amount": 1
-                    }
+                      "lu_suitability": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1]),
+                      "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
+                      "buffer_pixel_amount": 1
+                      }
     windon["weight"] = {"lu_availability": np.array(
         [0.00, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.10, 0.10, 0.10, 0.10, 0.00, 0.10, 0.00, 0.10, 0.00, 0.10]),
-                        "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
-                        "power_density": 0.000008,
-                        "f_performance": 0.87
-                        }
+        "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
+        "power_density": 0.000008,
+        "f_performance": 0.87
+    }
     param["WindOn"] = windon
     return param
-    
+
+
 def offshore_wind_paramters(param):
     """
     This function sets the parameters for offshore wind in the dictionary *windoff* inside param:
@@ -533,7 +549,7 @@ def offshore_wind_paramters(param):
     """
     windoff = {}
     windoff["resource"] = {"res_correction": 1,
-                        }
+                           }
     windoff["technical"] = {"w_in": 3,
                             "w_r": 16.5,
                             "w_off": 34,
@@ -541,17 +557,18 @@ def offshore_wind_paramters(param):
                             "hub_height": 120
                             }
     windoff["mask"] = {"depth": -40,
-                    "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
-                    }
+                       "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
+                       }
     windoff["weight"] = {"lu_availability": np.array(
         [0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00]),
-                        "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
-                        "power_density": 0.000020,
-                        "f_performance": 0.87
-                        }
+        "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
+        "power_density": 0.000020,
+        "f_performance": 0.87
+    }
     param["WindOff"] = windoff
     return param
-    
+
+
 ###########################
 ##### Define Paths ########
 ###########################
@@ -569,13 +586,14 @@ def weather_input_folder(paths, param):
     """
     global root
     global fs
-    
+
     MERRA_coverage = param["MERRA_coverage"]
     year = str(param["year"])
     paths["MERRA_IN"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + MERRA_coverage + " " + year + fs
-    
+
     return paths
-    
+
+
 def global_maps_input_paths(paths):
     """
     This function defines the paths where the global maps are saved:
@@ -596,7 +614,7 @@ def global_maps_input_paths(paths):
     """
     global root
     global fs
-    
+
     # Global maps
     PathTemp = root + "01 Raw inputs" + fs + "Maps" + fs
     paths["LU_global"] = PathTemp + "Landuse" + fs + "LCType.tif"
@@ -607,8 +625,9 @@ def global_maps_input_paths(paths):
     paths["GWA"] = PathTemp + "Global Wind Atlas" + fs + fs + "windSpeed.csv"
     paths["Countries"] = PathTemp + "Countries" + fs + "gadm36_0.shp"
     paths["EEZ_global"] = PathTemp + "EEZ" + fs + "eez_v10.shp"
-    
+
     return paths
+
 
 def output_folders(paths, param):
     """
@@ -632,42 +651,41 @@ def output_folders(paths, param):
     """
     global root
     global fs
-    
+
     region = param["region_name"]
     subregions = param["subregions_name"]
-    
+
     # Main output folder
     paths["region"] = root + "03 Intermediate files" + fs + "Files " + region + fs
-    
+
     # Output folder for weather data
     paths["weather_data"] = paths["region"] + "Weather data" + fs
     if not os.path.isdir(paths["weather_data"]):
         os.makedirs(paths["weather_data"])
-        
+
     # Output folder for local maps of the scope
     paths["local_maps"] = paths["region"] + "Maps" + fs
     if not os.path.isdir(paths["local_maps"]):
         os.makedirs(paths["local_maps"])
-        
+
     # Output folder for the potential of the scope
     paths["potential"] = paths["region"] + "Renewable energy" + fs + "Potential" + fs
     if not os.path.isdir(paths["potential"]):
         os.makedirs(paths["potential"])
-        
+
     # Output folder for the regional analysis
     paths["regional_analysis"] = paths["region"] + "Renewable energy" + fs + "Regional analysis" + fs + subregions + fs
     if not os.path.isdir(paths["regional_analysis"]):
         os.makedirs(paths["regional_analysis"])
-        
+
     # Regression output
     paths["regression_out"] = paths["regional_analysis"] + "Regression outputs" + fs
     if not os.path.isdir(paths["regression_out"]):
         os.makedirs(paths["regression_out"])
 
     return paths
-    
 
-    
+
 def weather_output_paths(paths, param):
     """
     This function defines the paths to weather filesfor a specific *year*:
@@ -687,9 +705,10 @@ def weather_output_paths(paths, param):
     paths["W50M"] = paths["weather_data"] + "w50m_" + year + ".mat"
     paths["CLEARNESS"] = paths["weather_data"] + "clearness_" + year + ".mat"
     paths["T2M"] = paths["weather_data"] + "t2m_" + year + ".mat"
-    
+
     return paths
-    
+
+
 def local_maps_paths(paths, param):
     """
     This function defines the paths where the local maps will be saved:
@@ -716,7 +735,7 @@ def local_maps_paths(paths, param):
     :return: The updated dictionary paths.
     :rtype: dict
     """
-    
+
     # Local maps
     PathTemp = paths["local_maps"] + param["region_name"]
     paths["LAND"] = PathTemp + "_Land.tif"  # Land pixels
@@ -730,16 +749,17 @@ def local_maps_paths(paths, param):
     paths["POP"] = PathTemp + "_Population.tif"  # Population
     paths["BUFFER"] = PathTemp + "_Population_Buffered.tif"  # Buffered population
     paths["CORR_GWA"] = PathTemp + "_GWA_Correction.mat"  # Correction factors based on the GWA
-    paths["AREA"] = PathTemp + "_Area.mat" # Area per pixel in m²
-    
+    paths["AREA"] = PathTemp + "_Area.mat"  # Area per pixel in m²
+
     # Correction factors for wind speeds
     turbine_height_on = str(param["WindOn"]["technical"]["hub_height"])
     turbine_height_off = str(param["WindOff"]["technical"]["hub_height"])
     paths["CORR_ON"] = PathTemp + "_WindOn_Correction_" + turbine_height_on + '.tif'
     paths["CORR_OFF"] = PathTemp + "_WindOff_Correction_" + turbine_height_off + '.tif'
-    
+
     return paths
-    
+
+
 def irena_paths(paths, param):
     """
     This function defines the paths for the IRENA inputs and outputs:
@@ -757,18 +777,20 @@ def irena_paths(paths, param):
     """
     global root
     global fs
-    
+
     year = str(param["year"])
     # IRENA input
-    paths["IRENA"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA" + fs + "IRENA_RE_electricity_statistics_allcountries_alltech_" + year + ".csv"
+    paths[
+        "IRENA"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA" + fs + "IRENA_RE_electricity_statistics_allcountries_alltech_" + year + ".csv"
     paths["IRENA_dict"] = root + "00 Assumptions" + fs + "dict_IRENA_countries.csv"
-    
+
     # IRENA output
     paths["IRENA_summary"] = paths["region"] + "Renewable energy" + fs + "IRENA_summary_" + year + ".csv"
     paths["IRENA_regression"] = paths["regression_out"] + "IRENA_regression_" + year + ".csv"
     
     return paths
-    
+
+
 def regression_input_paths(paths):
     """
     Description ?????
@@ -780,13 +802,13 @@ def regression_input_paths(paths):
     """
     global current_folder
     global fs
-    
-    paths["Reg_RM"] = current_folder + fs + "Regression_coef" + fs + "README.txt"
+
     paths["inst-cap_example"] = current_folder + fs + "Regression_coef" + fs + "IRENA_FLH_example.csv"
     paths["regression_in"] = paths["regional_analysis"]
-    
+
     return paths
-    
+
+
 def emhires_input_paths(paths, param, tech):
     """
     Description ?????
@@ -802,20 +824,21 @@ def emhires_input_paths(paths, param, tech):
     """
     global root
     global fs
-    
+
     year = str(param["year"])
-    
+
     if tech == 'WindOn':
         paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + year + fs + \
-                                "TS.CF.COUNTRY.30yr.date.txt"
+                                 "TS.CF.COUNTRY.30yr.date.txt"
     elif tech == 'WindOff':
         paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + year + fs + \
-                                "TS.CF.OFFSHORE.30yr.date.txt"
+                                 "TS.CF.OFFSHORE.30yr.date.txt"
     elif tech == 'PV':
         paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + year + fs + \
-                                "EMHIRESPV_TSh_CF_Country_19862015.txt"
+                                 "EMHIRESPV_TSh_CF_Country_19862015.txt"
     return paths
-    
+
+
 def potential_output_paths(paths, param, tech):
     """
     This function defines the paths of the files that will be saved in the folder for the potential outputs:
@@ -835,10 +858,10 @@ def potential_output_paths(paths, param, tech):
     :return: The updated dictionary paths.
     :rtype: dict
     """
-    
+
     region = param["region_name"]
     year = str(param["year"])
-    
+
     if tech in ['WindOn', 'WindOff']:
         hubheight = str(param[tech]["technical"]["hub_height"])
         PathTemp = paths["potential"] + region + '_' + tech + '_' + hubheight
@@ -850,7 +873,7 @@ def potential_output_paths(paths, param, tech):
         PathTemp = paths["potential"] + region + '_' + tech + '_' + orientation
     else:
         PathTemp = paths["potential"] + region + '_' + tech
-    
+
     paths[tech]["FLH"] = PathTemp + '_FLH_' + year + '.mat'
     paths[tech]["mask"] = PathTemp + "_mask_" + year + ".mat"
     paths[tech]["FLH_mask"] = PathTemp + "_FLH_mask_" + year + ".mat"
@@ -858,7 +881,8 @@ def potential_output_paths(paths, param, tech):
     paths[tech]["FLH_weight"] = PathTemp + "_FLH_weight_" + year + ".mat"
 
     return paths
-    
+
+
 def regional_analysis_output_paths(paths, param, tech):
     """
     This function defines the paths of the files that will be saved in the folder for the regional analysis outputs:
@@ -867,9 +891,9 @@ def regional_analysis_output_paths(paths, param, tech):
       * *TS* is the csv file with the time series for all subregions and quantiles.
       * *Region_Stats* is the csv file with the summary report for all subregions.
       * *Sorted_FLH* is the mat file with the sorted samples of FLH for each subregion.
-      * *TS_param* is ?????
-      * *Regression_summary* is ?????
-      * *Regression_TS* is ?????
+      * *TS_param* is the path format for TS files corresponding to tech
+      * *Regression_summary* is the path format for a csv files containing the regression coefficients found by the solver
+      * *Regression_TS* is the path format for a csv files with the regression resulting timeseries for the tech and settings
     
     :param paths: Dictionary including the paths.
     :type paths: dict
@@ -880,10 +904,10 @@ def regional_analysis_output_paths(paths, param, tech):
     :return: The updated dictionary paths.
     :rtype: dict
     """
-    
+
     subregions = param["subregions_name"]
     year = str(param["year"])
-    
+
     if tech in ['WindOn', 'WindOff']:
         hubheight = str(param[tech]["technical"]["hub_height"])
         PathTemp = paths["regional_analysis"] + subregions + '_' + tech + '_' + hubheight
@@ -893,16 +917,19 @@ def regional_analysis_output_paths(paths, param, tech):
         else:
             orientation = '0'
         PathTemp = paths["regional_analysis"] + subregions + '_' + tech + '_' + orientation
+    elif tech in ['CSP']:
+        orientation = '0'
+        PathTemp = paths["regional_analysis"] + subregions + '_' + tech + '_' + orientation
     else:
         PathTemp = paths["regional_analysis"] + subregions + '_' + tech
-    
+
     paths[tech]["Locations"] = PathTemp + '_Locations.shp'
     paths[tech]["TS"] = PathTemp + '_TS_' + year + '.csv'
     paths[tech]["Region_Stats"] = PathTemp + '_Region_stats_' + year + '.csv'
     paths[tech]["Sorted_FLH"] = PathTemp + '_sorted_FLH_sampled_' + year + '.mat'
-    
+
     paths[tech]["TS_param"] = paths["regression_in"] + subregions + '_' + tech
     paths[tech]["Regression_summary"] = paths["regression_out"] + subregions + '_' + tech + '_reg_coefficients_'
     paths[tech]["Regression_TS"] = paths["regression_out"] + subregions + '_' + tech + '_reg_TimeSeries_'
-    
+
     return paths

@@ -159,7 +159,7 @@ def calc_FLH_solar(hours, args):
             # Show progress of the simulation
             status = status + 1
             sys.stdout.write('\r')
-            sys.stdout.write(tech + ' ' + param["region"] + ' ' + '[%-50s] %d%%' % (
+            sys.stdout.write(tech + ' ' + param["region_name"] + ' ' + '[%-50s] %d%%' % (
                 '=' * ((status * 50) // len(hours)), (status * 100) // len(hours)))
             sys.stdout.flush()
 
@@ -217,7 +217,7 @@ def calc_TS_solar(hours, args):
             # Show progress of the simulation
             status = status + 1
             sys.stdout.write('\r')
-            sys.stdout.write(tech + ' ' + param["region"] + ' ' + '[%-50s] %d%%' % (
+            sys.stdout.write(tech + ' ' + param["subregions_name"] + ' ' + '[%-50s] %d%%' % (
                 '=' * ((status * 50) // len(hours)), (status * 100) // len(hours)))
             sys.stdout.flush()
 
@@ -472,7 +472,7 @@ def calc_FLH_wind(hours, args):
             # Show progress of the simulation
             status = status + 1
             sys.stdout.write('\r')
-            sys.stdout.write(tech + ' ' + param["region"] + ' ' + '[%-50s] %d%%' % (
+            sys.stdout.write(tech + ' ' + param["region_name"] + ' ' + '[%-50s] %d%%' % (
                 '=' * ((status * 50) // len(hours)), (status * 100) // len(hours)))
             sys.stdout.flush()
 
@@ -522,7 +522,7 @@ def calc_TS_wind(hours, args):
             # Show progress of the simulation
             status = status + 1
             sys.stdout.write('\r')
-            sys.stdout.write(tech + ' ' + param["region"] + ' ' + '[%-50s] %d%%' % (
+            sys.stdout.write(tech + ' ' + param["subregions_name"] + ' ' + '[%-50s] %d%%' % (
                 '=' * ((status * 50) // len(hours)), (status * 100) // len(hours)))
             sys.stdout.flush()
 
@@ -533,3 +533,48 @@ def calc_TS_wind(hours, args):
         CF[np.isnan(CF)] = 0
         TS[:, hour] = CF
     return TS
+    
+def pyomo_regression_model():
+    """
+    Create Pyomo Abstract Model ?????
+    """
+    model = pyo.AbstractModel()
+    model.s = pyo.Set()
+    model.q = pyo.Set()
+    model.t = pyo.Set()
+
+    model.FLH = pyo.Param()
+    model.shape = pyo.Param(model.t)
+
+    model.TS = pyo.Param(model.s, model.q, model.t)
+    model.coef = pyo.Var(model.s, model.q, domain=pyo.NonNegativeReals)
+
+    def constraint_FLH(model):
+        FLH = 0
+        for s in model.s:
+            for q in model.q:
+                tempTS = 0
+                for t in model.t:
+                    tempTS = tempTS + model.TS[s, q, t]
+                FLH = FLH + pyo.prod([model.coef[s, q], tempTS])
+        return FLH == model.FLH
+
+    def constraint_sum(model):
+        sum = 0
+        for s in model.s:
+            for q in model.q:
+                sum = sum + model.coef[s, q]
+        return sum == 1
+
+    def obj_expression(model):
+        Error = 0
+        for s in model.s:
+            for q in model.q:
+                for t in model.t:
+                    Error = Error + (pyo.prod([model.coef[s, q], model.TS[s, q, t]]) - model.shape[t]) ** 2
+        return Error
+
+    model.OBJ = pyo.Objective(rule=obj_expression)
+    model.constraint_FLH = pyo.Constraint(rule=constraint_FLH)
+    model.constraint_sum = pyo.Constraint(rule=constraint_sum)
+    return model

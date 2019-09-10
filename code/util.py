@@ -28,6 +28,7 @@ import shutil
 import pyomo.environ as pyo
 from pyomo.opt import SolverFactory
 import json
+from warnings import warn
 
 def sind(alpha):
     """
@@ -224,17 +225,6 @@ def changem(A, newval, oldval):
     return Out
 
 
-def list_files(directory, format):
-    """
-    ?????
-    """
-    saved = getcwd()
-    chdir(directory)
-    it = glob(format)
-    chdir(saved)
-    return it
-
-
 def sub2ind(array_shape, rows, cols):
     """
     Convert subscripts to linear indices
@@ -320,18 +310,6 @@ def timecheck(*args):
     else:
         raise Exception('Too many arguments have been passed.\nExpected: zero or one \nPassed: ' + format(len(args)))
 
-
-def reg_miss_folder(paths):
-
-    print("\nNo Regression Folder found, It has been created under: \n" + paths["regression_in"])
-    print("\nPlease populate the input folder with the required data. \n"
-          "(look at README.txt in the folder for more information)\n")
-
-
-def reg_miss_files():
-
-    print("\nPlease populate the input folder with the technology corresponding data.\n"
-          "(look at README.txt in the folder for more information)\n")
 
 
 def display_progress(message, progress_stat):

@@ -55,7 +55,7 @@ def general_settings():
     
     param = {}
     param["author"] = 'Kais Siala' # the name of the person running the script
-    param["comment"] = 'Testing JSON'
+    param["comment"] = 'Testing regression'
     
     paths = {}
     fs = os.path.sep
@@ -99,18 +99,18 @@ def scope_paths_and_parameters(paths, param):
     """
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
-    paths["spatial_scope"] = PathTemp + "gadm36_SGP_0.shp"
-    paths["subregions"] = PathTemp + "gadm36_SGP_1.shp"
+    paths["spatial_scope"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
+    paths["subregions"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
     
     # Name tags for the scope and the subregions
-    param["region_name"] = 'Singapore'  # Name tag of the spatial scope
-    param["subregions_name"] = 'Singapore_districts' # Name tag of the subregions
+    param["region_name"] = 'Europe'  # Name tag of the spatial scope
+    param["subregions_name"] = 'Europe_wo_Balkans_NUTS0' # Name tag of the subregions
     
     # Year
     param["year"] = 2015
     
     # Technologies
-    param["technology"] = ['WindOn', 'PV', 'WindOff', 'CSP']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+    param["technology"] = ['WindOn']  # ['PV', 'CSP', 'WindOn', 'WindOff']
     return paths, param
   
     
@@ -191,6 +191,8 @@ def time_series_parameters(param):
     """
     This function determines the time series that will be created.
     
+    update ?????
+    
     *quantiles* is a numpy array of floats between 100 and 0. Within each subregion, the FLH values will be sorted,
     and points with FLH values at a certain quantile will be later selected. The time series will be created for these points.
     The value 100 corresponds to the maximum, 50 to the median, and 0 to the minimum.
@@ -206,14 +208,21 @@ def time_series_parameters(param):
     
     # Quantiles for time series
     param["quantiles"] = np.array([100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0])
-    
+    param["modes"] = {"high": [100, 90, 80],
+                      "mid": [70, 60, 50, 40, 30],
+                      "low": [20, 10, 0]}
+                      
     # Regression
     regression = {
         "solver": 'gurobi', # string
-        "hub_heights": [80], # list of numbers
-        "orientations": []} # list of numbers
+        "WindOn": [[60, 80, 100], [80, 100, 120], [100, 120, 140]], # list of hub height combinations
+        "WindOff": [[80], [100], [120]], # list of hub height combinations
+        "PV": [[0, 180, -90, 90]], # list of orientation combinations
+        "CSP": [[]]}
+        
     param["regression"] = regression
     return param
+    
     
 def landuse_parameters(param):
     """
@@ -473,7 +482,7 @@ def onshore_wind_parameters(param):
                         "w_r": 13,
                         "w_off": 25,
                         "P_r": 3,
-                        "hub_height": 80
+                        "hub_height": 140
                         }
     windon["mask"] = {"slope": 20,
                     "lu_suitability": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1]),
@@ -698,6 +707,7 @@ def local_maps_paths(paths, param):
       * *CORR_GWA* for correction factors based on the Global Wind Atlas (mat file)
       * *CORR_ON* for the onshore wind correction factors (raster)
       * *CORR_OFF* for the offshore wind correction factors (raster)
+      * *AREA* for the area per pixel in m² (mat file)
     
     :param paths: Dictionary including the paths.
     :type paths: dict
@@ -754,7 +764,8 @@ def irena_paths(paths, param):
     paths["IRENA_dict"] = root + "00 Assumptions" + fs + "dict_IRENA_countries.csv"
     
     # IRENA output
-    paths["IRENA_out"] = paths["region"] + "Renewable energy" + fs + "IRENA_summary_" + year + ".csv"
+    paths["IRENA_summary"] = paths["region"] + "Renewable energy" + fs + "IRENA_summary_" + year + ".csv"
+    paths["IRENA_regression"] = paths["regression_out"] + "IRENA_regression_" + year + ".csv"
     
     return paths
     

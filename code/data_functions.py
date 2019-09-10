@@ -379,42 +379,6 @@ def sampled_sorting(Raster, sampling):
     return s
 
 
-def calc_areas(Crd_all, n_high, res_desired):
-    # WSG84 ellipsoid constants
-    a = 6378137  # major axis
-    b = 6356752.3142  # minor axis
-    e = np.sqrt(1 - (b / a) ** 2)
-
-    # Lower pixel latitudes
-    lat_vec = np.arange(Crd_all[2], Crd_all[0], res_desired[0])
-    lat_vec = lat_vec[np.newaxis]
-
-    # Lower slice areas
-    # Areas between the equator and the lower pixel latitudes circling the globe
-    f_lower = np.deg2rad(lat_vec)
-    zm_lower = 1 - (e * sin(f_lower))
-    zp_lower = 1 + (e * sin(f_lower))
-
-    lowerSliceAreas = np.pi * b ** 2 * ((2 * np.arctanh(e * sin(f_lower))) / (2 * e) +
-                                        (sin(f_lower) / (zp_lower * zm_lower)))
-
-    # Upper slice areas
-    # Areas between the equator and the upper pixel latitudes circling the globe
-    f_upper = np.deg2rad(lat_vec + res_desired[0])
-
-    zm_upper = 1 - (e * sin(f_upper))
-    zp_upper = 1 + (e * sin(f_upper))
-
-    upperSliceAreas = np.pi * b ** 2 * ((2 * np.arctanh((e * sin(f_upper)))) / (2 * e) +
-                                        (sin(f_upper) / (zp_upper * zm_upper)))
-
-    # Pixel areas
-    # Finding the latitudinal pixel-sized globe slice areas then dividing them by the longitudinal pixel size
-    area_vec = ((upperSliceAreas - lowerSliceAreas) * res_desired[1] / 360).T
-    A_area = np.tile(area_vec, (1, n_high))
-    return A_area
-
-
 def regmodel_load_data(paths, param, tech, settings, region):
     """
     This function returns a dictionary used to initialize a pyomo abstract model.

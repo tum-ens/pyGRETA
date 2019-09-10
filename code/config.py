@@ -121,7 +121,7 @@ def computation_parameters(param):
     """
     This function defines parameters related to the processing.
     Some modules in ``Master.py`` allow parallel processing. The key *nproc*, which takes an integer as a value, limits the number of parallel processes.
-    *CPU_limit* is a boolean parameter that sets the level of priority for all processes in the multiprocessesing, leave True if you plan on using the computer while FLH and TS are being computed, False for fastest computation time
+    *CPU_limit* is a boolean parameter that sets the level of priority for all processes in the multiprocessesing, leave ``True`` if you plan on using the computer while FLH and TS are being computed, ``False`` for fastest computation time
 
     :param param: Dictionary including the user preferences.
     :type param: dict
@@ -265,8 +265,7 @@ def landuse_parameters(param):
                "type_urban": 13,
                "Ross_coeff": np.array(
                    [0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208,
-                    0.0208,
-                    0.0208, 0.0208, 0.0208, 0.0208]),
+                    0.0208, 0.0208, 0.0208, 0.0208, 0.0208]),
                "albedo": np.array(
                    [0.00, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.00, 0.20, 0.20, 0.20, 0.00,
                     0.20]),

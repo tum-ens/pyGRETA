@@ -758,7 +758,38 @@ def generate_area(paths, param):
     res_desired = param["res_desired"]
 
     # Calculate available Area
-    A_area = calc_areas(Crd_all, n_high, res_desired)
+    # WSG84 ellipsoid constants
+    a = 6378137  # major axis
+    b = 6356752.3142  # minor axis
+    e = np.sqrt(1 - (b / a) ** 2)
+
+    # Lower pixel latitudes
+    lat_vec = np.arange(Crd_all[2], Crd_all[0], res_desired[0])
+    lat_vec = lat_vec[np.newaxis]
+
+    # Lower slice areas
+    # Areas between the equator and the lower pixel latitudes circling the globe
+    f_lower = np.deg2rad(lat_vec)
+    zm_lower = 1 - (e * sin(f_lower))
+    zp_lower = 1 + (e * sin(f_lower))
+
+    lowerSliceAreas = np.pi * b ** 2 * ((2 * np.arctanh(e * sin(f_lower))) / (2 * e) +
+                                        (sin(f_lower) / (zp_lower * zm_lower)))
+
+    # Upper slice areas
+    # Areas between the equator and the upper pixel latitudes circling the globe
+    f_upper = np.deg2rad(lat_vec + res_desired[0])
+
+    zm_upper = 1 - (e * sin(f_upper))
+    zp_upper = 1 + (e * sin(f_upper))
+
+    upperSliceAreas = np.pi * b ** 2 * ((2 * np.arctanh((e * sin(f_upper)))) / (2 * e) +
+                                        (sin(f_upper) / (zp_upper * zm_upper)))
+
+    # Pixel areas
+    # Finding the latitudinal pixel-sized globe slice areas then dividing them by the longitudinal pixel size
+    area_vec = ((upperSliceAreas - lowerSliceAreas) * res_desired[1] / 360).T
+    A_area = np.tile(area_vec, (1, n_high))
 
     # Save to HDF File
     hdf5storage.writes({'A_area': A_area}, paths["AREA"], store_python_metadata=True, matlab_compatible=True)
@@ -1027,12 +1058,14 @@ def weighting(paths, param, tech):
     with rasterio.open(paths["PA"]) as src:
         A_protect = src.read(1)
         A_protect = np.flipud(A_protect).astype(int)  # Protection categories 0-10, to be classified
+
     # Calculate availability based on protection categories
     A_availability_pa = changem(A_protect, weight["pa_availability"], param["protected_areas"]["type"]).astype(float)
 
     with rasterio.open(paths["LU"]) as src:
         A_lu = src.read(1)
         A_lu = np.flipud(A_lu).astype(int)  # Landuse classes 0-16, to be reclassified
+
     # Calculate availability based on landuse types
     A_availability_lu = changem(A_lu, weight["lu_availability"], param["landuse"]["type"]).astype(float)
 
@@ -1149,7 +1182,7 @@ def reporting(paths, param, tech):
             else:
                 regions.drop([ind_prev], axis=0, inplace=True)
 
-                # Sum area: available area in km2
+        # Sum area: available area in km2
         A_area_region = A_region_extended * A_area
         Total_area = np.nansum(A_area_region) / (10 ** 6)
         regions.loc[reg, "Available_Area_km2"] = Total_area

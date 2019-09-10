@@ -2,25 +2,44 @@ from util import *
 
 
 def define_spatial_scope(scope_shp):
+    """
+    Missing description
+
+    :param scope_shp:
+    :return:
+    """
     scope_shp = scope_shp.to_crs({'init': 'epsg:4326'})
     r = scope_shp.total_bounds
     box = r[::-1][np.newaxis]
     return box
 
 
-def calc_ext(regb, ext, res):
-    minRow = m.floor(regb["miny"] / res[1, 0]) * res[1, 0]
-    maxRow = m.ceil(regb["maxy"] / res[1, 0]) * res[1, 0]
-    minCol = m.floor(regb["minx"] / res[1, 1]) * res[1, 1]
-    maxCol = m.ceil(regb["maxx"] / res[1, 1]) * res[1, 1]
-
-    return [[min(m.ceil((ext[0, 0] - res[0, 0] / 2) / res[0, 0]) * res[0, 0] + res[0, 0] / 2, maxRow),
-             min(m.ceil((ext[0, 1] - res[0, 1] / 2) / res[0, 1]) * res[0, 1] + res[0, 1] / 2, maxCol),
-             max(m.ceil((ext[0, 2] - res[0, 0] / 2) / res[0, 0]) * res[0, 0] + res[0, 0] / 2, minRow),
-             max(m.ceil((ext[0, 3] - res[0, 1] / 2) / res[0, 1]) * res[0, 1] + res[0, 1] / 2, minCol)]]
+# def calc_ext(regb, ext, res):
+#     minRow = m.floor(regb["miny"] / res[1, 0]) * res[1, 0]
+#     maxRow = m.ceil(regb["maxy"] / res[1, 0]) * res[1, 0]
+#     minCol = m.floor(regb["minx"] / res[1, 1]) * res[1, 1]
+#     maxCol = m.ceil(regb["maxx"] / res[1, 1]) * res[1, 1]
+#
+#     return [[min(m.ceil((ext[0, 0] - res[0, 0] / 2) / res[0, 0]) * res[0, 0] + res[0, 0] / 2, maxRow),
+#              min(m.ceil((ext[0, 1] - res[0, 1] / 2) / res[0, 1]) * res[0, 1] + res[0, 1] / 2, maxCol),
+#              max(m.ceil((ext[0, 2] - res[0, 0] / 2) / res[0, 0]) * res[0, 0] + res[0, 0] / 2, minRow),
+#              max(m.ceil((ext[0, 3] - res[0, 1] / 2) / res[0, 1]) * res[0, 1] + res[0, 1] / 2, minCol)]]
+#
 
 
 def crd_merra(Crd_regions, res_weather):
+    """
+    Calculates coordinates of box covering MERRA2 data (centroids + half resolution)
+
+    :param Crd_regions: Cooridinates of Regions
+    :type Crd_regions: array
+
+    :param res_weather: Weather data resolution
+    :type res_weather: list
+
+    :return Crd: Coordinates in Weather resolution
+    :rtype: list
+    """
     ''' Calculates coordinates of box covering MERRA2 data (centroids + half resolution)'''
     Crd = np.array(
         [np.ceil((Crd_regions[:, 0] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
@@ -32,6 +51,14 @@ def crd_merra(Crd_regions, res_weather):
 
 
 def crd_exact_box(Ind, Crd_all, res_desired):
+    """
+    Missing description
+
+    :param Ind:
+    :param Crd_all:
+    :param res_desired:
+    :return:
+    """
     Ind = Ind[np.newaxis]
 
     Crd = [Ind[:, 0] * res_desired[0] + Crd_all[2],
@@ -43,7 +70,8 @@ def crd_exact_box(Ind, Crd_all, res_desired):
 
 def crd_exact_points(Ind_points, Crd_all, res):
     '''
-    description
+    Missing description
+
     :param Ind_points: tuple of indices in the vertical and horizontal axes.
     '''
 
@@ -78,7 +106,14 @@ def subset(A, param):
 
 
 def ind_merra(Crd, Crd_all, res):
-    ''' description '''
+    """
+    Missing description
+
+    :param Crd:
+    :param Crd_all:
+    :param res:
+    :return:
+    """
     if len(Crd.shape) == 1:
         Crd = Crd[np.newaxis]
     Ind = np.array([(Crd[:, 0] - Crd_all[2]) / res[0],
@@ -90,7 +125,13 @@ def ind_merra(Crd, Crd_all, res):
 
 
 def ind_global(Crd, res_desired):
-    ''' description '''
+    """
+    Missing description
+
+    :param Crd:
+    :param res_desired:
+    :return:
+    """
     if len(Crd.shape) == 1:
         Crd = Crd[np.newaxis]
     Ind = np.array([np.round((90 - Crd[:, 0]) / res_desired[0]) + 1,
@@ -123,7 +164,15 @@ def calc_geotiff(Crd_all, res_desired):
 
 
 def calc_region(region, Crd_reg, res_desired, GeoRef):
-    ''' description '''
+    """
+    Missing description
+
+    :param region:
+    :param Crd_reg:
+    :param res_desired:
+    :param GeoRef:
+    :return:
+    """
     latlim = Crd_reg[2] - Crd_reg[0]
     lonlim = Crd_reg[3] - Crd_reg[1]
     M = int(math.fabs(latlim) / res_desired[0])
@@ -155,7 +204,13 @@ def calc_region(region, Crd_reg, res_desired, GeoRef):
 
 
 def clean_IRENA(param, paths):
-    ''' description'''
+    """
+    Missing description
+
+    :param param:
+    :param paths:
+    :return:
+    """
     year = str(param["year"])
     filter_countries = param["regions_land"]['GID_0'].to_list()
     IRENA_dict = pd.read_csv(paths["IRENA_dict"], sep=';', index_col=0)
@@ -204,7 +259,13 @@ def clean_IRENA(param, paths):
 
 
 def calc_gwa_correction(param, paths):
+    """
+    Missing description
 
+    :param param:
+    :param paths:
+    :return:
+    """
     m_high = param["m_high"]
     n_high = param["n_high"]
     res_desired = param["res_desired"]

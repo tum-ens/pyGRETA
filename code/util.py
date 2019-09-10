@@ -308,3 +308,33 @@ def display_progress(message, progress_stat):
     sys.stdout.flush()
     if status == length:
         print('\n')
+
+
+def create_json(filepath, param, param_keys, paths, paths_keys):
+    '''
+    '''
+    new_file = os.path.splitext(filepath)[0] + '.json'
+    new_dict = {}
+    # Add standard keys
+    param_keys = param_keys + ["author", "comment"]
+    for key in param_keys:
+        new_dict[key] = param[key]
+        if type(param[key]) == np.ndarray:
+            new_dict[key] = param[key].tolist()
+        if type(param[key]) == dict:
+            for k, v in param[key].items():
+                if type(v) == np.ndarray:
+                    new_dict[key][k] = v.tolist()
+                if type(v) == dict:
+                    for k2, v2 in v.items():
+                        if type(v2) == np.ndarray:
+                            new_dict[key][k][k2] = v2.tolist()
+
+    for key in paths_keys:
+        new_dict[key] = paths[key]
+    # Add timestamp
+    new_dict["timestamp"] = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
+    # Add caller function's name
+    new_dict["function"] = inspect.stack()[1][3]
+    with open(new_file, 'w') as json_file:
+        json.dump(new_dict, json_file)

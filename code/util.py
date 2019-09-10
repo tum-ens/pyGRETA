@@ -269,9 +269,10 @@ def limit_cpu(check):
     Set priority of a process for cpu time and ram allocation at two levels: average or below average.
 
     :param check: If ``True``, the process is set a below average priority rating allowing other programs to run undisturbed.
-    if ``False``, the process is given the same priority as all other user processes currently running on the machine,
-    leading to faster calculation times.
+        if ``False``, the process is given the same priority as all other user processes currently running on the machine,
+        leading to faster calculation times.
     :type check: boolean
+    :return: None
     """
 
     check = check[0]
@@ -299,7 +300,7 @@ def timecheck(*args):
 
     :param args: Message to be displayed with the function name and the timestamp.
     :type args: string (``optional``)
-    :return:
+    :return: None
     """
     if len(args) == 0:
         print(inspect.stack()[1].function + str(datetime.datetime.now().strftime(": %H:%M:%S:%f")))
@@ -319,7 +320,8 @@ def display_progress(message, progress_stat):
     :param message: Message to be displayed with the progress bar
     :type message: string
     :param progress_stat: tuple containing the total length of the calculation and the current status or progress
-    :type progress_stat: tuple length 2
+    :type progress_stat: tuple (int, int)
+    :return: None
     """
     length = progress_stat[0]
     status = progress_stat[1]
@@ -349,6 +351,9 @@ def create_json(filepath, param, param_keys, paths, paths_keys):
 
     :param paths_keys: Keys of the paths to be extracted from the paths dictionary and saved into the json file
     :type paths_keys: iterable of strings
+
+    :return: The json file will be saved in the desired path *filepath*.
+    :rtype: None
     """
     new_file = os.path.splitext(filepath)[0] + '.json'
     new_dict = {}

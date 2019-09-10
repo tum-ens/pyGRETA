@@ -12,7 +12,7 @@ def initialization():
     used for saving tif files.
 
     :return: The updated dictionaries param and paths.
-    :rtype: dict, dict
+    :rtype: tuple (dict, dict)
     """
     timecheck('Start')
 

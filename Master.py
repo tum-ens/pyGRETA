@@ -15,6 +15,7 @@ import h5netcdf
 import shutil
 import pyomo.environ as pyo
 from pyomo.opt import SolverFactory
+import glob
 
 
 
@@ -1045,16 +1046,6 @@ def generate_time_series(paths, param):
 def regression_coefficient(paths, param, tech):
     timecheck('Start')
 
-    # Check technology for hubeights
-    if tech in ['WindOn', 'WindOff']:
-        hub_heights = param["hub_heights"]
-    elif tech in ['PV']:
-        hub_heights = np.array([0])
-    else:
-        print(tech + " is not yet implemented;")
-        timecheck('End')
-        return
-
     # Check if regression folder is present, if not creates it
 
     if not os.path.isdir(paths['regression']):
@@ -1069,6 +1060,29 @@ def regression_coefficient(paths, param, tech):
         timecheck('End')
         return
 
+    # Reads the files present in input folder and extract hub_heights represented.
+    inputfiles = glob.glob(paths[tech]["TS_height"] + '_*')
+    if len(inputfiles) == 0:
+        reg_miss_files()
+        timecheck('End')
+        return
+    elif len(inputfiles) == 1:
+        hub_heights = np.zeros(1, dtype=int)
+    else:
+        hub_heights = np.zeros(len(inputfiles), dtype=int)
+
+        h = 0
+        for filename in inputfiles:
+            heigh = int(filename.replace(paths[tech]["TS_height"] + '_', '').replace('_TS_' + param["year"] + '.csv', ''))
+            hub_heights[h] = heigh
+            h += 1
+        hub_heights = sorted(hub_heights, reverse=True)
+
+    del inputfiles
+
+    print("\nFor technology " + tech + ", the following hubheights have been detected: ")
+    print(hub_heights)
+
     # Copy EMHIRES and IRENA files for technology if not present
 
     if not os.path.isfile(paths["regression_in"] + os.path.split(paths[tech]["EMHIRES"])[1]):
@@ -1078,22 +1092,6 @@ def regression_coefficient(paths, param, tech):
     if not os.path.isfile(paths["regression_in"] + os.path.split(paths["IRENA"])[1]):
         shutil.copy2(paths["IRENA"],
                      paths["regression_in"] + os.path.split(paths["IRENA"])[1])
-
-    # Check if the TS files are present in input folder
-
-    missing = 0
-    for hub in hub_heights:
-        if len(hub_heights) > 1:
-            pathfile = paths[tech]["TS_height"] + '_' + str(hub) + '_TS_' + param["year"] + '.csv'
-        else:
-            pathfile = paths[tech]["TS_height"] + '_TS_' + param["year"] + '.csv'
-        if not os.path.isfile(pathfile):
-            missing = missing + 1
-    if missing > 0:
-        reg_miss_files(paths, param, missing, hub_heights)
-        timecheck('End')
-        return
-    del missing, pathfile, hub
 
     # Create Pyomo Abstract Model
 
@@ -1205,7 +1203,7 @@ def regression_coefficient(paths, param, tech):
             r = np.full((len(param["quantiles"]), len(hub_heights)), np.nan)
             nosolution = nosolution + reg + ', '
 
-        if len(hub_heights) > 1:
+        if hub_heights != [0]:
             result = pd.DataFrame(r, param["quantiles"], (reg + "_" + str(h) for h in hub_heights))
         else:
             result = pd.DataFrame(r, param["quantiles"], [reg])
@@ -1214,14 +1212,18 @@ def regression_coefficient(paths, param, tech):
             summary = result
         else:
             summary = pd.concat([summary, result], axis=1)
+
+    # Print Regression Summary
+
     if solution != '':
         print("\nA solution was found for the following regions: " + solution.rstrip(', '))
     if nosolution != '':
         print("\nNo Solution was found for the following regions: " + nosolution.rstrip(', '))
     if nodata != '':
         print("\nNo data was available for the following regions: " + nodata.rstrip(', '))
+
     summary.to_csv(paths[tech]["Regression_summary"], na_rep=param["no_solution"], sep=';', decimal='.')
-    print("files saved: " + paths[tech]["Regression_summary"])
+    print("\nfiles saved: " + paths[tech]["Regression_summary"])
     timecheck('End')
 
 

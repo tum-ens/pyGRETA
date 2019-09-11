@@ -8,8 +8,8 @@ import os
 
 param = {}
 param["region"] = 'Germany'
-param["year"] = 2015
-param["technology"] = ['WindOn', 'PV']  #['PV', 'CSP', 'WindOn', 'WindOff']
+param["year"] = '2015'
+param["technology"] = ['PV']  #['PV', 'CSP', 'WindOn', 'WindOff']
 param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
 param["nproc"] = 6

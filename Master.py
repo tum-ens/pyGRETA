@@ -443,91 +443,93 @@ def generate_protected_areas(paths, param):
 
 
 def generate_buffered_population(paths, param):
-    timecheck('Start')
-    buffer_pixel_amount = param["WindOn"]["mask"]["buffer_pixel_amount"]
-    GeoRef = param["GeoRef"]
-    with rasterio.open(paths["LU"]) as src:
-        A_lu = src.read(1)
-    A_lu = np.flipud(A_lu).astype(int)
-    A_lu = A_lu == param["landuse"]["type_urban"] # Land use type for Urban and built-up
-    kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
-    kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-    A_lu_buffered = convolve(A_lu, kernel)
-    A_notPopulated = (~A_lu_buffered).astype(int)
+    if not os.path.isfile(paths["BUFFER"]):
+        timecheck('Start')
+        buffer_pixel_amount = param["WindOn"]["mask"]["buffer_pixel_amount"]
+        if buffer_pixel_amount:
+            GeoRef = param["GeoRef"]
+            with rasterio.open(paths["LU"]) as src:
+                A_lu = src.read(1)
+                A_lu = np.flipud(A_lu).astype(int)
 
-    array2raster(paths["BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
-                 A_notPopulated)
-    print("files saved: " + paths["BUFFER"])
-    timecheck('End')
+            A_lu_buffered = create_buffer(A_lu, buffer_pixel_amount)
+            A_notPopulated = (~A_lu_buffered).astype(int)
+
+            array2raster(paths["BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
+                         A_notPopulated)
+            print("files saved: " + paths["BUFFER"])
+        timecheck('End')
 
 
 def generate_wind_correction(paths, param):
-    res_correction_on = param["WindOn"]["resource"]["res_correction"]
-    res_correction_off = param["WindOff"]["resource"]["res_correction"]
-    topo_correction = param["WindOn"]["resource"]["topo_correction"]
-    GeoRef = param["GeoRef"]
-    # Onshore resolution correction
-    if res_correction_on:
-        landuse = param["landuse"]
-        turbine_height_on = param["WindOn"]["technical"]["hub_height"]
-        m_low = param["m_low"]
-        n_low = param["n_low"]
-        m_high = param["m_high"]
-        n_high = param["n_high"]
-        res_weather = param["res_weather"]
-        res_desired = param["res_desired"]
-        with rasterio.open(paths["LU"]) as src:
-            A_lu = np.flipud(src.read(1)).astype(int)
-        A_hellmann = changem(A_lu, landuse["hellmann"], landuse["type"]).astype(float)
-        A_gradient_height = changem(A_lu.astype(float), landuse["height"], landuse["type"])
-        del A_lu
-        Sigma = sumnorm_MERRA2((50 / A_gradient_height) ** A_hellmann, m_low, n_low, res_weather, res_desired)
-        A_cf_on = ((turbine_height_on / 50) * turbine_height_on /
-                   A_gradient_height) ** A_hellmann / resizem(Sigma, m_high, n_high)
-        del A_gradient_height, Sigma
-    else:
-        A_cf_on = (turbine_height_on / 50) ** A_hellmann
+    if not os.path.isfile(paths["CORR"]):
+        timecheck('Start')
+        res_correction_on = param["WindOn"]["resource"]["res_correction"]
+        res_correction_off = param["WindOff"]["resource"]["res_correction"]
+        topo_correction = param["WindOn"]["resource"]["topo_correction"]
+        GeoRef = param["GeoRef"]
+        # Onshore resolution correction
+        if res_correction_on:
+            landuse = param["landuse"]
+            turbine_height_on = param["WindOn"]["technical"]["hub_height"]
+            m_low = param["m_low"]
+            n_low = param["n_low"]
+            m_high = param["m_high"]
+            n_high = param["n_high"]
+            res_low = param["res_low"]
+            res_high = param["res_high"]
+            with rasterio.open(paths["LU"]) as src:
+                A_lu = np.flipud(src.read(1)).astype(int)
+            A_hellmann = changem(A_lu, landuse["hellmann"], landuse["type"]).astype(float) / 100
+            A_gradient_height = changem(A_lu.astype(float), landuse["height"], landuse["type"])
+            del A_lu
+            Sigma = sumnorm_MERRA2((50 / A_gradient_height) ** A_hellmann, m_low, n_low, res_low, res_high)
+            A_cf_on = ((turbine_height_on / 50) * turbine_height_on /
+                       A_gradient_height) ** A_hellmann / resizem(Sigma, m_high, n_high)
+            del A_gradient_height, Sigma
+        else:
+            A_cf_on = (turbine_height_on / 50) ** A_hellmann
 
-    # Offshore resolution correction
-    if res_correction_off:
-        landuse = param["landuse"]
-        turbine_height_off = param["WindOff"]["technical"]["hub_height"]
-        m_low = param["m_low"]
-        n_low = param["n_low"]
-        m_high = param["m_high"]
-        n_high = param["n_high"]
-        res_weather = param["res_weather"]
-        res_desired = param["res_desired"]
-        with rasterio.open(paths["LU"]) as src:
-            A_lu = np.flipud(src.read(1)).astype(int)
-        A_hellmann = changem(A_lu, landuse["hellmann"], landuse["type"]).astype(float)
-        A_gradient_height = changem(A_lu.astype(float), landuse["height"], landuse["type"])
-        del A_lu
-        Sigma = sumnorm_MERRA2((50 / A_gradient_height) ** A_hellmann, m_low, n_low, res_weather, res_desired)
-        A_cf_off = ((turbine_height_off / 50) * turbine_height_off /
-                    A_gradient_height) ** A_hellmann / resizem(Sigma, m_high, n_high)
-        del A_gradient_height, Sigma
-    else:
-        A_cf_off = (turbine_height_on / 50) ** A_hellmann
-    del A_hellmann
+        # Offshore resolution correction
+        if res_correction_off:
+            landuse = param["landuse"]
+            turbine_height_off = param["WindOff"]["technical"]["hub_height"]
+            m_low = param["m_low"]
+            n_low = param["n_low"]
+            m_high = param["m_high"]
+            n_high = param["n_high"]
+            res_low = param["res_low"]
+            res_high = param["res_high"]
+            with rasterio.open(paths["LU"]) as src:
+                A_lu = np.flipud(src.read(1)).astype(int)
+            A_hellmann = changem(A_lu, landuse["hellmann"], landuse["type"]).astype(float) / 100
+            A_gradient_height = changem(A_lu.astype(float), landuse["height"], landuse["type"])
+            del A_lu
+            Sigma = sumnorm_MERRA2((50 / A_gradient_height) ** A_hellmann, m_low, n_low, res_low, res_high)
+            A_cf_off = ((turbine_height_off / 50) * turbine_height_off /
+                        A_gradient_height) ** A_hellmann / resizem(Sigma, m_high, n_high)
+            del A_gradient_height, Sigma
+        else:
+            A_cf_off = (turbine_height_on / 50) ** A_hellmann
+        del A_hellmann
 
-    # Topographic correction (only onshore)
-    with rasterio.open(paths["LAND"]) as src:
-        A_land = np.flipud(src.read(1)).astype(int)
-    A_cf_on = A_cf_on * A_land
-    del A_land
-    if topo_correction:
-        if not os.path.isfile(paths["CORR_GWA"]):
-            calc_gwa_correction(param, paths)
-        gwa_correction = hdf5storage.read('correction_' + param["WindOn"]["resource"]["topo_weight"], paths["CORR_GWA"])
-        A_cf_on = A_cf_on * gwa_correction
-    with rasterio.open(paths["EEZ"]) as src:
-        A_eez = np.flipud(src.read(1)).astype(int)
-    A_cf = A_cf_off * A_eez + A_cf_on
+        # Topographic correction (only onshore)
+        with rasterio.open(paths["LAND"]) as src:
+            A_land = np.flipud(src.read(1)).astype(int)
+        A_cf_on = A_cf_on * A_land
+        del A_land
+        if topo_correction:
+            with rasterio.open(paths["TOPO"]) as src:
+                A_topo = np.flipud(src.read(1)).astype(float)
+            (a, b) = param["WindOn"]["resource"]["topo_factors"]
+            A_cf_on = A_cf_on * np.minimum(np.exp(a * A_topo + b), 3.5)
+        with rasterio.open(paths["EEZ"]) as src:
+            A_eez = np.flipud(src.read(1)).astype(int)
+        A_cf = A_cf_off * A_eez + A_cf_on
 
-    array2raster(paths["CORR"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf)
-    print("files saved: " + paths["CORR"])
-    timecheck('End')
+        array2raster(paths["CORR"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf)
+        print("files saved: " + paths["CORR"])
+        timecheck('End')
 
 
 def calculate_FLH(paths, param, tech):
@@ -906,6 +908,7 @@ def reporting(paths, param, tech):
 
 
 def find_locations_quantiles(paths, param, tech):
+    timecheck('Start')
     FLH_mask = hdf5storage.read('FLH_mask', paths[tech]["FLH_mask"])
     quantiles = param["quantiles"]
     res_desired = param["res_desired"]
@@ -973,9 +976,11 @@ def find_locations_quantiles(paths, param, tech):
     hdf5storage.writes({'Crd_points': param[tech]["Crd_points"]}, paths[tech]["Locations"][:-4] + '_Crd.mat',
                        store_python_metadata=True, matlab_compatible=True)
     print("files saved: " + paths[tech]["Locations"])
+    timecheck('End')
 
 
 def generate_time_series(paths, param, tech):
+    timecheck('Start')
     nproc = param["nproc"]
     param[tech]["Crd_points"] = hdf5storage.read('Crd_points', paths[tech]["Locations"][:-4] + '_Crd.mat')
     param[tech]["Ind_points"] = hdf5storage.read('Ind_points', paths[tech]["Locations"][:-4] + '_Ind.mat')
@@ -1022,6 +1027,7 @@ def generate_time_series(paths, param, tech):
     results = pd.DataFrame(TS.transpose(), columns=column_names)
     results.to_csv(paths[tech]["TS"], sep=';', decimal=',')
     print("files saved: " + paths[tech]["TS"])
+    timecheck('End')
 
 
 if __name__ == '__main__':
@@ -1037,11 +1043,11 @@ if __name__ == '__main__':
     generate_buffered_population(paths, param)  # Buffered Population
     generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
-        calculate_FLH(paths, param, tech)
-        masking(paths, param, tech)
-        weighting(paths, param, tech)
-        reporting(paths, param, tech)
-        find_locations_quantiles(paths, param, tech)
+        # calculate_FLH(paths, param, tech)
+        # masking(paths, param, tech)
+        # weighting(paths, param, tech)
+        # reporting(paths, param, tech)
+        # find_locations_quantiles(paths, param, tech)
         generate_time_series(paths, param, tech)
         # cProfile.run('reporting(paths, param, tech)', 'cprofile_test.txt')
         # p = pstats.Stats('cprofile_test.txt')

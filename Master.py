@@ -492,12 +492,15 @@ def calculate_FLH(paths, param, tech):
             CLEARNESS = hdf5storage.read('CLEARNESS', paths["CLEARNESS"])
             day_filter = CLEARNESS[Ind[0, reg, 2]-1:Ind[0, reg, 0], Ind[0, reg, 3]-1:Ind[0, reg, 1], :].sum(axis=(0,1)) != 0
             list_hours = np.arange(0, 8760)
-            #results = calc_FLH_solar(list_hours[day_filter], [reg, paths, param, nRegions, region_name, rasterData, tech])
+            # results = calc_FLH_solar(list_hours[day_filter], [reg, paths, param, nRegions, region_name, rasterData, tech])
             list_hours = np.array_split(list_hours[day_filter], nproc)
             print(len(list_hours[0]))
+            param["status_bar_limit"] = list_hours[0][-1]
             results = Pool(processes=nproc).starmap(calc_FLH_solar, product(list_hours, [
                 [reg, paths, param, nRegions, region_name, rasterData, tech]]))
         elif tech in ['WindOn', 'WindOff']:
+            print(len(list_hours[0]))
+            param["status_bar_limit"] = list_hours[0][-1]
             results = Pool(processes=nproc).starmap(calc_FLH_wind, product(list_hours, [
                 [reg, paths, param, nRegions, region_name, rasterData, tech]]))
 

@@ -10,7 +10,7 @@ from sys import platform
 param = {}
 param["region"] = 'Germany'
 param["year"] = 2015
-param["technology"] = ['WindOn', 'PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 
 param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
@@ -290,5 +290,6 @@ for tech in param["technology"]:
 
     paths[tech]["TS_height"] = paths["regression_in"] + region + '_' + tech
     paths[tech]["Regression_summary"] = paths["regression_out"] + region + '_' + tech + '_reg_coefficients_' + timestamp + '.csv'
+    paths[tech]["Regression_TS"] = paths["regression_out"] + region + '_' + tech + '_reg_TimeSeries_' + timestamp + '.csv'
 
 del root, PathTemp, fs

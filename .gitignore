@@ -10,5 +10,5 @@ __pycache__/*
 *.prj
 *.qpj
 *.mat
+*.xlsx
 *.csv
-

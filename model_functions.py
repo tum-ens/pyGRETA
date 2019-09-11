@@ -33,7 +33,7 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
         orient = 0
 
     # Compute the angles
-    A_phi, A_omega, A_delta, A_alpha, A_beta, A_azimuth, A_orientation, sunrise, sunset = \
+    A_phi, A_omega, A_delta, A_alpha, A_beta, A_azimuth, A_orientation = \
         angles(hour, reg_ind_h, Crd_all, res_desired, orient)
 
     # Compute the hourly TOA radiation
@@ -66,9 +66,9 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
     if tech == 'PV':
         # Tracking
         if pv["tracking"] == 1:
-            A_orientation, A_beta = traking(1, A_phi, A_alpha, A_beta, A_azimuth)
+            A_orientation, A_beta = tracking(1, A_phi, A_alpha, A_beta, A_azimuth)
         elif pv["tracking"] == 2:
-            A_orientation, A_beta = traking(2, A_phi, A_alpha, A_beta, A_azimuth)
+            A_orientation, A_beta = tracking(2, A_phi, A_alpha, A_beta, A_azimuth)
 
         aux = np.maximum(np.minimum((sind(A_delta) * sind(A_phi) * cosd(A_beta)
                                      - sind(A_delta) * cosd(A_phi) * sind(A_beta) * cosd(A_orientation)
@@ -82,7 +82,7 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
         R_b[A_alpha <= 5] = cosd(A_incidence[A_alpha <= 5]) / sind(5)
         R_b[A_alpha <= 0] = 0
 
-        F_direct, F_diffuse, F_reflected = coefficients(A_beta, RATIO, R_b, A_i, f, hour, sunrise, sunset)
+        F_direct, F_diffuse, F_reflected = coefficients(A_beta, RATIO, R_b, A_i, f)
 
         F = F_diffuse + F_direct * (1 - SHADING) + F_reflected * A_albedo
         F[F > 1] = 1
@@ -305,40 +305,10 @@ def angles(hour, reg_ind, Crd_all, res_desired, orient):
     orientation = np.full(alpha.shape, orient)  # Azimuth of the PV panel is zero for the Northern hemisphere
     orientation[phi < 0] = 180 - orient  # Azimuth of the PV panel is 180° for the Southern hemisphere
 
-    # Sunrise and sunset hours in GMT
-
-    aux = np.maximum(np.minimum((-tand(phi)) * tand(delta), 1), -1)
-    sunrise = 12 - 1 / 15 * arccosd(aux)
-    sunset = 12 + 1 / 15 * arccosd(aux)
-    coeff_a = (cosd(phi) / tand(beta)) + sind(phi)
-    coeff_b = tand(delta) * (cosd(phi) * cosd(orientation) - sind(phi) / tand(beta))
-    aux = np.maximum(np.minimum(((coeff_a * coeff_b - sind(orientation)
-                                  * (coeff_a ** 2 - coeff_b ** 2 + sind(orientation) ** 2) ** 0.5
-                                  / (coeff_a ** 2 + sind(orientation) ** 2))), 1), -1)
-    sunrise_tilt = 12 - 1 / 15 * arccosd(aux)
-    sunset_tilt = 12 + 1 / 15 * arccosd(aux)
-
-    #import pdb; pdb.set_trace()
-    # sunrise = np.maximum(sunrise, sunrise_tilt) - repmat(TC, m, 1)  # Correction Solar time -> GMT
-    # sunset = np.minimum(sunset, sunset_tilt) - repmat(TC, m, 1)  # Correction solar time -> GMT
-    sunrise = np.maximum(sunrise, sunrise_tilt) - TC  # Correction Solar time -> GMT
-    sunset = np.minimum(sunset, sunset_tilt) - TC  # Correction solar time -> GMT
-
-    # if len(args) == 1:
-        # phi = np.diag(phi)
-        # omega = np.diag(omega)
-        # delta = np.diag(delta)
-        # alpha = np.diag(alpha)
-        # beta = np.diag(beta)
-        # azi = np.diag(azi)
-        # orientation = np.diag(orientation)
-        # sunrise = np.diag(sunrise)
-        # sunset = np.diag(sunset)
-    # import pdb; pdb.set_trace()
-    return phi, omega, delta, alpha, beta, azi, orientation, sunrise, sunset
+    return phi, omega, delta, alpha, beta, azi, orientation
 
 
-def traking(axis, A_phi, A_alpha, A_beta, A_azimuth):
+def tracking(axis, A_phi, A_alpha, A_beta, A_azimuth):
     # One axis Tracking
     if axis == 1:
         A_orientation = np.zeros(A_alpha.shape)
@@ -398,7 +368,7 @@ def toa_hourly(alpha, hour):
     return TOA_h
 
 
-def coefficients(beta, ratio, R_b, A_i, f, *args):
+def coefficients(beta, ratio, R_b, A_i, f):
     """
     This function creates three weighting matrices for the desired extent and width the desired resolution,
     that correspond to the gains/losses caused by tilting to each component of the incident radiation
@@ -409,55 +379,9 @@ def coefficients(beta, ratio, R_b, A_i, f, *args):
     - beta: matrix of tilting angles
     - azi: matrix of azimuth angles
     - orientation: matrix of surface azimuth (PV panel orientation angle)
-    - hour, sunrise, and sunset (optional): hour of the year, and the matrix for the sunrise and sunset hours for every
-    location on that day
     """
 
-    duration = np.ones(beta.shape)  # Adjusts for any inaccuracy in case the sunset or the sunrise occurs within hour
-
-    if len(args) == 3:
-        hour = args[0]
-        sunrise = args[1]
-        sunset = args[2]
-        hourofday = hour % 24 + 0.5
-
-        # Case 1: Sunrise and sunset occur on the same day (GMT)
-        critertion = np.logical_and(hourofday < sunrise, np.logical_and(sunrise > 0, sunset < 24))
-        duration[critertion] = 0
-        critertion = np.logical_and(np.logical_and((hourofday - 1) < sunrise, hourofday > sunrise),
-                                    np.logical_and(sunrise > 0, sunset < 24))
-        duration[critertion] = hourofday - sunrise[critertion]
-        critertion = np.logical_and(np.logical_and((hourofday - 1) < sunset, hourofday > sunset),
-                                    np.logical_and(sunrise > 0, sunset < 24))
-        duration[critertion] = sunset[critertion] - hourofday + 1
-        critertion = np.logical_and((hourofday - 1) > sunset,
-                                    np.logical_and(sunrise > 0, sunset < 24))
-        duration[critertion] = 0
-
-        # Case 2: Sunrise occurs on the previous day (GMT) -
-        # we can assume that it occurs at the same time as the following day
-        critertion = np.logical_and(np.logical_and((hourofday - 1) < sunset, hourofday > sunset),
-                                    np.logical_and(sunrise < 0, sunset < 24))
-        duration[critertion] = sunset[critertion] - hourofday + 1
-        critertion = np.logical_and(np.logical_and((hourofday - 1) > sunset, hourofday < sunrise + 24),
-                                    np.logical_and(sunrise < 0, sunset < 24))
-        duration[critertion] = 0
-        critertion = np.logical_and(np.logical_and((hourofday - 1) < (sunrise + 24), hourofday > (sunrise + 24)),
-                                    np.logical_and(sunrise < 0, sunset < 24))
-        duration[critertion] = hourofday - (sunrise[critertion] + 24)
-
-        # case 3: Sunset occurs on the next day (GMT) - not relevant for ASEAN
-        critertion = np.logical_and(np.logical_and((hourofday - 1) < (sunset - 24), hourofday > (sunset - 24)),
-                                    np.logical_and(sunrise > 0, sunset > 24))
-        duration[critertion] = (sunset[critertion] - 24) - hourofday + 1
-        critertion = np.logical_and(np.logical_and((hourofday - 1) > (sunset - 24), hourofday < sunrise),
-                                    np.logical_and(sunrise > 0, sunset > 24))
-        duration[critertion] = 0
-        critertion = np.logical_and(np.logical_and((hourofday - 1) < sunrise, hourofday > sunrise),
-                                    np.logical_and(sunrise > 0, sunset > 24))
-        duration[critertion] = hourofday - sunrise[critertion]
-
-    F_direct = duration * (1 - ratio + ratio * A_i) * R_b
+    F_direct = (1 - ratio + ratio * A_i) * R_b
     F_direct[F_direct < 0] = 0
 
     F_diffuse = ratio * (1 - A_i) * (1 + cos(np.deg2rad(beta))) / 2 * (1 + f * sin(np.deg2rad(beta / 2)) ** 3)

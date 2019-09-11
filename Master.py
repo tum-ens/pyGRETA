@@ -743,7 +743,7 @@ def calculate_FLH(paths, param, tech):
     FLH[FLH == 0] = np.nan
 
     hdf5storage.writes({'FLH': FLH}, paths[tech]["FLH"], store_python_metadata=True, matlab_compatible=True)
-    print("files saved: " + paths[tech]["FLH"])
+    print("\nfiles saved: " + paths[tech]["FLH"])
     timecheck('End')
 
 
@@ -1498,7 +1498,7 @@ if __name__ == '__main__':
     # generate_population(paths, param)  # Population
     # generate_protected_areas(paths, param)  # Protected areas
     # generate_buffered_population(paths, param)  # Buffered Population
-    generate_wind_correction(paths, param)  # Correction factors for wind speeds
+    #generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
         print("Tech: " + tech)
         calculate_FLH(paths, param, tech)

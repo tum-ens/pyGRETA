@@ -1102,10 +1102,10 @@ def generate_time_series(paths, param, tech):
 
 def regression_coefficient(paths, param, tech):
     """
-    Solves following optimization problem:
+    Solves the following optimization problem:
 
     Express a given model timeseries provided by EMHIRES as a combination timeseries
-    for different Hub-Heights and Quantiles, while constraining the total sum of
+    for different Hub-Heights/orientations and Quantiles, while constraining the total sum of
     the obtained TS to the FLH given by IRENA
 
     Save the regression coefficients and the result timeseries in a .csv file
@@ -1136,12 +1136,12 @@ def regression_coefficient(paths, param, tech):
     else:
         settings = np.zeros(len(inputfiles), dtype=int)
 
-        h = 0
+        s = 0
         for filename in inputfiles:
             set = int(
                 filename.replace(paths[tech]["TS_param"] + '_', '').replace('_TS_' + str(param["year"]) + '.csv', ''))
-            settings[h] = set
-            h += 1
+            settings[s] = set
+            s += 1
         settings = sorted(settings, reverse=True)
 
     del inputfiles
@@ -1181,39 +1181,39 @@ def regression_coefficient(paths, param, tech):
 
     model = pyo.AbstractModel()
     solver = SolverFactory(param["regression"]["solver"])
-    model.h = pyo.Set()
+    model.s = pyo.Set()
     model.q = pyo.Set()
     model.t = pyo.Set()
 
     model.FLH = pyo.Param()
     model.shape = pyo.Param(model.t)
 
-    model.TS = pyo.Param(model.h, model.q, model.t)
-    model.coef = pyo.Var(model.h, model.q, domain=pyo.NonNegativeReals)
+    model.TS = pyo.Param(model.s, model.q, model.t)
+    model.coef = pyo.Var(model.s, model.q, domain=pyo.NonNegativeReals)
 
     def constraint_FLH(model):
         FLH = 0
-        for h in model.h:
+        for s in model.s:
             for q in model.q:
                 tempTS = 0
                 for t in model.t:
-                    tempTS = tempTS + model.TS[h, q, t]
-                FLH = FLH + pyo.prod([model.coef[h, q], tempTS])
+                    tempTS = tempTS + model.TS[s, q, t]
+                FLH = FLH + pyo.prod([model.coef[s, q], tempTS])
         return FLH == model.FLH
 
     def constraint_sum(model):
         sum = 0
-        for h in model.h:
+        for s in model.s:
             for q in model.q:
-                sum = sum + model.coef[h, q]
+                sum = sum + model.coef[s, q]
         return sum == 1
 
     def obj_expression(model):
         Error = 0
-        for h in model.h:
+        for s in model.s:
             for q in model.q:
                 for t in model.t:
-                    Error = Error + (pyo.prod([model.coef[h, q], model.TS[h, q, t]]) - model.shape[t]) ** 2
+                    Error = Error + (pyo.prod([model.coef[s, q], model.TS[s, q, t]]) - model.shape[t]) ** 2
         return Error
 
     model.OBJ = pyo.Objective(rule=obj_expression)
@@ -1268,6 +1268,8 @@ def regression_coefficient(paths, param, tech):
 
         region_data = regmodel_load_data(paths, param, tech, settings, reg)
 
+        settings = list(region_data[None]['s'][None])
+
         # Skip regions not present in the generated TS
         if region_data is None:
             nodata = nodata + reg + ', '
@@ -1320,7 +1322,7 @@ def regression_coefficient(paths, param, tech):
             no_sol_low_high = no_sol_low_high + reg + ', '
 
         if settings != [0]:
-            result = pd.DataFrame(r, param["quantiles"], (reg + "_" + str(h) for h in settings))
+            result = pd.DataFrame(r, param["quantiles"], (reg + "_" + str(s) for s in settings))
         else:
             result = pd.DataFrame(r, param["quantiles"], [reg])
 
@@ -1391,13 +1393,13 @@ if __name__ == '__main__':
     # generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
         print("Tech: " + tech)
-        calculate_FLH(paths, param, tech)
-        masking(paths, param, tech)
-        weighting(paths, param, tech)
-        reporting(paths, param, tech)
-        find_locations_quantiles(paths, param, tech)
-        generate_time_series(paths, param, tech)
-        # regression_coefficient(paths, param, tech)
+        # calculate_FLH(paths, param, tech)
+        # masking(paths, param, tech)
+        # weighting(paths, param, tech)
+        # reporting(paths, param, tech)
+        # find_locations_quantiles(paths, param, tech)
+        # generate_time_series(paths, param, tech)
+        regression_coefficient(paths, param, tech)
         # cProfile.run('reporting(paths, param, tech)', 'cprofile_test.txt')
         # p = pstats.Stats('cprofile_test.txt')
         # p.sort_stats('cumulative').print_stats(20)

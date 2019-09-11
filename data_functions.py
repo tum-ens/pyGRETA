@@ -15,10 +15,11 @@ def calc_ext(regb, ext, res):
 
 def crd_merra(Crd_regions, res_weather):
     ''' Calculates coordinates of box covering MERRA2 data (centroids + half resolution)'''
-    Crd = np.array([np.ceil((Crd_regions[:, 0] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
-                    np.ceil(Crd_regions[:, 1] / res_weather[1]) * res_weather[1],
-                    np.floor((Crd_regions[:, 2] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
-                    np.floor(Crd_regions[:, 3] / res_weather[1]) * res_weather[1]])
+    Crd = np.array(
+        [np.ceil((Crd_regions[:, 0] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
+         np.ceil(Crd_regions[:, 1] / res_weather[1]) * res_weather[1],
+         np.floor((Crd_regions[:, 2] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
+         np.floor(Crd_regions[:, 3] / res_weather[1]) * res_weather[1]])
     Crd = Crd.T
     return Crd
 
@@ -42,16 +43,16 @@ def crd_exact_points(Ind_points, Crd_all, res):
     Crd_points = [Ind_points[0] * res[0] + Crd_all[2],
                   Ind_points[1] * res[1] + Crd_all[3]]
     return Crd_points
-    
-    
+
+
 def subset(A, param):
     if param["MERRA_coverage"] == 'World':
         crd = param["Crd_all"]
         res = param["res_weather"]
-        southlim = int(m.floor((crd[2] + res[0]/10 + 90 + res[0]/2) / res[0]))
-        northlim = int(m.ceil((crd[0] - res[0]/10 + 90 + res[0]/2) / res[0]))
-        westlim = int(m.floor((crd[3] + res[1]/10 + 180) / res[1]))
-        eastlim = int(m.ceil((crd[1] - res[1]/10 + 180) / res[1]))
+        southlim = int(m.floor((crd[2] + res[0] / 10 + 90 + res[0] / 2) / res[0]))
+        northlim = int(m.ceil((crd[0] - res[0] / 10 + 90 + res[0] / 2) / res[0]))
+        westlim = int(m.floor((crd[3] + res[1] / 10 + 180) / res[1]))
+        eastlim = int(m.ceil((crd[1] - res[1] / 10 + 180) / res[1]))
         subset = A[:, southlim:northlim, westlim:eastlim]
     else:
         subset = A
@@ -337,7 +338,7 @@ def calc_areas(Crd_all, n_high, res_desired):
     return A_area
 
 
-def regmodel_load_data(paths, param, tech, hubheights, region):
+def regmodel_load_data(paths, param, tech, settings, region):
     """
     This function returns a dictionary used to initialize a pyomo abstract model.
     The dictionary keys are: hubheights, quantiles, IRENA goal FLH, EMHIRES or Renewable.ninja timeseries,
@@ -352,8 +353,8 @@ def regmodel_load_data(paths, param, tech, hubheights, region):
 
     # Setup the data dataframe for generated TS for each quantile
     GenTS = {}
-    for hub in hubheights:
-        TS_Temp = pd.read_csv(paths[tech]["TS_param"] + '_' + str(hub) + '_TS_' + str(param["year"]) + '.csv',
+    for set in settings:
+        TS_Temp = pd.read_csv(paths[tech]["TS_param"] + '_' + str(set) + '_TS_' + str(param["year"]) + '.csv',
                               sep=';', decimal=',', dtype=str)
 
         # Remove undesired regions
@@ -367,19 +368,18 @@ def regmodel_load_data(paths, param, tech, hubheights, region):
         TS_Temp.columns = TS_Temp.iloc[0]
         TS_Temp = TS_Temp.drop(0)
         # Replace ',' with '.' for float conversion
-        for q in param["quantiles"]:
-            TS_Temp['q'+str(q)] = TS_Temp['q'+str(q)].str.replace(',', '.')
-        
-        GenTS[str(hub)] = TS_Temp.astype(float)
+        for q in TS_Temp.columns:
+            TS_Temp[q] = TS_Temp[q].str.replace(',', '.')
+        GenTS[str(set)] = TS_Temp.astype(float)
 
     # reorder hubheights to go from max TS to min TS:
-    hubheights = np.array(pd.DataFrame((np.nansum(GenTS[key])
-                                        for key in GenTS.keys()),
-                                       index=hubheights,
-                                       columns=['FLH_all_quant']).sort_values(by='FLH_all_quant', ascending=0).index)
+    settings = np.array(pd.DataFrame((np.nansum(GenTS[key])
+                                      for key in GenTS.keys()),
+                                     index=settings,
+                                     columns=['FLH_all_quant']).sort_values(by='FLH_all_quant', ascending=0).index)
 
-    GenTS["TS_Max"] = np.nansum(GenTS[str(hubheights[0])]["q" + str(np.max(param["quantiles"]))])
-    GenTS["TS_Min"] = np.nansum(GenTS[str(hubheights[-1])]["q" + str(np.min(param["quantiles"]))])
+    GenTS["TS_Max"] = np.nansum(GenTS[str(settings[0])]["q" + str(np.max(param["quantiles"]))])
+    GenTS["TS_Min"] = np.nansum(GenTS[str(settings[-1])]["q" + str(np.min(param["quantiles"]))])
 
     # Setup dataframe for IRENA
     IRENA = param["IRENA"]
@@ -390,17 +390,17 @@ def regmodel_load_data(paths, param, tech, hubheights, region):
     # Prepare Timeseries dictionary indexing by height and quantile
 
     if solution_check == (False, True):
-        Timeseries = GenTS[str(np.max(hubheights))]["q" + str(np.max(param["quantiles"]))]
+        Timeseries = GenTS[str(settings[0])]["q" + str(np.max(param["quantiles"]))]
 
     elif solution_check == (True, False):
-        Timeseries = GenTS[str(np.min(hubheights))]["q" + str(np.min(param["quantiles"]))]
+        Timeseries = GenTS[str(settings[-1])]["q" + str(np.min(param["quantiles"]))]
 
     elif solution_check == (True, True):
         Timeseries = {}
-        for h in hubheights:
+        for s in settings:
             for q in param["quantiles"]:
                 for t in time:
-                    Timeseries[(h, q, t)] = np.array(GenTS[str(h)]['q' + str(q)])[t - 1]
+                    Timeseries[(s, q, t)] = np.array(GenTS[str(s)]['q' + str(q)])[t - 1]
 
     # Setup dataframe for EMHIRES DATA
     EMHIRES = param["EMHIRES"]
@@ -412,7 +412,7 @@ def regmodel_load_data(paths, param, tech, hubheights, region):
 
     # Create data_input dictionary
     data = {None: {
-        "h": {None: hubheights},
+        "s": {None: settings},
         "q": {None: param["quantiles"]},
         "FLH": {None: IRENA_FLH},
         "shape": TS,

@@ -18,23 +18,23 @@ def calc_ext(regb, ext, res):
              max(m.ceil((ext[0, 3] - res[0, 1] / 2) / res[0, 1]) * res[0, 1] + res[0, 1] / 2, minCol)]]
 
 
-def crd_merra(Crd_regions, res_low):
+def crd_merra(Crd_regions, res_weather):
     ''' description '''
-    Crd = np.array([(np.ceil((Crd_regions[:, 0] - res_low[0] / 2) / res_low[0]) * res_low[0] + res_low[0] / 2),
-                    (np.ceil((Crd_regions[:, 1] - res_low[1] / 2) / res_low[1]) * res_low[1] + res_low[1] / 2),
-                    (np.floor((Crd_regions[:, 2] + res_low[0] / 2) / res_low[0]) * res_low[0] - res_low[0] / 2),
-                    (np.floor((Crd_regions[:, 3] + res_low[1] / 2) / res_low[1]) * res_low[1] - res_low[1] / 2)])
+    Crd = np.array([(np.ceil((Crd_regions[:, 0] - res_weather[0] / 2) / res_weather[0]) * res_weather[0] + res_weather[0] / 2),
+                    (np.ceil((Crd_regions[:, 1] - res_weather[1] / 2) / res_weather[1]) * res_weather[1] + res_weather[1] / 2),
+                    (np.floor((Crd_regions[:, 2] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2),
+                    (np.floor((Crd_regions[:, 3] + res_weather[1] / 2) / res_weather[1]) * res_weather[1] - res_weather[1] / 2)])
     Crd = Crd.T
     return Crd
 
 
-def crd_exact_box(Ind, Crd_all, res_high):
+def crd_exact_box(Ind, Crd_all, res_desired):
     Ind = Ind[np.newaxis]
 
-    Crd = [Ind[:, 0] * res_high[0] + Crd_all[2],
-           Ind[:, 1] * res_high[1] + Crd_all[3],
-           (Ind[:, 2] - 1) * res_high[0] + Crd_all[2],
-           (Ind[:, 3] - 1) * res_high[1] + Crd_all[3]]
+    Crd = [Ind[:, 0] * res_desired[0] + Crd_all[2],
+           Ind[:, 1] * res_desired[1] + Crd_all[3],
+           (Ind[:, 2] - 1) * res_desired[0] + Crd_all[2],
+           (Ind[:, 3] - 1) * res_desired[1] + Crd_all[3]]
     return Crd
 
 
@@ -59,33 +59,39 @@ def ind_merra(Crd, Crd_all, res):
     return Ind
 
 
-def ind_global(Crd, res_high):
+def ind_global(Crd, res_desired):
     ''' description '''
     if len(Crd.shape) == 1:
         Crd = Crd[np.newaxis]
-    Ind = np.array([np.round((90 - Crd[:, 0]) / res_high[0]) + 1,
-                    np.round((180 + Crd[:, 1]) / res_high[1]),
-                    np.round((90 - Crd[:, 2]) / res_high[0]),
-                    np.round((180 + Crd[:, 3]) / res_high[1]) + 1])
+    Ind = np.array([np.round((90 - Crd[:, 0]) / res_desired[0]) + 1,
+                    np.round((180 + Crd[:, 1]) / res_desired[1]),
+                    np.round((90 - Crd[:, 2]) / res_desired[0]),
+                    np.round((180 + Crd[:, 3]) / res_desired[1]) + 1])
     Ind = np.transpose(Ind.astype(int))
     return Ind
 
 
-def calc_geotiff(Crd_all, res_high):
-    ''' description - why is there a minus sign?'''
+def calc_geotiff(Crd_all, res_desired):
+    """
+    Returns dictionary containing the Georefferencing parameters for geotiff creation,
+    based on the desired extent and resolution
+
+    :param Crd: Extent
+    :param res: resolution
+    """
     GeoRef = {"RasterOrigin": [Crd_all[3], Crd_all[0]],
               "RasterOrigin_alt": [Crd_all[3], Crd_all[2]],
-              "pixelWidth": res_high[1],
-              "pixelHeight": -res_high[0]}
+              "pixelWidth": res_desired[1],
+              "pixelHeight": -res_desired[0]}
     return GeoRef
 
 
-def calc_region(region, Crd_reg, res_high, GeoRef):
+def calc_region(region, Crd_reg, res_desired, GeoRef):
     ''' description - why is there a minus sign?'''
     latlim = Crd_reg[2] - Crd_reg[0]
     lonlim = Crd_reg[3] - Crd_reg[1]
-    M = int(m.fabs(latlim) / res_high[0])
-    N = int(m.fabs(lonlim) / res_high[1])
+    M = int(m.fabs(latlim) / res_desired[0])
+    N = int(m.fabs(lonlim) / res_desired[1])
     A_region = np.ones((M, N))
     origin = [Crd_reg[3], Crd_reg[2]]
 
@@ -112,16 +118,21 @@ def calc_region(region, Crd_reg, res_high, GeoRef):
     return A_region
 
 
-def calc_gcr(Crd_all, m_high, n_high, res_high, GCR):
-    # This code creates a GCR wieghing matrix for the desired geographic extent. The sizing of the PV system is
-    # conducted on Dec 22 for a shade-free exposure to the Sun during a given number of hours.
-    # INPUTS:
-    # north_, east_, south_, west_: desired geographic extent
-    # res: resolution of MERRA data & desired resolution in lat/lon
-    # Shadefree_period: duration of the shade-free period
+def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
+    """
+    This function creates a GCR weighting matrix for the desired geographic extent
+    The sizing of the PV system is conducted on a user-defined day for a shade-free exposure
+    to the sun during a given number of hours.
+
+    :param Crd_all: desired geographic extent of the whole region (north, east, south, west)
+    :param m_high, n_high: number of rows and columns
+    :param res_desired: high map resolution
+    :param GCR: includes the user-defined day and the duration of the shade-free period
+    """
+
     # Vector of latitudes between (south) and (north), with resolution (res_should) degrees
-    lat = np.arange((Crd_all[2] + res_high[0] / 2), (Crd_all[0] - res_high[0] / 2), res_high[0])[np.newaxis]
-    lon = np.arange((Crd_all[3] + res_high[1] / 2), (Crd_all[1] - res_high[1] / 2), res_high[1])[np.newaxis]
+    lat = np.arange((Crd_all[2] + res_desired[0] / 2), (Crd_all[0] - res_desired[0] / 2), res_desired[0])[np.newaxis]
+    lon = np.arange((Crd_all[3] + res_desired[1] / 2), (Crd_all[1] - res_desired[1] / 2), res_desired[1])[np.newaxis]
 
     # Repeating for all longitudes/latitudes
     lat = repmat(lat.transpose(), 1, int(n_high))
@@ -206,14 +217,14 @@ def sampled_sorting(Raster, sampling):
     return s
 
 
-def calc_areas(Crd_all, n_high, res_high):
+def calc_areas(Crd_all, n_high, res_desired):
     # WSG84 ellipsoid constants
     a = 6378137  # major axis
     b = 6356752.3142  # minor axis
     e = np.sqrt(1 - (b / a) ** 2)
 
     # Lower pixel latitudes
-    lat_vec = np.arange(Crd_all[2], Crd_all[0], res_high[0])
+    lat_vec = np.arange(Crd_all[2], Crd_all[0], res_desired[0])
     lat_vec = lat_vec[np.newaxis]
 
     # Lower slice areas
@@ -227,7 +238,7 @@ def calc_areas(Crd_all, n_high, res_high):
 
     # Upper slice areas
     # Areas between the equator and the upper pixel latitudes circling the globe
-    f_upper = np.deg2rad(lat_vec + res_high[0])
+    f_upper = np.deg2rad(lat_vec + res_desired[0])
 
     zm_upper = 1 - (e * sin(f_upper))
     zp_upper = 1 + (e * sin(f_upper))
@@ -237,6 +248,6 @@ def calc_areas(Crd_all, n_high, res_high):
 
     # Pixel areas
     # Finding the latitudinal pixel-sized globe slice areas then dividing them by the longitudinal pixel size
-    area_vec = ((upperSliceAreas - lowerSliceAreas) * res_high[1] / 360).T
+    area_vec = ((upperSliceAreas - lowerSliceAreas) * res_desired[1] / 360).T
     A_area = np.tile(area_vec, (1, n_high))
     return A_area

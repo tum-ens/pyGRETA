@@ -7,12 +7,14 @@ import os
 ###########################
 
 param = {}
-param["region"] = 'Europe'
+param["region"] = 'Germany'
 param["year"] = '2015'
-param["technology"] = ['WindOff', 'WindOn'] #['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
-param["nproc"] = 6
+param["nproc"] = 1
+param["CPU_limit"] = True
+param["report_sampling"] = 100
 
 # MERRA_Centroid_Extent = [74.5, 45, 19, -20.625]  # EUMENA
 # MERRA_Centroid_Extent = [74.5, 36.25, 33.5, -16.25]  # Europe
@@ -155,7 +157,7 @@ del pv, csp, windon, windoff
 ###########################
 
 fs = os.path.sep
-root = os.path.dirname(os.path.abspath(__file__)) + fs  + ".." + fs
+root = os.path.dirname(os.path.abspath(__file__)) + fs  # + ".d." + fs
 region = param["region"]
 year = param["year"]
 

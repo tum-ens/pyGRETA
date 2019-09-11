@@ -119,4 +119,3 @@ def sumnorm_MERRA2(A, m, n, res):
             s[i, j] = np.sum(A[(row_step * i):(row_step * (i + 1)),
                              (col_step * j):(col_step * (j + 1))]) / (row_step * col_step)
     return s
-

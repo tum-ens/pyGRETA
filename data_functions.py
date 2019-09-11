@@ -345,10 +345,10 @@ def regmodel_load_data(paths, param, tech, hubheights, region):
     GenTS = {}
     for hub in hubheights:
         if hubheights != [0]:
-            TS_Temp = pd.read_csv(paths[tech]["TS_height"] + '_' + str(hub) + '_TS_' + str(param["year"]) + '.csv',
+            TS_Temp = pd.read_csv(paths[tech]["TS_param"] + '_' + str(hub) + '_TS_' + str(param["year"]) + '.csv',
                                   sep=';', decimal=',', dtype=str)
         else:
-            TS_Temp = pd.read_csv(paths[tech]["TS_height"] + '_TS_' + str(param["year"]) + '.csv',
+            TS_Temp = pd.read_csv(paths[tech]["TS_param"] + '_TS_' + str(param["year"]) + '.csv',
                                   sep=';', decimal=',', dtype=str)
 
         # Remove undesired regions

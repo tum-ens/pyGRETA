@@ -149,9 +149,40 @@ def calc_FLH_solar(hours, args):
     paths = args[0]
     param = args[1]
     tech = args[2]
-    rasterData = args[3]
-    merraData = args[4]
+
+    landuse = param["landuse"]
     reg_ind = param["Ind_nz"]
+
+    rasterData = {}
+
+    # Calculate A matrices
+    # A_lu
+    with rasterio.open(paths["LU"]) as src:
+        w = src.read(1)
+    rasterData["A_lu"] = np.flipud(w)
+    # rasterData["A_lu"] = rasterData["A_lu"][reg_ind]
+    # A_Ross (Temperature coefficients for heating losses)
+    rasterData["A_Ross"] = changem(rasterData["A_lu"], param["landuse"]["Ross_coeff"], param["landuse"]["type"]).astype(
+        float)
+    # A_albedo (Reflectivity coefficients)
+    rasterData["A_albedo"] = changem(rasterData["A_lu"], param["landuse"]["albedo"], param["landuse"]["type"]).astype(
+        float)
+
+    # A_WS_Coef wind Speed at 2m above the ground
+    A_hellmann = changem(rasterData["A_lu"], landuse["hellmann"], landuse["type"]).astype(float)
+    rasterData["A_WindSpeed_Corr"] = (2 / 50) ** A_hellmann
+    del A_hellmann
+
+    # Obtain weather matrices
+    merraData = {}
+    # Clearness index - stored variable CLEARNESS
+    merraData["CLEARNESS"] = hdf5storage.read('CLEARNESS', paths["CLEARNESS"])
+
+    # Temperature 2m above the ground - stored variable T2M
+    merraData["T2M"] = hdf5storage.read('T2M', paths["T2M"])
+
+    # Wind Speed
+    merraData["W50M"] = hdf5storage.read('W50M', paths["W50M"])
 
     FLH = np.zeros(len(reg_ind[0]))
     status = 0
@@ -533,14 +564,27 @@ def calc_FLH_wind(hours, args):
     paths = args[0]
     param = args[1]
     tech = args[2]
-    rasterData = args[3]
-    merraData = args[4]
 
     m_high = param["m_high"]
     n_high = param["n_high"]
     reg_ind = param["Ind_nz"]
 
     turbine = param[tech]["technical"]
+
+    # Obtain weather matrices
+    merraData = {}
+    # Wind speed at 50m
+    merraData["W50M"] = hdf5storage.read('W50M', paths["W50M"])
+
+    rasterData = {}
+
+    # Calculate A matrices
+    # A_cf
+    with rasterio.open(paths["CORR"]) as src:
+        w = src.read(1)
+    rasterData["A_cf"] = np.flipud(w)
+    rasterData["A_cf"] = rasterData["A_cf"][reg_ind]
+    del w
 
     FLH = np.zeros(rasterData["A_cf"].shape)
     status = 0

@@ -4,14 +4,8 @@ import math as m
 import numpy as np
 import rasterio
 from rasterio import windows, mask, MemoryFile
-<<<<<<< HEAD
-import pandas as pd
-import hdf5storage
-from itertools import product
-=======
 import hdf5storage
 
->>>>>>> c01003f... regression_data_setup
 
 def calc_ext(regb, ext, res):
     minRow = m.floor(regb["miny"] / res[1, 0]) * res[1, 0]
@@ -25,23 +19,23 @@ def calc_ext(regb, ext, res):
              max(m.ceil((ext[0, 3] - res[0, 1] / 2) / res[0, 1]) * res[0, 1] + res[0, 1] / 2, minCol)]]
 
 
-def crd_merra(Crd_regions, res_weather):
+def crd_merra(Crd_regions, res_low):
     ''' description '''
-    Crd = np.array([(np.ceil((Crd_regions[:, 0] - res_weather[0] / 2) / res_weather[0]) * res_weather[0] + res_weather[0] / 2),
-                    (np.ceil((Crd_regions[:, 1] - res_weather[1] / 2) / res_weather[1]) * res_weather[1] + res_weather[1] / 2),
-                    (np.floor((Crd_regions[:, 2] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2),
-                    (np.floor((Crd_regions[:, 3] + res_weather[1] / 2) / res_weather[1]) * res_weather[1] - res_weather[1] / 2)])
+    Crd = np.array([(np.ceil((Crd_regions[:, 0] - res_low[0] / 2) / res_low[0]) * res_low[0] + res_low[0] / 2),
+                    (np.ceil((Crd_regions[:, 1] - res_low[1] / 2) / res_low[1]) * res_low[1] + res_low[1] / 2),
+                    (np.floor((Crd_regions[:, 2] + res_low[0] / 2) / res_low[0]) * res_low[0] - res_low[0] / 2),
+                    (np.floor((Crd_regions[:, 3] + res_low[1] / 2) / res_low[1]) * res_low[1] - res_low[1] / 2)])
     Crd = Crd.T
     return Crd
 
 
-def crd_exact_box(Ind, Crd_all, res_desired):
+def crd_exact_box(Ind, Crd_all, res_high):
     Ind = Ind[np.newaxis]
 
-    Crd = [Ind[:, 0] * res_desired[0] + Crd_all[2],
-           Ind[:, 1] * res_desired[1] + Crd_all[3],
-           (Ind[:, 2] - 1) * res_desired[0] + Crd_all[2],
-           (Ind[:, 3] - 1) * res_desired[1] + Crd_all[3]]
+    Crd = [Ind[:, 0] * res_high[0] + Crd_all[2],
+           Ind[:, 1] * res_high[1] + Crd_all[3],
+           (Ind[:, 2] - 1) * res_high[0] + Crd_all[2],
+           (Ind[:, 3] - 1) * res_high[1] + Crd_all[3]]
     return Crd
 
 
@@ -66,19 +60,19 @@ def ind_merra(Crd, Crd_all, res):
     return Ind
 
 
-def ind_global(Crd, res_desired):
+def ind_global(Crd, res_high):
     ''' description '''
     if len(Crd.shape) == 1:
         Crd = Crd[np.newaxis]
-    Ind = np.array([np.round((90 - Crd[:, 0]) / res_desired[0]) + 1,
-                    np.round((180 + Crd[:, 1]) / res_desired[1]),
-                    np.round((90 - Crd[:, 2]) / res_desired[0]),
-                    np.round((180 + Crd[:, 3]) / res_desired[1]) + 1])
+    Ind = np.array([np.round((90 - Crd[:, 0]) / res_high[0]) + 1,
+                    np.round((180 + Crd[:, 1]) / res_high[1]),
+                    np.round((90 - Crd[:, 2]) / res_high[0]),
+                    np.round((180 + Crd[:, 3]) / res_high[1]) + 1])
     Ind = np.transpose(Ind.astype(int))
     return Ind
 
 
-def calc_geotiff(Crd_all, res_desired):
+def calc_geotiff(Crd_all, res_high):
     """
     Returns dictionary containing the Georefferencing parameters for geotiff creation,
     based on the desired extent and resolution
@@ -88,17 +82,17 @@ def calc_geotiff(Crd_all, res_desired):
     """
     GeoRef = {"RasterOrigin": [Crd_all[3], Crd_all[0]],
               "RasterOrigin_alt": [Crd_all[3], Crd_all[2]],
-              "pixelWidth": res_desired[1],
-              "pixelHeight": -res_desired[0]}
+              "pixelWidth": res_high[1],
+              "pixelHeight": -res_high[0]}
     return GeoRef
 
 
-def calc_region(region, Crd_reg, res_desired, GeoRef):
+def calc_region(region, Crd_reg, res_high, GeoRef):
     ''' description - why is there a minus sign?'''
     latlim = Crd_reg[2] - Crd_reg[0]
     lonlim = Crd_reg[3] - Crd_reg[1]
-    M = int(m.fabs(latlim) / res_desired[0])
-    N = int(m.fabs(lonlim) / res_desired[1])
+    M = int(m.fabs(latlim) / res_high[0])
+    N = int(m.fabs(lonlim) / res_high[1])
     A_region = np.ones((M, N))
     origin = [Crd_reg[3], Crd_reg[2]]
 
@@ -123,95 +117,23 @@ def calc_region(region, Crd_reg, res_desired, GeoRef):
         A_region = out_image[0]
 
     return A_region
-	
-	
-def calc_gwa_correction(param, paths):
-    ''' description'''
-    m_high = param["m_high"]
-    n_high = param["n_high"]
-    res_desired = param["res_desired"]
-    nCountries = param["nCountries"]
-    countries_shp = param["countries"]
-    Crd_countries = param["Crd_countries"][0:nCountries, :]
-    GeoRef = param["GeoRef"]
-
-    # Obtain wind speed at 50m
-    W50M = hdf5storage.read('W50M', paths["W50M"])
-    W50M = np.mean(W50M, 2)
-    W50M = resizem(W50M, m_high, n_high)
-	
-    # Obtain topography
-    with rasterio.open(paths["TOPO"]) as src:
-        w = src.read(1)
-    TOPO = np.flipud(w)
-	
-    # Get the installed capacities
-    inst_cap = pd.read_csv(paths["inst-cap"], skiprows = 2, sep = ';', index_col = 0)
-
-    w_size = np.zeros((nCountries, 1))
-    w_cap = np.zeros((nCountries, 1))
-    # Try different combinations of (a, b)
-    combi_list = list(product(np.arange(0.00046, 0.00066, 0.00002), np.arange(-0.3, 0, 0.025)))
-    errors = np.zeros((len(combi_list), nCountries))
-    for reg in range(0, nCountries):
-        A_region = calc_region(countries_shp.iloc[reg], Crd_countries[reg, :], res_desired, GeoRef)
-        reg_name = countries_shp.iloc[reg]["NAME_SHORT"]
-        Ind_reg = np.nonzero(A_region)
-        w_size[reg] = len(Ind_reg[0])
-        w_cap[reg] = inst_cap.loc[reg_name, 'WindOn']
-
-        # Load MERRA data, increase its resolution, and fit it to the extent
-        w50m_reg = W50M[Ind_reg]
-        topo_reg = TOPO[Ind_reg]
-		
-        # Get the sampled frequencies from the GWA
-        w50m_gwa = pd.read_csv(paths["GWA"][:-14] + reg_name + paths["GWA"][-14:], usecols=['gwa_ws']).to_numpy()[:,0]
-        
-        i = 0
-        for combi in combi_list:
-            ai, bi = combi
-            w50m_corrected = w50m_reg * np.minimum(np.exp(ai * topo_reg + bi), 3.5)
-            w50m_sorted = np.sort(w50m_corrected)
-            w50m_sampled = np.flipud(w50m_sorted[::(len(w50m_sorted) // 50 + 1)])
-            w50m_diff = w50m_sampled - w50m_gwa
-            errors[i, reg] = np.sqrt((w50m_diff**2).sum())
-            i = i + 1
-			
-    w_size = np.tile(w_size / w_size.sum(), (1, len(combi_list))).transpose()
-    w_cap = np.tile(w_cap / w_cap.sum(), (1, len(combi_list))).transpose()
-	
-    ae, be = combi_list[np.argmin(np.sum(errors / nCountries, 1))]
-    correction_none = np.zeros(TOPO.shape)
-    correction_none = np.minimum(np.exp(ae * TOPO + be), 3.5)
-	
-    a_size, b_size = combi_list[np.argmin(np.sum(errors * w_size, 1))]
-    correction_size = np.zeros(TOPO.shape)
-    correction_size = np.minimum(np.exp(a_size * TOPO + b_size), 3.5)
-	
-    a_cap, b_cap = combi_list[np.argmin(np.sum(errors * w_cap, 1))]
-    correction_capacity = np.zeros(TOPO.shape)
-    correction_capacity = np.minimum(np.exp(a_cap * TOPO + b_cap), 3.5)
-
-    hdf5storage.writes({'correction_none': correction_none, 'correction_size': correction_size, 'correction_capacity': correction_capacity,}, paths["CORR_GWA"],
-                       store_python_metadata=True, matlab_compatible=True)
-    return
 
 
-def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
+def calc_gcr(Crd_all, m_high, n_high, res_high, GCR):
     """
-    This function creates a GCR weighting matrix for the desired geographic extent.
+    This function creates a GCR weighting matrix for the desired geographic extent
     The sizing of the PV system is conducted on a user-defined day for a shade-free exposure
     to the sun during a given number of hours.
 
     :param Crd_all: desired geographic extent of the whole region (north, east, south, west)
     :param m_high, n_high: number of rows and columns
-    :param res_desired: high map resolution
+    :param res_high: high map resolution
     :param GCR: includes the user-defined day and the duration of the shade-free period
     """
 
     # Vector of latitudes between (south) and (north), with resolution (res_should) degrees
-    lat = np.arange((Crd_all[2] + res_desired[0] / 2), Crd_all[0], res_desired[0])[np.newaxis]
-    lon = np.arange((Crd_all[3] + res_desired[1] / 2), Crd_all[1], res_desired[1])[np.newaxis]
+    lat = np.arange((Crd_all[2] + res_high[0] / 2), (Crd_all[0] - res_high[0] / 2), res_high[0])[np.newaxis]
+    lon = np.arange((Crd_all[3] + res_high[1] / 2), (Crd_all[1] - res_high[1] / 2), res_high[1])[np.newaxis]
 
     # Repeating for all longitudes/latitudes
     lat = repmat(lat.transpose(), 1, int(n_high))
@@ -296,14 +218,14 @@ def sampled_sorting(Raster, sampling):
     return s
 
 
-def calc_areas(Crd_all, n_high, res_desired):
+def calc_areas(Crd_all, n_high, res_high):
     # WSG84 ellipsoid constants
     a = 6378137  # major axis
     b = 6356752.3142  # minor axis
     e = np.sqrt(1 - (b / a) ** 2)
 
     # Lower pixel latitudes
-    lat_vec = np.arange(Crd_all[2], Crd_all[0], res_desired[0])
+    lat_vec = np.arange(Crd_all[2], Crd_all[0], res_high[0])
     lat_vec = lat_vec[np.newaxis]
 
     # Lower slice areas
@@ -317,7 +239,7 @@ def calc_areas(Crd_all, n_high, res_desired):
 
     # Upper slice areas
     # Areas between the equator and the upper pixel latitudes circling the globe
-    f_upper = np.deg2rad(lat_vec + res_desired[0])
+    f_upper = np.deg2rad(lat_vec + res_high[0])
 
     zm_upper = 1 - (e * sin(f_upper))
     zp_upper = 1 + (e * sin(f_upper))
@@ -327,7 +249,7 @@ def calc_areas(Crd_all, n_high, res_desired):
 
     # Pixel areas
     # Finding the latitudinal pixel-sized globe slice areas then dividing them by the longitudinal pixel size
-    area_vec = ((upperSliceAreas - lowerSliceAreas) * res_desired[1] / 360).T
+    area_vec = ((upperSliceAreas - lowerSliceAreas) * res_high[1] / 360).T
     A_area = np.tile(area_vec, (1, n_high))
     return A_area
 

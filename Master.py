@@ -474,14 +474,14 @@ def generate_buffered_population(paths, param):
 
 
 def generate_wind_correction(paths, param):
-    timecheck('Start')
-    res_correction = param["WindOn"]["resource"]["res_correction"]
+    res_correction_on = param["WindOn"]["resource"]["res_correction"]
+    res_correction_off = param["WindOff"]["resource"]["res_correction"]
     topo_correction = param["WindOn"]["resource"]["topo_correction"]
     GeoRef = param["GeoRef"]
-    if res_correction:
+    # Onshore resolution correction
+    if res_correction_on:
         landuse = param["landuse"]
         turbine_height_on = param["WindOn"]["technical"]["hub_height"]
-        turbine_height_off = param["WindOff"]["technical"]["hub_height"]
         m_low = param["m_low"]
         n_low = param["n_low"]
         m_high = param["m_high"]
@@ -496,13 +496,34 @@ def generate_wind_correction(paths, param):
         Sigma = sumnorm_MERRA2((50 / A_gradient_height) ** A_hellmann, m_low, n_low, res_low, res_high)
         A_cf_on = ((turbine_height_on / 50) * turbine_height_on /
                    A_gradient_height) ** A_hellmann / resizem(Sigma, m_high, n_high)
+        del A_gradient_height, Sigma
+    else:
+        A_cf_on = (turbine_height_on / 50) ** A_hellmann
+
+    # Offshore resolution correction
+    if res_correction_off:
+        landuse = param["landuse"]
+        turbine_height_off = param["WindOff"]["technical"]["hub_height"]
+        m_low = param["m_low"]
+        n_low = param["n_low"]
+        m_high = param["m_high"]
+        n_high = param["n_high"]
+        res_low = param["res_low"]
+        res_high = param["res_high"]
+        with rasterio.open(paths["LU"]) as src:
+            A_lu = np.flipud(src.read(1)).astype(int)
+        A_hellmann = changem(A_lu, landuse["hellmann"], landuse["type"]).astype(float) / 100
+        A_gradient_height = changem(A_lu.astype(float), landuse["height"], landuse["type"])
+        del A_lu
+        Sigma = sumnorm_MERRA2((50 / A_gradient_height) ** A_hellmann, m_low, n_low, res_low, res_high)
         A_cf_off = ((turbine_height_off / 50) * turbine_height_off /
                     A_gradient_height) ** A_hellmann / resizem(Sigma, m_high, n_high)
         del A_gradient_height, Sigma
-    # else:
-    #     A_cf_on = (turbine_height_on / 50) ** A_hellmann
-    #     A_cf_off = (turbine_height_on / 50) ** A_hellmann
-    # del A_hellmann
+    else:
+        A_cf_off = (turbine_height_on / 50) ** A_hellmann
+    del A_hellmann
+
+    # Topographic correction (only onshore)
     with rasterio.open(paths["LAND"]) as src:
         A_land = np.flipud(src.read(1)).astype(int)
     A_cf_on = A_cf_on * A_land

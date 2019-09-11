@@ -1,5 +1,6 @@
 from util import *
 
+
 def define_spatial_scope(scope_shp):
     scope_shp = scope_shp.to_crs({'init': 'epsg:4326'})
     r = scope_shp.total_bounds
@@ -105,7 +106,7 @@ def calc_geotiff(Crd_all, res_desired):
 
 
 def calc_region(region, Crd_reg, res_desired, GeoRef):
-    ''' description - why is there a minus sign?'''
+    ''' description '''
     latlim = Crd_reg[2] - Crd_reg[0]
     lonlim = Crd_reg[3] - Crd_reg[1]
     M = int(math.fabs(latlim) / res_desired[0])
@@ -135,42 +136,43 @@ def calc_region(region, Crd_reg, res_desired, GeoRef):
 
     return A_region
 
+
 def clean_IRENA(param, paths):
     ''' description'''
     year = str(param["year"])
     filter_countries = param["regions_land"]['GID_0'].to_list()
     IRENA_dict = pd.read_csv(paths["IRENA_dict"], sep=';', index_col=0)
     IRENA_dict = IRENA_dict['Countries shapefile'].to_dict()
-    IRENA = pd.read_csv(paths["IRENA"], skiprows=7, sep=';', index_col=False, usecols=[0,1,2,3])
+    IRENA = pd.read_csv(paths["IRENA"], skiprows=7, sep=';', index_col=False, usecols=[0, 1, 2, 3])
     for i in IRENA.index:
         if pd.isnull(IRENA.loc[i, 'Country/area']):
-            IRENA.loc[i, 'Country/area'] = IRENA.loc[i-1, 'Country/area']
+            IRENA.loc[i, 'Country/area'] = IRENA.loc[i - 1, 'Country/area']
         if pd.isnull(IRENA.loc[i, 'Technology']):
-            IRENA.loc[i, 'Technology'] = IRENA.loc[i-1, 'Technology']
+            IRENA.loc[i, 'Technology'] = IRENA.loc[i - 1, 'Technology']
 
     for c in IRENA['Country/area'].unique():
-        IRENA.loc[IRENA['Country/area']==c, 'Country/area'] = IRENA_dict[c]
-        
+        IRENA.loc[IRENA['Country/area'] == c, 'Country/area'] = IRENA_dict[c]
+
     IRENA = IRENA.set_index(['Country/area', 'Technology'])
-    
+
     IRENA = IRENA.fillna(0).sort_index()
 
     for (c, t) in IRENA.index.unique():
         sub_df = IRENA.loc[(c, t), :]
-        inst_cap = sub_df.loc[sub_df['Indicator']=='Electricity capacity (MW)', year][0]
+        inst_cap = sub_df.loc[sub_df['Indicator'] == 'Electricity capacity (MW)', year][0]
         if isinstance(inst_cap, str):
-            inst_cap = int(inst_cap.replace(' ',''))
-            sub_df.loc[sub_df['Indicator']=='Electricity capacity (MW)', year] = inst_cap
-        gen_prod = sub_df.loc[sub_df['Indicator']=='Electricity generation (GWh)', year][0]
+            inst_cap = int(inst_cap.replace(' ', ''))
+            sub_df.loc[sub_df['Indicator'] == 'Electricity capacity (MW)', year] = inst_cap
+        gen_prod = sub_df.loc[sub_df['Indicator'] == 'Electricity generation (GWh)', year][0]
         if isinstance(gen_prod, str):
-            gen_prod = 1000 * int(gen_prod.replace(' ',''))
-            sub_df.loc[sub_df['Indicator']=='Electricity generation (GWh)', year] = gen_prod
+            gen_prod = 1000 * int(gen_prod.replace(' ', ''))
+            sub_df.loc[sub_df['Indicator'] == 'Electricity generation (GWh)', year] = gen_prod
         if inst_cap == 0:
             FLH = 0
         else:
             FLH = gen_prod / inst_cap
         IRENA = IRENA.append(pd.DataFrame([['FLH (h)', FLH]], index=[(c, t)], columns=['Indicator', year])).sort_index()
-        
+
     # Filter countries
     IRENA = IRENA.reset_index()
     IRENA = IRENA.set_index(['Country/area']).sort_index()
@@ -182,7 +184,7 @@ def clean_IRENA(param, paths):
                                                                    'Electricity generation (GWh)': 'prod (MWh)'})
     IRENA = IRENA.astype(float)
     IRENA.to_csv(paths['IRENA_out'], sep=';', decimal=',', index=True)
-    
+
 
 def calc_gwa_correction(param, paths):
     ''' description'''
@@ -208,10 +210,10 @@ def calc_gwa_correction(param, paths):
     # Clean IRENA data and filter them for desired scope
     if (not os.path.isfile(paths["IRENA_out"])):
         clean_IRENA(param, paths)
-    
+
     # Get the installed capacities
-    inst_cap = pd.read_csv(paths["IRENA_out"], sep=';', decimal=',', index_col=0, usecols=[0,1,2])
-    inst_cap = inst_cap.loc[inst_cap["Technology"]=='Onshore wind energy']
+    inst_cap = pd.read_csv(paths["IRENA_out"], sep=';', decimal=',', index_col=0, usecols=[0, 1, 2])
+    inst_cap = inst_cap.loc[inst_cap["Technology"] == 'Onshore wind energy']
 
     w_size = np.zeros((nCountries, 1))
     w_cap = np.zeros((nCountries, 1))
@@ -225,7 +227,7 @@ def calc_gwa_correction(param, paths):
         sys.stdout.write('\rFinding wind correction factors ' + '[%-50s] %d%%' % (
             '=' * ((status * 50) // nCountries), (status * 100) // nCountries))
         sys.stdout.flush()
-        
+
         A_region = calc_region(countries_shp.iloc[reg], Crd_countries[reg, :], res_desired, GeoRef)
         reg_name = countries_shp.iloc[reg]["GID_0"]
         Ind_reg = np.nonzero(A_region)
@@ -498,7 +500,53 @@ def regmodel_load_data(paths, param, tech, settings, region):
     }}
 
     return data
-    
+
+
+def get_merra_raster_Data(paths, param, tech):
+    landuse = param["landuse"]
+    merraData = {}
+    rasterData = {}
+    # Wind Speed Data
+    merraData["W50M"] = hdf5storage.read('W50M', paths["W50M"])
+    if tech in ['PV', 'CSP']:
+
+        # Other weather Data
+        # Clearness index - stored variable CLEARNESS
+        merraData["CLEARNESS"] = hdf5storage.read('CLEARNESS', paths["CLEARNESS"])
+        # Temperature 2m above the ground - stored variable T2M
+        merraData["T2M"] = hdf5storage.read('T2M', paths["T2M"])
+
+        # Calculate A matrices correction
+        # A_lu
+        with rasterio.open(paths["LU"]) as src:
+            w = src.read(1)
+        rasterData["A_lu"] = np.flipud(w)
+        # A_Ross (Temperature coefficients for heating losses)
+        rasterData["A_Ross"] = changem(rasterData["A_lu"], param["landuse"]["Ross_coeff"],
+                                       param["landuse"]["type"]).astype('float16')
+        # A_albedo (Reflectivity coefficients)
+        rasterData["A_albedo"] = changem(rasterData["A_lu"], param["landuse"]["albedo"],
+                                         param["landuse"]["type"]).astype('float16')
+        # A_WS_Coef wind Speed at 2m above the ground
+        A_hellmann = changem(rasterData["A_lu"], landuse["hellmann"], landuse["type"])
+        rasterData["A_WindSpeed_Corr"] = ((2 / 50) ** A_hellmann).astype('float16')
+        del A_hellmann
+
+    elif tech in ['WindOn', 'WindOff']:
+        reg_ind = param["Ind_nz"]
+        # A_cf
+        if tech == 'WindOn':
+            paths_corr = paths["CORR_ON"]
+        else:
+            paths_corr = paths["CORR_OFF"]
+        with rasterio.open(paths_corr) as src:
+            w = src.read(1)
+        rasterData["A_cf"] = np.flipud(w).astype('float16')
+        rasterData["A_cf"] = rasterData["A_cf"][reg_ind]
+        del w
+    return merraData, rasterData
+
+
 def create_json(filepath, param, param_keys, paths, paths_keys):
     '''
     '''
@@ -518,13 +566,14 @@ def create_json(filepath, param, param_keys, paths, paths_keys):
                     for k2, v2 in v.items():
                         if type(v2) == np.ndarray:
                             new_dict[key][k][k2] = v2.tolist()
-                    
+
     for key in paths_keys:
         new_dict[key] = paths[key]
     # Add timestamp
     new_dict["timestamp"] = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
     # Add caller function's name
     new_dict["function"] = inspect.stack()[1][3]
-    import pdb; pdb.set_trace()
+    import pdb
+    pdb.set_trace()
     with open(new_file, 'w') as json_file:
         json.dump(new_dict, json_file)

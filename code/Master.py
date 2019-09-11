@@ -1,11 +1,23 @@
 from model_functions import *
 
-
 def initialization():
+    """
+    This function reads the user-defined parameters and paths from config.py, then adds additional parameters related
+    to the shapefiles. 
+    First, it saves the spatial scope of the problem.
+    Then, it distinguishes between countries, exclusive economic zones and subregions. For each one of them, 
+    it saves the geodataframes, the number of features, and the coordinates of the bounding boxes of each feature.
+    Finally, it saves the number of rows and columns in the low and righ resolution, and a georeference dictionary
+    used for saving tif files.
+
+    :return: The updated dictionaries param and paths.
+    :rtype: tuple of dict
+    """
     timecheck('Start')
     
     # import param and paths
-    from config import paths, param
+    from config import config
+    paths, param = config()
         
     create_folders(paths)
     
@@ -102,9 +114,14 @@ def generate_weather_files(paths, param):
     """
     This function reads the daily NetCDF data (from MERRA) for SWGDN, SWTDN, T2M, U50m, and V50m,
     and saves them in matrices with yearly time series with low spatial resolution.
-    This code has to be run only once
+    This function has to be run only once.
 
-    :param paths: paths dictionary containing the input file for NetCDF data
+    :param paths: Dictionary including the paths to the MERRA-2 input files (MERRA_IN), and to the desired output locations for T2M, W50M and CLEARNESS.
+    :type paths: dict
+    :param param: Dictionary including the year and the spatial scope.
+    :type param: dict
+    :return: The files T2M.mat, W50M.mat, and CLEARNESS.mat are saved directly in the defined paths.
+    :rtype: None
     """
 
     timecheck('Start')
@@ -183,6 +200,20 @@ def generate_weather_files(paths, param):
 
 
 def clean_weather_data(paths, param):
+    """
+    This function detects data outliers in the wind input file W50M.mat. An outlier is a data point, for which
+    the absolute value of the difference between the yearly average value and the mean of the direct neighbors
+    (Moore neighborhood) is higher than a user-defined threshold (MERRA_correction). It replaces the hourly values
+    with the hourly values of the mean of the neighbors, and overwrites the original W50M.mat file.
+
+    :param paths: Dictionary including the path to the file W50M.mat.
+    :type paths: dict
+    :param param: Dictionary including the threshold value MERRA_coorection.
+    :type param: dict
+    :return: The file W50M.mat is overwritten after the correction.
+    :rtype: None
+    """
+    
     timecheck('Start')
 
     W50M = hdf5storage.read('W50M', paths["W50M"])
@@ -199,7 +230,7 @@ def clean_weather_data(paths, param):
     points = np.where(ratio > param["MERRA_correction"])
 
     # Extract over threshold Points
-    points = np.where(np.sqrt((ratio - np.mean(ratio)) ** 2) > param["MERRA_correction"])
+    points = np.where(abs(ratio - np.mean(ratio)) > param["MERRA_correction"])
 
     # Correct points hourly
     for t in range(W50M.shape[2]):
@@ -211,6 +242,17 @@ def clean_weather_data(paths, param):
 
 
 def generate_landsea(paths, param):
+    """
+    This function reads the shapefiles of the countries (land areas) and of the exclusive economic zones (sea areas)
+    within the scope, and creates two rasters out of them.
+
+    :param paths: Dictionary including the paths LAND and EEZ.
+    :type paths: dict
+    :param param: Dictionary including the geodataframes of the shapefiles, the number of features, the coordinates of the bounding box of the spatial scope, and the number of rows and columns.
+    :type param: dict
+    :return: The tif files for LAND and EEZ are saved in their respective paths.
+    :rtype: None
+    """
     m_high = param["m_high"]
     n_high = param["n_high"]
     Crd_all = param["Crd_all"]
@@ -278,6 +320,16 @@ def generate_landsea(paths, param):
 
 
 def generate_subregions(paths, param):
+    """
+    This function reads the shapefiles of the subregions within the scope, and creates a raster out of it.
+
+    :param paths: Dictionary including the paths SUB, LAND, EEZ.
+    :type paths: dict
+    :param param: Dictionary including the geodataframe of the shapefile, the number of features, the coordinates of the bounding box of the spatial scope, and the number of rows and columns.
+    :type param: dict
+    :return: The tif file for SUB is saved in its respective path.
+    :rtype: None
+    """
     m_high = param["m_high"]
     n_high = param["n_high"]
     Crd_all = param["Crd_all"]
@@ -323,6 +375,18 @@ def generate_subregions(paths, param):
 
 
 def generate_landuse(paths, param):
+    """
+    This function reads the global map of land use, and creates a raster out of it for the desired scope.
+    There are 17 discrete possible values from 0 to 16, corresponding to different land use classes.
+    See config.py for more information on the land use map.
+
+    :param paths: Dictionary including the paths to the global land use raster LU_global and to the output path LU.
+    :type paths: dict
+    :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
+    :type param: dict
+    :return: The tif file for LU is saved in its respective path.
+    :rtype: None
+    """
 
     timecheck('Start')
     res_desired = param["res_desired"]
@@ -339,6 +403,17 @@ def generate_landuse(paths, param):
 
 
 def generate_bathymetry(paths, param):
+    """
+    This function reads the global map of bathymetry, resizes it, and creates a raster out of it for the desired scope.
+    The values are in meter (negative in the sea).
+
+    :param paths: Dictionary including the paths to the global bathymetry raster Bathym_global and to the output path BATH.
+    :type paths: dict
+    :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
+    :type param: dict
+    :return: The tif file for BATH is saved in its respective path.
+    :rtype: None
+    """
 
     timecheck('Start')
     res_desired = param["res_desired"]
@@ -355,7 +430,18 @@ def generate_bathymetry(paths, param):
 
 
 def generate_topography(paths, param):
+    """
+    This function reads the tiles that make the global map of topography, picks those that lie completely or partially in the scope,
+    and creates a raster out of them for the desired scope. The values are in meter.
 
+    :param paths: Dictionary including the paths to the tiles of the global topography raster Topo_tiles and to the output path TOPO.
+    :type paths: dict
+    :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
+    :type param: dict
+    :return: The tif file for TOPO is saved in its respective path.
+    :rtype: None
+    """
+    
     timecheck('Start')
     res_desired = param["res_desired"]
     Crd_all = param["Crd_all"]
@@ -408,6 +494,17 @@ def generate_topography(paths, param):
 
 
 def generate_slope(paths, param):
+    """
+    This function reads the topography raster for the scope, and creates a raster of slope out of it. The slope is calculated in
+    percentage, although this can be changed easily at the end of the code.
+
+    :param paths: Dictionary including the paths to the topography map of the scope TOPO and to the output path SLOPE.
+    :type paths: dict
+    :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
+    :type param: dict
+    :return: The tif file for SLOPE is saved in its respective path.
+    :rtype: None
+    """
 
     timecheck('Start')
     res_desired = param["res_desired"]
@@ -456,7 +553,17 @@ def generate_slope(paths, param):
 
 
 def generate_population(paths, param):
+    """
+    This function reads the tiles that make the global map of population, picks those that lie completely or partially in the scope,
+    and creates a raster out of them for the desired scope. The values are in population by pixel.
 
+    :param paths: Dictionary including the paths to the tiles of the global population raster Pop_tiles and to the output path POP.
+    :type paths: dict
+    :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
+    :type param: dict
+    :return: The tif file for POP is saved in its respective path.
+    :rtype: None
+    """
     timecheck('Start')
     res_desired = param["res_desired"]
     Crd_all = param["Crd_all"]
@@ -510,7 +617,18 @@ def generate_population(paths, param):
 
 
 def generate_protected_areas(paths, param):
+    """
+    This function reads the shapefile of the globally protected areas, adds an attribute whose values are based on the dictionary 
+    of conversion (protected_areas) to identify the protection category, then converts the shapefile into a raster for the scope.
+    The values are integers from 0 to 10.
 
+    :param paths: Dictionary including the paths to the shapefile of the globally protected areas, to the landuse raster of the scope, and to the output path PA.
+    :type paths: dict
+    :param param: Dictionary including the dictionary of conversion of protection categories (protected_areas).
+    :type param: dict
+    :return: The tif file for PA is saved in its respective path.
+    :rtype: None
+    """
     timecheck('Start')
     protected_areas = param["protected_areas"]
     # set up protected areas dictionary
@@ -666,7 +784,7 @@ def generate_wind_correction(paths, param):
         A_cf_off = A_cf_off * A_eez
         
         array2raster(paths["CORR_OFF"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf_off)
-        print("files saved: " + paths["CORR_OFF"])
+        print("\nfiles saved: " + paths["CORR_OFF"])
     timecheck('End')
 
 
@@ -1235,7 +1353,7 @@ def generate_time_series(paths, param, tech):
     timecheck('End')
 
 
-def regression_coefficient(paths, param, tech):
+def regression_coefficients(paths, param, tech):
     """
     Solves the following optimization problem:
 
@@ -1515,6 +1633,7 @@ def regression_coefficient(paths, param, tech):
 
 
 if __name__ == '__main__':
+    
     paths, param = initialization()
     # generate_weather_files(paths, param)
     # clean_weather_data(paths, param)
@@ -1523,20 +1642,20 @@ if __name__ == '__main__':
     # generate_landuse(paths, param)  # Landuse
     # generate_bathymetry(paths, param)  # Bathymetry
     # generate_topography(paths, param)  # Topography
-    generate_slope(paths, param)  # Slope
-    generate_population(paths, param)  # Population
-    generate_protected_areas(paths, param)  # Protected areas
-    generate_buffered_population(paths, param)  # Buffered Population
-    generate_wind_correction(paths, param)  # Correction factors for wind speeds
+    # generate_slope(paths, param)  # Slope
+    # generate_population(paths, param)  # Population
+    # generate_protected_areas(paths, param)  # Protected areas
+    # generate_buffered_population(paths, param)  # Buffered Population
+    # generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
         print("Tech: " + tech)
-        calculate_FLH(paths, param, tech)
-        masking(paths, param, tech)
-        weighting(paths, param, tech)
-        reporting(paths, param, tech)
-        #find_locations_quantiles(paths, param, tech)
-        #generate_time_series(paths, param, tech)
-        #regression_coefficient(paths, param, tech)
+        # calculate_FLH(paths, param, tech)
+        # masking(paths, param, tech)
+        # weighting(paths, param, tech)
+        # reporting(paths, param, tech)
+        # find_locations_quantiles(paths, param, tech)
+        generate_time_series(paths, param, tech)
+        #regression_coefficients(paths, param, tech)
     # cProfile.run('initialization()', 'cprofile_test.txt')
     # p = pstats.Stats('cprofile_test.txt')
     # p.sort_stats('cumulative').print_stats(20)

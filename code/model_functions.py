@@ -3,7 +3,6 @@ from util import *
 
 np.seterr(divide='ignore')  # Repress Invalid value or division by zero error
 
-
 def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
     pv = param["PV"]["technical"]
     csp = param["CSP"]["technical"]

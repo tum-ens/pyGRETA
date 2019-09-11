@@ -10,16 +10,16 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
+sys.path.append(os.path.abspath('../code/'))
 import sphinx_rtd_theme
 
 
 # -- Project information -----------------------------------------------------
 
 project = 'renewable-timeseries'
-copyright = '2019, Kais Siala, Houssame Houmy'
+copyright = 'ENS 2019'
 author = 'Kais Siala, Houssame Houmy'
 
 # The full version, including alpha/beta/rc tags
@@ -69,3 +69,9 @@ html_theme_options = {
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = []
+
+# Modules to be ignored
+autodoc_mock_imports = ["gdal", "osr", "osgeo", "numpy", "os", "glob", "psutil", "datetime",
+                        "inspect", "sys", "math", "rasterio", "pandas", "scipy", "geopandas",
+                        "shapely", "fiona", "hdf5storage", "multiprocessing", "itertools",
+                        "h5netcdf", "cProfile", "pstats", "shutil", "pyomo"]

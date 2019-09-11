@@ -1035,6 +1035,12 @@ def generate_time_series(paths, param):
 def regression_coefficient(paths, param, tech):
     timecheck('Start')
 
+    # Check technology for hubeights
+    if tech in ['WindOn', 'WindOff']:
+        hub_heights = param["hub_heights"]
+    else:
+        hub_heights = [0]
+
     # Check if regression folder is present, if not creates it
 
     if not os.path.isdir(paths['regression']):
@@ -1043,8 +1049,8 @@ def regression_coefficient(paths, param, tech):
         os.mkdir(paths["regression_out"])
         shutil.copy2(paths["IRENA"],
                      paths["regression_in"] + os.path.split(paths["IRENA"])[1])
-        shutil.copy2(paths["EMHIRES"] + tech + '.txt',
-                     paths["regression_in"] + os.path.split(paths["EMHIRES"] + tech + '.txt')[1])
+        shutil.copy2(paths[tech]["EMHIRES"],
+                     paths["regression_in"] + os.path.split(paths[tech]["EMHIRES"])[1])
         # display error, and copy readme file
         shutil.copy2(paths["Reg_RM"],
                      paths["regression_in"] + os.path.split(paths["Reg_RM"])[1])
@@ -1054,8 +1060,11 @@ def regression_coefficient(paths, param, tech):
     # Check if the TS files are present in input folder
 
     missing = 0
-    for hub in param["hub_heights"]:
-        pathfile = paths[tech]["TS_height"] + str(hub) + '_TS_' + param["year"] + '.csv'
+    for hub in hub_heights:
+        if hub != 0:
+            pathfile = paths[tech]["TS_height"] + str(hub) + '_TS_' + param["year"] + '.csv'
+        else:
+            pathfile = paths[tech]["TS_height"] + '_TS_' + param["year"] + '.csv'
         if not os.path.isfile(pathfile):
             missing = missing + 1
     if missing > 0:
@@ -1077,13 +1086,22 @@ def regression_coefficient(paths, param, tech):
     model.TS = pyo.Param(model.h, model.q, model.t)
     model.coef = pyo.Var(model.h, model.q, domain=pyo.NonNegativeReals)
 
-    def constraint_rule(model):
+    def constraint_FLH(model):
         FLH = 0
         for h in model.h:
             for q in model.q:
+                tempTS = 0
                 for t in model.t:
-                    FLH = FLH + pyo.prod([model.coef[h, q], model.TS[h, q, t]])
+                    tempTS = tempTS + model.TS[h, q, t]
+                FLH = FLH + pyo.prod([model.coef[h, q], tempTS])
         return FLH == model.FLH
+
+    def constraint_sum(model):
+        sum = 0
+        for h in model.h:
+            for q in model.q:
+                sum = sum + model.coef[h, q]
+        return sum == 1
 
     def obj_expression(model):
         Error = 0
@@ -1094,10 +1112,10 @@ def regression_coefficient(paths, param, tech):
         return Error
 
     model.OBJ = pyo.Objective(rule=obj_expression)
-    model.constraint = pyo.Constraint(rule=constraint_rule)
+    model.constraint_FLH = pyo.Constraint(rule=constraint_FLH)
+    model.constraint_sum = pyo.Constraint(rule=constraint_sum)
 
     # Load IRENA data and regions
-
     irena = pd.read_csv(paths["regression_in"] + 'IRENA_FLH.txt', '\t')
     irena_regions = np.array(irena['NAME_SHORT'])
     irena = irena.transpose()
@@ -1106,7 +1124,7 @@ def regression_coefficient(paths, param, tech):
     param["IRENA"] = irena
 
     # load EMHIRES data for desired year
-    EMHIRES = pd.read_csv(paths["regression_in"] + 'EMHIRES_WindOn.txt', '\t')
+    EMHIRES = pd.read_csv(paths["regression_in"] + os.path.split(paths[tech]["EMHIRES"])[1], '\t')
     EMHIRES = EMHIRES[EMHIRES["Year"] == int(param["year"])].reset_index()
     EMHIRES = EMHIRES.drop(['index', 'Time', 'step', 'Date', 'Year', 'Month', 'Day', 'Hour'], axis=1)
     emhires_regions = np.array(EMHIRES.columns)
@@ -1116,28 +1134,47 @@ def regression_coefficient(paths, param, tech):
     list_regions = np.intersect1d(irena_regions, emhires_regions)
     del emhires_regions, irena_regions
 
+    summary = None
+
     # loop over all regions
-    results = {}
     for reg in list_regions:
-        region_data = load_data(paths, param, tech, reg)
+        region_data = load_data(paths, param, tech, hub_heights, reg)
+
+        # Skip regions not present in the generated TS
         if region_data is None:
             continue
+
         if region_data[None]["IRENA_best_worst"] == (True, True):
+
+            # create model instance
             regression = model.create_instance(region_data)
-            results = solver.solve(regression)
+
+            # solve model and return results
+            solver.solve(regression)
+
+            # Retreive results
+            r = np.zeros((len(param["quantiles"]), len(hub_heights)))
+            c = 0
+            for q in param["quantiles"]:
+                p = 0
+                for h in hub_heights:
+                    r[c, p] = pyo.value(regression.coef[h, q])
+                    p += 1
+                c += 1
+            r[r < 10**(-5)] = 0
         else:
-            results[reg] = "No solution"
+            r = np.full((len(param["quantiles"]), len(hub_heights)), np.nan)
             print("There is no solution for region:" + reg)
 
+        result = pd.DataFrame(r, param["quantiles"], (reg + "_" + str(h) for h in hub_heights))
+        if summary is None:
+            summary = result
+        else:
+            summary = pd.concat([summary, result], axis=1)
 
-    # IRENA_FLH = irena[region].loc['wind']
-    #
-    #   return region data
-    #   instantiate model
-    #   solve it and return results
-    #   Save data to array and parse it to pandas Dataframe
-    # Save dataframe to .csv file
-    print(results)
+    print(summary)
+
+    summary.to_csv(paths[tech]["Regression_summary"], na_rep=param["no_solution"], sep=';', decimal='.')
     timecheck('End')
 
 

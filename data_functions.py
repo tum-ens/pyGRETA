@@ -428,34 +428,42 @@ def superpose_down(A_lu, buffer_pixed_amount):
     return shifted_down
 
 
-def load_data(paths, param, tech, region):
+def load_data(paths, param, tech, hubheights, region):
 
     # Read data from output folder
     IRENA_FLH = 0
     TS = np.zeros(8760)
+    time = range(1, 8761)
 
     # Setup the data dataframe for generated TS for each quantile
     GenTS = {}
-    for hub in param["hub_heights"]:
-        TS_Temp = pd.read_csv(paths[tech]["TS_height"] + str(hub) + '_TS_' + param["year"] + '.csv', ';')
+    for hub in hubheights:
+        if hub != 0:
+            TS_Temp = pd.read_csv(paths[tech]["TS_height"] + str(hub) + '_TS_' + param["year"] + '.csv', ';')
+        else:
+            TS_Temp = pd.read_csv(paths[tech]["TS_height"] + '_TS_' + param["year"] + '.csv', ';')
 
         # Remove undesired regions
         filter_reg = [col for col in TS_Temp if col.startswith(region)]
         TS_Temp = TS_Temp[filter_reg]
+
+        # Exit function if region is not present in TS files
         if TS_Temp.empty:
             return None
+
         TS_Temp.columns = TS_Temp.iloc[0]
         TS_Temp = TS_Temp.drop(0)
 
         GenTS[str(hub)] = TS_Temp.astype(float)
+
     GenTS["TS_Max"] = np.nansum(GenTS[str(np.max(param["hub_heights"]))]["q" + str(np.max(param["quantiles"]))])
     GenTS["TS_Min"] = np.nansum(GenTS[str(np.min(param["hub_heights"]))]["q" + str(np.min(param["quantiles"]))])
 
     # Prepare Timeseries dictionary indexing by height and quantile
     Timeseries = {}
-    for h in param["hub_heights"]:
+    for h in hubheights:
         for q in param["quantiles"]:
-            for t in range(1, 8761):
+            for t in time:
                 Timeseries[(h, q, t)] = np.array(GenTS[str(h)]['q'+str(q)])[t-1]
 
     # Setup dataframe for IRENA
@@ -466,16 +474,16 @@ def load_data(paths, param, tech, region):
     EMHIRES = param["EMHIRES"]
     ts = np.array(EMHIRES[region].values)
     TS = {}
-    for t in range(1, 8761):
+    for t in time:
         TS[(t,)] = ts[t - 1]
 
     # Create data_input dictionary
     data = {None: {
-        "h": {None: param["hub_heights"]},
+        "h": {None: hubheights},
         "q": {None: param["quantiles"]},
         "FLH": {None: IRENA_FLH},
         "shape": TS,
-        "t": {None: np.arange(1, 8761)},
+        "t": {None: np.array(time)},
         "TS": Timeseries,
         "IRENA_best_worst": (GenTS["TS_Max"] > IRENA_FLH, GenTS["TS_Min"] < IRENA_FLH)
             }}

@@ -8,7 +8,7 @@ from pathlib import Path
 ###########################
 
 param = {}
-param["region"] = 'Europe_wo_balkans'
+param["region"] = 'Germany'
 param["MERRA_coverage"] = 'World'
 param["year"] = 2015
 param["technology"] = ['PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
@@ -16,7 +16,7 @@ param["technology"] = ['PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 # param["quantiles"] = np.array([100, 95, 90, 85, 80, 70, 60, 50, 40, 35, 20, 0])
 param["quantiles"] = np.array([100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
-param["nproc"] = 20
+param["nproc"] = 4
 param["CPU_limit"] = True
 param["report_sampling"] = 100
 # Custom timestamp
@@ -196,9 +196,9 @@ fs = os.path.sep
 
 git_RT_folder = os.path.dirname(os.path.abspath(__file__))
 # For personal Computer:
-# root = str(Path(git_RT_folder).parent.parent) + fs + "Database_KS" + fs
+root = str(Path(git_RT_folder).parent.parent) + fs + "Database_KS" + fs
 # For Server Computer:
-root = str(Path(git_RT_folder).parent.parent) + "Database_KS" + fs
+# root = str(Path(git_RT_folder).parent.parent) + "Database_KS" + fs
 
 region = param["region"]
 MERRA_coverage = param["MERRA_coverage"]
@@ -256,15 +256,15 @@ paths["SHP"] = paths["Countries"]
 # paths["SHP"] = PathTemp + "PV orientation test.shp"
 
 # CSP capacity factor testing
-# paths["Countries"] = PathTemp + "Germany_with_EEZ.shp"
-# paths["SHP"] = paths["Countries"]
+paths["Countries"] = PathTemp + "Germany_with_EEZ.shp"
+paths["SHP"] = paths["Countries"]
 
 # Chille PV
 # paths["Countries"] = PathTemp + 'Chille region.shp'
 # paths["SHP"] = paths["Countries"]
 
 # Local maps
-paths["maps"] = paths["region"] + "Maps" + fs
+paths["maps"] = paths["region"] + "Maps" + fs + param["region"]
 if not os.path.isdir(paths["maps"]):
     os.mkdir(paths["maps"])
 paths["LAND"] = paths["maps"] + "_Land.tif"  # Land pixels

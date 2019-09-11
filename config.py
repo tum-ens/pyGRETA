@@ -3,39 +3,54 @@ import numpy as np
 import os
 from pathlib import Path
 
+param = {}
+paths = {}
+fs = os.path.sep
+git_RT_folder = os.path.dirname(os.path.abspath(__file__))
+# For personal Computer:
+# root = str(Path(git_RT_folder).parent.parent) + fs + "Database_KS" + fs
+# For Server Computer:
+root = str(Path(git_RT_folder).parent.parent) + "Database_KS" + fs
+
 ###########################
 #### User preferences #####
 ###########################
 
-param = {}
-param["region"] = 'Europe_wo_balkans'
-param["MERRA_coverage"] = 'World'
-param["year"] = 2015
-param["technology"] = ['WindOff']  # ['PV', 'CSP', 'WindOn', 'WindOff']
-# param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30, 0])
-# param["quantiles"] = np.array([100, 95, 90, 85, 80, 70, 60, 50, 40, 35, 20, 0])
-param["quantiles"] = np.array([100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0])
-param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
-param["nproc"] = 18
-param["CPU_limit"] = True
-param["report_sampling"] = 100
 # Custom timestamp
 timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
+timestamp = '4NEMO'
 
-# Regression Coefficient
-regression = {
-    "solver": 'gurobi',
-    "hub_heights": [100, 80, 60],
-    "orientations": []}
-param["regression"] = regression
+# Important settings
+param["region"] = 'Europe_wo_balkans'
+param["year"] = 2015
+param["technology"] = ['WindOff']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 
-# MERRA_Centroid_Extent = [74.5, 45, 19, -20.625]  # EUMENA
-# MERRA_Centroid_Extent = [74.5, 36.25, 33.5, -16.25]  # Europe
-# MERRA_Centroid_Extent = [49, -103.75, 28, -129.375]  # California
-# MERRA_Centroid_Extent = np.array([56.25, 15.3125, 47.25, 2.8125])  # Germany
+# Computation
+param["nproc"] = 18
+param["CPU_limit"] = True
 
+# Data resolution
 param["res_weather"] = np.array([1 / 2, 5 / 8])
 param["res_desired"] = np.array([1 / 240, 1 / 240])
+
+# Weather
+param["MERRA_coverage"] = 'World'
+
+# Mask / Weight
+param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
+
+# Reporting
+param["report_sampling"] = 100
+
+# Time series
+param["quantiles"] = np.array([100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0])
+
+# Regression
+regression = {
+    "solver": 'gurobi',
+    "hub_heights": [80],
+    "orientations": []}
+param["regression"] = regression
 
 # Landuse reclassification
 # A_lu matrix element values range from 0 to 16:
@@ -118,6 +133,7 @@ if pv["technical"]["tracking"] != 0 and pv["technical"]["orientation"] not in [0
     print('WARNING: ' + str(pv["technical"]["tracking"]) + ' axis tracking, overwrites orientation input: '
           + str(pv["technical"]["orientation"]))
     pv["technical"]["orientation"] = 'track_' + str(pv["technical"]["tracking"])
+    
 # Parameters related to CSP
 csp = {}
 csp["technical"] = {"T_avg_HTF": 350,  # °C
@@ -192,30 +208,16 @@ del pv, csp, windon, windoff
 ##### Define Paths ########
 ###########################
 
-fs = os.path.sep
-
-git_RT_folder = os.path.dirname(os.path.abspath(__file__))
-# For personal Computer:
-# root = str(Path(git_RT_folder).parent.parent) + fs + "Database_KS" + fs
-# For Server Computer:
-root = str(Path(git_RT_folder).parent.parent) + "Database_KS" + fs
-
 region = param["region"]
 MERRA_coverage = param["MERRA_coverage"]
 year = str(param["year"])
 
-paths = {}
-
 # Regionalization
 paths["region"] = root + "03 Intermediate files" + fs + "Files " + region + fs
-if not os.path.isdir(paths["region"]):
-    os.makedirs(paths["region"] + "Renewable energy" + fs)
 
 # MERRA2
 paths["MERRA_IN"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + MERRA_coverage + " " + year + fs
 paths["weather_dat"] = paths["region"] + "Renewable energy" + fs + "MERRA2 " + year + fs
-if not os.path.isdir(paths["weather_dat"]):
-    os.mkdir(paths["weather_dat"])
 paths["U50M"] = paths["weather_dat"] + "u50m_" + year + ".mat"
 paths["V50M"] = paths["weather_dat"] + "v50m_" + year + ".mat"
 paths["W50M"] = paths["weather_dat"] + "w50m_" + year + ".mat"
@@ -248,45 +250,29 @@ paths["GWA"] = PathTemp + "Global Wind Atlas" + fs + fs + "windSpeed.csv"
 
 # Shapefiles
 PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
-
 paths["Countries"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
 paths["SHP"] = paths["Countries"]
 
-# Pv orientation Testing:
-# paths["SHP"] = PathTemp + "PV orientation test.shp"
-
-# CSP capacity factor testing
-# paths["Countries"] = PathTemp + "Germany_with_EEZ.shp"
-# paths["SHP"] = paths["Countries"]
-
-# Chille PV
-# paths["Countries"] = PathTemp + 'Chille region.shp'
-# paths["SHP"] = paths["Countries"]
-
 # Local maps
-paths["maps"] = paths["region"] + "Maps" + fs + param["region"]
-if not os.path.isdir(paths["maps"]):
-    os.mkdir(paths["maps"])
-paths["LAND"] = paths["maps"] + "_Land.tif"  # Land pixels
-paths["EEZ"] = paths["maps"] + "_EEZ.tif"  # Sea pixels
-paths["LU"] = paths["maps"] + "_Landuse.tif"  # Land use types
-paths["TOPO"] = paths["maps"] + "_Topography.tif"  # Topography
-paths["PA"] = paths["maps"] + "_Protected_areas.tif"  # Protected areas
-paths["SLOPE"] = paths["maps"] + "_Slope.tif"  # Slope
-paths["BATH"] = paths["maps"] + "_Bathymetry.tif"  # Bathymetry
-paths["POP"] = paths["maps"] + "_Population.tif"  # Population
-paths["BUFFER"] = paths["maps"] + "_Population_Buffered.tif"  # Buffered population
-paths["CORR_GWA"] = paths["maps"] + "_GWA_Correction.mat"  # Correction factors based on the GWA
+PathTemp = paths["region"] + "Maps" + fs + param["region"]
+paths["LAND"] = PathTemp + "_Land.tif"  # Land pixels
+paths["EEZ"] = PathTemp + "_EEZ.tif"  # Sea pixels
+paths["LU"] = PathTemp + "_Landuse.tif"  # Land use types
+paths["TOPO"] = PathTemp + "_Topography.tif"  # Topography
+paths["PA"] = PathTemp + "_Protected_areas.tif"  # Protected areas
+paths["SLOPE"] = PathTemp + "_Slope.tif"  # Slope
+paths["BATH"] = PathTemp + "_Bathymetry.tif"  # Bathymetry
+paths["POP"] = PathTemp + "_Population.tif"  # Population
+paths["BUFFER"] = PathTemp + "_Population_Buffered.tif"  # Buffered population
+paths["CORR_GWA"] = PathTemp + "_GWA_Correction.mat"  # Correction factors based on the GWA
 
 # Correction factors for wind speeds
 turbine_height_on = str(param["WindOn"]["technical"]["hub_height"])
 turbine_height_off = str(param["WindOff"]["technical"]["hub_height"])
-paths["CORR"] = paths["maps"] + "_Wind_Correction_" + turbine_height_on + '_' + turbine_height_off + '.tif'
+paths["CORR"] = PathTemp + "_Wind_Correction_" + turbine_height_on + '_' + turbine_height_off + '.tif'
 
 # Ouput Folders
 paths["OUT"] = root + "03 Intermediate files" + fs + "Files " + region + fs + "Renewable energy" + fs + timestamp + fs
-if not os.path.isdir(paths["OUT"]):
-    os.mkdir(paths["OUT"])
 
 # Regression folders
 paths["regression_in"] = paths["OUT"]
@@ -327,9 +313,10 @@ for tech in param["technology"]:
     paths[tech]["TS"] = PathTemp + '_TS_' + year + '.csv'
     paths[tech]["Region_Stats"] = PathTemp + '_Region_stats_' + year + '.csv'
     paths[tech]["Sorted_FLH"] = PathTemp + '_sorted_FLH_sampled_' + year + '.mat'
-
     paths[tech]["TS_param"] = paths["regression_in"] + region + '_' + tech
     paths[tech]["Regression_summary"] = paths["regression_out"] + region + '_' + tech + '_reg_coefficients_'
     paths[tech]["Regression_TS"] = paths["regression_out"] + region + '_' + tech + '_reg_TimeSeries_'
 
+
+        
 del root, PathTemp, fs

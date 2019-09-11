@@ -5,6 +5,17 @@ def initialization():
     timecheck('Start')
     # import param and paths
     from config import paths, param
+    
+    def create_folders(paths):
+        if not os.path.isdir(paths["region"]):
+            os.makedirs(paths["region"] + "Renewable energy" + fs)
+            os.makedirs(paths["region"] + "Maps" + fs)
+        if not os.path.isdir(paths["weather_dat"]):
+            os.makedirs(paths["weather_dat"])
+        if not os.path.isdir(paths["OUT"]):
+            os.makedirs(paths["OUT"])
+        
+    create_folders(paths)
     res_weather = param["res_weather"]
     res_desired = param["res_desired"]
 
@@ -61,7 +72,7 @@ def initialization():
     param["n_low"] = (Ind_all_low[:, 1] - Ind_all_low[:, 3] + 1).astype(int)[0]  # number of columns
     param["GeoRef"] = calc_geotiff(Crd_all, res_desired)
     timecheck('End')
-    # Display Intial Information
+    # Display Initial Information
     print('\nRegion: ' + param["region"] + ' - Year: ' + str(param["year"]))
     print('Folder Path: ' + paths["region"] + '\n')
     return paths, param
@@ -1393,12 +1404,12 @@ if __name__ == '__main__':
     # generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
         print("Tech: " + tech)
-        # calculate_FLH(paths, param, tech)
-        # masking(paths, param, tech)
-        # weighting(paths, param, tech)
-        # reporting(paths, param, tech)
-        # find_locations_quantiles(paths, param, tech)
-        # generate_time_series(paths, param, tech)
+        #calculate_FLH(paths, param, tech)
+        #masking(paths, param, tech)
+        #weighting(paths, param, tech)
+        #reporting(paths, param, tech)
+        #find_locations_quantiles(paths, param, tech)
+        #generate_time_series(paths, param, tech)
         regression_coefficient(paths, param, tech)
         # cProfile.run('reporting(paths, param, tech)', 'cprofile_test.txt')
         # p = pstats.Stats('cprofile_test.txt')

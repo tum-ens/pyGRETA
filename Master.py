@@ -190,7 +190,8 @@ def clean_weather_data(paths, param):
     mask[1, 1] = 0
     averagewind = ndimage.generic_filter(wind, np.nanmean, footprint=mask, mode='constant', cval=np.NaN)
     ratio = wind / averagewind
-    points = np.where(np.sqrt((ratio - np.mean(ratio)) ^ 2) > param["MERRA_correction"])
+    # hdf5storage.writes({'ratio': ratio}, 'ratio.mat', store_python_metadata=True, matlab_compatible=True)
+    points = np.where(ratio > param["MERRA_correction"])
 
     for t in range(W50M.shape[2]):
         W50M[points[0], points[1], t] = W50M[points[0], points[1], t] / ratio[points[0], points[1]]
@@ -1520,12 +1521,12 @@ if __name__ == '__main__':
     #generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
         print("Tech: " + tech)
-        calculate_FLH(paths, param, tech)
-        masking(paths, param, tech)
-        weighting(paths, param, tech)
-        reporting(paths, param, tech)
-        find_locations_quantiles(paths, param, tech)
-        generate_time_series(paths, param, tech)
+        #calculate_FLH(paths, param, tech)
+        #masking(paths, param, tech)
+        #weighting(paths, param, tech)
+        #reporting(paths, param, tech)
+        #find_locations_quantiles(paths, param, tech)
+        #generate_time_series(paths, param, tech)
         #regression_coefficient(paths, param, tech)
     # cProfile.run('initialization()', 'cprofile_test.txt')
     # p = pstats.Stats('cprofile_test.txt')

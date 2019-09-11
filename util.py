@@ -10,7 +10,6 @@ import datetime
 import inspect
 import sys
 from numpy.matlib import repmat, sin, cos
-from scipy import ndimage
 import math as m
 import rasterio
 from rasterio import windows, mask, MemoryFile
@@ -18,7 +17,6 @@ import pandas as pd
 import numpy as np
 from scipy.ndimage import convolve
 import datetime
-from scipy import ndimage
 import geopandas as gpd
 from rasterio import windows
 from shapely.geometry import mapping, Point, Polygon

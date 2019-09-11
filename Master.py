@@ -187,9 +187,13 @@ def clean_weather_data(paths, param):
 
     W50M = hdf5storage.read('W50M', paths["W50M"])
     wind = np.mean(W50M, 2)
-    mask = np.ones((3, 3))
-    mask[1, 1] = 0
-    averagewind = ndimage.generic_filter(wind, np.nanmean, footprint=mask, mode='constant', cval=np.NaN)
+
+    # Set convolution mask
+    kernel = np.ones((3, 3))
+    kernel[1, 1] = 0
+
+    # Compute average Convolution
+    averagewind = convolve(wind, kernel, mode='constant')
     ratio = wind / averagewind
     # hdf5storage.writes({'ratio': ratio}, 'ratio.mat', store_python_metadata=True, matlab_compatible=True)
     points = np.where(ratio > param["MERRA_correction"])

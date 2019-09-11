@@ -112,30 +112,6 @@ def calc_region(region, Crd_reg, res_high, GeoRef):
     return A_region
 
 
-def calc_region_extended(param, regions_shp, reg, location):
-    m_high = param["m_high"]
-    n_high = param["n_high"]
-    Crd_all = param["Crd_all"]
-    res_high = param["res_high"]
-    GeoRef = param["GeoRef"]
-
-    nRegions = param["nRegions_" + location]
-
-    if location == 'land':
-        Crd_regions = param["Crd_regions"][0:nRegions, :]
-    if location == 'eez':
-        Crd_regions = param["Crd_regions"][- nRegions:, :]
-
-    A_region_extended = np.zeros((m_high, n_high))
-    Ind = ind_merra(Crd_regions, Crd_all, res_high)
-
-    A_region = calc_region(regions_shp, Crd_regions[reg, :], res_high, GeoRef)
-    A_region_extended[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] = \
-        A_region_extended[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] + A_region
-
-    return A_region_extended
-
-
 def calc_gcr(Crd, m, n, res, GCR):
     """
     This function creates a GCR weighting matrix for the desired geographic extent

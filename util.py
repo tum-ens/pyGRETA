@@ -9,7 +9,6 @@ from glob import glob
 import psutil
 import datetime
 import inspect
-import pandas as pd
 
 
 def sind(alpha):
@@ -159,10 +158,10 @@ def changeExt2tif(filepath):
     return base + '.tif'
 
 
-def sumnorm_MERRA2(A, m, n, res_low, res_high):
+def sumnorm_MERRA2(A, m, n, res_low, res_desired):
     s = np.zeros((m, n))
-    row_step = int(res_low[0] / res_high[0])
-    col_step = int(res_low[1] / res_high[1])
+    row_step = int(res_low[0] / res_desired[0])
+    col_step = int(res_low[1] / res_desired[1])
     for i in range(0, m):
         for j in range(0, n):
             s[i, j] = np.sum(A[(row_step * i):(row_step * (i + 1)),

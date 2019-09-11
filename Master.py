@@ -788,9 +788,15 @@ def reporting(paths, param, tech):
     regions_shp = param["regions_" + location]
     regions = [None] * nRegions
 
+    # Initialize regions list of sorted FLH, FLH_M, and FLH_W
+    sorted_FLH_list = {}
+
+    # Define sampling for sorted lists
+    sampling = param["report_sampling"]
+
     # Loop over each region
-    for reg1 in range(0, nRegions+1):
-        reg = 0
+    for reg in range(0, nRegions):
+
         # Intitialize region stats
         region_stats = {}
         region_stats["Region"] = regions_shp.iloc[reg]["NAME_SHORT"] + "_" + location
@@ -814,6 +820,7 @@ def reporting(paths, param, tech):
 
         # Stats for FLH
         FLH_region = A_region_extended * FLH
+        FLH_region[FLH_region == 0] = np.nan
         mean = np.nanmean(FLH_region)
         median = np.nanmedian(FLH_region)
         max = np.nanmax(FLH_region)
@@ -859,14 +866,33 @@ def reporting(paths, param, tech):
         energy_potential_weighted_masked = np.nansum(A_E_W_M_potential)
         region_stats["Energy_Potential_Weighted_Masked_TWh"] = energy_potential_weighted_masked / (10**6)
 
+        sort = {}
+        # Sorted FLH Sampling
+        sorted_sampled_FLH = sampled_sorting(FLH_region[~np.isnan(FLH_region)], sampling)
+        sort["FLH"] = sorted_sampled_FLH
+
+        # Sorted FLH Sampling after masking
+        sorted_sampled_FLH_masked = sampled_sorting(FLH_region_masked[~np.isnan(FLH_region_masked)], sampling)
+        sort["FLH_M"] = sorted_sampled_FLH_masked
+
+        # Sorted FLH Sampling after masking and wieghting
+        FLH_region_masked_weighted = FLH_region_masked * A_weight
+        FLH_region_masked_weighted[FLH_region_masked_weighted == 0] = np.nan
+
+        sorted_sampled_FLH_masked_weighted = \
+            sampled_sorting(FLH_region_masked_weighted[~np.isnan(FLH_region_masked_weighted)], sampling)
+        sort["FLH_M_W"] = sorted_sampled_FLH_masked_weighted
+
+        sorted_FLH_list[region_stats["Region"]] = sort
+
         # Add region to list
-        regions[reg1] = region_stats
+        regions[reg] = region_stats
 
     # Create Dataframe
     df = pd.DataFrame.from_dict(regions)
 
     # Reorder dataframe columns
-    df = df[['Region', 'Available', 'Available_Masked', 'Available_Area_km²', 'FLH_Mean_MW', 'FLH_Median_MW',
+    df = df[['Region', 'Available', 'Available_Masked', 'Available_Area_km2', 'FLH_Mean_MW', 'FLH_Median_MW',
              'FLH_Max_MW', 'FLH_Min_MW', 'FLH_Mean_Masked_MW', 'FLH_Median_Masked_MW', 'FLH_Max_Masked_MW',
              'FLH_Min_Masked_MW', 'FLH_Std_Masked_MW', 'Power_Potential_GW', 'Energy_Potential_TWh',
              'Energy_Potential_Weighted_TWh', 'Energy_Potential_Weighted_Masked_TWh']]
@@ -874,25 +900,14 @@ def reporting(paths, param, tech):
     # Export the dataframe as CSV
     df.to_csv(paths["OUT"] + 'Region_stats.csv')
 
+    # Save Sorted lists to .mat file
+    filepath = paths["OUT"] + "sorted_FLH_sampled.mat"
+    for reg in sorted_FLH_list.keys():
 
-
-
-
-    # make list of regions
-
-
-
-    # multiply with mask, and sum to get the number of points after masking
-    # multiply mask with area to get total area (important: in km²)
-    # region_mask on FLH, derive Mean, median, max, min and std
-    # apply A_mask, re-derive all values
-    # Compute power potential: multiply area by power density for technology
-    # sum to get TW peak for region
-    # multiply by FLH to get TWh before and after weighting and masking
-    # define sampling coefficient
-    # Sort FLH values before masking and weighting, sample data
-    # Do the same after masking, and after weighting
-    return
+        hdf5storage.writes({reg + '/FLH': sorted_FLH_list[reg]["FLH"],
+                            reg + '/FLH_masked': sorted_FLH_list[reg]["FLH_M"],
+                            reg + '/FLH_masked_weighted': sorted_FLH_list[reg]["FLH_M_W"]
+                            }, filepath, store_python_metadata=True, matlab_compatible=True)
 
 
 # # Compute Sums

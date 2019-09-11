@@ -177,6 +177,23 @@ def calc_gcr(Crd, m, n, res, GCR):
     return A_GCR
 
 
+def sampled_sorting(Raster, sampling):
+
+    # Flatten the raster and sort raster from highest to lowest
+    Sorted_FLH = np.sort(Raster.flatten(order='F'))
+    Sorted_FLH = np.flipud(Sorted_FLH)
+
+    # Loop over list with sampling increment
+
+    s = Sorted_FLH[0]  # Highest value
+    for n in np.arange(sampling, len(Sorted_FLH), sampling):
+        s = np.append(s, Sorted_FLH[n])
+    s = np.append(s, Sorted_FLH[-1])  # Lowest value
+
+    return s
+
+
+
 def calc_areas(Crd, n, res, reg):
     # WSG84 ellipsoid constants
     a = 6378137  # major axis

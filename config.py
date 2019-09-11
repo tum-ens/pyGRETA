@@ -14,13 +14,14 @@ param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
 param["nproc"] = 4
 param["CPU_limit"] = True
+param["report_sampling"] = 100
 
 # MERRA_Centroid_Extent = [74.5, 45, 19, -20.625]  # EUMENA
 # MERRA_Centroid_Extent = [74.5, 36.25, 33.5, -16.25]  # Europe
 # MERRA_Centroid_Extent = [49, -103.75, 28, -129.375]  # California
 # MERRA_Centroid_Extent = np.array([56.25, 15.3125, 47.25, 2.8125])  # Germany
 
-param["res_low"] = np.array([ 1/2,   5/8])
+param["res_low"] = np.array([1/2,   5/8])
 param["res_high"] = np.array([1/240, 1/240])
 
 # Landuse reclassification

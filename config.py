@@ -26,24 +26,8 @@ param["region"] = 'Europe_wo_Balkans'  #'Chile' #'Europe_wo_Balkans'  # Name of 
 param["year"] = 2015
 param["technology"] = ['PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 
-# Shapefiles
-PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
-paths["spatial_scope"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp" # "Chile_regions.shp" # 
-paths["subregions"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp" # "Chile_regions.shp" # 
-
 # Computation
-param["nproc"] = 18
-
-param = {}
-param["region"] = 'World'
-param["MERRA_coverage"] = 'World'
-param["year"] = 2015
-param["technology"] = ['PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
-# param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30, 0])
-# param["quantiles"] = np.array([100, 95, 90, 85, 80, 70, 60, 50, 40, 35, 20, 0])
-param["quantiles"] = np.array([100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0])
-param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
-param["nproc"] = 50
+param["nproc"] = 1
 param["CPU_limit"] = True
 
 # Data resolution
@@ -59,11 +43,6 @@ param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
 
 # Reporting
 param["report_sampling"] = 100
-
-# Custom timestamp
-timestamp = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
-timestamp = 'Magda_Timeseries'
-param["MERRA_correction"] = 1.2
 
 # Time series
 param["quantiles"] = np.array([100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0])
@@ -301,10 +280,6 @@ paths["CORR_GWA"] = PathTemp + "_GWA_Correction.mat"  # Correction factors based
 paths["Countries"] = PathTemp + 'Chile.shp'
 paths["SHP"] = paths["Countries"]
 
-# Magda PV
-paths["Countries"] = PathTemp + 'Magda.shp'
-paths["SHP"] = paths["Countries"]
-
 # Local maps
 paths["maps"] = paths["region"] + "Maps" + fs
 if not os.path.isdir(paths["maps"]):
@@ -377,6 +352,4 @@ for tech in param["technology"]:
     paths[tech]["Regression_summary"] = paths["regression_out"] + region + '_' + tech + '_reg_coefficients_'
     paths[tech]["Regression_TS"] = paths["regression_out"] + region + '_' + tech + '_reg_TimeSeries_'
 
-
-        
 del root, PathTemp, fs

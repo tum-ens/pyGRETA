@@ -977,7 +977,7 @@ def generate_time_series(paths, param, tech):
     param["status_bar_limit"] = list_hours[-1]
     if tech in ['PV', 'CSP']:
         CLEARNESS = hdf5storage.read('CLEARNESS', paths["CLEARNESS"])
-        day_filter = np.nonzero(CLEARNESS[Ind[2] - 1:Ind[0], Ind[3] - 1:Ind[1], :].sum(axis=(0, 1)))
+        day_filter = np.nonzero(CLEARNESS[Ind[2]-1:Ind[0], Ind[3]-1:Ind[1], :8760].sum(axis=(0,1)))
         list_hours = np.arange(0, 8760)
         if nproc == 1:
             param["status_bar_limit"] = list_hours[-1]
@@ -1024,9 +1024,9 @@ if __name__ == '__main__':
     # generate_buffered_population(paths, param)  # Buffered Population
     # generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
-        #calculate_FLH(paths, param, tech)
-        #masking(paths, param, tech)
-        #weighting(paths, param, tech)
-        #reporting(paths, param, tech)
-        #find_locations_quantiles(paths, param, tech)
+        calculate_FLH(paths, param, tech)
+        masking(paths, param, tech)
+        weighting(paths, param, tech)
+        reporting(paths, param, tech)
+        find_locations_quantiles(paths, param, tech)
         generate_time_series(paths, param, tech)

@@ -22,9 +22,9 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
     CLEARNESS_h = resizem(CLEARNESS_h, m_high, n_high)
     reg_ind_h = np.nonzero(CLEARNESS_h)
     # Filter out night hours for every valid point
-    filter_x = np.logical_and(reg_ind[0] >= reg_ind_h[0][0], reg_ind[0] <= reg_ind_h[0][-1])
-    filter_y = np.logical_and(reg_ind[1] >= reg_ind_h[1][0], reg_ind[1] <= reg_ind_h[1][-1])
-    filter = np.logical_and(filter_x, filter_y)
+    filter_lat = np.logical_and(reg_ind[0] >= reg_ind_h[0].min(), reg_ind[0] <= reg_ind_h[0].max())
+    filter_lon = np.logical_and(reg_ind[1] >= reg_ind_h[1].min(), reg_ind[1] <= reg_ind_h[1].max())
+    filter = np.logical_and(filter_lat, filter_lon)
     reg_ind_h = (reg_ind[0][filter], reg_ind[1][filter])
     if len(reg_ind_h[0]) == 0:
         CF_pv = np.zeros(reg_ind[0].shape)
@@ -64,6 +64,7 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
 
     # Compute the coefficients for the HDKR model
     R_b = cosd(A_incidence) / sind(A_alpha)
+    R_b[R_b <= 0] = 0
     A_i = (1 - RATIO) * CLEARNESS_h
     f = (1 - RATIO) ** 0.5
 
@@ -74,11 +75,11 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
     SHADING = 0
 
     F = F_diffuse + F_direct * (1 - SHADING) + F_reflected * A_albedo
+    #import pdb; pdb.set_trace()
     F[F > 1] = 1
 
     # Compute the incident radiation
     GHI_h = TOA_h * CLEARNESS_h
-    GHI_h[GHI_h < 0] = 0
     GHI_h[np.isnan(GHI_h)] = 0
     G_tilt_h = GHI_h * F
 
@@ -87,7 +88,6 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
 
     # Compute the hourly capacity factor
     CF_pv = ((A_alpha > 0) * 1) * G_tilt_h / 1000 * (1 - LOSS_TEMP)
-    CF_pv[CF_pv > 1] = 1
 
     # For CSP: tracking like pv.tracking = 1
     A_beta = 90 - A_alpha
@@ -209,10 +209,9 @@ def calc_TS_solar(hours, args):
             sys.stdout.flush()
 
         if tech == 'PV':
-            CF, _ = calc_CF_solar(hour, reg_ind, param, merraData, rasterData)
+            CF = calc_CF_solar(hour, reg_ind, param, merraData, rasterData)[0]
         elif tech == 'CSP':
-            _, CF = calc_CF_solar(hour, reg_ind, param, merraData, rasterData)
-
+            CF = calc_CF_solar(hour, reg_ind, param, merraData, rasterData)[1]
         # Aggregates CF to obtain the time series
         CF[np.isnan(CF)] = 0
         TS[:, hour] = CF
@@ -337,9 +336,10 @@ def toa_hourly(alpha, *args):
         hour = args[0]
         N = np.floor((hour - 1) / 24) + 1
 
-    h_TOA = solarconst * (1 + 0.03344 * cos(N * 2 * np.pi / 365.25 - 0.048869)) * sind(alpha)
+    TOA_h = solarconst * (1 + 0.03344 * cos(N * 2 * np.pi / 365.25 - 0.048869)) * sind(alpha)
+    TOA_h = np.maximum(TOA_h, 0)
 
-    return h_TOA
+    return TOA_h
 
 
 def coefficients(beta, ratio, R_b, A_i, f, *args):

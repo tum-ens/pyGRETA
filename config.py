@@ -20,8 +20,11 @@ param["report_sampling"] = 100
 
 
 # Regression Coefficient
-param["solver"] = 'gurobi'
-param["no_solution"] = '**'
+regression = {
+    "solver": 'gurobi',
+    "hub_heights": [],
+    "orientations": []}
+param["regression"] = regression
 
 # MERRA_Centroid_Extent = [74.5, 45, 19, -20.625]  # EUMENA
 # MERRA_Centroid_Extent = [74.5, 36.25, 33.5, -16.25]  # Europe
@@ -87,7 +90,7 @@ pv["resource"] = {"clearness_correction": 0.75
 pv["technical"] = {"T_r": 25,
                    "loss_coeff": 0.37,
                    "tracking": 0,
-                   "orientation": -30
+                   "orientation": 0
                    }
 pv["mask"] = {"slope": 20,
               "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
@@ -187,13 +190,12 @@ year = str(param["year"])
 paths = {}
 # Shapefiles
 PathTemp = root + "01 Raw inputs" + fs + "Maps" + fs + "Shapefiles" + fs  # + region + fs
-paths["SHP"] = PathTemp + "Germany_with_EEZ.shp"
-# paths["SHP"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
+paths["SHP"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
 # paths["SHP"] = PathTemp + "Germany_with_EEZ.shp"
 
 # for eventual correction with the Global Wind Atlas
-paths["Countries"] = PathTemp + "Germany_with_EEZ.shp"
-# paths["Countries"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
+paths["Countries"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
+# paths["Countries"] = PathTemp + "Germany_with_EEZ.shp"
 # paths["Countries"] = paths["SHP"]
 
 # MERRA2
@@ -209,10 +211,6 @@ paths["TOA_net"] = PathTemp + "swtnt_" + year + ".mat"
 paths["CLEARNESS"] = PathTemp + "clearness_" + year + ".mat"
 paths["CLEARNESS_net"] = PathTemp + "clearness_net_" + year + ".mat"
 paths["T2M"] = PathTemp + "t2m_" + year + ".mat"
-# Testing GHI and TOA net as input
-# paths["GHI"] = paths["GHI_net"]
-# paths["TOA"] = paths["TOA_net"]
-# paths["CLEARNESS"] = paths["CLEARNESS_net"]
 
 # IRENA
 paths["inst-cap"] = root + "INPUTS" + fs + region + fs + "IRENA " + year + fs + "inst_cap_" + year + ".csv"
@@ -278,6 +276,12 @@ for tech in param["technology"]:
     if tech in ['WindOn', 'WindOff']:
         hubheight = str(param[tech]["technical"]["hub_height"])
         PathTemp = paths["OUT"] + region + '_' + tech + '_' + hubheight
+    elif tech in ['PV']:
+        if 'orientation' in pv.keys():
+            orientation = str(param[tech]["technical"]["orientation"])
+        else:
+            orientation = '0'
+        PathTemp = paths["OUT"] + region + '_' + tech + '_' + orientation
     else:
         PathTemp = paths["OUT"] + region + '_' + tech
     
@@ -292,8 +296,8 @@ for tech in param["technology"]:
     paths[tech]["Region_Stats"] = PathTemp + '_Region_stats_' + year + '.csv'
     paths[tech]["Sorted_FLH"] = PathTemp + '_sorted_FLH_sampled_' + year + '.mat'
 
-    paths[tech]["TS_height"] = paths["regression_in"] + region + '_' + tech
-    paths[tech]["Regression_summary"] = paths["regression_out"] + region + '_' + tech + '_reg_coefficients.csv'
-    paths[tech]["Regression_TS"] = paths["regression_out"] + region + '_' + tech + '_reg_TimeSeries.csv'
+    paths[tech]["TS_param"] = paths["regression_in"] + region + '_' + tech
+    paths[tech]["Regression_summary"] = paths["regression_out"] + region + '_' + tech + '_reg_coefficients_'
+    paths[tech]["Regression_TS"] = paths["regression_out"] + region + '_' + tech + '_reg_TimeSeries_'
 
 del root, PathTemp, fs

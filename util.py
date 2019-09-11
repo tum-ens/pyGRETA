@@ -208,7 +208,7 @@ def timecheck(*args):
 
 def reg_miss_folder(paths):
 
-    print("\nNo Regression Folder found, It has been created under: \n" + paths["regression"])
+    print("\nNo Regression Folder found, It has been created under: \n" + paths["regression_in"])
     print("\nPlease populate the input folder with the required data. \n"
           "(look at README.txt in the folder for more information)\n")
 

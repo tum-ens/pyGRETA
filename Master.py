@@ -11,6 +11,7 @@ import fiona
 import hdf5storage
 from multiprocessing import Pool
 from itertools import product
+import h5netcdf
 
 
 def initialization():
@@ -31,6 +32,7 @@ def initialization():
     param["regions_land"] = regions_shp.drop(regions_shp[regions_shp["Population"] == 0].index)
     param["regions_eez"] = regions_shp.drop(regions_shp[regions_shp["Population"] != 0].index)
     # Recombine the maps in this order: onshore then offshore
+
     regions_all = gpd.GeoDataFrame(pd.concat([param["regions_land"], param["regions_eez"]],
                                              ignore_index=True), crs=param["regions_land"].crs)
 
@@ -165,7 +167,8 @@ def generate_landsea(paths, param):
             A_region = calc_region(regions_shp.iloc[reg], Crd_regions[reg, :], res_high, GeoRef)
             A_land[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] = \
                 A_land[(Ind[reg, 2] - 1):Ind[reg, 0], (Ind[reg, 3] - 1):Ind[reg, 1]] + A_region
-        array2raster(paths["LAND"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelheight"], A_land)
+        array2raster(paths["LAND"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_land)
+
         print("files saved: " + paths["LAND"])
 
     if not os.path.isfile(paths["EEZ"]):
@@ -211,7 +214,7 @@ def generate_bathymetry(paths, param):
             A_BATH = src.read(1)
         A_BATH = resizem(A_BATH, 180 * 240, 360 * 240)
         A_BATH = np.flipud(A_BATH[Ind[0] - 1: Ind[2], Ind[3] - 1: Ind[1]])
-        array2raster(paths['BATH'], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelheight"], A_BATH)
+        array2raster(paths['BATH'], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_BATH)
         print("files saved: " + paths["BATH"])
 
 
@@ -362,6 +365,7 @@ def generate_population(paths, param):
                 Pop[tile_extents[index, 0] - 1: tile_extents[index, 2],
                 tile_extents[index, 3] - 1: tile_extents[index, 1]] = \
                     tile[0]
+
         A_POP = np.flipud(Pop[Ind[0] - 1:Ind[2], Ind[3] - 1:Ind[1]])
         array2raster(paths["POP"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelheight"], A_POP)
         print("files saved: " + paths["POP"])
@@ -497,6 +501,7 @@ def generate_wind_correction(paths, param):
 
 def calculate_FLH(paths, param, tech):
     nproc = param["nproc"]
+    CPU_limit = np.full((1, nproc), param["CPU_limit"])
     m_high = param["m_high"]
     n_high = param["n_high"]
 
@@ -526,15 +531,20 @@ def calculate_FLH(paths, param, tech):
             param["status_bar_limit"] = list_hours[-1]
             results = calc_FLH_solar(list_hours[day_filter], [paths, param, tech])
         else:
+
             list_hours = np.array_split(list_hours[day_filter], nproc)
-            print(len(list_hours[0]))
+            print('PV and CSP')
+            print(('Number of processors', nproc))
+            print(('Number of hours per process:', len(list_hours[0])))
             param["status_bar_limit"] = list_hours[0][-1]
-            results = Pool(processes=nproc).starmap(calc_FLH_solar, product(list_hours, [
+            results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(calc_FLH_solar, product(list_hours, [
                 [paths, param, tech]]))
     elif tech in ['WindOn', 'WindOff']:
-        print(len(list_hours[0]))
+        print('WindOn and WindOff')
+        print(('Number of processors', nproc))
+        print(('Number of hours per process:', len(list_hours[0])))
         param["status_bar_limit"] = list_hours[0][-1]
-        results = Pool(processes=nproc).starmap(calc_FLH_wind, product(list_hours, [
+        results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(calc_FLH_wind, product(list_hours, [
             [paths, param, tech]]))
     print('\n')
 
@@ -555,7 +565,7 @@ def combine_FLH(paths, param, tech):
     if tech == "WindOff":
         regions_shp = param["regions_eez"]
         nRegions = param["nRegions_eez"]
-        Ind = param["Ind"][:, -nRegions-1:-1, :]
+        Ind = param["Ind"][:, -nRegions - 1:-1, :]
     else:
         regions_shp = param["regions_land"]
         nRegions = param["nRegions_land"]
@@ -645,9 +655,10 @@ def masking(paths, param, tech):
 
     # Masking matrix for the suitable sites (pixels)
     A_mask = (A_suitability_pa * A_suitability_lu * A_slope * A_notPopulated * A_bathymetry).astype(float)
+
     del A_suitability_lu, A_suitability_pa, A_slope, A_notPopulated, A_bathymetry
 
-    # Calculate masked FLH	
+    # Calculate masked FLH
     FLH = hdf5storage.read('FLH', paths[tech]["FLH"])
     FLH_mask = FLH * A_mask
     FLH_mask[FLH_mask == 0] = np.nan
@@ -661,25 +672,25 @@ def masking(paths, param, tech):
 
     # Save GEOTIFF files
     if param["savetiff"]:
-        Georef = param["Georef"]
         array2raster(changeExt2tif(paths[tech]["mask"]),
                      GeoRef["RasterOrigin"],
                      GeoRef["pixelWidth"],
-                     GeoRef["pixelheight"],
+                     GeoRef["pixelHeight"],
                      A_mask)
         print("files saved:" + changeExt2tif(paths[tech]["mask"]))
 
         array2raster(changeExt2tif(paths[tech]["FLH_mask"]),
                      GeoRef["RasterOrigin"],
                      GeoRef["pixelWidth"],
-                     GeoRef["pixelheight"],
+                     GeoRef["pixelHeight"],
                      FLH_mask)
         print("files saved:" + changeExt2tif(paths[tech]["FLH_mask"]))
 
 
 def weighting(paths, param, tech):
     weight = param[tech]["weight"]
-    Crd = param["Crd"]
+    Crd_all = param["Crd_all"]
+    Crd_reg = param["Crd_regions"]
     m = param["m"]
     n = param["n"]
     res = param["res"]
@@ -687,7 +698,7 @@ def weighting(paths, param, tech):
 
     if tech == 'PV':
         # Ground Cover Ratio - defines spacing between PV arrays
-        A_GCR = calc_gcr(Crd[-1, :][np.newaxis], m[1, -1], n[1, -1], res, weight["GCR"])
+        A_GCR = calc_gcr(Crd_all[:][np.newaxis], m[1, -1], n[1, -1], res, weight["GCR"])
     else:
         A_GCR = 1
 
@@ -708,7 +719,7 @@ def weighting(paths, param, tech):
     del A_availability_pa, A_availability_lu
 
     # Calculate available areas
-    A_area = calc_areas(Crd, n, res, -1) * A_availability
+    A_area = calc_areas(Crd_reg, n, res, -1) * A_availability
 
     # Weighting matrix for the energy output (technical potential) in MWp
     A_weight = A_area * A_GCR * weight["power_density"] * weight["f_performance"]
@@ -732,21 +743,21 @@ def weighting(paths, param, tech):
         array2raster(changeExt2tif(paths[tech]["area"]),
                      GeoRef["RasterOrigin"],
                      GeoRef["pixelWidth"],
-                     GeoRef["pixelheight"],
+                     GeoRef["pixelHeight"],
                      A_area)
         print("files saved:" + changeExt2tif(paths[tech]["area"]))
 
         array2raster(changeExt2tif(paths[tech]["weight"]),
                      GeoRef["RasterOrigin"],
                      GeoRef["pixelWidth"],
-                     GeoRef["pixelheight"],
+                     GeoRef["pixelHeight"],
                      A_weight)
         print("files saved:" + changeExt2tif(paths[tech]["weight"]))
 
         array2raster(changeExt2tif(paths[tech]["FLH_weight"]),
                      GeoRef["RasterOrigin"],
                      GeoRef["pixelWidth"],
-                     GeoRef["pixelheight"],
+                     GeoRef["pixelHeight"],
                      FLH_weight)
         print("files saved:" + changeExt2tif(paths[tech]["FLH_weight"]))
 
@@ -754,6 +765,101 @@ def weighting(paths, param, tech):
 # #########
 # # Module : reporting
 # #########
+def reporting(paths, param, tech):
+
+    # read FLH, Masking, area, and weighting matrix
+    FLH = hdf5storage.read('FLH', paths[tech]["FLH"])
+    A_mask = hdf5storage.read('A_mask', paths[tech]["mask"])
+    A_weight = hdf5storage.read('A_weight', paths[tech]["weight"])
+    A_area = hdf5storage.read('A_area', paths[tech]["area"])
+    density = param[tech]["weight"]["power_density"]
+
+    # create empty table - check syntax
+    # check for files availability - to be done later
+    # Check if land or see
+    if tech in ['PV', 'CSP', 'WindOn']:
+        location = "land"
+    elif tech in ['WindOff']:
+        location = "eez"
+    nRegions = param["nRegions_" + location]
+    regions_shp = param["regions_" + location]
+
+    # loop over each region
+    regions = np.empty(nRegions+1, dtype=dict)
+    for reg1 in range(0, nRegions+1):
+        reg = 0
+        # Intitialize region stats
+        region_stats = {}
+        region_stats["Region"] = regions_shp.iloc[reg]["NAME_SHORT"] + "_" + location
+        # Compute region_mask
+        A_region_extended = calc_region_extended(param, regions_shp.iloc[reg], reg, location)
+
+        region_stats["Available"] = np.sum(A_region_extended)
+        A_masked = A_region_extended * A_mask
+        available_masked = np.nansum(A_masked)
+        region_stats["Available_Masked"] = available_masked
+        area = A_region_extended * A_area
+        Total_area = np.nansum(area)/(10**6)
+        region_stats["Area"] = Total_area
+        FLH_region = A_region_extended * FLH
+        mean = np.nanmean(FLH_region)
+        median = np.nanmedian(FLH_region)
+        max = np.nanmax(FLH_region)
+        min = np.nanmin(FLH_region)
+        std = np.nanstd(FLH_region)
+        region_stats["FLH_mean"] = mean
+        region_stats["FLH_median"] = median
+        region_stats["FLH_max"] = max
+        region_stats["FLH_min"] = min
+        region_stats["FLH_std"] = std
+        FLH_region_masked = A_masked * FLH_region
+        mean = np.nanmean(FLH_region_masked)
+        median = np.nanmedian(FLH_region_masked)
+        max = np.nanmax(FLH_region_masked)
+        min = np.nanmin(FLH_region_masked)
+        std = np.nanstd(FLH_region_masked)
+        region_stats["FLH_mean_masked"] = mean
+        region_stats["FLH_median_masked"] = median
+        region_stats["FLH_max_masked"] = max
+        region_stats["FLH_min_masked"] = min
+        region_stats["FLH_std_masked"] = std
+        A_P_potential = A_area * density
+        power_potential = np.nansum(A_P_potential)
+        region_stats["Power_Potential"] = power_potential
+        A_E_potential = A_P_potential * FLH_region
+        energy_potential = np.nansum(A_E_potential)
+        region_stats["Energy_Potential"] = energy_potential
+        A_E_W_potential = A_E_potential * A_weight
+        energy_potential_weighted = np.nansum(A_E_W_potential)
+        region_stats["Energy_Potential_Weighted"] = energy_potential_weighted
+        A_E_W_M_potential = A_E_W_potential * A_masked
+        energy_potential_weighted_masked = np.nansum(A_E_W_M_potential)
+        region_stats["Energy_Potential_Weighted_Masked"] = energy_potential_weighted_masked
+        regions[reg1] = region_stats
+    df = pd.DataFrame.from_dict(regions)
+    print("done")
+
+
+
+
+
+
+    # make list of regions
+
+
+    # Sum region_mask to get number of point before masking
+    # multiply with mask, and sum to get the number of points after masking
+    # multiply mask with area to get total area (important: in km²)
+    # region_mask on FLH, derive Mean, median, max, min and std
+    # apply A_mask, re-derive all values
+    # Compute power potential: multiply area by power density for technology
+    # sum to get TW peak for region
+    # multiply by FLH to get TWh before and after weighting and masking
+    # define sampling coefficient
+    # Sort FLH values before masking and weighting, sample data
+    # Do the same after masking, and after weighting
+    return
+
 
 # # Compute Sums
 
@@ -761,7 +867,6 @@ def weighting(paths, param, tech):
 # area_sum_km_2 = np.nansum(A_area_mask) / 1e6
 # power_potential_sum_TWp = np.nansum(A_weight) / 1e6
 # energy_potential_sum_TWh = np.nansum(A_FLH_weight) / 1e6
-
 
 def find_locations_quantiles(paths, param, tech):
     FLH_mask = hdf5storage.read('FLH_mask', paths[tech]["FLH_mask"])
@@ -820,6 +925,9 @@ def find_locations_quantiles(paths, param, tech):
 
     param["Crd_Locations"] = Crd_Locations
     param["Ind_Locations"] = Ind_Locations
+
+    import pdb; pdb.set_trace()
+
     # Format point locations
     points = list(map(tuple, np.reshape(Crd_Locations[:, :, [1, 0]], (-1, 2), 'C')))
     attribute1 = np.reshape(np.tile(region_names, (len(quantiles), 1)), (-1, 1), 'F')
@@ -948,7 +1056,6 @@ def generate_time_series(paths, param, tech):
 # recursive_dict_save(f, 'description/', description)
 # print("files saved:" + paths["TS"])
 
-
 if __name__ == '__main__':
     paths, param = initialization()
 
@@ -971,8 +1078,9 @@ if __name__ == '__main__':
     # generate_wind_correction(paths, param)  # Correction factors for wind speeds
 
     for tech in param["technology"]:
-        calculate_FLH(paths, param, tech)
-        #combine_FLH(paths, param, tech)
-        #masking(paths, param, tech)
-        #weighting(paths, param, tech)
-        #param = find_locations_quantiles(paths, param, tech)
+        # calculate_FLH(paths, param, tech)
+        # combine_FLH(paths, param, tech)
+        # masking(paths, param, tech)
+        # weighting(paths, param, tech)
+        reporting(paths, param, tech)
+        param = find_locations_quantiles(paths, param, tech)

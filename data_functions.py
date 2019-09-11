@@ -123,6 +123,10 @@ def calc_gcr(Crd_all, m_high, n_high, res_high, GCR):
     lat = np.arange((Crd_all[2] + res_high[0] / 2), (Crd_all[0] - res_high[0] / 2), res_high[0])[np.newaxis]
     lon = np.arange((Crd_all[3] + res_high[1] / 2), (Crd_all[1] - res_high[1] / 2), res_high[1])[np.newaxis]
 
+    # Repeating for all longitudes/latitudes
+    lat = repmat(lat.transpose(), 1, int(n_high))
+    lon = repmat(lon, int(m_high), 1)
+	
     # Solar time where shade-free exposure starts
     omegast = 12 - GCR["shadefree_period"] / 2
 
@@ -176,8 +180,8 @@ def calc_gcr(Crd_all, m_high, n_high, res_high, GCR):
     # Azimuth angle
     azi = arccosd((sind(delta) * cosd(phi) - cosd(delta) * sind(phi) * cosd(omega)) / cosd(alpha))
 
-    # The GCR applies for each line, independently from the longitude
-    A_GCR = repmat((1 / (cosd(beta) + np.abs(cosd(azi)) * sind(beta) / tand(alpha))), 1, int(n_high))
+    # The GCR
+    A_GCR = 1 / (cosd(beta) + np.abs(cosd(azi)) * sind(beta) / tand(alpha))
 
     # Fix too large and too small values of GCR
     A_GCR[A_GCR < 0.2] = 0.2

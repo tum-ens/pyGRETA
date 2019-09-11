@@ -880,17 +880,16 @@ def reporting(paths, param, tech):
              'Energy_Potential_Weighted_TWh', 'Energy_Potential_Weighted_Masked_TWh']]
 
     # Export the dataframe as CSV
-    df.to_csv(paths[tech]["Region_Stats"])
-    print("files saved: " + paths[tech]["Region_Stats"])
+    df.to_csv(paths["OUT"] + tech + '_Region_stats.csv', sep=';', decimal=',')
 
     # Save Sorted lists to .mat file
+    filepath = paths["OUT"] + tech + '_sorted_FLH_sampled.mat'
     for reg in sorted_FLH_list.keys():
         hdf5storage.writes({reg + '/FLH': sorted_FLH_list[reg]["FLH"],
                             reg + '/FLH_masked': sorted_FLH_list[reg]["FLH_M"],
                             reg + '/FLH_masked_weighted': sorted_FLH_list[reg]["FLH_M_W"]
-                            }, paths[tech]["Sorted_FLH"], store_python_metadata=True, matlab_compatible=True)
-    print("files saved: " + paths[tech]["Sorted_FLH"])
-    timecheck('End')
+                            }, filepath, store_python_metadata=True, matlab_compatible=True)
+    print('Reporting done!')
 
 
 def find_locations_quantiles(paths, param, tech):
@@ -987,8 +986,7 @@ def generate_time_series(paths, param, tech):
             list_hours = np.array_split(list_hours[day_filter], nproc)
             print(len(list_hours[0]))
             param["status_bar_limit"] = list_hours[0][-1]
-            results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(calc_TS_solar, product(
-                list_hours[day_filter], [[paths, param, tech]]))
+            results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(calc_TS_solar, product(list_hours, [[paths, param, tech]]))
     elif tech in ['WindOn', 'WindOff']:
         list_hours = np.array_split(np.arange(0, 8760), nproc)
         param["status_bar_limit"] = list_hours[0][-1]
@@ -1008,7 +1006,7 @@ def generate_time_series(paths, param, tech):
     # Restructuring results
     tuples = list(zip(list_names, list_quantiles))
     column_names = pd.MultiIndex.from_tuples(tuples, names=['NAME_SHORT', 'Quantile'])
-    results = pd.DataFrame(TS.T(), columns=column_names)
+    results = pd.DataFrame(TS.transpose(), columns=column_names)
     results.to_csv(paths[tech]["TS"], sep=';', decimal=',')
     print("files saved: " + paths[tech]["TS"])
 
@@ -1026,14 +1024,9 @@ if __name__ == '__main__':
     # generate_buffered_population(paths, param)  # Buffered Population
     # generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
-        calculate_FLH(paths, param, tech)
-        masking(paths, param, tech)
-        weighting(paths, param, tech)
-        reporting(paths, param, tech)
-        # find_locations_quantiles(paths, param, tech)
-        # generate_time_series(paths, param, tech)
-        # cProfile.run('reporting(paths, param, tech)', 'cprofile_test.txt')
-        # p = pstats.Stats('cprofile_test.txt')
-        # p.sort_stats('cumulative').print_stats(20)
-
-
+        #calculate_FLH(paths, param, tech)
+        #masking(paths, param, tech)
+        #weighting(paths, param, tech)
+        #reporting(paths, param, tech)
+        #find_locations_quantiles(paths, param, tech)
+        generate_time_series(paths, param, tech)

@@ -924,7 +924,15 @@ def generate_time_series(paths, param, tech):
 
 if __name__ == '__main__':
     paths, param = initialization()
-    generate_weather_files(paths)
+
+    # Check if Merra2 mat files have been generated
+    if not (os.path.isfile(paths["GHI"])
+            and os.path.isfile((paths["TOA"]))
+            and os.path.isfile(paths["T2M"])
+            and os.path.isfile(paths["U50M"])
+            and os.path.isfile(paths["V50M"])):
+        generate_weather_files(paths)
+
     generate_landsea(paths, param)  # Land and Sea
     generate_landuse(paths, param)  # Landuse
     generate_bathymetry(paths, param)  # Bathymetry

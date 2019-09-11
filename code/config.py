@@ -57,8 +57,8 @@ def general_settings():
 
     param = {}
     param["author"] = 'Kais Siala'  # the name of the person running the script
-    param["comment"] = 'Testing JSON'
-
+    param["comment"] = 'Testing regression'
+    
     paths = {}
     fs = os.path.sep
     current_folder = os.path.dirname(os.path.abspath(__file__))
@@ -102,18 +102,18 @@ def scope_paths_and_parameters(paths, param):
     """
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
-    paths["spatial_scope"] = PathTemp + "gadm36_SGP_0.shp"
-    paths["subregions"] = PathTemp + "gadm36_SGP_1.shp"
-
+    paths["spatial_scope"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
+    paths["subregions"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
+    
     # Name tags for the scope and the subregions
-    param["region_name"] = 'Singapore'  # Name tag of the spatial scope
-    param["subregions_name"] = 'Singapore_districts'  # Name tag of the subregions
-
+    param["region_name"] = 'Europe'  # Name tag of the spatial scope
+    param["subregions_name"] = 'Europe_wo_Balkans_NUTS0' # Name tag of the subregions
+    
     # Year
     param["year"] = 2015
 
     # Technologies
-    param["technology"] = ['WindOn', 'PV', 'WindOff', 'CSP']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+    param["technology"] = ['WindOn', 'WindOff', 'PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
     return paths, param
 
 
@@ -198,7 +198,9 @@ def time_series_parameters(param):
     """
     This function determines the time series that will be created.
     
-    *quantiles* is a numpy array of floats between 100 and 0. Within each subregion, the FLH values will be sorted,
+    update ?????
+    
+    *quantiles* is a list of floats between 100 and 0. Within each subregion, the FLH values will be sorted,
     and points with FLH values at a certain quantile will be later selected. The time series will be created for these points.
     The value 100 corresponds to the maximum, 50 to the median, and 0 to the minimum.
     
@@ -212,15 +214,28 @@ def time_series_parameters(param):
     """
 
     # Quantiles for time series
-    param["quantiles"] = np.array([100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0])
-
+    param["quantiles"] = [100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0]
+                      
     # Regression
-    regression = {
-        "solver": 'gurobi',  # string
-        "WindOn": {"hub_heights": [[80, 100, 120], []]},  # list of numbers
-        "WindOff": {"hub_heights": [140]},  # list of numbers
-        "orientations": []}  # list of numbers
-    param["regression"] = regression
+    param["regression"] = {"solver": 'gurobi', # string
+                           "WindOn": {'80m': [60, 80, 100]}, # dictionary of hub height combinations
+                           "WindOff": {'80m': [80]}, # dictionary of hub height combinations
+                           "PV": {'Solar': [0, 180, -90, 90]}, # list of orientation combinations
+                           "CSP": {'all': []}
+                           }
+        
+    # Stratified time series
+    param["modes"] = {"high": [100, 90, 80],
+                      "mid": [70, 60, 50, 40, 30],
+                      "low": [20, 10, 0],
+                      "all": param["quantiles"]
+                      }
+    param["combo"] = {"WindOn": {'80m': [60, 80, 100], '100m': [80, 100, 120], '120m': [100, 120, 140]}, # dictionary of hub height combinations
+                      "WindOff": {'80m': [80], '100m': [100], '120m': [120]}, # dictionary of hub height combinations
+                      "PV": {'Solar': [0, 180, -90, 90]}, # list of orientation combinations
+                      "CSP": {'all': []}
+                      }
+    
     return param
 
 
@@ -357,7 +372,7 @@ def pv_parameters(param):
                       }
     pv["technical"] = {"T_r": 25,  # °C
                        "loss_coeff": 0.37,
-                       "tracking": 1,  # 0 for no tracking, 1 for one-axis tracking, 2 for two-axes tracking
+                       "tracking": 0,  # 0 for no tracking, 1 for one-axis tracking, 2 for two-axes tracking
                        "orientation": 90  # | 0: South | 90: West | 180: North | -90: East |
                        }
     pv["mask"] = {"slope": 20,
@@ -719,6 +734,7 @@ def local_maps_paths(paths, param):
       * *CORR_GWA* for correction factors based on the Global Wind Atlas (mat file)
       * *CORR_ON* for the onshore wind correction factors (raster)
       * *CORR_OFF* for the offshore wind correction factors (raster)
+      * *AREA* for the area per pixel in m² (mat file)
     
     :param paths: Dictionary including the paths.
     :type paths: dict
@@ -777,8 +793,9 @@ def irena_paths(paths, param):
     paths["IRENA_dict"] = root + "00 Assumptions" + fs + "dict_IRENA_countries.csv"
 
     # IRENA output
-    paths["IRENA_out"] = paths["region"] + "Renewable energy" + fs + "IRENA_summary_" + year + ".csv"
-
+    paths["IRENA_summary"] = paths["region"] + "Renewable energy" + fs + "IRENA_summary_" + year + ".csv"
+    paths["IRENA_regression"] = paths["regression_out"] + "IRENA_regression_" + year + ".csv"
+    
     return paths
 
 
@@ -911,16 +928,13 @@ def regional_analysis_output_paths(paths, param, tech):
     elif tech in ['CSP']:
         orientation = '0'
         PathTemp = paths["regional_analysis"] + subregions + '_' + tech + '_' + orientation
-    else:
-        PathTemp = paths["regional_analysis"] + subregions + '_' + tech
 
     paths[tech]["Locations"] = PathTemp + '_Locations.shp'
     paths[tech]["TS"] = PathTemp + '_TS_' + year + '.csv'
     paths[tech]["Region_Stats"] = PathTemp + '_Region_stats_' + year + '.csv'
     paths[tech]["Sorted_FLH"] = PathTemp + '_sorted_FLH_sampled_' + year + '.mat'
 
-    paths[tech]["TS_param"] = paths["regression_in"] + subregions + '_' + tech
-    paths[tech]["Regression_summary"] = paths["regression_out"] + subregions + '_' + tech + '_reg_coefficients_'
+    paths[tech]["Regression_coefficients"] = paths["regression_out"] + subregions + '_' + tech + '_reg_coefficients_'
     paths[tech]["Regression_TS"] = paths["regression_out"] + subregions + '_' + tech + '_reg_TimeSeries_'
 
     return paths

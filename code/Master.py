@@ -1116,7 +1116,7 @@ def reporting(paths, param, tech):
     FLH = hdf5storage.read('FLH', paths[tech]["FLH"])
     A_mask = hdf5storage.read('A_mask', paths[tech]["mask"])
     A_weight = hdf5storage.read('A_weight', paths[tech]["weight"])
-    A_area = hdf5storage.read('A_area', paths[tech]["area"])
+    A_area = hdf5storage.read('A_area', paths["AREA"])
     density = param[tech]["weight"]["power_density"]
 
     # Check if land or see
@@ -1298,15 +1298,15 @@ def find_locations_quantiles(paths, param, tech):
             # do nothing
             continue
 
-        for q in range(0, len(quantiles)):
+        for q in quantiles:
             list_names.append(regions_shp["NAME_SHORT"].loc[reg])
-            list_quantiles.append('q' + str(quantiles[q]))
-            if quantiles[q] == 100:
+            list_quantiles.append('q' + str(q))
+            if q == 100:
                 I = I_old[(len(X) - 1) - sum(np.isnan(X).astype(int))]
-            elif quantiles[q] == 0:
+            elif q == 0:
                 I = I_old[0]
             else:
-                I = I_old[int(np.round(quantiles[q] / 100 * (len(X) - 1 - sum(np.isnan(X).astype(int)))))]
+                I = I_old[int(np.round(q / 100 * (len(X) - 1 - sum(np.isnan(X).astype(int)))))]
             # Convert the indices to row-column indices
             I, J = ind2sub(FLH_reg.shape, I)
             reg_ind[k, q, :] = np.array([I + Ind[reg, 2], J + Ind[reg, 3]]).astype(int)
@@ -1422,129 +1422,32 @@ def regression_coefficients(paths, param, tech):
     """
 
     timecheck('Start')
-
-    # Reads the files present in input folder and extract hub_heights represented.
-    inputfiles = glob.glob(paths[tech]["TS_param"] + '_*_TS_' + str(param["year"]) + '.csv')
-    if len(inputfiles) == 0:
-        warn('\n No Time-Series files found for: ' + tech)
+    
+    try:
+        combinations = combinations_for_regression(paths, param, tech)
+    except UserWarning:
         timecheck('End')
         return
-    else:
-        settings = np.zeros(len(inputfiles), dtype=int)
 
-        s = 0
-        for filename in inputfiles:
-            set = int(
-                filename.replace(paths[tech]["TS_param"] + '_', '').replace('_TS_' + str(param["year"]) + '.csv', ''))
-            settings[s] = set
-            s += 1
-        settings = sorted(settings, reverse=True)
-
-    del inputfiles
-
-    # Display the available settings and desired settings to be used
-
-    print("\nFor technology " + tech + ", the following parameter have been detected: ")
-    print(settings)
+    # Display the combinations of settings to be used
     if tech in ['WindOn', 'WindOff']:
-        if len(param["regression"]["hub_heights"]) != 0:
-            if np.all(np.in1d(param["regression"][tech]["hub_heights"], settings)):
-                print("Hub heights to be used for the regression: ")
-                print(param["regression"]["hub_heights"])
-                settings = sorted(param["regression"][tech]["hub_heights"], reverse=True)
-            else:
-                warn('Missing hub-heihgts: ' +
-                     str(param["regression"][tech]["hub_heights"][np.in1d(param["regression"][tech]["hub_heights"],
-                                                                          settings,
-                                                                          invert=True)]))
-                timecheck('End')
-                return
-
+        print("Combinations of hub heights to be used for the regression: ", combinations)
     elif tech in ['PV']:
-        if len(param["regression"]["orientations"]) != 0:
-            if np.all(np.in1d(param["regression"]["orientations"], settings)):
-                print("Orientations to be used for the regression: ")
-                print(param["regression"]["orientations"])
-                settings = sorted(param["regression"]["orientations"], reverse=True)
-            else:
-                warn('Missing hub-heihgts: ' +
-                     str(param["regression"]["orientations"][np.in1d(param["regression"]["orientations"],
-                                                                     settings,
-                                                                     invert=True)]))
-                timecheck('End')
-                return
-    elif tech in ['CSP']:
-        settings = [0]
+        print("Orientations to be used for the regression: ", combinations)
 
-    st = ''
-    for set in np.sort(np.array(settings)):
-        st = st + str(set) + '_'
-
-    # Copy EMHIRES and IRENA files to regression folder not present
-    if not os.path.isdir(paths['regression_out']):
-        os.mkdir(paths["regression_out"])
-
+    # Copy EMHIRES files to regression folder if not present
     if not os.path.isfile(paths["regression_out"] + os.path.split(paths[tech]["EMHIRES"])[1]):
         shutil.copy2(paths[tech]["EMHIRES"],
                      paths["regression_out"] + os.path.split(paths[tech]["EMHIRES"])[1])
-
-    if not os.path.isfile(paths["regression_out"] + os.path.split(paths["IRENA_FLH"])[1]):
-        shutil.copy2(paths["IRENA_FLH"],
-                     paths["regression_out"] + os.path.split(paths["IRENA_FLH"])[1])
-
-    # Create Pyomo Abstract Model
-
-    model = pyo.AbstractModel()
-    solver = SolverFactory(param["regression"]["solver"])
-    model.s = pyo.Set()
-    model.q = pyo.Set()
-    model.t = pyo.Set()
-
-    model.FLH = pyo.Param()
-    model.shape = pyo.Param(model.t)
-
-    model.TS = pyo.Param(model.s, model.q, model.t)
-    model.coef = pyo.Var(model.s, model.q, domain=pyo.NonNegativeReals)
-
-    def constraint_FLH(model):
-        FLH = 0
-        for s in model.s:
-            for q in model.q:
-                tempTS = 0
-                for t in model.t:
-                    tempTS = tempTS + model.TS[s, q, t]
-                FLH = FLH + pyo.prod([model.coef[s, q], tempTS])
-        return FLH == model.FLH
-
-    def constraint_sum(model):
-        sum = 0
-        for s in model.s:
-            for q in model.q:
-                sum = sum + model.coef[s, q]
-        return sum == 1
-
-    def obj_expression(model):
-        Error = 0
-        for s in model.s:
-            for q in model.q:
-                for t in model.t:
-                    Error = Error + (pyo.prod([model.coef[s, q], model.TS[s, q, t]]) - model.shape[t]) ** 2
-        return Error
-
-    model.OBJ = pyo.Objective(rule=obj_expression)
-    model.constraint_FLH = pyo.Constraint(rule=constraint_FLH)
-    model.constraint_sum = pyo.Constraint(rule=constraint_sum)
+    
+    # Create IRENA file for regression
+    clean_IRENA_regression(param, paths)
 
     # Load IRENA data and regions
+    irena = pd.read_csv(paths["IRENA_regression"], sep=';', decimal=',', index_col=0)
+    irena_regions = set(irena.index)
 
-    irena = pd.read_csv(paths["regression_out"] + os.path.split(paths["IRENA_FLH"])[1], ',')
-    irena_regions = np.array(irena['NAME_SHORT'])
-    irena = irena.transpose()
-    irena.columns = irena.iloc[0]
-    irena = irena.drop('NAME_SHORT')
-    param["IRENA"] = irena
-
-    # load EMHIRES data for desired year
+    # Load EMHIRES data for desired year
 
     if tech == 'PV':
         date_index = pd.date_range(start='1/1/1986', end='1/1/2016', freq='H', closed='left')
@@ -1556,148 +1459,210 @@ def regression_coefficients(paths, param, tech):
         EMHIRES = EMHIRES[EMHIRES["Year"] == param["year"]].reset_index()
         EMHIRES = EMHIRES.drop(['index', 'Time step', 'Date', 'Year', 'Month', 'Day', 'Hour'], axis=1)
 
-    emhires_regions = np.array(EMHIRES.columns)
+    emhires_regions = set(EMHIRES.columns)
     param["EMHIRES"] = EMHIRES
 
     # Find intersection between EMHIRES and IRENA
-
-    list_regions = np.intersect1d(irena_regions, emhires_regions)
+    list_regions = sorted(list(irena_regions.intersection(irena_regions, emhires_regions)))
     del emhires_regions, irena_regions
 
     # Summary Variables
     summary = None
-    summaryTS = None
+    # summaryTS = None
     nodata = ''
     no_sol_high = ''
     no_sol_low = ''
     solution = ''
 
-    # loop over all regions
-    status = 0
-    print("Regions under study : ")
-    print(list_regions)
-    for reg in list_regions:
-        # Show progress of the simulation
-        status = status + 1
-        display_progress('Regression Coefficients ' + tech + ' ' + param["subregions_name"],
-                         (len(list_regions), status))
+    # loop over all combinations and regions
+    for settings in combinations:
+        status = 0
+        print("Regions under study : ", list_regions)
+        for reg in list_regions:
+            # Show progress of the simulation
+            status = status + 1
+            display_progress('Regression Coefficients ' + tech + ' ' + param["subregions_name"], (len(list_regions), status))
+        
+            region_data = regmodel_load_data(paths, param, tech, settings, reg)
+            settings_sorted = region_data[None]['s'][None].tolist()
+        
+            # Skip regions not present in the generated TS
+            if region_data is None:
+                nodata = nodata + reg + ', '
+                continue
+        
+            if region_data[None]["IRENA_best_worst"] == (True, True):
+        
+                # create model instance
+                solver = SolverFactory(param["regression"]["solver"])
+                model = pyomo_regression_model()
+                regression = model.create_instance(region_data)
+        
+                # solve model and return results
+                solver.solve(regression)
+        
+                # Retrieve results
+                r = np.zeros((len(param["quantiles"]), len(settings_sorted)))
+                # finalTS = np.zeros(8760)
+                c = 0
+                for q in param["quantiles"]:
+                    p = 0
+                    for s in settings_sorted:
+                        r[c, p] = pyo.value(regression.coef[s, q])
+                        # finalTS = finalTS + region_data[None]["GenTS"][str(s)]["q" + str(q)] * r[c, p]
+                        p += 1
+                    c += 1
+                r[r < 10 ** (-5)] = 0
+                # finalTS = pd.DataFrame(finalTS, np.arange(1, 8761), [reg])
+                # summaryTS = pd.concat([summaryTS, finalTS], axis=1)
+                solution = solution + reg + ', '
+        
+            elif region_data[None]["IRENA_best_worst"] == (False, True):
+                # Select best TS (highest height, highest quantile)
+                r = np.full((len(param["quantiles"]), len(settings_sorted)), 0)
+                r[0, 0] = 1
+                # finalTS = np.array(region_data[None]["TS"])
+                # finalTS = pd.DataFrame(finalTS, np.arange(1, 8761), [reg])
+                # summaryTS = pd.concat([summaryTS, finalTS], axis=1)
+                no_sol_high = no_sol_high + reg + ', '
+        
+            elif region_data[None]["IRENA_best_worst"] == (True, False):
+                # Select worst TS (lowest height, lowest quantile)
+                r = np.full((len(param["quantiles"]), len(settings_sorted)), 0)
+                r[-1, -1] = 1
+                # finalTS = np.array(region_data[None]["TS"])
+                # finalTS = pd.DataFrame(finalTS, np.arange(1, 8761), [reg])
+                # summaryTS = pd.concat([summaryTS, finalTS], axis=1)
+                no_sol_low = no_sol_low + reg + ', '
+        
+            else:
+                r = np.full((len(param["quantiles"]), len(settings_sorted)), 0)
+        
+            if settings_sorted != [0]:
+                result = pd.DataFrame(r, param["quantiles"], (reg + "_" + str(s) for s in settings_sorted))
+            else:
+                result = pd.DataFrame(r, param["quantiles"], [reg])
+        
+            if summary is None:
+                summary = result
+            else:
+                summary = pd.concat([summary, result], axis=1)
+        
+        # Regions not present in EMHIRES and IRENA
+        TS_nodata = {}
+        setting = settings_sorted[0]
+        TS_nodata[str(setting)] = pd.read_csv(paths[tech]["TS_param"] + '_' + str(setting) + '_TS_' + str(param["year"]) + '.csv',
+                                          sep=';', decimal=',', dtype=str, header=[0, 1], index_col=[0])
+        
+        # Remove undesired regions
+        for region in list_regions:
+            filter_reg = [col for col in TS_nodata[str(setting)] if col[0].startswith((region,))]
+            TS_nodata[str(setting)] = TS_nodata[str(setting)].drop(filter_reg, axis=1)
+        
+        # Get list of regions
+        nodata_regions = np.array(TS_nodata[str(setting)].columns.get_level_values(0).unique()).astype(str)
+        for reg in nodata_regions:
+            r = np.full((len(param["quantiles"]), len(settings_sorted)), 0)
+        
+            if settings_sorted != [0]:
+                result = pd.DataFrame(r, param["quantiles"], (reg + "_" + str(s) for s in settings_sorted))
+            else:
+                result = pd.DataFrame(r, param["quantiles"], [reg])
+        
+            if summary is None:
+                summary = result
+            else:
+                summary = pd.concat([summary, result], axis=1)
+        
+        # Print Regression Summary
+        if solution != '':
+            print("\nA solution was found for the following regions: " + solution.rstrip(', '))
+        if no_sol_low != '':
+            print("\nNo Solution was found for the following regions because they are too high: " + no_sol_low.rstrip(', '))
+        if no_sol_high != '':
+            print(
+                "\nNo Solution was found for the following regions because they are too low: " + no_sol_high.rstrip(', '))
+        if nodata != '':
+            print("\nNo data was available for the following regions: " + nodata.rstrip(', '))
+        
+        st = ''
+        for setting in settings_sorted:
+            st = st + str(setting) + '_'
+            
+        summary.to_csv(paths[tech]["Regression_coefficients"] + st + year + '.csv', sep=';', decimal=',')
+        print("\nfiles saved: " + paths[tech]["Regression_coefficients"] + st + year + '.csv')
+        
+        # if summaryTS is not None:
+            # summaryTS.to_csv(paths[tech]["Regression_TS"] + st[:-1] + '.csv', sep=';', decimal=',')
+            # print("\nfiles saved: " + paths[tech]["Regression_TS"] + st[:-1] + '.csv')
 
-        region_data = regmodel_load_data(paths, param, tech, settings, reg)
-
-        settings = list(region_data[None]['s'][None])
-
-        # Skip regions not present in the generated TS
-        if region_data is None:
-            nodata = nodata + reg + ', '
-            continue
-
-        if region_data[None]["IRENA_best_worst"] == (True, True):
-
-            # create model instance
-            regression = model.create_instance(region_data)
-
-            # solve model and return results
-            solver.solve(regression)
-
-            # Retreive results
-            r = np.zeros((len(param["quantiles"]), len(settings)))
-            finalTS = np.zeros(8760)
-            c = 0
-            for q in param["quantiles"]:
-                p = 0
-                for s in settings:
-                    r[c, p] = pyo.value(regression.coef[s, q])
-                    finalTS = finalTS + region_data[None]["GenTS"][str(s)]["q" + str(q)] * r[c, p]
-                    p += 1
-                c += 1
-            r[r < 10 ** (-5)] = 0
-            finalTS = pd.DataFrame(finalTS, np.arange(1, 8761), [reg])
-            summaryTS = pd.concat([summaryTS, finalTS], axis=1)
-            solution = solution + reg + ', '
-
-        elif region_data[None]["IRENA_best_worst"] == (False, True):
-            # Select best TS (highest height, highest quantile)
-            r = np.full((len(param["quantiles"]), len(settings)), 0)
-            r[0, 0] = 1
-            finalTS = np.array(region_data[None]["TS"])
-            finalTS = pd.DataFrame(finalTS, np.arange(1, 8761), [reg])
-            summaryTS = pd.concat([summaryTS, finalTS], axis=1)
-            no_sol_high = no_sol_high + reg + ', '
-
-        elif region_data[None]["IRENA_best_worst"] == (True, False):
-            # Select worst TS (lowest height, lowest quantile)
-            r = np.full((len(param["quantiles"]), len(settings)), 0)
-            r[-1, -1] = 1
-            finalTS = np.array(region_data[None]["TS"])
-            finalTS = pd.DataFrame(finalTS, np.arange(1, 8761), [reg])
-            summaryTS = pd.concat([summaryTS, finalTS], axis=1)
-            no_sol_low = no_sol_low + reg + ', '
-
-        else:
-            r = np.full((len(param["quantiles"]), len(settings)), 0)
-
-        if settings != [0]:
-            result = pd.DataFrame(r, param["quantiles"], (reg + "_" + str(s) for s in settings))
-        else:
-            result = pd.DataFrame(r, param["quantiles"], [reg])
-
-        if summary is None:
-            summary = result
-        else:
-            summary = pd.concat([summary, result], axis=1)
-
-    # Regions not present in EMHIRES and IRENA
-    TS_nodata = {}
-    set = settings[0]
-    TS_nodata[str(set)] = pd.read_csv(paths[tech]["TS_param"] + '_' + str(set) + '_TS_' + str(param["year"]) + '.csv',
-                                      sep=';', decimal=',', dtype=str, header=[0, 1], index_col=[0])
-
-    # Remove undesired regions
-    for region in list_regions:
-        filter_reg = [col for col in TS_nodata[str(set)] if col[0].startswith((region,))]
-        TS_nodata[str(set)] = TS_nodata[str(set)].drop(filter_reg, axis=1)
-
-    # Get list of regions
-    nodata_regions = np.array(TS_nodata[str(set)].columns.get_level_values(0).unique()).astype(str)
-    for reg in nodata_regions:
-        r = np.full((len(param["quantiles"]), len(settings)), 0)
-
-        if settings != [0]:
-            result = pd.DataFrame(r, param["quantiles"], (reg + "_" + str(s) for s in settings))
-        else:
-            result = pd.DataFrame(r, param["quantiles"], [reg])
-
-        if summary is None:
-            summary = result
-        else:
-            summary = pd.concat([summary, result], axis=1)
-
-    # Print Regression Summary
-
-    if solution != '':
-        print("\nA solution was found for the following regions: " + solution.rstrip(', '))
-    if no_sol_low != '':
-        print("\nNo Solution was found for the following regions because they are too high: " + no_sol_low.rstrip(', '))
-    if no_sol_high != '':
-        print(
-            "\nNo Solution was found for the following regions because they are too low: " + no_sol_high.rstrip(', '))
-    if nodata != '':
-        print("\nNo data was available for the following regions: " + nodata.rstrip(', '))
-
-    summary.to_csv(paths[tech]["Regression_summary"] + st[:-1] + '.csv', sep=';', decimal=',')
-    print("\nfiles saved: " + paths[tech]["Regression_summary"] + st[:-1] + '.csv')
-
-    if summaryTS is not None:
-        summaryTS.to_csv(paths[tech]["Regression_TS"] + st[:-1] + '.csv', sep=';', decimal=',')
-        print("\nfiles saved: " + paths[tech]["Regression_TS"] + st[:-1] + '.csv')
-
+    timecheck('End')
+    
+    
+def generate_stratified_timeseries(paths, param, tech):
+    '''
+    description
+    '''
+    timecheck('Start')
+    modes = param["modes"]
+    subregions = param["subregions_name"]
+    year = str(param["year"])
+    
+    try:
+        settings_existing, inputfiles = combinations_for_stratified_timeseries(paths, param, tech)
+    except UserWarning:
+        timecheck('End')
+        return
+    
+    # Display the combinations of settings to be used
+    if tech in ['WindOn', 'WindOff']:
+        print("Combinations of hub heights to be used for the stratified time series: ", settings_existing)
+    elif tech in ['PV']:
+        print("Orientations to be used for the stratified time series: ", settings_existing)
+        
+    for tag, combo in param["combo"][tech].items():
+        if combo == []:
+            combo = list(set([item for sublist in param["combo"][tech].values() for item in sublist]))
+        ind = settings_existing.index(sorted(combo))
+        coef = pd.read_csv(inputfiles[ind], sep=';', decimal=',', index_col=[0])
+        
+        # Extract names of regions
+        regions = sorted(list(set([col.split('_')[0] for col in coef.columns])))
+        
+        # Load the TS files
+        TS_files = {}
+        for setting in combo:
+            setting_path = paths["regional_analysis"] + subregions + '_' + tech + '_' + str(setting) + '_TS_' + year + '.csv'
+            TS_files[setting] = pd.read_csv(setting_path, sep=';', decimal=',', header=[0,1], index_col=[0])
+        
+        # Loop over modes and regions
+        TS_df = pd.DataFrame(index=range(8760), dtype='float16')
+        for mode_tag, quantiles in modes.items():
+            for reg in regions:
+                col_name = reg + '_' + tech + '_' + tag + '_' + mode_tag
+                TS_df[col_name] = np.zeros((8760, 1))
+                filter_reg = [col for col in coef if col.startswith(reg)]
+                for setting in combo:
+                    sum_quantiles = coef.loc[quantiles, filter_reg].sum().sum()
+                    for quantile in quantiles:
+                        if sum_quantiles:
+                            TS_df[col_name] = TS_df[col_name] + TS_files[setting][reg, 'q'+str(quantile)] * coef.loc[quantile, reg+'_'+str(setting)] / sum_quantiles
+                        else:
+                            TS_df[col_name] = TS_df[col_name] + TS_files[setting][reg, 'q'+str(quantile)] / len(quantiles) / len(combo)
+                        
+        st = ''
+        for setting in combo:
+            st = st + str(setting) + '_'
+            
+        TS_df.to_csv(paths[tech]["Regression_TS"] + st + year + '.csv', sep=';', decimal=',')
+        print("File Saved: " + paths[tech]["Regression_TS"] + st + year + '.csv')
     timecheck('End')
 
 
 if __name__ == '__main__':
 
     paths, param = initialization()
-    generate_weather_files(paths, param)
+    # generate_weather_files(paths, param)
     # clean_weather_data(paths, param)
     # generate_landsea(paths, param)  # Land and Sea
     # generate_subregions(paths, param)  # Subregions
@@ -1717,7 +1682,13 @@ if __name__ == '__main__':
         # reporting(paths, param, tech)
         # find_locations_quantiles(paths, param, tech)
         # generate_time_series(paths, param, tech)
+    
+    # Only for countries in Europe as subregions
+    for tech in param["technology"]:
+        print("Tech: " + tech)
         # regression_coefficients(paths, param, tech)
+        # generate_stratified_timeseries(paths, param, tech)
+        
     # cProfile.run('initialization()', 'cprofile_test.txt')
     # p = pstats.Stats('cprofile_test.txt')
     # p.sort_stats('cumulative').print_stats(20)

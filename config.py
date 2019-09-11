@@ -8,14 +8,14 @@ from pathlib import Path
 ###########################
 
 param = {}
-param["region"] = 'Europe'
+param["region"] = 'Germany'
 param["year"] = 2015
-param["technology"] = ['PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+param["technology"] = ['CSP']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 # param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30, 0])
 # param["quantiles"] = np.array([100, 95, 90, 85, 80, 70, 60, 50, 40, 35, 20, 0])
 param["quantiles"] = np.array([100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
-param["nproc"] = 1
+param["nproc"] = 3
 param["CPU_limit"] = True
 param["report_sampling"] = 100
 
@@ -87,7 +87,7 @@ del landuse, protected_areas
 
 # Parameters related to PV
 pv = {}
-pv["resource"] = {"clearness_correction": 0.75
+pv["resource"] = {"clearness_correction": 1
                   }
 pv["technical"] = {"T_r": 25,
                    "loss_coeff": 0.37,
@@ -117,11 +117,11 @@ if pv["technical"]["tracking"] != 0 and pv["technical"]["orientation"] not in [0
     pv["technical"]["orientation"] = 'track_' + str(pv["technical"]["tracking"])
 # Parameters related to CSP
 csp = {}
-csp["technical"] = {"Tin_HTF": 350,  # °C
-                    "Cp_HTF": 2.0,  # kJ/kg.K
-                    "loss_coeff": 0.37,  # Heat Loss coefficient W/m².K
-                    "Flow_coeff": 0.5,  # Flow or heat removal factor
-                    "AbRe_ratio": 0.008,  # Receiver Area / Concentrator appeture
+csp["technical"] = {"T_avg_HTF": 350,  # °C
+                    "loss_coeff": 1.06,  # Heat Loss coefficient W/m².K Independent on Wind Speed
+                    "loss_coeff_wind": 1.19,  # Multiplied with (Wind speed)^(0.6)
+                    "Flow_coeff": 0.95,  # heat transfer to the HTF factor (Flow or heat removal factor)
+                    "AbRe_ratio": 0.00079  # Receiver Area / Concentrator aperture (90mm diameter/8m aperture)
                     }
 csp["mask"] = {"slope": 20,
                "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
@@ -191,7 +191,7 @@ del pv, csp, windon, windoff
 fs = os.path.sep
 
 git_RT_folder = os.path.dirname(os.path.abspath(__file__))
-root = str(Path(git_RT_folder).parent.parent) + "Database_KS" + fs
+root = str(Path(git_RT_folder).parent.parent) + fs + "Database_KS" + fs
 
 region = param["region"]
 year = str(param["year"])
@@ -235,9 +235,9 @@ paths["GWA"] = PathTemp + "Global Wind Atlas" + fs + fs + "windSpeed.csv"
 PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
 paths["SHP"] = PathTemp + "Magda.shp"
 # for eventual correction with the Global Wind Atlas
-paths["Countries"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
-# paths["Countries"] = PathTemp + "Germany_with_EEZ.shp"
-# paths["SHP"] = paths["Countries"]
+# paths["Countries"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
+paths["Countries"] = PathTemp + "Germany_with_EEZ.shp"
+paths["SHP"] = paths["Countries"]
 
 # Local maps
 PathTemp = root + "03 Intermediate files" + fs + "Files " + region + fs + "Maps" + fs + region

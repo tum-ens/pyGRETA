@@ -12,7 +12,7 @@ param["year"] = '2015'
 param["technology"] = ['PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 param["quantiles"] = np.array([100, 97, 95, 90, 75, 67, 50, 30])
 param["savetiff"] = 1  # Save geotiff files of mask and weight rasters
-param["nproc"] = 1
+param["nproc"] = 4
 param["CPU_limit"] = True
 param["report_sampling"] = 100
 
@@ -217,7 +217,9 @@ for tech in param["technology"]:
     paths[tech]["area"] = paths["OUT"] + region + "_" + tech + "_area_" + year + ".mat"
     paths[tech]["weight"] = paths["OUT"] + region + "_" + tech + "_weight_" + year + ".mat"
     paths[tech]["FLH_weight"] = paths["OUT"] + region + "_" + tech + "_FLH_weight_" + year + ".mat"
-    paths[tech]["Locations"] = paths["OUT"] + region + "_" + tech +'_Locations.shp'
+    paths[tech]["Locations"] = paths["OUT"] + region + "_" + tech + '_Locations.shp'
     paths[tech]["TS"] = paths["OUT"] + region + '_' + tech + '_TS_' + year + '.mat'
+    paths[tech]["Region_Stats"] = paths["OUT"] + region + '_' + tech + '_Region_stats_' + year + '.csv'
+    paths[tech]["Sorted_FLH"] = paths["OUT"] + region + '_' + tech + '_sorted_FLH_sampled_' + year + '.mat'
 
 del root, PathTemp, fs

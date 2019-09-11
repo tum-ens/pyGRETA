@@ -438,10 +438,12 @@ def load_data(paths, param, tech, hubheights, region):
     # Setup the data dataframe for generated TS for each quantile
     GenTS = {}
     for hub in hubheights:
-        if hub != 0:
-            TS_Temp = pd.read_csv(paths[tech]["TS_height"] + str(hub) + '_TS_' + param["year"] + '.csv', ';')
+        if len(hubheights) > 1:
+            TS_Temp = pd.read_csv(paths[tech]["TS_height"] + '_' + str(hub) + '_TS_' + param["year"] + '.csv',
+                                  sep=';', dtype=str)
         else:
-            TS_Temp = pd.read_csv(paths[tech]["TS_height"] + '_TS_' + param["year"] + '.csv', ';')
+            TS_Temp = pd.read_csv(paths[tech]["TS_height"] + '_TS_' + param["year"] + '.csv',
+                                  sep=';', dtype=str)
 
         # Remove undesired regions
         filter_reg = [col for col in TS_Temp if col.startswith(region)]
@@ -456,8 +458,8 @@ def load_data(paths, param, tech, hubheights, region):
 
         GenTS[str(hub)] = TS_Temp.astype(float)
 
-    GenTS["TS_Max"] = np.nansum(GenTS[str(np.max(param["hub_heights"]))]["q" + str(np.max(param["quantiles"]))])
-    GenTS["TS_Min"] = np.nansum(GenTS[str(np.min(param["hub_heights"]))]["q" + str(np.min(param["quantiles"]))])
+    GenTS["TS_Max"] = np.nansum(GenTS[str(np.max(hubheights))]["q" + str(np.max(param["quantiles"]))])
+    GenTS["TS_Min"] = np.nansum(GenTS[str(np.min(hubheights))]["q" + str(np.min(param["quantiles"]))])
 
     # Prepare Timeseries dictionary indexing by height and quantile
     Timeseries = {}

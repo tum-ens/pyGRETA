@@ -71,11 +71,10 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData):
     F_direct, F_diffuse, F_reflected = coefficients(A_beta, RATIO, R_b, A_i, f, hour, sunrise, sunset)
 
     # Compute the shading losses
-    # The following line requires long computation time, replace with SHADING = 0 for fast computation
+    # Currently ignored
     SHADING = 0
 
     F = F_diffuse + F_direct * (1 - SHADING) + F_reflected * A_albedo
-    #import pdb; pdb.set_trace()
     F[F > 1] = 1
 
     # Compute the incident radiation
@@ -156,10 +155,10 @@ def calc_FLH_solar(hours, args):
             sys.stdout.flush()
 
         if tech == 'PV':
-            CF, _ = calc_CF_solar(hour, reg_ind, param, merraData, rasterData)
+            CF = calc_CF_solar(hour, reg_ind, param, merraData, rasterData)[0]
         elif tech == 'CSP':
-
-            _, CF = calc_CF_solar(hour, reg_ind, param, merraData, rasterData)
+            CF = calc_CF_solar(hour, reg_ind, param, merraData, rasterData)[1]
+        
 
         # Aggregates CF to obtain the yearly FLH
         CF[np.isnan(CF)] = 0

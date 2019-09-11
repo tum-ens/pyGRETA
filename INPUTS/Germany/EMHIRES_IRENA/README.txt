@@ -1,1 +1,0 @@
-Something about the required Dataformat for the regression to be calculated

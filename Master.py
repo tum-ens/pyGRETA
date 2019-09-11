@@ -105,6 +105,7 @@ def generate_weather_files(paths):
         SWGDN = np.array([])
         SWGNT = np.array([])
         SWTDN = np.array([])
+        SWGNT = np.array([])
         SWTNT = np.array([])
         T2M = np.array([])
         U50M = np.array([])
@@ -1205,7 +1206,6 @@ def regression_coefficient(paths, param, tech):
     nodata = ''
     no_sol_high = ''
     no_sol_low = ''
-    no_sol_low_high = ''
     solution = ''
 
     # loop over all regions
@@ -1250,15 +1250,12 @@ def regression_coefficient(paths, param, tech):
             finalTS = pd.DataFrame(finalTS, np.arange(1, 8761), [reg])
             summaryTS = pd.concat([summaryTS, finalTS], axis=1)
             solution = solution + reg + ', '
-        elif region_data[None]["IRENA_best_worst"] == (False, True):
+        elif region_data[None]["IRENA_best_worst"][1] == False:
             r = np.full((len(param["quantiles"]), len(hub_heights)), np.nan)
             no_sol_high = no_sol_high + reg + ', '
-        elif region_data[None]["IRENA_best_worst"] == (True, False):
+        elif region_data[None]["IRENA_best_worst"][0] == False:
             r = np.full((len(param["quantiles"]), len(hub_heights)), np.nan)
             no_sol_low = no_sol_low + reg + ', '
-        else:
-            r = np.full((len(param["quantiles"]), len(hub_heights)), np.nan)
-            no_sol_low_high = no_sol_low_high + reg + ', '
 
         if hub_heights != [0]:
             result = pd.DataFrame(r, param["quantiles"], (reg + "_" + str(h) for h in hub_heights))
@@ -1277,23 +1274,18 @@ def regression_coefficient(paths, param, tech):
     if no_sol_low != '':
         print("\nNo Solution was found for the following regions because they are too low: " + no_sol_low.rstrip(', '))
     if no_sol_high != '':
-        print(
-            "\nNo Solution was found for the following regions because they are too high: " + no_sol_high.rstrip(', '))
-    if no_sol_low_high != '':
-        print(
-            "\nNo Solution was found for the following regions because they are too high and too low: "
-            + no_sol_low_high.rstrip(', '))
+        print("\nNo Solution was found for the following regions because they are too high: " + no_sol_high.rstrip(', '))
     if nodata != '':
         print("\nNo data was available for the following regions: " + nodata.rstrip(', '))
 
     if not os.path.isdir(paths['regression_out']):
         os.mkdir(paths["regression_out"])
 
-    summary.to_csv(paths[tech]["Regression_summary"], na_rep=param["no_solution"], sep=';', decimal='.')
+    summary.to_csv(paths[tech]["Regression_summary"], na_rep=param["no_solution"], sep=';', decimal=',')
     print("\nfiles saved: " + paths[tech]["Regression_summary"])
 
     if summaryTS is not None:
-        summaryTS.to_csv(paths[tech]["Regression_TS"], sep=';', decimal='.')
+        summaryTS.to_csv(paths[tech]["Regression_TS"], sep=';', decimal=',')
         print("\nfiles saved: " + paths[tech]["Regression_TS"])
 
     timecheck('End')
@@ -1301,24 +1293,24 @@ def regression_coefficient(paths, param, tech):
 
 if __name__ == '__main__':
     paths, param = initialization()
-    # generate_weather_files(paths)
-    # generate_landsea(paths, param)  # Land and Sea
-    # generate_landuse(paths, param)  # Landuse
-    # generate_bathymetry(paths, param)  # Bathymetry
-    # generate_topography(paths, param)  # Topography
-    # generate_slope(paths, param)  # Slope
-    # generate_population(paths, param)  # Population
-    # generate_protected_areas(paths, param)  # Protected areas
-    # generate_buffered_population(paths, param)  # Buffered Population
-    # generate_wind_correction(paths, param)  # Correction factors for wind speeds
+    generate_weather_files(paths)
+    generate_landsea(paths, param)  # Land and Sea
+    generate_landuse(paths, param)  # Landuse
+    generate_bathymetry(paths, param)  # Bathymetry
+    generate_topography(paths, param)  # Topography
+    generate_slope(paths, param)  # Slope
+    generate_population(paths, param)  # Population
+    generate_protected_areas(paths, param)  # Protected areas
+    #generate_buffered_population(paths, param)  # Buffered Population
+    #generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
-        calculate_FLH(paths, param, tech)
-        masking(paths, param, tech)
-        weighting(paths, param, tech)
-        # reporting(paths, param, tech)
+        #calculate_FLH(paths, param, tech)
+        #masking(paths, param, tech)
+        #weighting(paths, param, tech)
+        #reporting(paths, param, tech)
         find_locations_quantiles(paths, param, tech)
         generate_time_series(paths, param, tech)
-        regression_coefficient(paths, param, tech)
+        # regression_coefficient(paths, param, tech)
         # cProfile.run('reporting(paths, param, tech)', 'cprofile_test.txt')
         # p = pstats.Stats('cprofile_test.txt')
         # p.sort_stats('cumulative').print_stats(20)

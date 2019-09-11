@@ -12,4 +12,4 @@ __pycache__/*
 *.mat
 *.xlsx
 *.csv
-OUTPUTS/*
+*.txt

@@ -4,9 +4,14 @@ import math as m
 import numpy as np
 import rasterio
 from rasterio import windows, mask, MemoryFile
+<<<<<<< HEAD
 import pandas as pd
 import hdf5storage
 from itertools import product
+=======
+import hdf5storage
+
+>>>>>>> c01003f... regression_data_setup
 
 
 def calc_ext(regb, ext, res):
@@ -212,7 +217,7 @@ def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
     # Repeating for all longitudes/latitudes
     lat = repmat(lat.transpose(), 1, int(n_high))
     lon = repmat(lon, int(m_high), 1)
-	
+
     # Solar time where shade-free exposure starts
     omegast = 12 - GCR["shadefree_period"] / 2
 
@@ -326,3 +331,163 @@ def calc_areas(Crd_all, n_high, res_desired):
     area_vec = ((upperSliceAreas - lowerSliceAreas) * res_desired[1] / 360).T
     A_area = np.tile(area_vec, (1, n_high))
     return A_area
+
+
+def create_buffer(A_lu, buffer_pixel_amount):
+    """
+    This function creates a buffer around urban areas, based on a Von Neumann neighborhood.
+    A_lu matrix element values range from 0 to 16:
+    # 0   -- Water
+    # 1   -- Evergreen needle leaf forest
+    # 2   -- Evergreen broad leaf forest
+    # 3   -- Deciduous needle leaf forest
+    # 4   -- deciduous broad leaf forest
+    # 5   -- Mixed forests
+    # 6   -- Closed shrublands
+    # 7   -- Open shrublands
+    # 8   -- Woody savannas
+    # 9   -- Grasslands
+    # 10  -- Permanent wetland
+    # 12  -- Croplands
+    # 13  -- URBAN AND BUILT-UP
+    # 14  -- Croplands / natural vegetation mosaic
+    # 15  -- Snow and ice
+    # 16  -- Barren or sparsely vegetated
+
+    :param A_lu: Landuse matrix
+    :param buffer_pixel_amount: Buffer amount
+    """
+
+    # Mark the matrix elements with values 13
+    A_lu = A_lu == 13
+
+    # modify
+    # create a buffer around the cities
+    shifted_A_lu = A_lu
+
+    for p in range(0, buffer_pixel_amount):
+        n = 1  # Number of pixel shifts per loop
+        shifted_left = superpose_left(shifted_A_lu, n)
+        shifted_right = superpose_right(shifted_A_lu, n)
+        shifted_up = superpose_up(shifted_A_lu, n)
+        shifted_down = superpose_down(shifted_A_lu, n)
+
+        superposed = shifted_left + shifted_right + shifted_up + shifted_down
+
+        superposed = superposed != 0
+        shifted_A_lu = superposed
+
+    A_lu_buffered = shifted_A_lu
+    return A_lu_buffered
+
+
+def superpose_left(A_lu, buffer_pixed_amount):
+    """
+    Used as part of create_buffer()
+    Shift and superpose to the left, shift amount is defined by buffer_pixel amount
+    """
+
+    left = np.append(A_lu[:, buffer_pixed_amount:], np.zeros((A_lu.shape[0], buffer_pixed_amount)), axis=1)
+    shifted_left = A_lu + left
+    shifted_left = shifted_left != 0
+    return shifted_left
+
+
+def superpose_right(A_lu, buffer_pixed_amount):
+    """
+    Used as part of create_buffer()
+    Shift and superpose to the right, shift amount is defined by buffer_pixel amount
+    """
+
+    right = np.append(np.zeros((A_lu.shape[0], buffer_pixed_amount)), A_lu[:, :-buffer_pixed_amount], axis=1)
+    shifted_right = A_lu + right
+    shifted_right = shifted_right != 0
+    return shifted_right
+
+
+def superpose_up(A_lu, buffer_pixed_amount):
+    """
+    Used as part of create_buffer()
+    Shift and superpose upward, shift amount is defined by buffer_pixel amount
+    """
+
+    up = np.append(A_lu[buffer_pixed_amount:, :], np.zeros((buffer_pixed_amount, A_lu.shape[1])), axis=0)
+    shifted_up = A_lu + up
+    shifted_up = shifted_up != 0
+    return shifted_up
+
+
+def superpose_down(A_lu, buffer_pixed_amount):
+    """
+    Used as part of create_buffer()
+    Shift and superpose to the downward, shift amount is defined by buffer_pixel amount
+    """
+
+    down = np.append(np.zeros((buffer_pixed_amount, A_lu.shape[1])), A_lu[:-buffer_pixed_amount, :], axis=0)
+    shifted_down = A_lu + down
+    shifted_down = shifted_down != 0
+    return shifted_down
+
+
+def load_data(paths, param, region):
+
+    # Read data from output folder
+    IRENA_FLH = 0
+    TS = np.zeros(8760)
+
+    # Setup dataframe for EMHIRES DATA
+    EMHIRES = pd.read_csv(paths["regression"] + 'wind_on.txt', '\t')
+    EMHIRES = EMHIRES[EMHIRES["Year"] == int(param["year"])].reset_index()
+    # TO be ADDED, filter by regions understudy
+    EMHIRES = EMHIRES.drop(['index', 'Time', 'step', 'Date', 'Year', 'Month', 'Day', 'Hour'], axis=1)
+    TS = np.array(EMHIRES[region].values)
+
+    # Setup dataframe for IRENA
+    irena = pd.read_csv(paths["regression"] + 'IRENA_FLH.txt', '\t')
+    irena = irena.transpose()
+    irena.columns = irena.iloc[0]
+    irena = irena.drop('NAME_SHORT')
+    IRENA_FLH = irena[region].loc['wind']
+
+    # Setup the data dataframe for generated TS for each quantile
+    TS60 = pd.read_csv(paths["regression"] + 'Germany_WindOn_TS_60_2015.csv', ';')
+
+    # Filters unwanted regions
+    filter_reg = [col for col in TS60 if col.startswith(region)]
+    TS60 = TS60[filter_reg]
+    TS60.columns = TS60.iloc[0]
+    TS60 = TS60.drop(0)
+
+    TS80 = pd.read_csv(paths["regression"] + 'Germany_WindOn_TS_80_2015.csv', ';')
+    filter_reg = [col for col in TS80 if col.startswith(region)]
+    TS80 = TS80[filter_reg]
+    TS80.columns = TS80.iloc[0]
+    TS80 = TS80.drop(0)
+
+    TS100 = pd.read_csv(paths["regression"] + 'Germany_WindOn_TS_100_2015.csv', ';')
+    filter_reg = [col for col in TS100 if col.startswith(region)]
+    TS100 = TS100[filter_reg]
+    TS100.columns = TS100.iloc[0]
+    TS100 = TS100.drop(0)
+
+    GenTS = {"60": TS60.astype(float),
+             "80": TS80.astype(float),
+             "100": TS100.astype(float)}
+
+    # Prepare Timeseries dictionary indexing by height and quantile
+    Timeseries = {}
+    for h in param["hub_heights"]:
+        for q in param["quantiles"]:
+            Timeseries[(h, q)] = np.array(GenTS[str(h)]['q'+str(q)])
+
+    # Create data_input dictionary
+    data = {None: {
+        "h": {None: param["hub_heights"]},
+        "q": {None: param["quantiles"]},
+        "FLH": {None: IRENA_FLH},
+        "shape": {None: TS},
+        "TS": Timeseries
+            }}
+
+    return data
+

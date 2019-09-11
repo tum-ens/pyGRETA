@@ -247,38 +247,34 @@ paths["regression_out"] = paths["regression"] + "OUTPUTS" + fs
 for tech in param["technology"]:
     paths[tech] = {}
 
+    if tech == 'WindOn':
+        paths[tech]["EMHIRES"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + \
+                                     "TS.CF.COUNTRY.30yr.date.txt"
+    elif tech == 'WindOff':
+        paths[tech]["EMHIRES"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + \
+                                     "TS.CF.OFFSHORE.30yr.date.txt"
+    elif tech == 'PV':
+        paths[tech]["EMHIRES"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + \
+                                     "EMHIRESPV_TSh_CF_Country_19862015.txt"
+
     if tech in ['WindOn', 'WindOff']:
         hubheight = str(param[tech]["technical"]["hub_height"])
-        paths[tech]["FLH"] = paths["OUT"] + region + '_' + tech + '_' + hubheight + '_FLH_' + year + '.mat'
-        paths[tech]["mask"] = paths["OUT"] + region + "_" + tech + '_' + hubheight + "_mask_" + year + ".mat"
-        paths[tech]["FLH_mask"] = paths["OUT"] + region + "_" + tech + '_' + hubheight + "_FLH_mask_" + year + ".mat"
-        paths[tech]["area"] = paths["OUT"] + region + "_" + tech + '_' + hubheight + "_area_" + year + ".mat"
-        paths[tech]["weight"] = paths["OUT"] + region + "_" + tech + '_' + hubheight + "_weight_" + year + ".mat"
-        paths[tech]["FLH_weight"] = paths["OUT"] + region + "_" + tech + '_' + hubheight + "_FLH_weight_" + year + ".mat"
-        paths[tech]["Locations"] = paths["OUT"] + region + "_" + tech + '_' + hubheight + '_Locations.shp'
-        paths[tech]["TS"] = paths["OUT"] + region + '_' + tech + '_' + hubheight + '_TS_' + year + '.csv'
-        paths[tech]["Region_Stats"] = paths["OUT"] + region + '_' + tech + '_' + hubheight + '_Region_stats_' + year + '.csv'
-        paths[tech]["Sorted_FLH"] = paths["OUT"] + region + '_' + tech + '_' + hubheight + '_sorted_FLH_sampled_' + year + '.mat'
-        if tech == 'WindOn':
-            paths[tech]["EMHIRES"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + "TS.CF.COUNTRY.30yr.date.txt"
-        elif tech == 'WindOff':
-            paths[tech]["EMHIRES"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + "TS.CF.OFFSHORE.30yr.date.txt"
+        PathTemp = paths["OUT"] + region + '_' + tech + '_' + hubheight
     else:
-        paths[tech]["FLH"] = paths["OUT"] + region + '_' + tech + '_FLH_' + year + '.mat'
-        paths[tech]["mask"] = paths["OUT"] + region + "_" + tech + "_mask_" + year + ".mat"
-        paths[tech]["FLH_mask"] = paths["OUT"] + region + "_" + tech + "_FLH_mask_" + year + ".mat"
-        paths[tech]["area"] = paths["OUT"] + region + "_" + tech + "_area_" + year + ".mat"
-        paths[tech]["weight"] = paths["OUT"] + region + "_" + tech + "_weight_" + year + ".mat"
-        paths[tech]["FLH_weight"] = paths["OUT"] + region + "_" + tech + "_FLH_weight_" + year + ".mat"
-        paths[tech]["Locations"] = paths["OUT"] + region + "_" + tech + '_Locations.shp'
-        paths[tech]["TS"] = paths["OUT"] + region + '_' + tech + '_TS_' + year + '.csv'
-        paths[tech]["Region_Stats"] = paths["OUT"] + region + '_' + tech + '_Region_stats_' + year + '.csv'
-        paths[tech]["Sorted_FLH"] = paths["OUT"] + region + '_' + tech + '_sorted_FLH_sampled_' + year + '.mat'
-        if tech == 'PV':
-            paths[tech]["EMHIRES"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + "EMHIRESPV_TSh_CF_Country_19862015.txt"
+        PathTemp = paths["OUT"] + region + '_' + tech
+    
+    paths[tech]["FLH"] = PathTemp + '_FLH_' + year + '.mat'
+    paths[tech]["mask"] = PathTemp + "_mask_" + year + ".mat"
+    paths[tech]["FLH_mask"] = PathTemp + "_FLH_mask_" + year + ".mat"
+    paths[tech]["area"] = PathTemp + "_area_" + year + ".mat"
+    paths[tech]["weight"] = PathTemp + "_weight_" + year + ".mat"
+    paths[tech]["FLH_weight"] = PathTemp + "_FLH_weight_" + year + ".mat"
+    paths[tech]["Locations"] = PathTemp + '_Locations.shp'
+    paths[tech]["TS"] = PathTemp + '_TS_' + year + '.csv'
+    paths[tech]["Region_Stats"] = PathTemp + '_Region_stats_' + year + '.csv'
+    paths[tech]["Sorted_FLH"] = PathTemp + '_sorted_FLH_sampled_' + year + '.mat'
 
     paths[tech]["TS_height"] = paths["regression_in"] + region + '_' + tech
     paths[tech]["Regression_summary"] = paths["regression_out"] + region + '_' + tech + '_reg_coefficients_' + timestamp + '.csv'
-    # paths[tech]["EMHIRES"] = root + "INPUTS" + fs + region + fs + "EMHIRES_IRENA" + fs + "EMHIRES_" + tech + '.txt'
 
 del root, PathTemp, fs

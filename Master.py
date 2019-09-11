@@ -934,7 +934,7 @@ def find_locations_quantiles(paths, param, tech):
         regions_shp = param["regions_land"]
         nRegions = param["nRegions_land"]
         Crd_regions = param["Crd_regions"][0:nRegions, :]
-        Ind = ind_merra(Crd_regions, Crd_all, res_desired)
+    Ind = ind_merra(Crd_regions, Crd_all, res_desired)
 
     reg_ind = np.zeros((nRegions, len(quantiles), 2))
     list_names = []

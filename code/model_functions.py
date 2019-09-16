@@ -526,6 +526,7 @@ def global2diff(k_t, dims):
 
     return A_ratio
 
+
 def calc_CF_wind(hour, reg_ind, turbine, m, n, merraData, rasterData):
     """
     Computes the hourly capacity factor for Wind Onshore and Offshore technologies based on *spatial_scope*, time, and technology parameters.

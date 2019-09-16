@@ -461,3 +461,46 @@ References
 .. [11]
 	William F. Marion and Aron P. Dobos. Rotation angle for the optimum
 	tracking of one-axis trackers.
+
+=======
+
+References
+==========
+
+.. [1]
+	D. G. Erbs, S. A. Klein, and J. A. Duffle. Estimation of the diffuse radiation
+	fraction for hourly, daily and monthly-average global radiation. Solar
+	Energy, 28(4):293-302, 1982.
+.. [2]	
+	Danish Wind Industry Association. Wind energy reference manual, 2003.
+.. [3]
+	Douglas T. Reindl. Estimating diffuse radiation on horizontal surfaces
+	and total radiation on tilted surfaces. Master's dissertation, University of
+	Wisconsin, Madison, 1988.
+.. [4]
+	Gilbert M. Masters. Renewable and efficient electric power systems. Wiley-
+	Interscience and [Chichester : John Wiley], Hoboken, N.J., 2004.
+.. [5]	
+	John A. Duffle and William A. Beckman. Solar engineering of thermal
+	processes. Wiley, Hoboken, New Jersey, fourth edition edition, 2013.
+.. [6]
+	K. Scharmer and Jurgen Greif. Database and exploitation software, volume
+	2 of The European solar radiation atlas. Presses de l'nger, Paris, 2000.
+.. [7]
+	Laura Maturi, Giorgio Belluardo, David Moser, and Matteo Del Buono.
+	Bipv system performance and efficiency drops: Overview on pv module
+	temperature conditions of different module types. Energy Procedia,
+	48:1311-1319, 2014.
+.. [8]
+	Martin Kaltschmitt, Wolfgang Streicher, and Andreas Wiese. Renew-
+	able energy: Technology, economics, and environment / [editors] Martin
+	Kaltschmitt, Wolfgang Streicher, Andreas Wiese. Springer, Berlin and New
+	York, 2007.
+.. [9]
+	S. A. Klein. Calculation of monthly average insolation on tilted surfaces.
+	Solar Energy, 19(4):325-329, 1977.
+.. [10]
+	William B. Stine and Michael Geyer. Powerfromthesun.net, 05.03.2014.
+.. [11]
+	William F. Marion and Aron P. Dobos. Rotation angle for the optimum
+	tracking of one-axis trackers.

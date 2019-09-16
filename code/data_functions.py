@@ -512,8 +512,13 @@ def regmodel_load_data(paths, param, tech, settings, subregion):
     :param settings: list of all the settings (hub heights/orientations) to be used in the regression
     :type settings: list
 
+<<<<<<< HEAD
     :param subregion: code name of region
     :type subregion: str
+=======
+    :param region: name short of region
+    :type region: str
+>>>>>>> 03466b1679044013478b9a46680c8f6dcd3affa7
 
     :return: Dictionary containing regression parameters
     :rtype: dict

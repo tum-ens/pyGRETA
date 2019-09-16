@@ -683,6 +683,7 @@ def calc_TS_wind(hours, args):
         CF[np.isnan(CF)] = 0
         TS[:, hour] = CF
     return TS
+
     
 def pyomo_regression_model():
     """

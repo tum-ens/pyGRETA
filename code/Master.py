@@ -1257,6 +1257,7 @@ def reporting(paths, param, tech):
     print("files saved: " + paths[tech]["Region_Stats"])
 
     # Save Sorted lists to .mat file
+    filepath = paths["OUT"] + tech + '_sorted_FLH_sampled.mat'
     for reg in sorted_FLH_list.keys():
         hdf5storage.writes({reg + '/FLH': sorted_FLH_list[reg]["FLH"],
                             reg + '/FLH_masked': sorted_FLH_list[reg]["FLH_M"],
@@ -1448,7 +1449,6 @@ def regression_coefficients(paths, param, tech):
     irena_regions = set(irena.index)
 
     # Load EMHIRES data for desired year
-
     if tech == 'PV':
         date_index = pd.date_range(start='1/1/1986', end='1/1/2016', freq='H', closed='left')
         EMHIRES = pd.read_csv(paths["regression_out"] + os.path.split(paths[tech]["EMHIRES"])[1], ' ')
@@ -1674,7 +1674,6 @@ if __name__ == '__main__':
     # generate_protected_areas(paths, param)  # Protected areas
     # generate_buffered_population(paths, param)  # Buffered Population
     # generate_wind_correction(paths, param)  # Correction factors for wind speeds
-    clean_IRENA_regression(param, paths)
     for tech in param["technology"]:
         print("Tech: " + tech)
         # calculate_FLH(paths, param, tech)

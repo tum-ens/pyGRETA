@@ -114,6 +114,7 @@ def scope_paths_and_parameters(paths, param):
 
     # Technologies
     param["technology"] = ['WindOn', 'WindOff', 'PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+
     return paths, param
 
 
@@ -198,9 +199,13 @@ def time_series_parameters(param):
     """
     This function determines the time series that will be created.
     
+<<<<<<< HEAD
     update ?????
     
     *quantiles* is a list of floats between 100 and 0. Within each subregion, the FLH values will be sorted,
+=======
+    *quantiles* is a numpy array of floats between 100 and 0. Within each subregion, the FLH values will be sorted,
+>>>>>>> 03466b1679044013478b9a46680c8f6dcd3affa7
     and points with FLH values at a certain quantile will be later selected. The time series will be created for these points.
     The value 100 corresponds to the maximum, 50 to the median, and 0 to the minimum.
     
@@ -734,7 +739,10 @@ def local_maps_paths(paths, param):
       * *CORR_GWA* for correction factors based on the Global Wind Atlas (mat file)
       * *CORR_ON* for the onshore wind correction factors (raster)
       * *CORR_OFF* for the offshore wind correction factors (raster)
+<<<<<<< HEAD
       * *AREA* for the area per pixel in m² (mat file)
+=======
+>>>>>>> 03466b1679044013478b9a46680c8f6dcd3affa7
     
     :param paths: Dictionary including the paths.
     :type paths: dict

@@ -87,24 +87,9 @@ Continue here if you want to understand in detail the model implementation.
 Dependencies
 ------------
 
-* `Python`_ versions 2.7 or 3.x are both supported.
-* `pyomo`_ for model equations and as the interface to optimisation solvers.
-* `pandas`_ for input and result data handling, report generation ...
-* Any solver supported by pyomo; suggestion: `GLPK`_,gurobi
-* To be completed...
-
 Indices and tables
 ------------------
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-   
-.. _glpk: https://www.gnu.org/software/glpk/
-.. _Chair of Renewable and Sustainable Energy Systems: http://www.ens.ei.tum.de/
-.. _matplotlib: http://matplotlib.org
-.. _pandas: http://pandas.pydata.org
-.. _pyomo: http://www.pyomo.org
-.. _python: https://www.python.org/
-.. _readme.md: https://github.com/tum-ens/urbs/blob/master/README.md#installation
-.. _urbs: https://github.com/tum-ens/urbs

@@ -221,6 +221,7 @@ def clean_weather_data(paths, param):
 
     timecheck('Start')
 
+
     # Read Wind Data
     W50M = hdf5storage.read('W50M', paths["W50M"])
     wind = np.mean(W50M, 2)
@@ -1448,7 +1449,6 @@ def regression_coefficients(paths, param, tech):
     irena_regions = set(irena.index)
 
     # Load EMHIRES data for desired year
-
     if tech == 'PV':
         date_index = pd.date_range(start='1/1/1986', end='1/1/2016', freq='H', closed='left')
         EMHIRES = pd.read_csv(paths["regression_out"] + os.path.split(paths[tech]["EMHIRES"])[1], ' ')

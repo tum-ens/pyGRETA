@@ -202,7 +202,7 @@ def calc_region(region, Crd_reg, res_desired, GeoRef):
 
     return A_region
 
-<<<<<<< HEAD
+
 def clean_IRENA_summary(param, paths):
     ''' description'''
     year = str(param["year"])
@@ -622,15 +622,13 @@ def combinations_for_regression(paths, param, tech):
     settings_existing = []
     for filename in inputfiles:
         bef_setting = paths["regional_analysis"] + subregions + '_' + tech + '_'
-        if tech == 'CSP':
-            bef_setting = paths["regional_analysis"] + subregions + '_' + tech
         aft_setting = '_TS_' + year + '.csv'
         settings_existing = settings_existing + [int(filename.replace(bef_setting, '').replace(aft_setting, ''))]
     settings_existing = set(settings_existing)
     print("\nFor technology " + tech + ", time series for the following settings have been detected: ", settings_existing)
     
     # Get required settings
-    combinations = param["regression"][tech]
+    combinations = param["regression"][tech].values()
     combinations_sorted = []
     for combi in combinations:
         combinations_sorted = combinations_sorted + [sorted(combi)]
@@ -655,6 +653,48 @@ def combinations_for_regression(paths, param, tech):
             if not (full_combi in combinations):
                 combinations = combinations + full_combi
     return combinations
+    
+    
+def combinations_for_stratified_timeseries(paths, param, tech):
+    """
+    ?????
+    """
+    subregions = param["subregions_name"]
+    year = str(param["year"])
+    
+    # Reads the files present in input folder
+    inputfiles = glob(paths["regression_out"] + subregions + '_' + tech + '_reg_coefficients*' + year + '.csv')
+    
+    # Case 1: no files existing
+    if len(inputfiles) == 0:
+        warn('Run the regression first, before creating stratified time series!', UserWarning)
+        return
+        
+    # Get existing settings
+    settings_existing = []
+    for filename in inputfiles:
+        bef_setting = paths["regression_out"] + subregions + '_' + tech + '_reg_coefficients_'
+        aft_setting = '_' + year + '.csv'
+        list_settings = filename.replace(bef_setting, '').replace(aft_setting, '').split('_')
+        settings_existing = settings_existing + [sorted([int(x) for x in list_settings])]
+    settings_sorted = sorted(settings_existing)
+    print("\nFor technology " + tech + ", regression coefficients for the following combinations have been detected: ", settings_existing)
+    
+    # Get required settings
+    combinations = param["combo"][tech].values()
+    combinations_sorted = []
+    for combi in combinations:
+        if combi == []:
+            combi = list(set([item for sublist in combinations for item in sublist]))
+        combinations_sorted = combinations_sorted + [sorted(combi)]
+    combinations = sorted(combinations_sorted)
+
+    # Case 2: some files are missing
+    if combinations != settings_sorted:
+        print("\nFor technology " + tech + ", regression coefficients for the following combinations are required: ", combinations)
+        warn('Not all regression coefficients are available! Generate the missing regression coefficients first, then create stratified time series.', UserWarning)
+        return
+    return settings_existing, inputfiles
 
 
 def get_merra_raster_Data(paths, param, tech):

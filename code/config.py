@@ -113,7 +113,7 @@ def scope_paths_and_parameters(paths, param):
     param["year"] = 2015
 
     # Technologies
-    param["technology"] = ['WindOn']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+    param["technology"] = ['WindOn', 'WindOff', 'PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
     return paths, param
 
 
@@ -200,7 +200,7 @@ def time_series_parameters(param):
     
     update ?????
     
-    *quantiles* is a numpy array of floats between 100 and 0. Within each subregion, the FLH values will be sorted,
+    *quantiles* is a list of floats between 100 and 0. Within each subregion, the FLH values will be sorted,
     and points with FLH values at a certain quantile will be later selected. The time series will be created for these points.
     The value 100 corresponds to the maximum, 50 to the median, and 0 to the minimum.
     
@@ -214,20 +214,28 @@ def time_series_parameters(param):
     """
 
     # Quantiles for time series
-    param["quantiles"] = np.array([100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0])
-    param["modes"] = {"high": [100, 90, 80],
-                      "mid": [70, 60, 50, 40, 30],
-                      "low": [20, 10, 0]}
+    param["quantiles"] = [100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0]
                       
     # Regression
-    regression = {
-        "solver": 'gurobi', # string
-        "WindOn": [[60, 80, 100], [80, 100, 120], [100, 120, 140]], # list of hub height combinations
-        "WindOff": [[80], [100], [120]], # list of hub height combinations
-        "PV": [[0, 180, -90, 90]], # list of orientation combinations
-        "CSP": [[]]}
+    param["regression"] = {"solver": 'gurobi', # string
+                           "WindOn": {'80m': [60, 80, 100]}, # dictionary of hub height combinations
+                           "WindOff": {'80m': [80]}, # dictionary of hub height combinations
+                           "PV": {'Solar': [0, 180, -90, 90]}, # list of orientation combinations
+                           "CSP": {'all': []}
+                           }
         
-    param["regression"] = regression
+    # Stratified time series
+    param["modes"] = {"high": [100, 90, 80],
+                      "mid": [70, 60, 50, 40, 30],
+                      "low": [20, 10, 0],
+                      "all": param["quantiles"]
+                      }
+    param["combo"] = {"WindOn": {'80m': [60, 80, 100], '100m': [80, 100, 120], '120m': [100, 120, 140]}, # dictionary of hub height combinations
+                      "WindOff": {'80m': [80], '100m': [100], '120m': [120]}, # dictionary of hub height combinations
+                      "PV": {'Solar': [0, 180, -90, 90]}, # list of orientation combinations
+                      "CSP": {'all': []}
+                      }
+    
     return param
 
 
@@ -364,7 +372,7 @@ def pv_parameters(param):
                       }
     pv["technical"] = {"T_r": 25,  # °C
                        "loss_coeff": 0.37,
-                       "tracking": 1,  # 0 for no tracking, 1 for one-axis tracking, 2 for two-axes tracking
+                       "tracking": 0,  # 0 for no tracking, 1 for one-axis tracking, 2 for two-axes tracking
                        "orientation": 90  # | 0: South | 90: West | 180: North | -90: East |
                        }
     pv["mask"] = {"slope": 20,
@@ -920,16 +928,13 @@ def regional_analysis_output_paths(paths, param, tech):
     elif tech in ['CSP']:
         orientation = '0'
         PathTemp = paths["regional_analysis"] + subregions + '_' + tech + '_' + orientation
-    else:
-        PathTemp = paths["regional_analysis"] + subregions + '_' + tech
 
     paths[tech]["Locations"] = PathTemp + '_Locations.shp'
     paths[tech]["TS"] = PathTemp + '_TS_' + year + '.csv'
     paths[tech]["Region_Stats"] = PathTemp + '_Region_stats_' + year + '.csv'
     paths[tech]["Sorted_FLH"] = PathTemp + '_sorted_FLH_sampled_' + year + '.mat'
 
-    paths[tech]["TS_param"] = paths["regression_in"] + subregions + '_' + tech
-    paths[tech]["Regression_summary"] = paths["regression_out"] + subregions + '_' + tech + '_reg_coefficients_'
+    paths[tech]["Regression_coefficients"] = paths["regression_out"] + subregions + '_' + tech + '_reg_coefficients_'
     paths[tech]["Regression_TS"] = paths["regression_out"] + subregions + '_' + tech + '_reg_TimeSeries_'
 
     return paths

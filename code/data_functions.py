@@ -303,11 +303,11 @@ def calc_gwa_correction(param, paths):
     TOPO = np.flipud(w)
 
     # Clean IRENA data and filter them for desired scope
-    if not os.path.isfile(paths["IRENA_out"]):
+    if not os.path.isfile(paths["IRENA_summary"]):
         clean_IRENA_summary(param, paths)
     
     # Get the installed capacities
-    inst_cap = pd.read_csv(paths["IRENA_out"], sep=';', decimal=',', index_col=0, usecols=[0, 1, 2])
+    inst_cap = pd.read_csv(paths["IRENA_summary"], sep=';', decimal=',', index_col=0, usecols=[0, 1, 2])
     inst_cap = inst_cap.loc[inst_cap["Technology"] == 'Onshore wind energy']
 
     w_size = np.zeros((nCountries, 1))
@@ -512,13 +512,8 @@ def regmodel_load_data(paths, param, tech, settings, subregion):
     :param settings: list of all the settings (hub heights/orientations) to be used in the regression
     :type settings: list
 
-<<<<<<< HEAD
     :param subregion: code name of region
     :type subregion: str
-=======
-    :param region: name short of region
-    :type region: str
->>>>>>> 03466b1679044013478b9a46680c8f6dcd3affa7
 
     :return: Dictionary containing regression parameters
     :rtype: dict
@@ -588,7 +583,10 @@ def regmodel_load_data(paths, param, tech, settings, subregion):
     
     # Setup dataframe for EMHIRES DATA
     EMHIRES = param["EMHIRES"]
-    ts = np.array(EMHIRES[subregion].values)
+    try:
+        ts = np.array(EMHIRES[subregion].values)
+    except KeyError:
+        ts = np.array(EMHIRES["UK"].values)
     ts = ts * IRENA_FLH / np.sum(ts)
     TS = {}
     for t in time:

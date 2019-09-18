@@ -57,8 +57,8 @@ def general_settings():
 
     param = {}
     param["author"] = 'Kais Siala'  # the name of the person running the script
-    param["comment"] = 'Testing regression'
-
+    param["comment"] = 'For Marc Scheiger'
+    
     paths = {}
     fs = os.path.sep
     current_folder = os.path.dirname(os.path.abspath(__file__))
@@ -102,18 +102,19 @@ def scope_paths_and_parameters(paths, param):
     """
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
-    paths["spatial_scope"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
-    paths["subregions"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
-
+    paths["spatial_scope"] = PathTemp + "gadm36_BRA_1.shp"
+    paths["subregions"] = PathTemp + "gadm36_BRA_1.shp"
+    
     # Name tags for the scope and the subregions
-    param["region_name"] = 'Europe'  # Name tag of the spatial scope
-    param["subregions_name"] = 'Europe_wo_Balkans_NUTS0'  # Name tag of the subregions
-
+    param["region_name"] = 'Brazil'  # Name tag of the spatial scope
+    param["subregions_name"] = 'Brazil_states' # Name tag of the subregions
+    
     # Year
     param["year"] = 2015
 
     # Technologies
-    param["technology"] = ['WindOn', 'WindOff', 'PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+    param["technology"] = ['WindOn', 'PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+
     return paths, param
 
 
@@ -128,7 +129,7 @@ def computation_parameters(param):
     :return: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 36
+    param["nproc"] = 18
     param["CPU_limit"] = True
     return param
 
@@ -236,7 +237,7 @@ def time_series_parameters(param):
                       "PV": {'Solar': [0, 180, -90, 90]},  # list of orientation combinations
                       "CSP": {'all': []}
                       }
-
+    
     return param
 
 
@@ -374,7 +375,8 @@ def pv_parameters(param):
     pv["technical"] = {"T_r": 25,  # °C
                        "loss_coeff": 0.37,
                        "tracking": 0,  # 0 for no tracking, 1 for one-axis tracking, 2 for two-axes tracking
-                       "orientation": 90  # | 0: South | 90: West | 180: North | -90: East |
+                       "orientation": 180  # | 0: South | 90: West | 180: North | -90: East |
+
                        }
     pv["mask"] = {"slope": 20,
                   "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
@@ -506,7 +508,7 @@ def onshore_wind_parameters(param):
                            "w_r": 13,
                            "w_off": 25,
                            "P_r": 3,
-                           "hub_height": 80
+                           "hub_height": 100
                            }
     windon["mask"] = {"slope": 20,
                       "lu_suitability": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1]),
@@ -563,7 +565,7 @@ def offshore_wind_paramters(param):
                             "w_r": 16.5,
                             "w_off": 34,
                             "P_r": 7.58,
-                            "hub_height": 120
+                            "hub_height": 100
                             }
     windoff["mask"] = {"depth": -40,
                        "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),

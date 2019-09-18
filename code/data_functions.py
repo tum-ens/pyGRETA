@@ -203,14 +203,8 @@ def calc_region(region, Crd_reg, res_desired, GeoRef):
     return A_region
 
 
-def clean_IRENA(param, paths):
-    """
-    Missing description
-
-    :param param:
-    :param paths:
-    :return:
-    """
+def clean_IRENA_summary(param, paths):
+    ''' description'''
     year = str(param["year"])
     filter_countries = param["regions_land"]['GID_0'].to_list()
     IRENA_dict = pd.read_csv(paths["IRENA_dict"], sep=';', index_col=0)
@@ -255,7 +249,31 @@ def clean_IRENA(param, paths):
     IRENA = IRENA.pivot(columns='Indicator')[year].rename(columns={'Electricity capacity (MW)': 'inst-cap (MW)',
                                                                    'Electricity generation (GWh)': 'prod (MWh)'})
     IRENA = IRENA.astype(float)
-    IRENA.to_csv(paths['IRENA_out'], sep=';', decimal=',', index=True)
+    IRENA.to_csv(paths['IRENA_summary'], sep=';', decimal=',', index=True)
+    
+def clean_IRENA_regression(param, paths):
+    """
+    """
+    if not os.path.isfile(paths["IRENA_summary"]):
+        clean_IRENA_summary(param, paths)
+    IRENA_summary = pd.read_csv(paths['IRENA_summary'], sep=';', decimal=',', index_col=[0,1])
+    IRENA_dict = pd.read_csv(paths["IRENA_dict"], sep=';')
+    IRENA_dict.set_index(['Countries shapefile'], inplace=True)
+    IRENA_dict.dropna(inplace=True)
+    IRENA_dict = IRENA_dict['NUTS0'].to_dict()
+    
+    IRENA_regression = pd.DataFrame(columns=['WindOn', 'WindOff', 'PV', 'CSP'])
+    for country in IRENA_dict.keys():
+        try:
+            IRENA_regression.loc[IRENA_dict[country]] = [IRENA_summary.loc[(country, 'Onshore wind energy'), 'FLH (h)'],
+                                               IRENA_summary.loc[(country, 'Offshore wind energy'), 'FLH (h)'],
+                                               IRENA_summary.loc[(country, 'Solar photovoltaic'), 'FLH (h)'],
+                                               IRENA_summary.loc[(country, 'Concentrated solar power'), 'FLH (h)']]
+        except KeyError:
+            print(country)
+            import pdb; pdb.set_trace()
+            
+    IRENA_regression.to_csv(paths['IRENA_regression'], sep=';', decimal=',', index=True)
 
 
 def calc_gwa_correction(param, paths):
@@ -285,11 +303,11 @@ def calc_gwa_correction(param, paths):
     TOPO = np.flipud(w)
 
     # Clean IRENA data and filter them for desired scope
-    if not os.path.isfile(paths["IRENA_out"]):
-        clean_IRENA(param, paths)
-
+    if not os.path.isfile(paths["IRENA_summary"]):
+        clean_IRENA_summary(param, paths)
+    
     # Get the installed capacities
-    inst_cap = pd.read_csv(paths["IRENA_out"], sep=';', decimal=',', index_col=0, usecols=[0, 1, 2])
+    inst_cap = pd.read_csv(paths["IRENA_summary"], sep=';', decimal=',', index_col=0, usecols=[0, 1, 2])
     inst_cap = inst_cap.loc[inst_cap["Technology"] == 'Onshore wind energy']
 
     w_size = np.zeros((nCountries, 1))
@@ -480,7 +498,7 @@ def sampled_sorting(Raster, sampling):
     return s
 
 
-def regmodel_load_data(paths, param, tech, settings, region):
+def regmodel_load_data(paths, param, tech, settings, subregion):
     """
     Returns a dictionary used to initialize a pyomo abstract model for the regression analysis
     of each region.
@@ -494,80 +512,89 @@ def regmodel_load_data(paths, param, tech, settings, region):
     :param settings: list of all the settings (hub heights/orientations) to be used in the regression
     :type settings: list
 
-    :param region: name short of region
-    :type region: str
+    :param subregion: code name of region
+    :type subregion: str
 
     :return: Dictionary containing regression parameters
     :rtype: dict
     """
 
+    subregions = param["subregions_name"]
+    year = str(param["year"])
+    IRENA = pd.read_csv(paths["IRENA_regression"], sep=';', decimal=',', index_col=0)
+    
     # Read data from output folder
     IRENA_FLH = 0
     TS = np.zeros(8760)
     time = range(1, 8761)
 
-    # Setup the data dataframe for generated TS for each quantile
+    bef_setting = paths["regional_analysis"] + subregions + '_' + tech + '_'
+    if tech == 'CSP':
+        bef_setting = paths["regional_analysis"] + subregions + '_' + tech
+    aft_setting = '_TS_' + year + '.csv'
+    
+    # Setup the data dictionary for generated TS for each quantile
     GenTS = {}
-    for set in settings:
-        TS_Temp = pd.read_csv(paths[tech]["TS_param"] + '_' + str(set) + '_TS_' + str(param["year"]) + '.csv',
-                              sep=';', decimal=',', dtype=str)
-
+    
+    for setting in settings:
+        TS_Temp = pd.read_csv(bef_setting + str(setting) + aft_setting, sep=';', decimal=',', dtype=str)
+    
         # Remove undesired regions
-        filter_reg = [col for col in TS_Temp if col.startswith(region)]
+        filter_reg = [col for col in TS_Temp if col.startswith(subregion)]
         TS_Temp = TS_Temp[filter_reg]
-
-        # Exit function if region is not present in TS files
+    
+        # Exit function if subregion is not present in TS files
         if TS_Temp.empty:
             return None
-
+    
         TS_Temp.columns = TS_Temp.iloc[0]
         TS_Temp = TS_Temp.drop(0)
         # Replace ',' with '.' for float conversion
         for q in TS_Temp.columns:
             TS_Temp[q] = TS_Temp[q].str.replace(',', '.')
-        GenTS[str(set)] = TS_Temp.astype(float)
+        GenTS[str(setting)] = TS_Temp.astype(float)
 
     # reorder hubheights to go from max TS to min TS:
-    settings = np.array(pd.DataFrame((np.nansum(GenTS[key])
-                                      for key in GenTS.keys()),
-                                     index=settings,
-                                     columns=['FLH_all_quant']).sort_values(by='FLH_all_quant', ascending=0).index)
-
-    GenTS["TS_Max"] = np.nansum(GenTS[str(settings[0])]["q" + str(np.max(param["quantiles"]))])
-    GenTS["TS_Min"] = np.nansum(GenTS[str(settings[-1])]["q" + str(np.min(param["quantiles"]))])
+    settings_sorted = np.array(pd.DataFrame((np.nansum(GenTS[key])
+                               for key in GenTS.keys()),
+                               index=settings,
+                               columns=['FLH_all_quant']).sort_values(by='FLH_all_quant', ascending=0).index)
+    GenTS["TS_Max"] = np.nansum(GenTS[str(settings_sorted[0])]["q" + str(np.max(param["quantiles"]))])
+    GenTS["TS_Min"] = np.nansum(GenTS[str(settings_sorted[-1])]["q" + str(np.min(param["quantiles"]))])
 
     # Setup dataframe for IRENA
-    IRENA = param["IRENA"]
-    IRENA_FLH = IRENA[region].loc[tech]
-
+    IRENA_FLH = IRENA.loc[subregion, tech]
+    
     solution_check = (GenTS["TS_Max"] > IRENA_FLH, GenTS["TS_Min"] < IRENA_FLH)
 
     # Prepare Timeseries dictionary indexing by height and quantile
-
     if solution_check == (False, True):
-        Timeseries = GenTS[str(settings[0])]["q" + str(np.max(param["quantiles"]))]
-
+        Timeseries = GenTS[str(settings_sorted[0])]["q" + str(np.max(param["quantiles"]))]
+    
     elif solution_check == (True, False):
-        Timeseries = GenTS[str(settings[-1])]["q" + str(np.min(param["quantiles"]))]
-
+        Timeseries = GenTS[str(settings_sorted[-1])]["q" + str(np.min(param["quantiles"]))]
+    
     elif solution_check == (True, True):
         Timeseries = {}
-        for s in settings:
+        for s in settings_sorted:
             for q in param["quantiles"]:
                 for t in time:
                     Timeseries[(s, q, t)] = np.array(GenTS[str(s)]['q' + str(q)])[t - 1]
-
+    
     # Setup dataframe for EMHIRES DATA
     EMHIRES = param["EMHIRES"]
-    ts = np.array(EMHIRES[region].values)
+    try:
+        ts = np.array(EMHIRES[subregion].values)
+    except KeyError:
+        ts = np.array(EMHIRES["UK"].values)
     ts = ts * IRENA_FLH / np.sum(ts)
     TS = {}
     for t in time:
         TS[(t,)] = ts[t - 1]
-
+    
     # Create data_input dictionary
     data = {None: {
-        "s": {None: settings},
+        "s": {None: settings_sorted},
         "q": {None: param["quantiles"]},
         "FLH": {None: IRENA_FLH},
         "shape": TS,
@@ -576,8 +603,101 @@ def regmodel_load_data(paths, param, tech, settings, region):
         "IRENA_best_worst": solution_check,
         "GenTS": GenTS
     }}
-
     return data
+
+    
+def combinations_for_regression(paths, param, tech):
+    """
+    ?????
+    """
+    subregions = param["subregions_name"]
+    year = str(param["year"])
+    
+    # Reads the files present in input folder
+    inputfiles = glob(paths["regional_analysis"] + subregions + '_' + tech + '*_TS_' + year + '.csv')
+    
+    # Case 1: no files existing
+    if len(inputfiles) == 0:
+        warn('Generate time series first, before doing the regression!', UserWarning)
+        return
+        
+    # Get existing settings
+    settings_existing = []
+    for filename in inputfiles:
+        bef_setting = paths["regional_analysis"] + subregions + '_' + tech + '_'
+        aft_setting = '_TS_' + year + '.csv'
+        settings_existing = settings_existing + [int(filename.replace(bef_setting, '').replace(aft_setting, ''))]
+    settings_existing = set(settings_existing)
+    print("\nFor technology " + tech + ", time series for the following settings have been detected: ", settings_existing)
+    
+    # Get required settings
+    combinations = param["regression"][tech].values()
+    combinations_sorted = []
+    for combi in combinations:
+        combinations_sorted = combinations_sorted + [sorted(combi)]
+    combinations = combinations_sorted
+    settings_required = set([item for sublist in combinations for item in sublist])
+    
+    # Case 2: some files are missing
+    if not settings_required.issubset(settings_existing):
+        print("\nFor technology " + tech + ", time series for the following settings are required: ", settings_required)
+        warn('Not all time series are available! Generate the missing time series first, then do the regression.', UserWarning)
+        return
+    # Case 3: all the required files exist (and nothing more)
+    if settings_existing.issubset(settings_required):
+        if [] in combinations:
+            full_combi = sorted(list(settings_existing))
+            if not (full_combi in combinations):
+                combinations = combinations + full_combi
+    # Case 4: more files exist than those required
+    else:
+        if [] in combinations:
+            full_combi = sorted(list(settings_existing))
+            if not (full_combi in combinations):
+                combinations = combinations + full_combi
+    return combinations
+    
+    
+def combinations_for_stratified_timeseries(paths, param, tech):
+    """
+    ?????
+    """
+    subregions = param["subregions_name"]
+    year = str(param["year"])
+    
+    # Reads the files present in input folder
+    inputfiles = glob(paths["regression_out"] + subregions + '_' + tech + '_reg_coefficients*' + year + '.csv')
+    
+    # Case 1: no files existing
+    if len(inputfiles) == 0:
+        warn('Run the regression first, before creating stratified time series!', UserWarning)
+        return
+        
+    # Get existing settings
+    settings_existing = []
+    for filename in inputfiles:
+        bef_setting = paths["regression_out"] + subregions + '_' + tech + '_reg_coefficients_'
+        aft_setting = '_' + year + '.csv'
+        list_settings = filename.replace(bef_setting, '').replace(aft_setting, '').split('_')
+        settings_existing = settings_existing + [sorted([int(x) for x in list_settings])]
+    settings_sorted = sorted(settings_existing)
+    print("\nFor technology " + tech + ", regression coefficients for the following combinations have been detected: ", settings_existing)
+    
+    # Get required settings
+    combinations = param["combo"][tech].values()
+    combinations_sorted = []
+    for combi in combinations:
+        if combi == []:
+            combi = list(set([item for sublist in combinations for item in sublist]))
+        combinations_sorted = combinations_sorted + [sorted(combi)]
+    combinations = sorted(combinations_sorted)
+
+    # Case 2: some files are missing
+    if combinations != settings_sorted:
+        print("\nFor technology " + tech + ", regression coefficients for the following combinations are required: ", combinations)
+        warn('Not all regression coefficients are available! Generate the missing regression coefficients first, then create stratified time series.', UserWarning)
+        return
+    return settings_existing, inputfiles
 
 
 def get_merra_raster_Data(paths, param, tech):
@@ -639,4 +759,3 @@ def get_merra_raster_Data(paths, param, tech):
         rasterData["A_cf"] = rasterData["A_cf"][reg_ind]
         del w
     return merraData, rasterData
-

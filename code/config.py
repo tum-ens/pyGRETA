@@ -58,7 +58,7 @@ def general_settings():
     param = {}
     param["author"] = 'Kais Siala'  # the name of the person running the script
     param["comment"] = 'Testing regression'
-    
+
     paths = {}
     fs = os.path.sep
     current_folder = os.path.dirname(os.path.abspath(__file__))
@@ -104,11 +104,11 @@ def scope_paths_and_parameters(paths, param):
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
     paths["spatial_scope"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
     paths["subregions"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
-    
+
     # Name tags for the scope and the subregions
     param["region_name"] = 'Europe'  # Name tag of the spatial scope
-    param["subregions_name"] = 'Europe_wo_Balkans_NUTS0' # Name tag of the subregions
-    
+    param["subregions_name"] = 'Europe_wo_Balkans_NUTS0'  # Name tag of the subregions
+
     # Year
     param["year"] = 2015
 
@@ -215,27 +215,28 @@ def time_series_parameters(param):
 
     # Quantiles for time series
     param["quantiles"] = [100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0]
-                      
+
     # Regression
-    param["regression"] = {"solver": 'gurobi', # string
-                           "WindOn": {'80m': [60, 80, 100]}, # dictionary of hub height combinations
-                           "WindOff": {'80m': [80]}, # dictionary of hub height combinations
-                           "PV": {'Solar': [0, 180, -90, 90]}, # list of orientation combinations
+    param["regression"] = {"solver": 'gurobi',  # string
+                           "WindOn": {'80m': [60, 80, 100]},  # dictionary of hub height combinations
+                           "WindOff": {'80m': [80]},  # dictionary of hub height combinations
+                           "PV": {'Solar': [0, 180, -90, 90]},  # list of orientation combinations
                            "CSP": {'all': []}
                            }
-        
+
     # Stratified time series
     param["modes"] = {"high": [100, 90, 80],
                       "mid": [70, 60, 50, 40, 30],
                       "low": [20, 10, 0],
                       "all": param["quantiles"]
                       }
-    param["combo"] = {"WindOn": {'80m': [60, 80, 100], '100m': [80, 100, 120], '120m': [100, 120, 140]}, # dictionary of hub height combinations
-                      "WindOff": {'80m': [80], '100m': [100], '120m': [120]}, # dictionary of hub height combinations
-                      "PV": {'Solar': [0, 180, -90, 90]}, # list of orientation combinations
+    param["combo"] = {"WindOn": {'80m': [60, 80, 100], '100m': [80, 100, 120], '120m': [100, 120, 140]},
+                      # dictionary of hub height combinations
+                      "WindOff": {'80m': [80], '100m': [100], '120m': [120]},  # dictionary of hub height combinations
+                      "PV": {'Solar': [0, 180, -90, 90]},  # list of orientation combinations
                       "CSP": {'all': []}
                       }
-    
+
     return param
 
 
@@ -795,7 +796,7 @@ def irena_paths(paths, param):
     # IRENA output
     paths["IRENA_summary"] = paths["region"] + "Renewable energy" + fs + "IRENA_summary_" + year + ".csv"
     paths["IRENA_regression"] = paths["regression_out"] + "IRENA_regression_" + year + ".csv"
-    
+
     return paths
 
 

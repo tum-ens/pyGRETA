@@ -213,7 +213,7 @@ def clean_weather_data(paths, param):
 
     :param paths: Dictionary including the path to the file W50M.mat.
     :type paths: dict
-    :param param: Dictionary including the threshold value *MERRA_coorection*.
+    :param param: Dictionary including the threshold value *MERRA_correction*.
     :type param: dict
     :return: The file W50M.mat is overwritten after the correction, along with its metadata in a JSON file.
     :rtype: None
@@ -1468,6 +1468,7 @@ def regression_coefficients(paths, param, tech):
     # Find intersection between EMHIRES and IRENA
     list_regions = sorted(list(irena_regions.intersection(irena_regions, emhires_regions)))
     list_regions = sorted(param["regions_sub"]["NAME_SHORT"].values.tolist())
+
     del emhires_regions, irena_regions
 
     # Summary Variables

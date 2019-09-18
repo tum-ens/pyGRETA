@@ -213,7 +213,7 @@ def clean_weather_data(paths, param):
 
     :param paths: Dictionary including the path to the file W50M.mat.
     :type paths: dict
-    :param param: Dictionary including the threshold value *MERRA_coorection*.
+    :param param: Dictionary including the threshold value *MERRA_correction*.
     :type param: dict
     :return: The file W50M.mat is overwritten after the correction, along with its metadata in a JSON file.
     :rtype: None

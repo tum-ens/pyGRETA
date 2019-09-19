@@ -268,17 +268,18 @@ def clean_IRENA_regression(param, paths):
                                                IRENA_summary.loc[(country, 'Concentrated solar power'), 'FLH (h)']]
         except KeyError:
             print(country)
-            import pdb; pdb.set_trace()
             
     IRENA_regression.to_csv(paths['IRENA_regression'], sep=';', decimal=',', index=True)
 
 
-def clean_TS_regression(paths, param, tech):
+def clean_TS_regression(param, paths, tech):
     """
     """
     # load IRENA FLH data
     irena = param["IRENA_regression"]
-    list_regions = set(irena.index)
+
+    list_regions = param["regions_sub"]["NAME_SHORT"].values.tolist()
+    list_regions = sorted(list(set(list_regions).intersection(set(list_regions), set(irena.index))))
 
     # Create TS_regression dataframe
     TS_regression = pd.DataFrame(data=None, index=range(1, 8761), columns=list_regions)
@@ -286,19 +287,19 @@ def clean_TS_regression(paths, param, tech):
     # Load EMHIRES data for desired year
     if tech in ['PV', 'CSP']:
         date_index = pd.date_range(start='1/1/1986', end='1/1/2016', freq='H', closed='left')
-        EMHIRES = pd.read_csv(paths["regression_out"] + os.path.split(paths[tech]["EMHIRES"])[1], ' ')
+        EMHIRES = pd.read_csv(paths[tech]["EMHIRES"], ' ')
         EMHIRES = EMHIRES.set_index(date_index)
         EMHIRES = EMHIRES.loc['1/1/' + str(param["year"]):'1/1/' + str(param["year"] + 1)]
     else:
-        EMHIRES = pd.read_csv(paths["regression_out"] + os.path.split(paths[tech]["EMHIRES"])[1], '\t')
+        EMHIRES = pd.read_csv(paths[tech]["EMHIRES"], '\t')
         EMHIRES = EMHIRES[EMHIRES["Year"] == param["year"]].reset_index()
         EMHIRES = EMHIRES.drop(['index', 'Time step', 'Date', 'Year', 'Month', 'Day', 'Hour'], axis=1)
 
     emhires_regions = set(EMHIRES.columns)
 
     # Find intersection between EMHIRES and IRENA
-    intersect_regions = sorted(list(list_regions.intersection(list_regions, emhires_regions)))
-    intersect_regions = sorted(param["regions_sub"]["NAME_SHORT"].values.tolist())
+    intersect_regions = sorted(list((set(list_regions).intersection(set(list_regions), emhires_regions))))
+
     # Case 1: All regions are found in EMHIRES
     if np.isin(list(emhires_regions), intersect_regions).all():
         for region in list_regions:
@@ -315,8 +316,11 @@ def clean_TS_regression(paths, param, tech):
             else:
                 # Load Generated TS and Scale it with IRENA FLH
                 GenTS = read_generated_TS(paths, param, tech, settings, region)
+                import pdb
+                pdb.set_trace()
                 IRENA_FLH = irena.loc[region, tech]
                 TS_regression[region] = GenTS[settings[0]] * (IRENA_FLH / sum(GenTS[settings[0]]))
+                print(settings[0])
 
     TS_regression.to_csv(paths["TS_regression"], sep=';', decimal=',', index=True)
 

@@ -303,11 +303,11 @@ def timecheck(*args):
     :return: None
     """
     if len(args) == 0:
-        print(inspect.stack()[1].function + str(datetime.datetime.now().strftime(": %H:%M:%S:%f")))
+        print(inspect.stack()[1].function + str(datetime.datetime.now().strftime(": %H:%M:%S:%f")) + '\n')
 
     elif len(args) == 1:
         print(inspect.stack()[1].function + ' - ' + str(args[0])
-              + str(datetime.datetime.now().strftime(": %H:%M:%S:%f")))
+              + str(datetime.datetime.now().strftime(": %H:%M:%S:%f")) + '\n')
 
     else:
         raise Exception('Too many arguments have been passed.\nExpected: zero or one \nPassed: ' + format(len(args)))

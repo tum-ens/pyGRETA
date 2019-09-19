@@ -56,8 +56,8 @@ def general_settings():
     global current_folder
 
     param = {}
-    param["author"] = 'Kais Siala'  # the name of the person running the script
-    param["comment"] = 'For Marc Scheiger'
+    param["author"] = 'Houssame'  # the name of the person running the script
+    param["comment"] = 'Regression-testing_Documentation-Examples'
     
     paths = {}
     fs = os.path.sep
@@ -102,12 +102,12 @@ def scope_paths_and_parameters(paths, param):
     """
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
-    paths["spatial_scope"] = PathTemp + "gadm36_BRA_1.shp"
-    paths["subregions"] = PathTemp + "gadm36_BRA_1.shp"
+    paths["spatial_scope"] = PathTemp + "gadm36_SGP_0.shp"
+    paths["subregions"] = PathTemp + "gadm36_SGP_0.shp"
     
     # Name tags for the scope and the subregions
-    param["region_name"] = 'Brazil'  # Name tag of the spatial scope
-    param["subregions_name"] = 'Brazil_states'  # Name tag of the subregions
+    param["region_name"] = 'Singapore'  # Name tag of the spatial scope
+    param["subregions_name"] = 'gadm36_SGP_0'  # Name tag of the subregions
     
     # Year
     param["year"] = 2015
@@ -219,9 +219,9 @@ def time_series_parameters(param):
 
     # Regression
     param["regression"] = {"solver": 'gurobi',  # string
-                           "WindOn": {'80m': [60, 80, 100]},  # dictionary of hub height combinations
+                           "WindOn": {'80m': [100]},  # dictionary of hub height combinations
                            "WindOff": {'80m': [80]},  # dictionary of hub height combinations
-                           "PV": {'Solar': [0, 180, -90, 90]},  # list of orientation combinations
+                           "PV": {'Solar': [0]},  # list of orientation combinations
                            "CSP": {'all': []}
                            }
 
@@ -375,7 +375,7 @@ def pv_parameters(param):
     pv["technical"] = {"T_r": 25,  # °C
                        "loss_coeff": 0.37,
                        "tracking": 0,  # 0 for no tracking, 1 for one-axis tracking, 2 for two-axes tracking
-                       "orientation": 180  # | 0: South | 90: West | 180: North | -90: East |
+                       "orientation": 0  # | 0: South | 90: West | 180: North | -90: East |
 
                        }
     pv["mask"] = {"slope": 20,

@@ -1455,7 +1455,8 @@ def regression_coefficients(paths, param, tech):
     TS_reg = pd.read_csv(paths["TS_regression"], sep=';', decimal=',', index_col=0)
     param["TS_regression"] = TS_reg
 
-    list_regions = set(irena.index)
+    list_regions = sorted(param["regions_sub"]["NAME_SHORT"].values.tolist())
+    list_regions = sorted(list(list_regions.intersection(list_regions, irena.index)))
 
     # Summary Variables
     summary = None
@@ -1619,6 +1620,7 @@ if __name__ == '__main__':
     # clean_weather_data(paths, param)
     # generate_landsea(paths, param)  # Land and Sea
     # generate_subregions(paths, param)  # Subregions
+    # generate_area(paths, param)
     # generate_landuse(paths, param)  # Landuse
     # generate_bathymetry(paths, param)  # Bathymetry
     # generate_topography(paths, param)  # Topography
@@ -1626,20 +1628,21 @@ if __name__ == '__main__':
     # generate_population(paths, param)  # Population
     # generate_protected_areas(paths, param)  # Protected areas
     # generate_buffered_population(paths, param)  # Buffered Population
-    generate_wind_correction(paths, param)  # Correction factors for wind speeds
-    for tech in param["technology"]:
-        print("Tech: " + tech)
-        calculate_FLH(paths, param, tech)
-        masking(paths, param, tech)
-        weighting(paths, param, tech)
-        reporting(paths, param, tech)
-        find_locations_quantiles(paths, param, tech)
-        generate_time_series(paths, param, tech)
+    # generate_wind_correction(paths, param)  # Correction factors for wind speeds
+    #
+    # for tech in param["technology"]:
+    #     print("Tech: " + tech)
+    #     calculate_FLH(paths, param, tech)
+    #     masking(paths, param, tech)
+    #     weighting(paths, param, tech)
+    #     reporting(paths, param, tech)
+    #     find_locations_quantiles(paths, param, tech)
+    #     generate_time_series(paths, param, tech)
     
     # Only for countries in Europe as subregions
     for tech in param["technology"]:
         print("Tech: " + tech)
-        # regression_coefficients(paths, param, tech)
+        regression_coefficients(paths, param, tech)
         # generate_stratified_timeseries(paths, param, tech)
         
     # cProfile.run('initialization()', 'cprofile_test.txt')

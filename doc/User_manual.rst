@@ -4,7 +4,7 @@ User manual
 Installation
 ------------
 
-.. NOTE:: We assume that you are familiar with *git* and *conda*.
+.. NOTE:: We assume that you are familiar with `git <https://git-scm.com/downloads>`_ and `conda <https://docs.conda.io/projects/conda/en/latest/user-guide/install/download.html>`_.
 
 First, clone the git repository in a directory of your choice using a Command Prompt window::
 

@@ -9,7 +9,7 @@ def configuration():
     This function is the main configuration function that calls all the other modules in the code.
 
     :return: The dictionary param containing all the user preferences, and the dictionary path containing all the paths to inputs and outputs.
-    :rtype: tuple (dict, dict)
+    :rtype: tuple(dict, dict)
     """
     paths, param = general_settings()
     paths, param = scope_paths_and_parameters(paths, param)
@@ -45,15 +45,14 @@ def configuration():
 def general_settings():
     """
     This function creates and initializes the dictionaries param and paths. It also creates global variables for the root folder ``root``,
-    the current folder ``current_folder``, and the system-dependent file separator ``fs``.
+    and the system-dependent file separator ``fs``.
 
     :return: The empty dictionary paths, and the dictionary param including some general information.
-    :rtype: dict, dict
+    :rtype: tuple(dict, dict)
     """
     # These variables will be initialized here, then read in other modules without modifying them.
     global fs
     global root
-    global current_folder
 
     param = {}
     param["author"] = 'Kais Siala'  # the name of the person running the script
@@ -77,20 +76,22 @@ def general_settings():
 def scope_paths_and_parameters(paths, param):
     """
     This function defines the path of the geographic scope of the output *spatial_scope* and of the subregions of interest *subregions*.
-    It also associates two name tags for them, respectively *region_name* and *subregions_name*, which define the names of output folders.
     Both paths should point to shapefiles of polygons or multipolygons.
+    It also associates two name tags for them, respectively *region_name* and *subregions_name*, which define the names of output folders.
     
-    For *spatial_scope*, only the bounding box around all the features matters.
+    * For *spatial_scope*, only the bounding box around all the features matters.
     Example: In case of Europe, whether a shapefile of Europe as one multipolygon, or as a set of multiple features (countries, states, etc.) is used, does not make a difference.
     Potential maps (theoretical and technical) will be later generated for the whole scope of the bounding box.
     
-    For *subregions*, the shapes of the individual features matter, but not their scope.
+    * For *subregions*, the shapes of the individual features matter, but not their scope.
     For each individual feature that lies within the scope, you can later generate a summary report and time series.
     The shapefile of *subregions* does not have to have the same bounding box as *spatial_scope*.
     In case it is larger, features that lie completely outside the scope will be ignored, whereas those that lie partly inside it will be cropped using the bounding box
     of *spatial_scope*. In case it is smaller, all features are used with no modification.
     
-    *year* defines the year of the weather data, and *technology* the list of technologies that you are interested in.
+    * *year* defines the year of the weather data. 
+    
+    *technology* defines the list of technologies that you are interested in.
     Currently, four technologies are defined: onshore wind ``'WindOn'``, offshore wind ``'WindOff'``, photovoltaics ``'PV'``, concentrated solar power ``'CSP'``.
 
     :param paths: Dictionary including the paths.
@@ -811,10 +812,7 @@ def regression_input_paths(paths):
     :return: The updated dictionary paths.
     :rtype: dict
     """
-    global current_folder
-    global fs
 
-    paths["inst-cap_example"] = current_folder + fs + "Regression_coef" + fs + "IRENA_FLH_example.csv"
     paths["regression_in"] = paths["regional_analysis"]
 
     return paths

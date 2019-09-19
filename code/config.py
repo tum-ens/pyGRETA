@@ -79,20 +79,20 @@ def scope_paths_and_parameters(paths, param):
     Both paths should point to shapefiles of polygons or multipolygons.
     It also associates two name tags for them, respectively *region_name* and *subregions_name*, which define the names of output folders.
     
-    * For *spatial_scope*, only the bounding box around all the features matters.
-    Example: In case of Europe, whether a shapefile of Europe as one multipolygon, or as a set of multiple features (countries, states, etc.) is used, does not make a difference.
-    Potential maps (theoretical and technical) will be later generated for the whole scope of the bounding box.
-    
-    * For *subregions*, the shapes of the individual features matter, but not their scope.
-    For each individual feature that lies within the scope, you can later generate a summary report and time series.
-    The shapefile of *subregions* does not have to have the same bounding box as *spatial_scope*.
-    In case it is larger, features that lie completely outside the scope will be ignored, whereas those that lie partly inside it will be cropped using the bounding box
-    of *spatial_scope*. In case it is smaller, all features are used with no modification.
-    
-    * *year* defines the year of the weather data. 
-    
-    *technology* defines the list of technologies that you are interested in.
-    Currently, four technologies are defined: onshore wind ``'WindOn'``, offshore wind ``'WindOff'``, photovoltaics ``'PV'``, concentrated solar power ``'CSP'``.
+      * For *spatial_scope*, only the bounding box around all the features matters.
+      Example: In case of Europe, whether a shapefile of Europe as one multipolygon, or as a set of multiple features (countries, states, etc.) is used, does not make a difference.
+      Potential maps (theoretical and technical) will be later generated for the whole scope of the bounding box.
+      
+      * For *subregions*, the shapes of the individual features matter, but not their scope.
+      For each individual feature that lies within the scope, you can later generate a summary report and time series.
+      The shapefile of *subregions* does not have to have the same bounding box as *spatial_scope*.
+      In case it is larger, features that lie completely outside the scope will be ignored, whereas those that lie partly inside it will be cropped using the bounding box
+      of *spatial_scope*. In case it is smaller, all features are used with no modification.
+      
+      * *year* defines the year of the input data. 
+      
+      * *technology* defines the list of technologies that you are interested in.
+      Currently, four technologies are defined: onshore wind ``'WindOn'``, offshore wind ``'WindOff'``, photovoltaics ``'PV'``, concentrated solar power ``'CSP'``.
 
     :param paths: Dictionary including the paths.
     :type paths: dict
@@ -121,9 +121,12 @@ def scope_paths_and_parameters(paths, param):
 
 def computation_parameters(param):
     """
-    This function defines parameters related to the processing.
-    Some modules in ``Master.py`` allow parallel processing. The key *nproc*, which takes an integer as a value, limits the number of parallel processes.
-    *CPU_limit* is a boolean parameter that sets the level of priority for all processes in the multiprocessesing, leave ``True`` if you plan on using the computer while FLH and TS are being computed, ``False`` for fastest computation time
+    This function defines parameters related to the processing:
+    
+      * *nproc* is an integer that limits the number of parallel processes (some modules in ``Master.py`` allow parallel processing).
+      
+      * *CPU_limit* is a boolean parameter that sets the level of priority for all processes in the multiprocessesing.
+      Leave ``True`` if you plan on using the computer while FLH and TS are being computed, ``False`` for fastest computation time.
 
     :param param: Dictionary including the user preferences.
     :type param: dict
@@ -154,13 +157,13 @@ def resolution_parameters(param):
 
 def weather_data_parameters(param):
     """
-    This function defines the coverage of the weather data *MERRA_coverage*, and how outliers should be corrected *MERRA_correction*.
+    This function defines the coverage of the weather data *MERRA_coverage*, and how outliers should be corrected using *MERRA_correction*:
     
-    If you have downloaded the MERRA-2 data for the world, enter the name tag ``'World'``. The code will later search for the data in the corresponding folder.
-    It is possible to download the MERRA-2 just for the geographic scope of the analysis. In that case, enter another name tag (we recommend using the same one as the spatial scope).
-    
-    MERRA-2 contains some outliers, especially in the wind data. *MERRA_correction* sets the threshold of the relative distance between the yearly mean of the data point
-    to the yearly mean of its neighbors. 
+      * *MERRA_coverage*: If you have downloaded the MERRA-2 data for the world, enter the name tag ``'World'``. The code will later search for the data in the corresponding folder.
+      It is possible to download the MERRA-2 just for the geographic scope of the analysis. In that case, enter another name tag (we recommend using the same one as the spatial scope).
+      
+      * *MERRA_correction*: MERRA-2 contains some outliers, especially in the wind data. *MERRA_correction* sets the threshold of the relative distance between the yearly mean of the data point
+      to the yearly mean of its neighbors. 
 
     :param param: Dictionary including the user preferences.
     :type param: dict

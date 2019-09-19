@@ -4,9 +4,9 @@ Main configuration function
 .. automodule:: config
    :members: configuration, general_settings
    
-.. NOTE:: Both param and paths will be updated in the code after running the function :func: configuration in ``config.py``.
+.. NOTE:: Both *param* and *paths* will be updated in the code after running the function :func:configuration in ``config.py``.
 
-.. NOTE:: ``root`` points to the directory that contains all the inputs and outputs. All the paths will be defined relatively to the root, which is located in a relative position to ``current_folder``.
+.. NOTE:: ``root`` points to the directory that contains all the inputs and outputs. All the paths will be defined relatively to the root, which is located in a relative position to the current folder.
    
 The code differentiates between the geographic scope and the subregions of interest.
 You can run the first part of the script ``Master.py`` once and save results for the whole scope, and then repeat the second part using different subregions within the scope.

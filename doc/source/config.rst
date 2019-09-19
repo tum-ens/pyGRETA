@@ -20,14 +20,14 @@ You can run the first part of the script ``Master.py`` once and save results for
 
 .. NOTE::
    We recommend using a name tag that describes the scope of the bounding box of the regions of interest.
-   For example, 'Europe' and 'Europe_without_Switzerland' will actually lead to the same output for the first part of the code.
+   For example, ``'Europe'`` and ``'Europe_without_Switzerland'`` will actually lead to the same output for the first part of the code.
    
 .. NOTE::
    As of version |version|, it is possible to use different technologies in the same run, but not the same technology with different settings.
 
 .. WARNING::
    If you intend to use the wind correction feature relying on the `Global Wind Atlas <https://globalwindatlas.info/>`_,
-   it is recommended that (spatial_scope) covers **all** the countries that you are interested in,
+   it is recommended that *spatial_scope* covers **all** the countries that you are interested in,
    because the correction is done on a country-level. Also, you have to download the data from the Global Wind Atlas
    for each country that lies within the scope, even partially, and put it in the corresponding location.
 

@@ -219,7 +219,7 @@ def time_series_parameters(param):
     * *modes* is a dictionary that groups the quantiles and assigns names for each subgroup. You can define the groups as you wish.
       If you want to use all the quantiles in one group without splitting them in subgroups, you can write::
       
-      $ param["modes"] = {"all": param["quantiles"]}
+      param["modes"] = {"all": param["quantiles"]}
       
     * *combo* is a dictionary of options for :mod:`Master.generate_stratified_timeseries`:
     
@@ -826,7 +826,8 @@ def irena_paths(paths, param):
 
 def emhires_input_paths(paths, param, tech):
     """
-    Description ?????
+    This function defines the path to the EMHIRES input file for each technology (only ``'WindOn'``,
+    ``'WindOff'``, and ``'PV'`` supported by EMHIRES).
     
     :param paths: Dictionary including the paths.
     :type paths: dict

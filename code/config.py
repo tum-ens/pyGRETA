@@ -32,7 +32,6 @@ def configuration():
     paths = weather_output_paths(paths, param)
     paths = local_maps_paths(paths, param)
     paths = irena_paths(paths, param)
-    paths = regression_input_paths(paths)
 
     for tech in param["technology"]:
         paths[tech] = {}
@@ -79,19 +78,19 @@ def scope_paths_and_parameters(paths, param):
     Both paths should point to shapefiles of polygons or multipolygons.
     It also associates two name tags for them, respectively *region_name* and *subregions_name*, which define the names of output folders.
     
-      * For *spatial_scope*, only the bounding box around all the features matters.
+    * For *spatial_scope*, only the bounding box around all the features matters.
       Example: In case of Europe, whether a shapefile of Europe as one multipolygon, or as a set of multiple features (countries, states, etc.) is used, does not make a difference.
       Potential maps (theoretical and technical) will be later generated for the whole scope of the bounding box.
-      
-      * For *subregions*, the shapes of the individual features matter, but not their scope.
+    
+    * For *subregions*, the shapes of the individual features matter, but not their scope.
       For each individual feature that lies within the scope, you can later generate a summary report and time series.
       The shapefile of *subregions* does not have to have the same bounding box as *spatial_scope*.
       In case it is larger, features that lie completely outside the scope will be ignored, whereas those that lie partly inside it will be cropped using the bounding box
       of *spatial_scope*. In case it is smaller, all features are used with no modification.
-      
-      * *year* defines the year of the input data. 
-      
-      * *technology* defines the list of technologies that you are interested in.
+    
+    * *year* defines the year of the input data. 
+    
+    * *technology* defines the list of technologies that you are interested in.
       Currently, four technologies are defined: onshore wind ``'WindOn'``, offshore wind ``'WindOff'``, photovoltaics ``'PV'``, concentrated solar power ``'CSP'``.
 
     :param paths: Dictionary including the paths.
@@ -123,9 +122,9 @@ def computation_parameters(param):
     """
     This function defines parameters related to the processing:
     
-      * *nproc* is an integer that limits the number of parallel processes (some modules in ``Master.py`` allow parallel processing).
-      
-      * *CPU_limit* is a boolean parameter that sets the level of priority for all processes in the multiprocessesing.
+    * *nproc* is an integer that limits the number of parallel processes (some modules in ``Master.py`` allow parallel processing).
+    
+    * *CPU_limit* is a boolean parameter that sets the level of priority for all processes in the multiprocessesing.
       Leave ``True`` if you plan on using the computer while FLH and TS are being computed, ``False`` for fastest computation time.
 
     :param param: Dictionary including the user preferences.
@@ -159,10 +158,10 @@ def weather_data_parameters(param):
     """
     This function defines the coverage of the weather data *MERRA_coverage*, and how outliers should be corrected using *MERRA_correction*:
     
-      * *MERRA_coverage*: If you have downloaded the MERRA-2 data for the world, enter the name tag ``'World'``. The code will later search for the data in the corresponding folder.
+    * *MERRA_coverage*: If you have downloaded the MERRA-2 data for the world, enter the name tag ``'World'``. The code will later search for the data in the corresponding folder.
       It is possible to download the MERRA-2 just for the geographic scope of the analysis. In that case, enter another name tag (we recommend using the same one as the spatial scope).
-      
-      * *MERRA_correction*: MERRA-2 contains some outliers, especially in the wind data. *MERRA_correction* sets the threshold of the relative distance between the yearly mean of the data point
+    
+    * *MERRA_correction*: MERRA-2 contains some outliers, especially in the wind data. *MERRA_correction* sets the threshold of the relative distance between the yearly mean of the data point
       to the yearly mean of its neighbors. 
 
     :param param: Dictionary including the user preferences.
@@ -180,10 +179,10 @@ def file_saving_options(param):
     """
     This function sets some options for saving files.
     
-    *savetiff* is a boolean that determines whether tif rasters for the potentials are saved (True), or whether only mat files are saved (False).
-    The latter are saved in any case.
+    * *savetiff* is a boolean that determines whether tif rasters for the potentials are saved (True), or whether only mat files are saved (False).
+      The latter are saved in any case.
     
-    *report_sampling* is an integer that sets the sample size for the sorted FLH values per region (relevant for :mod:`Master.reporting`).
+    *  *report_sampling* is an integer that sets the sample size for the sorted FLH values per region (relevant for :mod:`Master.reporting`).
     
     :param param: Dictionary including the user preferences.
     :type param: dict
@@ -203,14 +202,33 @@ def time_series_parameters(param):
     """
     This function determines the time series that will be created.
     
-    update ?????
+    * *quantiles* is a list of floats between 100 and 0. Within each subregion, the FLH values will be sorted,
+      and points with FLH values at a certain quantile will be later selected. The time series will be created for these points.
+      The value 100 corresponds to the maximum, 50 to the median, and 0 to the minimum.
+      
+    * *regression* is a dictionary of options for :mod:`Master.regression_coefficients`:
+      
+      - *solver* is the name of the solver for the regression.
+      - *WindOn* is a dictionary containing a list of hub heights that will be considered in the regression, with a name tag for the list.
+      - *WindOff* is a dictionary containing a list of hub heights that will be considered in the regression, with a name tag for the list.
+      - *PV* is a dictionary containing a list of orientations that will be considered in the regression, with a name tag for the list.
+      - *CSP* is a dictionary containing a list of settings that will be considered in the regression, with a name tag for the list.
     
-    *quantiles* is a list of floats between 100 and 0. Within each subregion, the FLH values will be sorted,
-    and points with FLH values at a certain quantile will be later selected. The time series will be created for these points.
-    The value 100 corresponds to the maximum, 50 to the median, and 0 to the minimum.
+      If all the available settings should be used, you can leave an empty list.
+      
+    * *modes* is a dictionary that groups the quantiles and assigns names for each subgroup. You can define the groups as you wish.
+      If you want to use all the quantiles in one group without splitting them in subgroups, you can write::
+      
+      $ param["modes"] = {"all": param["quantiles"]}
+      
+    * *combo* is a dictionary of options for :mod:`Master.generate_stratified_timeseries`:
     
-    *regression* is a dictionary of options for :mod:`Master.regression_coefficients`. These are the name of the *solver*, the list of *hub_heights* that will be considered (Wind),
-    and the list of *orientations* that will be considered (PV).
+      - *WindOn* is a dictionary containing the different combinations of hub heights for which stratified time series should be generated, with a name tag for each list.
+      - *WindOff* is a dictionary containing the different combinations of hub heights for which stratified time series should be generated, with a name tag for each list.
+      - *PV* is a dictionary containing the different combinations of orientations for which stratified time series should be generated, with a name tag for each list.
+      - *CSP* is a dictionary containing the different combinations of settings for which stratified time series should be generated, with a name tag for each list.
+      
+      If all the available settings should be used, you can leave an empty list.
     
     :param param: Dictionary including the user preferences.
     :type param: dict
@@ -590,7 +608,7 @@ def offshore_wind_paramters(param):
 
 def weather_input_folder(paths, param):
     """
-    This function defines the path *MERRA_IN* where the MERRA-2 data is saved. It depends on the coverage of the data, and the year.
+    This function defines the path *MERRA_IN* where the MERRA-2 data is saved. It depends on the coverage of the data and the year.
     
     :param paths: Dictionary including the paths.
     :type paths: dict
@@ -806,21 +824,6 @@ def irena_paths(paths, param):
     return paths
 
 
-def regression_input_paths(paths):
-    """
-    Description ?????
-    
-    :param paths: Dictionary including the paths.
-    :type paths: dict
-    :return: The updated dictionary paths.
-    :rtype: dict
-    """
-
-    paths["regression_in"] = paths["regional_analysis"]
-
-    return paths
-
-
 def emhires_input_paths(paths, param, tech):
     """
     Description ?????
@@ -903,8 +906,7 @@ def regional_analysis_output_paths(paths, param, tech):
       * *TS* is the csv file with the time series for all subregions and quantiles.
       * *Region_Stats* is the csv file with the summary report for all subregions.
       * *Sorted_FLH* is the mat file with the sorted samples of FLH for each subregion.
-      * *TS_param* is the path format for TS files corresponding to tech
-      * *Regression_summary* is the path format for a csv files containing the regression coefficients found by the solver
+      * *Regression_coefficients* is the path format for a csv files containing the regression coefficients found by the solver
       * *Regression_TS* is the path format for a csv files with the regression resulting timeseries for the tech and settings
     
     :param paths: Dictionary including the paths.

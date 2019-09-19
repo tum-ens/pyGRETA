@@ -1445,7 +1445,7 @@ def regression_coefficients(paths, param, tech):
                      paths["regression_out"] + os.path.split(paths[tech]["EMHIRES"])[1])
     
     # Create IRENA file for regression
-    # clean_IRENA_regression(param, paths)
+    clean_IRENA_regression(param, paths)
 
     # Load IRENA data and regions
     irena = pd.read_csv(paths["IRENA_regression"], sep=';', decimal=',', index_col=0)
@@ -1467,13 +1467,11 @@ def regression_coefficients(paths, param, tech):
 
     # Find intersection between EMHIRES and IRENA
     list_regions = sorted(list(irena_regions.intersection(irena_regions, emhires_regions)))
-    list_regions = sorted(param["regions_sub"]["NAME_SHORT"].values.tolist())
-
+    #list_regions = sorted(param["regions_sub"]["NAME_SHORT"].values.tolist())
     del emhires_regions, irena_regions
 
     # Summary Variables
     summary = None
-    # summaryTS = None
     nodata = ''
     no_sol_high = ''
     no_sol_low = ''
@@ -1640,15 +1638,16 @@ if __name__ == '__main__':
     # generate_population(paths, param)  # Population
     # generate_protected_areas(paths, param)  # Protected areas
     # generate_buffered_population(paths, param)  # Buffered Population
-    generate_wind_correction(paths, param)  # Correction factors for wind speeds
+    # generate_area(paths, param)
+    # generate_wind_correction(paths, param)  # Correction factors for wind speeds
     for tech in param["technology"]:
         print("Tech: " + tech)
-        calculate_FLH(paths, param, tech)
+        # calculate_FLH(paths, param, tech)
         masking(paths, param, tech)
         weighting(paths, param, tech)
         reporting(paths, param, tech)
-        find_locations_quantiles(paths, param, tech)
-        generate_time_series(paths, param, tech)
+        # find_locations_quantiles(paths, param, tech)
+        # generate_time_series(paths, param, tech)
     
     # Only for countries in Europe as subregions
     for tech in param["technology"]:

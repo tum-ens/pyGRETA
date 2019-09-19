@@ -1438,38 +1438,24 @@ def regression_coefficients(paths, param, tech):
         print("Combinations of hub heights to be used for the regression: ", combinations)
     elif tech in ['PV']:
         print("Orientations to be used for the regression: ", combinations)
-
-    # Copy EMHIRES files to regression folder if not present
-    if not os.path.isfile(paths["regression_out"] + os.path.split(paths[tech]["EMHIRES"])[1]):
-        shutil.copy2(paths[tech]["EMHIRES"],
-                     paths["regression_out"] + os.path.split(paths[tech]["EMHIRES"])[1])
     
     # Create IRENA file for regression
-    # clean_IRENA_regression(param, paths)
+    if not os.path.isfile(paths["IRENA_regression"]):
+        clean_IRENA_regression(param, paths)
 
     # Load IRENA data and regions
     irena = pd.read_csv(paths["IRENA_regression"], sep=';', decimal=',', index_col=0)
-    irena_regions = set(irena.index)
+    param["IRENA_regression"] = irena
 
-    # Load EMHIRES data for desired year
-    if tech == 'PV':
-        date_index = pd.date_range(start='1/1/1986', end='1/1/2016', freq='H', closed='left')
-        EMHIRES = pd.read_csv(paths["regression_out"] + os.path.split(paths[tech]["EMHIRES"])[1], ' ')
-        EMHIRES = EMHIRES.set_index(date_index)
-        EMHIRES = EMHIRES.loc['1/1/' + str(param["year"]):'1/1/' + str(param["year"] + 1)]
-    else:
-        EMHIRES = pd.read_csv(paths["regression_out"] + os.path.split(paths[tech]["EMHIRES"])[1], '\t')
-        EMHIRES = EMHIRES[EMHIRES["Year"] == param["year"]].reset_index()
-        EMHIRES = EMHIRES.drop(['index', 'Time step', 'Date', 'Year', 'Month', 'Day', 'Hour'], axis=1)
+    # Create TS file for regression
+    if not os.path.isfile(paths["TS_regression"]):
+        clean_TS_regression(param, paths, tech)
 
-    emhires_regions = set(EMHIRES.columns)
-    param["EMHIRES"] = EMHIRES
+    # load TS regression file
+    TS_reg = pd.read_csv(paths["TS_regression"], sep=';', decimal=',', index_col=0)
+    param["TS_regression"] = TS_reg
 
-    # Find intersection between EMHIRES and IRENA
-    list_regions = sorted(list(irena_regions.intersection(irena_regions, emhires_regions)))
-    list_regions = sorted(param["regions_sub"]["NAME_SHORT"].values.tolist())
-
-    del emhires_regions, irena_regions
+    list_regions = set(irena.index)
 
     # Summary Variables
     summary = None

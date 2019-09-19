@@ -32,7 +32,7 @@ def configuration():
     paths = weather_output_paths(paths, param)
     paths = local_maps_paths(paths, param)
     paths = irena_paths(paths, param)
-    paths = regression_input_paths(paths)
+    paths = regression_paths(paths, param)
 
     for tech in param["technology"]:
         paths[tech] = {}
@@ -107,7 +107,7 @@ def scope_paths_and_parameters(paths, param):
     
     # Name tags for the scope and the subregions
     param["region_name"] = 'Brazil'  # Name tag of the spatial scope
-    param["subregions_name"] = 'Brazil_states' # Name tag of the subregions
+    param["subregions_name"] = 'Brazil_states'  # Name tag of the subregions
     
     # Year
     param["year"] = 2015
@@ -802,7 +802,7 @@ def irena_paths(paths, param):
     return paths
 
 
-def regression_input_paths(paths):
+def regression_paths(paths, param):
     """
     Description ?????
     
@@ -814,8 +814,11 @@ def regression_input_paths(paths):
     global current_folder
     global fs
 
+    year = str(param["year"])
+
     paths["inst-cap_example"] = current_folder + fs + "Regression_coef" + fs + "IRENA_FLH_example.csv"
     paths["regression_in"] = paths["regional_analysis"]
+    paths["TS_regression"] = paths["regression_out"] + "TimeSeries_regression_" + year + ".csv"
 
     return paths
 

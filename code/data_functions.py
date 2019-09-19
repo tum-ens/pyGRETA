@@ -29,14 +29,12 @@ def define_spatial_scope(scope_shp):
 
 def crd_merra(Crd_regions, res_weather):
     """
-    Calculates coordinates of box covering MERRA2 data (centroids + half resolution)
+    This function calculates coordinates of the bounding box covering MERRA2 data (centroids + half resolution)
 
     :param Crd_regions: Cooridinates of Regions
     :type Crd_regions: array
-
     :param res_weather: Weather data resolution
     :type res_weather: list
-
     :return Crd: Coordinates in Weather resolution
     :rtype: list
     """
@@ -82,8 +80,8 @@ def crd_exact_points(Ind_points, Crd_all, res):
 
 def subset(A, param):
     """
-    Retreives a subset of the global MERRA coverage based on weather resolution and *spatial_scope* bounding box
-    coordinates.
+    This function retrieves a subset of the global MERRA coverage based on weather resolution and ``spatial_scope``
+    bounding box coordinates.
 
     :param A: Weather Data
     :type A: numpy array
@@ -144,15 +142,13 @@ def ind_global(Crd, res_desired):
 
 def calc_geotiff(Crd_all, res_desired):
     """
-    Returns dictionary containing the Georefferencing parameters for geotiff creation,
+    This function returns dictionary containing the Georefferencing parameters for geotiff creation,
     based on the desired extent and resolution
 
     :param Crd_all: Extent
     :type Crd_all: list
-
     :param res_desired: resolution
     :type res_desired: list
-
     :return GeoRef: Dictionary containing ``RasterOrigin``, ``RasterOrigin_alt``, ``pixelWidth``, and ``pixelHeight``
     :rtype: dict
     """
@@ -250,7 +246,8 @@ def clean_IRENA_summary(param, paths):
                                                                    'Electricity generation (GWh)': 'prod (MWh)'})
     IRENA = IRENA.astype(float)
     IRENA.to_csv(paths['IRENA_summary'], sep=';', decimal=',', index=True)
-    
+
+
 def clean_IRENA_regression(param, paths):
     """
     """
@@ -274,6 +271,54 @@ def clean_IRENA_regression(param, paths):
             import pdb; pdb.set_trace()
             
     IRENA_regression.to_csv(paths['IRENA_regression'], sep=';', decimal=',', index=True)
+
+
+def clean_TS_regression(paths, param, tech):
+    """
+    """
+    # load IRENA FLH data
+    irena = param["IRENA_regression"]
+    list_regions = set(irena.index)
+
+    # Create TS_regression dataframe
+    TS_regression = pd.DataFrame(data=None, index=range(1, 8761), columns=list_regions)
+
+    # Load EMHIRES data for desired year
+    if tech in ['PV', 'CSP']:
+        date_index = pd.date_range(start='1/1/1986', end='1/1/2016', freq='H', closed='left')
+        EMHIRES = pd.read_csv(paths["regression_out"] + os.path.split(paths[tech]["EMHIRES"])[1], ' ')
+        EMHIRES = EMHIRES.set_index(date_index)
+        EMHIRES = EMHIRES.loc['1/1/' + str(param["year"]):'1/1/' + str(param["year"] + 1)]
+    else:
+        EMHIRES = pd.read_csv(paths["regression_out"] + os.path.split(paths[tech]["EMHIRES"])[1], '\t')
+        EMHIRES = EMHIRES[EMHIRES["Year"] == param["year"]].reset_index()
+        EMHIRES = EMHIRES.drop(['index', 'Time step', 'Date', 'Year', 'Month', 'Day', 'Hour'], axis=1)
+
+    emhires_regions = set(EMHIRES.columns)
+
+    # Find intersection between EMHIRES and IRENA
+    intersect_regions = sorted(list(list_regions.intersection(list_regions, emhires_regions)))
+    intersect_regions = sorted(param["regions_sub"]["NAME_SHORT"].values.tolist())
+    # Case 1: All regions are found in EMHIRES
+    if np.isin(list(emhires_regions), intersect_regions).all():
+        for region in list_regions:
+            TS_regression[region] = EMHIRES[region]
+
+    # Case 2: Missing TS from EMHIRES, use generated TS
+    else:
+        # Load setting combinations
+        settings = combinations_for_regression(paths, param, tech)
+
+        for region in list_regions:
+            if region in intersect_regions:
+                TS_regression[region] = EMHIRES[region]
+            else:
+                # Load Generated TS and Scale it with IRENA FLH
+                GenTS = read_generated_TS(paths, param, tech, settings, region)
+                IRENA_FLH = irena.loc[region, tech]
+                TS_regression[region] = GenTS[settings[0]] * (IRENA_FLH / sum(GenTS[settings[0]]))
+
+    TS_regression.to_csv(paths["TS_regression"], sep=';', decimal=',', index=True)
 
 
 def calc_gwa_correction(param, paths):
@@ -378,24 +423,19 @@ def calc_gwa_correction(param, paths):
 
 def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
     """
-    Creates a GCR weighting matrix for the desired geographic extent.
+    This function creates a GCR weighting matrix for the desired geographic extent.
     The sizing of the PV system is conducted on a user-defined day for a shade-free exposure
     to the sun during a given number of hours.
 
     :param Crd_all: desired geographic extent of the whole region (north, east, south, west)
     :type Crd_all: list
-
     :param m_high: number of rows
     :type m_high: int
-
     :param n_high: number of columns
     :type n_high: int
-
     :param res_desired: map's high resolution
     :type res_desired: list
-
     :param GCR: includes the user-defined day and the duration of the shade-free period
-
     :return: GCR raster
     :rtype: numpy array
     """
@@ -473,14 +513,12 @@ def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
 
 def sampled_sorting(Raster, sampling):
     """
-    Returns a list with a defined length of sorted values from a 2d raster.
+    This function returns a list with a defined length of sorted values sampled from a numpy array.
 
     :param Raster: Input raster to be sorted
-    :type Raster: array
-
+    :type Raster: numpy array
     :param sampling: Number of values to be sampled from the raster, defines length of outputted list
     :type sampling: int
-
     :return: List of sorted values sampled from Raster.
     :rtype: List
     """
@@ -498,23 +536,53 @@ def sampled_sorting(Raster, sampling):
     return s
 
 
+def read_generated_TS(paths, param, tech, settings, subregion):
+
+    subregions = param["subregions_name"]
+    year = str(param["year"])
+
+    bef_setting = paths["regional_analysis"] + subregions + '_' + tech + '_'
+    if tech == 'CSP':
+        bef_setting = paths["regional_analysis"] + subregions + '_' + tech
+    aft_setting = '_TS_' + year + '.csv'
+
+    # Setup the data dictionary for generated TS for each quantile
+    GenTS = {}
+
+    for setting in settings:
+        TS_Temp = pd.read_csv(bef_setting + str(setting) + aft_setting, sep=';', decimal=',', dtype=str)
+
+        filter_reg = [col for col in TS_Temp if col.startswith(subregion)]
+        # Remove undesired regions
+        TS_Temp = TS_Temp[filter_reg]
+
+        # Exit function if subregion is not present in TS files
+        if TS_Temp.empty:
+            return None
+
+        TS_Temp.columns = TS_Temp.iloc[0]
+        TS_Temp = TS_Temp.drop(0)
+        # Replace ',' with '.' for float conversion
+        for q in TS_Temp.columns:
+            TS_Temp[q] = TS_Temp[q].str.replace(',', '.')
+        GenTS[str(setting)] = TS_Temp.astype(float)
+
+    return GenTS
+
+
 def regmodel_load_data(paths, param, tech, settings, subregion):
     """
-    Returns a dictionary used to initialize a pyomo abstract model for the regression analysis
+    This function returns a dictionary used to initialize a pyomo abstract model for the regression analysis
     of each region.
 
     :param paths: dictionary of dictionaries containing the paths to the Timeseries csv files
     :param param: dictionry of dictionaries contating IRENA's region list, FLHs and EMHIRES model timeseries.
-
     :param tech: name of the technology under study
     :type tech: str
-
     :param settings: list of all the settings (hub heights/orientations) to be used in the regression
     :type settings: list
-
     :param subregion: code name of region
     :type subregion: str
-
     :return: Dictionary containing regression parameters
     :rtype: dict
     """
@@ -522,37 +590,12 @@ def regmodel_load_data(paths, param, tech, settings, subregion):
     subregions = param["subregions_name"]
     year = str(param["year"])
     IRENA = pd.read_csv(paths["IRENA_regression"], sep=';', decimal=',', index_col=0)
-    
-    # Read data from output folder
-    IRENA_FLH = 0
-    TS = np.zeros(8760)
+    # IRENA = param["IRENA_regression"]
     time = range(1, 8761)
-
-    bef_setting = paths["regional_analysis"] + subregions + '_' + tech + '_'
-    if tech == 'CSP':
-        bef_setting = paths["regional_analysis"] + subregions + '_' + tech
-    aft_setting = '_TS_' + year + '.csv'
-    
-    # Setup the data dictionary for generated TS for each quantile
-    GenTS = {}
-    
-    for setting in settings:
-        TS_Temp = pd.read_csv(bef_setting + str(setting) + aft_setting, sep=';', decimal=',', dtype=str)
-    
-        # Remove undesired regions
-        filter_reg = [col for col in TS_Temp if col.startswith(subregion)]
-        TS_Temp = TS_Temp[filter_reg]
-    
-        # Exit function if subregion is not present in TS files
-        if TS_Temp.empty:
-            return None
-    
-        TS_Temp.columns = TS_Temp.iloc[0]
-        TS_Temp = TS_Temp.drop(0)
-        # Replace ',' with '.' for float conversion
-        for q in TS_Temp.columns:
-            TS_Temp[q] = TS_Temp[q].str.replace(',', '.')
-        GenTS[str(setting)] = TS_Temp.astype(float)
+    # Read data from output folder
+    GenTS = read_generated_TS(paths, param, tech, settings, subregion)
+    if GenTS is None:
+        return None
 
     # reorder hubheights to go from max TS to min TS:
     settings_sorted = np.array(pd.DataFrame((np.nansum(GenTS[key])
@@ -568,6 +611,7 @@ def regmodel_load_data(paths, param, tech, settings, subregion):
     solution_check = (GenTS["TS_Max"] > IRENA_FLH, GenTS["TS_Min"] < IRENA_FLH)
 
     # Prepare Timeseries dictionary indexing by height and quantile
+
     if solution_check == (False, True):
         Timeseries = GenTS[str(settings_sorted[0])]["q" + str(np.max(param["quantiles"]))]
     
@@ -576,17 +620,18 @@ def regmodel_load_data(paths, param, tech, settings, subregion):
     
     elif solution_check == (True, True):
         Timeseries = {}
+
         for s in settings_sorted:
             for q in param["quantiles"]:
                 for t in time:
                     Timeseries[(s, q, t)] = np.array(GenTS[str(s)]['q' + str(q)])[t - 1]
     
     # Setup dataframe for EMHIRES DATA
-    EMHIRES = param["EMHIRES"]
-    try:
-        ts = np.array(EMHIRES[subregion].values)
-    except KeyError:
-        ts = np.array(EMHIRES["UK"].values)
+    TS_reg = param["TS_regression"]
+
+    ts = np.array(TS_reg[subregion].values)
+
+    # Scale the EMHIRES TS with IRENA FLH
     ts = ts * IRENA_FLH / np.sum(ts)
     TS = {}
     for t in time:

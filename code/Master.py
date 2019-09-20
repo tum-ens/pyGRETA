@@ -1439,6 +1439,7 @@ def regression_coefficients(paths, param, tech):
         print("Orientations to be used for the regression: ", combinations)
     
     # Create IRENA file for regression
+
     if not os.path.isfile(paths["IRENA_regression"]):
         clean_IRENA_regression(param, paths)
 
@@ -1453,13 +1454,13 @@ def regression_coefficients(paths, param, tech):
     # load TS regression file
     TS_reg = pd.read_csv(paths["TS_regression"], sep=';', decimal=',', index_col=0, header=[0, 1])
     param["TS_regression"] = TS_reg
-
+    
+    # Find intersection between IRENA and shapefile Subregions 
     list_regions = sorted(param["regions_sub"]["NAME_SHORT"].values.tolist())
     list_regions = sorted(list(set(list_regions).intersection(set(irena.index))))
 
     # Summary Variables
     summary = None
-    # summaryTS = None
     nodata = ''
     no_sol_high = ''
     no_sol_low = ''
@@ -1615,30 +1616,29 @@ def generate_stratified_timeseries(paths, param, tech):
 if __name__ == '__main__':
 
     paths, param = initialization()
-    # generate_weather_files(paths, param)
-    # clean_weather_data(paths, param)
-    # generate_landsea(paths, param)  # Land and Sea
-    # generate_subregions(paths, param)  # Subregions
-    # generate_area(paths, param)
-    # generate_landuse(paths, param)  # Landuse
-    # generate_bathymetry(paths, param)  # Bathymetry
-    # generate_topography(paths, param)  # Topography
-    # generate_slope(paths, param)  # Slope
-    # generate_population(paths, param)  # Population
-    # generate_protected_areas(paths, param)  # Protected areas
-    # generate_buffered_population(paths, param)  # Buffered Population
-    # generate_wind_correction(paths, param)  # Correction factors for wind speeds
-    #
-    # for tech in param["technology"]:
-    #     print("Tech: " + tech)
-    #     calculate_FLH(paths, param, tech)
-    #     masking(paths, param, tech)
-    #     weighting(paths, param, tech)
-    #     reporting(paths, param, tech)
-    #     find_locations_quantiles(paths, param, tech)
-    #     generate_time_series(paths, param, tech)
+    generate_weather_files(paths, param)
+    clean_weather_data(paths, param)
+    generate_landsea(paths, param)  # Land and Sea
+    generate_subregions(paths, param)  # Subregions
+    generate_area(paths, param)
+    generate_landuse(paths, param)  # Landuse
+    generate_bathymetry(paths, param)  # Bathymetry
+    generate_topography(paths, param)  # Topography
+    generate_slope(paths, param)  # Slope
+    generate_population(paths, param)  # Population
+    generate_protected_areas(paths, param)  # Protected areas
+    generate_buffered_population(paths, param)  # Buffered Population
+    generate_area(paths, param)
     
-    # Only for countries in Europe as subregions
+    for tech in param["technology"]:
+        print("Tech: " + tech)
+        calculate_FLH(paths, param, tech)
+        masking(paths, param, tech)
+        weighting(paths, param, tech)
+        reporting(paths, param, tech)
+        find_locations_quantiles(paths, param, tech)
+        generate_time_series(paths, param, tech)
+    # Only for countries present in IRENA FLH report
     for tech in param["technology"]:
         print("Tech: " + tech)
         regression_coefficients(paths, param, tech)

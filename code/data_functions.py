@@ -246,6 +246,7 @@ def clean_IRENA_summary(param, paths):
                                                                    'Electricity generation (GWh)': 'prod (MWh)'})
     IRENA = IRENA.astype(float)
     IRENA.to_csv(paths['IRENA_summary'], sep=';', decimal=',', index=True)
+    print("files saved: " + paths['IRENA_summary'])
 
 
 def clean_IRENA_regression(param, paths):
@@ -270,59 +271,76 @@ def clean_IRENA_regression(param, paths):
             print(country)
             
     IRENA_regression.to_csv(paths['IRENA_regression'], sep=';', decimal=',', index=True)
+    print("files saved: " + paths['IRENA_regression'])
 
 
-def clean_TS_regression(param, paths, tech):
+def clean_TS_regression(param, paths):
     """
     """
     # load IRENA FLH data
     irena = param["IRENA_regression"]
-
+    technologies = param["technology"]
+    # Find intersection between desired regions and irena regions
     list_regions = param["regions_sub"]["NAME_SHORT"].values.tolist()
-    list_regions = sorted(list(set(list_regions).intersection(set(list_regions), set(irena.index))))
+    list_regions = sorted(list(set(list_regions).intersection(set(irena.index))))
 
     # Create TS_regression dataframe
-    TS_regression = pd.DataFrame(data=None, index=range(1, 8761), columns=list_regions)
+    cols = pd.MultiIndex.from_product([list_regions, technologies], names=['Regions', 'tech'])
+    TS_regression = pd.DataFrame(data=None, index=range(1, 8761), columns=cols)
 
-    # Load EMHIRES data for desired year
-    if tech in ['PV', 'CSP']:
-        date_index = pd.date_range(start='1/1/1986', end='1/1/2016', freq='H', closed='left')
-        EMHIRES = pd.read_csv(paths[tech]["EMHIRES"], ' ')
-        EMHIRES = EMHIRES.set_index(date_index)
-        EMHIRES = EMHIRES.loc['1/1/' + str(param["year"]):'1/1/' + str(param["year"] + 1)]
-    else:
-        EMHIRES = pd.read_csv(paths[tech]["EMHIRES"], '\t')
-        EMHIRES = EMHIRES[EMHIRES["Year"] == param["year"]].reset_index()
-        EMHIRES = EMHIRES.drop(['index', 'Time step', 'Date', 'Year', 'Month', 'Day', 'Hour'], axis=1)
+    for tech in technologies:
+        # Load EMHIRES data for desired year
+        if tech in ['PV', 'CSP']:
+            date_index = pd.date_range(start='1/1/1986', end='1/1/2016', freq='H', closed='left')
+            EMHIRES = pd.read_csv(paths[tech]["EMHIRES"], ' ')
+            EMHIRES = EMHIRES.set_index(date_index)
+            EMHIRES = EMHIRES.loc['1/1/' + str(param["year"]):'1/1/' + str(param["year"] + 1)]
+        else:
+            EMHIRES = pd.read_csv(paths[tech]["EMHIRES"], '\t')
+            EMHIRES = EMHIRES[EMHIRES["Year"] == param["year"]].reset_index()
+            EMHIRES = EMHIRES.drop(['index', 'Time step', 'Date', 'Year', 'Month', 'Day', 'Hour'], axis=1)
 
-    emhires_regions = set(EMHIRES.columns)
+        emhires_regions = set(EMHIRES.columns)
 
-    # Find intersection between EMHIRES and IRENA
-    intersect_regions = sorted(list((set(list_regions).intersection(set(list_regions), emhires_regions))))
+        # Find intersection between EMHIRES and list_regions
+        intersect_regions = sorted(list((set(list_regions).intersection(set(list_regions), emhires_regions))))
 
-    # Case 1: All regions are found in EMHIRES
-    if np.isin(list(emhires_regions), intersect_regions).all():
-        for region in list_regions:
-            TS_regression[region] = EMHIRES[region]
+        # Case 1: All regions are found in EMHIRES
+        if np.isin(list(emhires_regions), intersect_regions).all():
+            for region in list_regions:
+                TS_regression[region, tech] = EMHIRES[region]
 
-    # Case 2: Missing TS from EMHIRES, use generated TS
-    else:
-        # Load setting combinations
-        settings = combinations_for_regression(paths, param, tech)
-
-        for region in list_regions:
-            if region in intersect_regions:
-                TS_regression[region] = EMHIRES[region]
+        # Case 2: Missing TS from EMHIRES, use generated TS
+        else:
+            # Load setting combinations
+            settings = combinations_for_regression(paths, param, tech)
+            if not settings[0]:
+                settings = settings[1]
             else:
-                # Load Generated TS and Scale it with IRENA FLH
-                GenTS = read_generated_TS(paths, param, tech, settings, region)
-                import pdb
-                pdb.set_trace()
-                IRENA_FLH = irena.loc[region, tech]
-                TS_regression[region] = GenTS[settings[0]] * (IRENA_FLH / sum(GenTS[settings[0]]))
-                print(settings[0])
+                settings = settings[0]
 
+            for region in list_regions:
+                if region in intersect_regions:
+                    TS_regression[region, tech] = EMHIRES[region]
+                else:
+                    # Load Generated TS and Scale it with IRENA FLH
+                    GenTS = read_generated_TS(paths, param, tech, settings, region)
+                    # Find highest FLH valued TS
+                    settings_sorted = np.array(pd.DataFrame((np.nansum(GenTS[key])
+                                                             for key in GenTS.keys()),
+                                                            index=settings,
+                                                            columns=['FLH_all_quant']).sort_values(by='FLH_all_quant',
+                                                                                                   ascending=0).index)
+                    import pdb
+                    pdb.set_trace()
+                    GenTS["TS_Max"] = GenTS[str(settings_sorted[0])]["q" + str(np.max(param["quantiles"]))]
+                    # Scale max TS to IRENA
+                    IRENA_FLH = irena.loc[region, tech]
+                    TS_regression[region, tech] = GenTS["TS_Max"] * (IRENA_FLH / sum(GenTS["TS_Max"]))
+
+    # Save TS_regression as .csv
     TS_regression.to_csv(paths["TS_regression"], sep=';', decimal=',', index=True)
+    print("files saved: " + paths["TS_regression"])
 
 
 def calc_gwa_correction(param, paths):
@@ -632,15 +650,13 @@ def regmodel_load_data(paths, param, tech, settings, subregion):
     
     # Setup dataframe for EMHIRES DATA
     TS_reg = param["TS_regression"]
-
-    ts = np.array(TS_reg[subregion].values)
+    ts = np.array(TS_reg[subregion, tech].values)
 
     # Scale the EMHIRES TS with IRENA FLH
     ts = ts * IRENA_FLH / np.sum(ts)
     TS = {}
     for t in time:
         TS[(t,)] = ts[t - 1]
-    
     # Create data_input dictionary
     data = {None: {
         "s": {None: settings_sorted},
@@ -697,13 +713,15 @@ def combinations_for_regression(paths, param, tech):
         if [] in combinations:
             full_combi = sorted(list(settings_existing))
             if not (full_combi in combinations):
-                combinations = combinations + full_combi
+                combinations = combinations + [full_combi]
     # Case 4: more files exist than those required
     else:
         if [] in combinations:
             full_combi = sorted(list(settings_existing))
             if not (full_combi in combinations):
-                combinations = combinations + full_combi
+                combinations = combinations + [full_combi]
+    import pdb
+    pdb.set_trace()
     return combinations
     
     

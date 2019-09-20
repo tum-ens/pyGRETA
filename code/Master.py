@@ -1369,7 +1369,6 @@ def generate_time_series(paths, param, tech):
             results = calc_TS_solar(list_hours[day_filter], [param, tech, rasterData, merraData])
         else:
             list_hours = np.array_split(list_hours[day_filter], nproc)
-            print(len(list_hours[0]))
             param["status_bar_limit"] = list_hours[0][-1]
             results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(
                 calc_TS_solar, product(list_hours, [[param, tech, rasterData, merraData]]))
@@ -1449,14 +1448,14 @@ def regression_coefficients(paths, param, tech):
 
     # Create TS file for regression
     if not os.path.isfile(paths["TS_regression"]):
-        clean_TS_regression(param, paths, tech)
+        clean_TS_regression(param, paths)
 
     # load TS regression file
-    TS_reg = pd.read_csv(paths["TS_regression"], sep=';', decimal=',', index_col=0)
+    TS_reg = pd.read_csv(paths["TS_regression"], sep=';', decimal=',', index_col=0, header=[0, 1])
     param["TS_regression"] = TS_reg
 
     list_regions = sorted(param["regions_sub"]["NAME_SHORT"].values.tolist())
-    list_regions = sorted(list(list_regions.intersection(list_regions, irena.index)))
+    list_regions = sorted(list(set(list_regions).intersection(set(irena.index))))
 
     # Summary Variables
     summary = None

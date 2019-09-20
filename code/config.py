@@ -219,9 +219,9 @@ def time_series_parameters(param):
 
     # Regression
     param["regression"] = {"solver": 'gurobi',  # string
-                           "WindOn": {'80m': [100]},  # dictionary of hub height combinations
+                           "WindOn": {'all': []},  # dictionary of hub height combinations
                            "WindOff": {'80m': [80]},  # dictionary of hub height combinations
-                           "PV": {'Solar': [0]},  # list of orientation combinations
+                           "PV": {'all': [0, 90, -90, 180]},  # list of orientation combinations
                            "CSP": {'all': []}
                            }
 
@@ -375,7 +375,7 @@ def pv_parameters(param):
     pv["technical"] = {"T_r": 25,  # °C
                        "loss_coeff": 0.37,
                        "tracking": 0,  # 0 for no tracking, 1 for one-axis tracking, 2 for two-axes tracking
-                       "orientation": 0  # | 0: South | 90: West | 180: North | -90: East |
+                       "orientation": -90  # | 0: South | 90: West | 180: North | -90: East |
 
                        }
     pv["mask"] = {"slope": 20,
@@ -508,7 +508,7 @@ def onshore_wind_parameters(param):
                            "w_r": 13,
                            "w_off": 25,
                            "P_r": 3,
-                           "hub_height": 100
+                           "hub_height": 120
                            }
     windon["mask"] = {"slope": 20,
                       "lu_suitability": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1]),

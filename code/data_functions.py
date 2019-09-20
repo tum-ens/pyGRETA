@@ -331,8 +331,6 @@ def clean_TS_regression(param, paths):
                                                             index=settings,
                                                             columns=['FLH_all_quant']).sort_values(by='FLH_all_quant',
                                                                                                    ascending=0).index)
-                    import pdb
-                    pdb.set_trace()
                     GenTS["TS_Max"] = GenTS[str(settings_sorted[0])]["q" + str(np.max(param["quantiles"]))]
                     # Scale max TS to IRENA
                     IRENA_FLH = irena.loc[region, tech]
@@ -720,8 +718,6 @@ def combinations_for_regression(paths, param, tech):
             full_combi = sorted(list(settings_existing))
             if not (full_combi in combinations):
                 combinations = combinations + [full_combi]
-    import pdb
-    pdb.set_trace()
     return combinations
     
     

@@ -13,32 +13,18 @@ def define_spatial_scope(scope_shp):
     box = r[::-1][np.newaxis]
     return box
 
-
-# def calc_ext(regb, ext, res):
-#     minRow = m.floor(regb["miny"] / res[1, 0]) * res[1, 0]
-#     maxRow = m.ceil(regb["maxy"] / res[1, 0]) * res[1, 0]
-#     minCol = m.floor(regb["minx"] / res[1, 1]) * res[1, 1]
-#     maxCol = m.ceil(regb["maxx"] / res[1, 1]) * res[1, 1]
-#
-#     return [[min(m.ceil((ext[0, 0] - res[0, 0] / 2) / res[0, 0]) * res[0, 0] + res[0, 0] / 2, maxRow),
-#              min(m.ceil((ext[0, 1] - res[0, 1] / 2) / res[0, 1]) * res[0, 1] + res[0, 1] / 2, maxCol),
-#              max(m.ceil((ext[0, 2] - res[0, 0] / 2) / res[0, 0]) * res[0, 0] + res[0, 0] / 2, minRow),
-#              max(m.ceil((ext[0, 3] - res[0, 1] / 2) / res[0, 1]) * res[0, 1] + res[0, 1] / 2, minCol)]]
-#
-
-
 def crd_merra(Crd_regions, res_weather):
     """
-    This function calculates coordinates of the bounding box covering MERRA2 data (centroids + half resolution)
+    This function calculates coordinates of the bounding box covering MERRA-2 data.
 
-    :param Crd_regions: Cooridinates of Regions
-    :type Crd_regions: array
-    :param res_weather: Weather data resolution
+    :param Crd_regions: Coordinates of the bounding boxes of the regions.
+    :type Crd_regions: numpy array
+    :param res_weather: Weather data resolution.
     :type res_weather: list
-    :return Crd: Coordinates in Weather resolution
-    :rtype: list
+    :return Crd: Coordinates of the bounding box covering MERRA-2 data for each region.
+    :rtype: numpy array
     """
-    ''' Calculates coordinates of box covering MERRA2 data (centroids + half resolution)'''
+
     Crd = np.array(
         [np.ceil((Crd_regions[:, 0] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
          np.ceil(Crd_regions[:, 1] / res_weather[1]) * res_weather[1],
@@ -48,29 +34,19 @@ def crd_merra(Crd_regions, res_weather):
     return Crd
 
 
-def crd_exact_box(Ind, Crd_all, res_desired):
-    """
-    Missing description
-
-    :param Ind:
-    :param Crd_all:
-    :param res_desired:
-    :return:
-    """
-    Ind = Ind[np.newaxis]
-
-    Crd = [Ind[:, 0] * res_desired[0] + Crd_all[2],
-           Ind[:, 1] * res_desired[1] + Crd_all[3],
-           (Ind[:, 2] - 1) * res_desired[0] + Crd_all[2],
-           (Ind[:, 3] - 1) * res_desired[1] + Crd_all[3]]
-    return Crd
-
-
 def crd_exact_points(Ind_points, Crd_all, res):
     '''
-    Missing description
+    This function converts indices of points in high resolution rasters into longitude and latitude coordinates.
 
-    :param Ind_points: tuple of indices in the vertical and horizontal axes.
+    :param Ind_points: Tuple of arrays of indices in the vertical and horizontal axes.
+    :type Ind_points: tuple of arrays
+    :param Crd_all: Array of coordinates of the bounding box of the spatial scope.
+    :type Crd_all: numpy array
+    :param res: Data resolution in the vertical and horizontal dimensions.
+    :type res: list
+    
+    :return Crd_points: Coordinates of the points in the vertical and horizontal dimensions.
+    :rtype: list of arrays
     '''
 
     Crd_points = [Ind_points[0] * res[0] + Crd_all[2],
@@ -80,12 +56,12 @@ def crd_exact_points(Ind_points, Crd_all, res):
 
 def subset(A, param):
     """
-    This function retrieves a subset of the global MERRA coverage based on weather resolution and ``spatial_scope``
-    bounding box coordinates.
+    This function retrieves a subset of the global MERRA-2 coverage based on weather resolution and the
+    bounding box coordinates of the spatial scope.
 
-    :param A: Weather Data
+    :param A: Weather data on a global scale.
     :type A: numpy array
-    :param param: Dictionary of parameters containing Merra Coverage and region's name.
+    :param param: Dictionary of parameters containing MERRA-2 coverage and the name of the region.
     :type param: dict
     :return subset: The subset of the weather data contained in the bounding box of *spatial_scope*.
     :rtype: numpy array
@@ -105,12 +81,17 @@ def subset(A, param):
 
 def ind_merra(Crd, Crd_all, res):
     """
-    Missing description
+    This function converts longitude and latitude coordinates into indices within the spatial scope of MERRA-2 data.
 
-    :param Crd:
-    :param Crd_all:
-    :param res:
-    :return:
+    :param Crd: Coordinates to be converted into indices.
+    :type Crd: numpy array
+    :param Crd_all: Coordinates of the bounding box of the spatial scope.
+    :type Crd_all: numpy array
+    :param res: Resolution of the data, for which the indices are produced.
+    :type res: list
+    
+    :return Ind: Indices within the spatial scope of MERRA-2 data.
+    :rtype: 
     """
     if len(Crd.shape) == 1:
         Crd = Crd[np.newaxis]
@@ -118,17 +99,21 @@ def ind_merra(Crd, Crd_all, res):
                     (Crd[:, 1] - Crd_all[3]) / res[1],
                     (Crd[:, 2] - Crd_all[2]) / res[0] + 1,
                     (Crd[:, 3] - Crd_all[3]) / res[1] + 1])
-    Ind = np.transpose(Ind.astype(int))
+    Ind = np.transpose(Ind).astype(int)
     return Ind
 
 
 def ind_global(Crd, res_desired):
     """
-    Missing description
+    This function converts longitude and latitude coordinates into indices on a global data scope, where the origin is at (-90, -180).
 
-    :param Crd:
-    :param res_desired:
-    :return:
+    :param Crd: Coordinates to be converted into indices.
+    :type Crd: numpy array
+    :param res_desired: Desired resolution in the vertical and horizontal dimensions.
+    :type res_desired: list
+    
+    :return Ind: Indices on a global data scope.
+    :rtype: numpy array
     """
     if len(Crd.shape) == 1:
         Crd = Crd[np.newaxis]
@@ -143,13 +128,13 @@ def ind_global(Crd, res_desired):
 def calc_geotiff(Crd_all, res_desired):
     """
     This function returns dictionary containing the Georefferencing parameters for geotiff creation,
-    based on the desired extent and resolution
+    based on the desired extent and resolution.
 
-    :param Crd_all: Extent
-    :type Crd_all: list
-    :param res_desired: resolution
+    :param Crd_all: Coordinates of the bounding box of the spatial scope.
+    :type Crd_all: numpy array
+    :param res_desired: Desired data resolution in the vertical and horizontal dimensions.
     :type res_desired: list
-    :return GeoRef: Dictionary containing ``RasterOrigin``, ``RasterOrigin_alt``, ``pixelWidth``, and ``pixelHeight``
+    :return GeoRef: Georeference dictionary containing *RasterOrigin*, *RasterOrigin_alt*, *pixelWidth*, and *pixelHeight*.
     :rtype: dict
     """
     GeoRef = {"RasterOrigin": [Crd_all[3], Crd_all[0]],

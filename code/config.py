@@ -801,7 +801,7 @@ def irena_paths(paths, param):
         
       * *IRENA* is a csv file containing statistics for all countries and technologies for a specific *year*, created using a query tool of IRENA.
       * *IRENA_dict* is a csv file to convert the code names of countries from the IRENA database to the database of the shapefile of countries.
-      * *IRENA_out* is a csv file with a summary of onshore wind statistics for the countries within the scope.
+      * *IRENA_summary* is a csv file with a summary of renewable energy statistics for the countries within the scope.
     
     :param paths: Dictionary including the paths.
     :type paths: dict
@@ -821,27 +821,26 @@ def irena_paths(paths, param):
 
     # IRENA output
     paths["IRENA_summary"] = paths["region"] + "Renewable energy" + fs + "IRENA_summary_" + year + ".csv"
-    paths["IRENA_regression"] = paths["regression_out"] + "IRENA_regression_" + year + ".csv"
 
     return paths
 
 
 def regression_paths(paths, param):
     """
-    Description ?????
+    This function defines the paths for the regression parameters:
+    
+      * *IRENA_regression* is a csv file containing FLH statistics for the subregions and the four technologies for a specific *year*, based on the previously created *IRENA_summary*.
+      * *TS_regression* is a csv file containing time series to match for the subregions and the four technologies. ?????
     
     :param paths: Dictionary including the paths.
     :type paths: dict
     :return: The updated dictionary paths.
     :rtype: dict
     """
-    global current_folder
-    global fs
 
     year = str(param["year"])
 
-    paths["inst-cap_example"] = current_folder + fs + "Regression_coef" + fs + "IRENA_FLH_example.csv"
-    paths["regression_in"] = paths["regional_analysis"]
+    paths["IRENA_regression"] = paths["regression_out"] + "IRENA_regression_" + year + ".csv"
     paths["TS_regression"] = paths["regression_out"] + "TimeSeries_regression_" + year + ".csv"
 
     return paths
@@ -850,7 +849,7 @@ def regression_paths(paths, param):
 def emhires_input_paths(paths, param, tech):
     """
     This function defines the path to the EMHIRES input file for each technology (only ``'WindOn'``,
-    ``'WindOff'``, and ``'PV'`` supported by EMHIRES).
+    ``'WindOff'``, and ``'PV'`` are supported by EMHIRES).
     
     :param paths: Dictionary including the paths.
     :type paths: dict

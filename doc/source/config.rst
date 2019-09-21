@@ -55,4 +55,4 @@ Paths
 
 .. automodule:: config
    :noindex:
-   :members: weather_input_folder, global_maps_input_paths, output_folders, weather_output_paths, local_maps_paths, irena_paths, regression_input_paths, emhires_input_paths, potential_output_paths, regional_analysis_output_paths
+   :members: weather_input_folder, global_maps_input_paths, output_folders, weather_output_paths, local_maps_paths, irena_paths, emhires_input_paths, potential_output_paths, regional_analysis_output_paths

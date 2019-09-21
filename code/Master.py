@@ -1643,11 +1643,11 @@ if __name__ == '__main__':
     for tech in param["technology"]:
         print("Tech: " + tech)
         # calculate_FLH(paths, param, tech)
-        masking(paths, param, tech)
+        # masking(paths, param, tech)
         weighting(paths, param, tech)
         reporting(paths, param, tech)
-        # find_locations_quantiles(paths, param, tech)
-        # generate_time_series(paths, param, tech)
+        find_locations_quantiles(paths, param, tech)
+        generate_time_series(paths, param, tech)
     
     # Only for countries in Europe as subregions
     for tech in param["technology"]:

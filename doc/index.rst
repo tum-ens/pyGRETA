@@ -1,7 +1,10 @@
+=====================
 renewable-timeseries
 =====================
+
+---------------------------------------------------------------------------
 GIS-based model for renewable energy potential and time series generation
--------------------------------------------------------------------------
+---------------------------------------------------------------------------
 
 :Code developers: Kais Siala, Houssame Houmy
 :Documentation authors:	Kais Siala, Sergio Alejandro Huezo Rodriguez, Houssame Houmy		

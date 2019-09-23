@@ -1441,23 +1441,20 @@ def regression_coefficients(paths, param, tech):
     # Create IRENA file for regression
 
     if not os.path.isfile(paths["IRENA_regression"]):
-        clean_IRENA_regression(param, paths)
-
-    # Load IRENA data and regions
-    irena = pd.read_csv(paths["IRENA_regression"], sep=';', decimal=',', index_col=0)
-    param["IRENA_regression"] = irena
+        clean_FLH_regression(param, paths)
 
     # Create TS file for regression
-    if not os.path.isfile(paths["TS_regression"]):
-        clean_TS_regression(param, paths)
+    if not os.path.isfile(paths[tech]["TS_regression"]):
+        clean_TS_regression(param, paths, tech)
 
-    # load TS regression file
-    TS_reg = pd.read_csv(paths["TS_regression"], sep=';', decimal=',', index_col=0, header=[0, 1])
+    FLH, TS_reg = check_regression_model(paths, tech)
+
+    param["FLH_regression"] = FLH
     param["TS_regression"] = TS_reg
-    
+
     # Find intersection between IRENA and shapefile Subregions 
     list_regions = sorted(param["regions_sub"]["NAME_SHORT"].values.tolist())
-    list_regions = sorted(list(set(list_regions).intersection(set(irena.index))))
+    list_regions = sorted(list(set(list_regions).intersection(set(FLH.index))))
 
     # Summary Variables
     summary = None

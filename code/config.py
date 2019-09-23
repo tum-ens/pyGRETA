@@ -32,11 +32,10 @@ def configuration():
     paths = weather_output_paths(paths, param)
     paths = local_maps_paths(paths, param)
     paths = irena_paths(paths, param)
-    paths = regression_paths(paths, param)
-
 
     for tech in param["technology"]:
         paths[tech] = {}
+        paths = regression_paths(paths, param, tech)
         paths = emhires_input_paths(paths, param, tech)
         paths = potential_output_paths(paths, param, tech)
         paths = regional_analysis_output_paths(paths, param, tech)
@@ -825,7 +824,7 @@ def irena_paths(paths, param):
     return paths
 
 
-def regression_paths(paths, param):
+def regression_paths(paths, param, tech):
     """
     This function defines the paths for the regression parameters:
     
@@ -840,8 +839,8 @@ def regression_paths(paths, param):
 
     year = str(param["year"])
 
-    paths["IRENA_regression"] = paths["regression_out"] + "IRENA_regression_" + year + ".csv"
-    paths["TS_regression"] = paths["regression_out"] + "TimeSeries_regression_" + year + ".csv"
+    paths["FLH_regression"] = paths["regression_out"] + "FLH_regression_" + year + ".csv"
+    paths[tech]["TS_regression"] = paths["regression_out"] + "TimeSeries_regression_" + tech + '_' + year + ".csv"
 
     return paths
 

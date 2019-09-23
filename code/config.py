@@ -35,6 +35,7 @@ def configuration():
 
     for tech in param["technology"]:
         paths[tech] = {}
+        paths = regression_paths(paths, param, tech)
         paths = emhires_input_paths(paths, param, tech)
         paths = potential_output_paths(paths, param, tech)
         paths = regional_analysis_output_paths(paths, param, tech)
@@ -54,8 +55,8 @@ def general_settings():
     global root
 
     param = {}
-    param["author"] = 'Kais Siala'  # the name of the person running the script
-    param["comment"] = 'For Marc Scheiger'
+    param["author"] = 'Houssame'  # the name of the person running the script
+    param["comment"] = 'Regression-testing_Documentation-Examples'
     
     paths = {}
     fs = os.path.sep
@@ -102,8 +103,10 @@ def scope_paths_and_parameters(paths, param):
     """
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
-    paths["spatial_scope"] = PathTemp + "gadm36_BRA_1.shp"
-    paths["subregions"] = PathTemp + "gadm36_BRA_1.shp"
+
+    paths["spatial_scope"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
+    paths["subregions"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
+
     
     # Name tags for the scope and the subregions
     param["region_name"] = 'Brazil'  # Name tag of the spatial scope
@@ -241,9 +244,9 @@ def time_series_parameters(param):
 
     # Regression
     param["regression"] = {"solver": 'gurobi',  # string
-                           "WindOn": {'80m': [60, 80, 100]},  # dictionary of hub height combinations
+                           "WindOn": {'all': []},  # dictionary of hub height combinations
                            "WindOff": {'80m': [80]},  # dictionary of hub height combinations
-                           "PV": {'Solar': [0, 180, -90, 90]},  # list of orientation combinations
+                           "PV": {'all': [0, 90, -90, 180]},  # list of orientation combinations
                            "CSP": {'all': []}
                            }
 
@@ -397,8 +400,8 @@ def pv_parameters(param):
     pv["technical"] = {"T_r": 25,  # °C
                        "loss_coeff": 0.37,
                        "tracking": 0,  # 0 for no tracking, 1 for one-axis tracking, 2 for two-axes tracking
-                       "orientation": 180  # | 0: South | 90: West | 180: North | -90: East |
 
+                       "orientation": 180  # | 0: South | 90: West | 180: North | -90: East |
                        }
     pv["mask"] = {"slope": 20,
                   "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
@@ -530,7 +533,7 @@ def onshore_wind_parameters(param):
                            "w_r": 13,
                            "w_off": 25,
                            "P_r": 3,
-                           "hub_height": 100
+                           "hub_height": 120
                            }
     windon["mask"] = {"slope": 20,
                       "lu_suitability": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1]),
@@ -799,7 +802,7 @@ def irena_paths(paths, param):
         
       * *IRENA* is a csv file containing statistics for all countries and technologies for a specific *year*, created using a query tool of IRENA.
       * *IRENA_dict* is a csv file to convert the code names of countries from the IRENA database to the database of the shapefile of countries.
-      * *IRENA_out* is a csv file with a summary of onshore wind statistics for the countries within the scope.
+      * *IRENA_summary* is a csv file with a summary of renewable energy statistics for the countries within the scope.
     
     :param paths: Dictionary including the paths.
     :type paths: dict
@@ -819,15 +822,35 @@ def irena_paths(paths, param):
 
     # IRENA output
     paths["IRENA_summary"] = paths["region"] + "Renewable energy" + fs + "IRENA_summary_" + year + ".csv"
-    paths["IRENA_regression"] = paths["regression_out"] + "IRENA_regression_" + year + ".csv"
 
     return paths
 
 
+def regression_paths(paths, param, tech):
+    """
+    This function defines the paths for the regression parameters:
+    
+      * *IRENA_regression* is a csv file containing FLH statistics for the subregions and the four technologies for a specific *year*, based on the previously created *IRENA_summary*.
+      * *TS_regression* is a csv file containing time series to match for the subregions and the four technologies. ?????
+    
+    :param paths: Dictionary including the paths.
+    :type paths: dict
+    :return: The updated dictionary paths.
+    :rtype: dict
+    """
+
+    year = str(param["year"])
+
+    paths["FLH_regression"] = paths["regression_out"] + "FLH_regression_" + year + ".csv"
+    paths[tech]["TS_regression"] = paths["regression_out"] + "TimeSeries_regression_" + tech + '_' + year + ".csv"
+
+    return paths
+
+  
 def emhires_input_paths(paths, param, tech):
     """
     This function defines the path to the EMHIRES input file for each technology (only ``'WindOn'``,
-    ``'WindOff'``, and ``'PV'`` supported by EMHIRES).
+    ``'WindOff'``, and ``'PV'`` are supported by EMHIRES).
     
     :param paths: Dictionary including the paths.
     :type paths: dict

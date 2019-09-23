@@ -1369,7 +1369,6 @@ def generate_time_series(paths, param, tech):
             results = calc_TS_solar(list_hours[day_filter], [param, tech, rasterData, merraData])
         else:
             list_hours = np.array_split(list_hours[day_filter], nproc)
-            print(len(list_hours[0]))
             param["status_bar_limit"] = list_hours[0][-1]
             results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(
                 calc_TS_solar, product(list_hours, [[param, tech, rasterData, merraData]]))
@@ -1438,37 +1437,24 @@ def regression_coefficients(paths, param, tech):
         print("Combinations of hub heights to be used for the regression: ", combinations)
     elif tech in ['PV']:
         print("Orientations to be used for the regression: ", combinations)
-
-    # Copy EMHIRES files to regression folder if not present
-    if not os.path.isfile(paths["regression_out"] + os.path.split(paths[tech]["EMHIRES"])[1]):
-        shutil.copy2(paths[tech]["EMHIRES"],
-                     paths["regression_out"] + os.path.split(paths[tech]["EMHIRES"])[1])
     
     # Create IRENA file for regression
-    clean_IRENA_regression(param, paths)
 
-    # Load IRENA data and regions
-    irena = pd.read_csv(paths["IRENA_regression"], sep=';', decimal=',', index_col=0)
-    irena_regions = set(irena.index)
+    if not os.path.isfile(paths["IRENA_regression"]):
+        clean_FLH_regression(param, paths)
 
-    # Load EMHIRES data for desired year
-    if tech == 'PV':
-        date_index = pd.date_range(start='1/1/1986', end='1/1/2016', freq='H', closed='left')
-        EMHIRES = pd.read_csv(paths["regression_out"] + os.path.split(paths[tech]["EMHIRES"])[1], ' ')
-        EMHIRES = EMHIRES.set_index(date_index)
-        EMHIRES = EMHIRES.loc['1/1/' + str(param["year"]):'1/1/' + str(param["year"] + 1)]
-    else:
-        EMHIRES = pd.read_csv(paths["regression_out"] + os.path.split(paths[tech]["EMHIRES"])[1], '\t')
-        EMHIRES = EMHIRES[EMHIRES["Year"] == param["year"]].reset_index()
-        EMHIRES = EMHIRES.drop(['index', 'Time step', 'Date', 'Year', 'Month', 'Day', 'Hour'], axis=1)
+    # Create TS file for regression
+    if not os.path.isfile(paths[tech]["TS_regression"]):
+        clean_TS_regression(param, paths, tech)
 
-    emhires_regions = set(EMHIRES.columns)
-    param["EMHIRES"] = EMHIRES
+    FLH, TS_reg = check_regression_model(paths, tech)
 
-    # Find intersection between EMHIRES and IRENA
-    list_regions = sorted(list(irena_regions.intersection(irena_regions, emhires_regions)))
-    #list_regions = sorted(param["regions_sub"]["NAME_SHORT"].values.tolist())
-    del emhires_regions, irena_regions
+    param["FLH_regression"] = FLH
+    param["TS_regression"] = TS_reg
+
+    # Find intersection between IRENA and shapefile Subregions 
+    list_regions = sorted(param["regions_sub"]["NAME_SHORT"].values.tolist())
+    list_regions = sorted(list(set(list_regions).intersection(set(FLH.index))))
 
     # Summary Variables
     summary = None
@@ -1627,19 +1613,20 @@ def generate_stratified_timeseries(paths, param, tech):
 if __name__ == '__main__':
 
     paths, param = initialization()
-    # generate_weather_files(paths, param)
-    # clean_weather_data(paths, param)
-    # generate_landsea(paths, param)  # Land and Sea
-    # generate_subregions(paths, param)  # Subregions
-    # generate_landuse(paths, param)  # Landuse
-    # generate_bathymetry(paths, param)  # Bathymetry
-    # generate_topography(paths, param)  # Topography
-    # generate_slope(paths, param)  # Slope
-    # generate_population(paths, param)  # Population
-    # generate_protected_areas(paths, param)  # Protected areas
-    # generate_buffered_population(paths, param)  # Buffered Population
-    # generate_area(paths, param)
-    # generate_wind_correction(paths, param)  # Correction factors for wind speeds
+    generate_weather_files(paths, param)
+    clean_weather_data(paths, param)
+    generate_landsea(paths, param)  # Land and Sea
+    generate_subregions(paths, param)  # Subregions
+    generate_area(paths, param)
+    generate_landuse(paths, param)  # Landuse
+    generate_bathymetry(paths, param)  # Bathymetry
+    generate_topography(paths, param)  # Topography
+    generate_slope(paths, param)  # Slope
+    generate_population(paths, param)  # Population
+    generate_protected_areas(paths, param)  # Protected areas
+    generate_buffered_population(paths, param)  # Buffered Population
+    generate_area(paths, param)
+    
     for tech in param["technology"]:
         print("Tech: " + tech)
         # calculate_FLH(paths, param, tech)
@@ -1648,11 +1635,10 @@ if __name__ == '__main__':
         reporting(paths, param, tech)
         find_locations_quantiles(paths, param, tech)
         generate_time_series(paths, param, tech)
-    
-    # Only for countries in Europe as subregions
+    # Only for countries present in IRENA FLH report
     for tech in param["technology"]:
         print("Tech: " + tech)
-        # regression_coefficients(paths, param, tech)
+        regression_coefficients(paths, param, tech)
         # generate_stratified_timeseries(paths, param, tech)
         
     # cProfile.run('initialization()', 'cprofile_test.txt')

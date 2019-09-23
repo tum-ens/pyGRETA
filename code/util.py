@@ -303,11 +303,11 @@ def timecheck(*args):
     :return: None
     """
     if len(args) == 0:
-        print(inspect.stack()[1].function + str(datetime.datetime.now().strftime(": %H:%M:%S:%f")))
+        print(inspect.stack()[1].function + str(datetime.datetime.now().strftime(": %H:%M:%S:%f")) + '\n')
 
     elif len(args) == 1:
         print(inspect.stack()[1].function + ' - ' + str(args[0])
-              + str(datetime.datetime.now().strftime(": %H:%M:%S:%f")))
+              + str(datetime.datetime.now().strftime(": %H:%M:%S:%f")) + '\n')
 
     else:
         raise Exception('Too many arguments have been passed.\nExpected: zero or one \nPassed: ' + format(len(args)))
@@ -380,3 +380,30 @@ def create_json(filepath, param, param_keys, paths, paths_keys):
     new_dict["function"] = inspect.stack()[1][3]
     with open(new_file, 'w') as json_file:
         json.dump(new_dict, json_file)
+
+
+def check_regression_model(paths, tech):
+    """
+    This function check the regression model parameters for nan values, and return the FLH and TS model dataframes.
+    :param paths:
+    :param tech:
+    :return:
+    """
+    while True:
+        # Load IRENA data and regions
+        FLH = pd.read_csv(paths["IRENA_regression"], sep=';', decimal=',', index_col=0)
+        # load TS regression file
+        TS_reg = pd.read_csv(paths[tech]["TS_regression"], sep=';', decimal=',', index_col=0, header=0)
+        filter_FLH = np.logical_or(np.isnan(FLH[tech]), FLH[tech] == 0)
+        # Create filter for nan and 0 values for FLH_regression
+        reg_nan_null = list(FLH.loc[filter_FLH].index)
+
+        if len(reg_nan_null) != 0:
+            print('Missing data:' + ','.join(reg_nan_null))
+            ans = input("Some regions are missing FLH data for the technology of choice. Continue ? [y]/n")
+            if ans in ['', 'y', '[y]']:
+                break
+        else:
+            break
+
+    return FLH, TS_reg

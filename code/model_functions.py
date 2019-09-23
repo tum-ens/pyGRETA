@@ -1,32 +1,27 @@
 from data_functions import *
 from util import *
 
-np.seterr(divide='ignore')  # Repress Invalid value or division by zero error
+np.seterr(divide='ignore')  # Repress invalid value or division by zero error
 
 
 def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
     """
-    Computes the hourly capacity factor for PV and CSP technologies based *spatial_scope*, time, and technology parameters
+    This function computes the hourly capacity factor for PV and CSP technologies for all valid pixels within the spatial scope for a given hour.
 
-    :param hour: Hour of the year
+    :param hour: Hour within the year (from 0 to 8759).
     :type hour: integer
-
-    :param reg_ind: points ???????
-    :type reg_ind: numpy array
-
-    :param param: Dictionary including the dictionary of conversion of protection categories (protected_areas).
+    :param reg_ind: indices of valid pixels within the spatial scope (pixels on land).
+    :type reg_ind: tuple of arrays
+    :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and technology parameters.
     :type param: dict
-
-    :param merraData: Dictionary of numpy Array containing the weather data (Clearness and Wind speed at 50m) for every point in reg_ind
+    :param merraData: Dictionary of numpy arrays containing the weather data for every point in *reg_ind*.
     :type merraData: dict
-
-    :param rasterData: Dictionary of numpy Array containing Landuse, Ross coefficients, Albedo, and wind speed correction for every point in reg_ind
+    :param rasterData: Dictionary of numpy arrays containing land use types, Ross coefficients, albedo coefficients, and wind speed correction for every point in *reg_ind*.
     :type rasterData: dict
-
-    :param tech: Name of the technology (PV or CSP)
+    :param tech: Name of the technology (``'PV'`` or ``'CSP'``).
     :type tech: str
 
-    :return (CF_pv, CF_csp): the Capacity factors for all the points during that hour
+    :return (CF_pv, CF_csp): the capacity factors for all the points during that hour for PV and CSP.
     :rtype: tuple (numpy array, numpy array)
     """
     pv = param["PV"]["technical"]
@@ -170,25 +165,23 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
 
 def calc_FLH_solar(hours, args):
     """
-    Computes FLH for points specified in key: ind_nz for param dictionary
+    This function computes the full-load hours for all valid pixels specified in *ind_nz* in *param*. Due to parallel processing,
+    most of the inputs are collected in the list *args*.
 
-    :param hours: Filtered day hour ranks in a year (from 1 to 8760)
+    :param hours: Filtered day hour ranks in a year (from 0 to 8759).
     :type hours: numpy array
-
-    :param args:
-        ``param`` (dict):
-            Dictionary including the dictionary of conversion of protection categories (protected_areas).
-        ``tech`` (str):
-            Name of the technology
-        ``rasterData`` (dict):
-            Dictionary of numpy array containing Landuse, Ross coefficients, Albedo, and wind speed correction
-        ``merraData`` (dict):
-            Dictionary of numpy array containing the weather data (Clearness and Wind speed at 50m)
-
-    :return FLH: FLH over the year for technology
+    :param args: List of arguments:
+      * *param* (dict): Dictionary including multiple parameters such as the status bar limit, the name of the region, and
+        others for calculating the hourly capacity factors.
+      * *tech* (str): Name of the technology.
+      * *rasterData* (dict): Dictionary of numpy arrays containing land use types, Ross coefficients, albedo coefficients,
+        and wind speed correction for every point in *reg_ind*.
+      * *merraData* (dict): Dictionary of numpy arrays containing the weather data for every point in *reg_ind*.
+    :rtype args: list
+    :return FLH: Full-load hours over the year for the technology.
     :rtype: numpy array
     """
-    # Decomposing the tuple args
+    # Decomposing the list args
     param = args[0]
     tech = args[1]
     rasterData = args[2]
@@ -220,25 +213,24 @@ def calc_FLH_solar(hours, args):
 
 def calc_TS_solar(hours, args):
     """
-    Computes the hourly PV and CSP capacity factor for desired quantiles.
+    This function computes the hourly PV and CSP capacity factor for the desired quantiles.
 
-    :param hours: hour ranks of the year (from 1 to 8760)
+    :param hours: Hour ranks of the year (from 0 to 8759).
     :type hours: numpy array
 
-    :param args:
-        ``param`` (dict):
-            dictionary of user parameters
-        ``tech`` (str):
-            name of technology
-        ``rasterData`` (dict):
-            correction rasters
-        ``merraData`` (dict):
-            weather Data raster
+    :param args: List of arguments:
+      * *param* (dict): Dictionary including multiple parameters such as the status bar limit, the name of the region, and
+        others for calculating the hourly capacity factors.
+      * *tech* (str): Name of the technology.
+      * *rasterData* (dict): Dictionary of numpy arrays containing land use types, Ross coefficients, albedo coefficients,
+        and wind speed correction for every point in *reg_ind*.
+      * *merraData* (dict): Dictionary of numpy arrays containing the weather data for every point in *reg_ind*.
+    :rtype args: list
 
-    :return TS: numpy array of timeseries for desired quantiles
+    :return TS: Array of time series for the desired quantiles for each subregion.
     :rtype: numpy array
     """
-    # Decomposing the tuple args
+    # Decomposing the list args
     param = args[0]
     tech = args[1]
     rasterData = args[2]
@@ -269,27 +261,23 @@ def calc_TS_solar(hours, args):
 
 def angles(hour, reg_ind, Crd_all, res_desired, orient):
     """
-    Creates seven matrices for the desired extent, that represent the incidence, hour angles, declination
+    This function creates multiple matrices for the whole scope, that represent the incidence, hour angles, declination,
     elevation, tilt, azimuth and orientation angles of every pixel with the desired resolution.
 
-    :param hour: hour rank in a year (from 1 to 8760)
+    :param hour: Hour rank in a year (from 0 to 8759).
     :type hour: int
-
-    :param reg_ind: index of region
-    :type reg_ind: list
-
-    :param Crd_all: coorinates of spatial_scope
+    :param reg_ind: indices of valid pixels within the spatial scope (pixels on land).
+    :type reg_ind: tuple of arrays
+    :param Crd_all: Coordinates of the bounding box of the spatial scope.
     :type Crd_all: list
-
-    :param res_desired: Desired high Resolution
+    :param res_desired: Desired high resolution in degrees.
     :type res_desired: list
-
-    :param orient: the azimuth orientation of the module in degrees
+    :param orient: Azimuth orientation of the module in degrees.
     :type orient: int
 
-    :return (phi, omega, delta, alpha, beta, azi, orientation): rasters of incidence, hour, declination, elevation,
-        tilt, azimuth and orientation angles
-    :rtype: tuple (7 x numpy array)
+    :return (phi, omega, delta, alpha, beta, azi, orientation): Rasters of latitude, hour, declination, elevation,
+        tilt, azimuth and orientation angles.
+    :rtype: tuple of arrays
     """
     # Initialization
     Crd_points = crd_exact_points(reg_ind, Crd_all, res_desired)
@@ -353,27 +341,23 @@ def angles(hour, reg_ind, Crd_all, res_desired, orient):
 
 def tracking(axis, A_phi, A_alpha, A_beta, A_azimuth):
     """
-    Computes the tilt angle and orientation based on the number of tracking axis, incidence, elevation tilt and azimuth angles
+    This function computes the tilt angle and orientation based on the type of tracking, incidence, elevation tilt and azimuth angles.
 
-    :param axis: Number of tracking axis(0, 1, 2). axis = 1 assumes east-west tracking
+    :param axis: Number of tracking axes (0, 1, 2). The value ``0`` means no tracking (fixed rack), ``1`` means single-axis tracking in east-west dimension, and ``2`` means double-axis tracking.
     :type axis: int
-
-    :param A_phi: raster of incidence angle
+    :param A_phi: Raster of latitude angle.
     :type A_phi: numpy array
-
-    :param A_alpha: raster of elevation angle
+    :param A_alpha: Raster of elevation angle.
     :type A_alpha: numpy array
-
-    :param A_beta: raster of tilt angle
+    :param A_beta: Raster of tilt angle.
     :type A_beta: numpy array
-
-    :param A_azimuth: raster of azimuth angle
+    :param A_azimuth: Raster of azimuth angle.
     :type A_azimuth: numpy array
 
-    :return (A_orient, A_beta): tuple of rasters for orientationa and tilt angles for specified tracking axis
-    :rtype: tuple (numpy array, numpy array)
+    :return (A_orient, A_beta): Tuple of rasters for orientationa and tilt angles for specified tracking type.
+    :rtype: tuple of arrays
     """
-    # One axis Tracking
+    # Single-axis tracking
     if axis == 1:
         A_orientation = np.zeros(A_alpha.shape)
         A_orientation[A_phi < 0] = 180
@@ -414,7 +398,7 @@ def tracking(axis, A_phi, A_alpha, A_beta, A_azimuth):
         A_orientation = orientation - 180
         A_beta = beta
 
-    # Two Axis Tracking
+    # Double-axis tracking
     elif axis == 2:
         A_beta = 90 - A_alpha
         A_orientation = A_azimuth - 180
@@ -424,15 +408,14 @@ def tracking(axis, A_phi, A_alpha, A_beta, A_azimuth):
 
 def toa_hourly(alpha, hour):
     """
-    Returns the top of the atmosphere normal irradiance based on the solar constant, hour rank, and incidence angle.
+    This function returns the top of the atmosphere normal irradiance based on the solar constant, hour rank, and incidence angle.
 
-    :param alpha: raster of elevation angles
+    :param alpha: Raster of elevation angles.
     :type alpha: numpy array
-
-    :param hour: hour rank of the year (from 1 to 8760)
+    :param hour: Hour rank of the year (from 0 to 8759).
     :type hour: int
 
-    :return TOA_h: Raster of the normal top of the atmosphere irradiance
+    :return TOA_h: Raster of the normal top of the atmosphere irradiance.
     :rtype: numpy array
     """
     solarconst = 1367  # in W/m^2
@@ -446,23 +429,23 @@ def toa_hourly(alpha, hour):
 
 def coefficients(beta, ratio, R_b, A_i, f):
     """
-    Creates three weighting matrices for the desired extent and width the desired resolution,
-    that correspond to the gains/losses caused by tilting to each component of the incident radiation
+    This function creates three weighting matrices for the spatial scope with the desired resolution,
+    that correspond to the gains/losses caused by tilting to each component of the incident irradiance
     (direct, diffuse, and reflected).
 
-    :param beta: Raster of tilt angles
+    :param beta: Raster of tilt angles.
     :type beta: numpy array
+    :param ratio: Diffuse fraction of global horizontal solar radiation using the Erbs model.
+    :type ratio: numpy array
+    :param R_b: Ratio of incident beam to horizontal beam in the HDKR model.
+    :type R_b: numpy array
+    :param A_i: Anisotropy index for forward scattering circumsolar diffuse irradiance in the HDKR model.
+    :type A_i: numpy array
+    :param f: Modulating factor for horizontal brightening correction.
+    :type f: numpy array
 
-    :param ratio: numpy array ????
-
-    :param R_b: numpy array ????
-
-    :param A_i: numpy array ????
-
-    :param f: numpy array ????
-
-    :return (F_direct, F_diffuse, F_reflected): rasters of direct, diffuse and reflected ratios of irradiance
-    :rtype: tuple (numpy array, numpy array, numpy array)
+    :return (F_direct, F_diffuse, F_reflected): Rasters of direct, diffuse and reflected ratios of irradiance.
+    :rtype: tuple of arrays
     """
 
     F_direct = (1 - ratio + ratio * A_i) * R_b
@@ -477,21 +460,18 @@ def coefficients(beta, ratio, R_b, A_i, f):
 
 def loss(G_tilt_h, TEMP, A_Ross, pv):
     """
-    Creates a temperature loss weighting matrix for the desired extent.
+    This function creates a temperature loss weighting matrix for the spatial scope.
 
-    :param G_tilt_h: Raster of incident radiation on the tilted panel
+    :param G_tilt_h: Raster of incident irradiance on the tilted panel.
     :type G_tilt_h: numpy array
-
-    :param TEMP: raster of ambient temperatures in °C
+    :param TEMP: Raster of ambient temperatures in °C
     :type TEMP: numpy array
-
-    :param A_Ross: numpy array ????
+    :param A_Ross: Raster of Ross coefficients for temperature sensitivity.
     :type A_Ross: numpy array
+    :param pv: Dictionary containing PV-specific parameters for loss coefficient and rated temperature.
+    :type pv: dict
 
-    :param pv: [loss_coeff]: Heat loss coefficient according to the technical characteristics of the Yingli PV module, [T_r] : Rated temperature according to STC
-    :type pv: dictionary containing PV specific parameters for loss coefficient and rated temperature
-
-    :return LOSS_TEMP: raster of weighting temperature loss
+    :return LOSS_TEMP: raster of weighting temperature loss.
     :rtype: numpy array
     """
 
@@ -502,13 +482,14 @@ def loss(G_tilt_h, TEMP, A_Ross, pv):
 
 def global2diff(k_t, dims):
     """
-    Estimates the global-to-diffuse radiation ratio.
+    This function estimates the global-to-diffuse irradiance ratio using the Erb model.
 
-    :param k_t: param ????
+    :param k_t: Raster of clearness indices.
+    :type k_t: numpy array
+    :param dims: Dimensions of the output (similar to the dimension of the angles).
+    :type dims: tuple
 
-    :param dims: param ????
-
-    :return A_ratio: Matrix of global-to-diffuse radiation ratios
+    :return A_ratio: Raster of global-to-diffuse irradiance ratios.
     :rtype: numpy array
     """
     k_d = np.zeros(dims)
@@ -527,32 +508,26 @@ def global2diff(k_t, dims):
     return A_ratio
 
 
-def calc_CF_wind(hour, reg_ind, turbine, m, n, merraData, rasterData):
+def calc_CF_wind(hour, reg_ind, turbine, m, n, merraData, rasterData):         
     """
-    Computes the hourly capacity factor for Wind Onshore and Offshore technologies based on *spatial_scope*, time, and technology parameters.
+    This function computes the hourly capacity factor for onshore and offshore wind for all valid pixels within the spatial scope for a given hour.
 
-    :param hour: hour rank in a year (from 1 to 8760)
+    :param hour: Hour within the year (from 0 to 8759).
     :type hour: integer
-
-    :param reg_ind: region index
-    :type reg_ind: numpy array
-
-    :param turbine: Turbine parameters (Cut-in, Cut-off and rated wind speed)
+    :param reg_ind: indices of valid pixels within the spatial scope (pixels on land for onshore wind, on sea for offshore wind).
+    :type reg_ind: tuple of arrays
+    :param turbine: Dictionary including the turbine parameters (cut-in, cut-off and rated wind speed).
     :type turbine: dict
-
-    :param m: number of rows
+    :param m: number of rows.
     :type m: int
-
-    :param n: number of columns
+    :param n: number of columns.
     :type n: int
-
-    :param merraData: Dictionary of numpy array containing the wind speed at 50m for every point in reg_ind
+    :param merraData: Dictionary of numpy arrays containing the weather data for every point in *reg_ind*.
     :type merraData: dict
-
-    :param rasterData: Dictionary of numpy array containing wind speed correction for every point in reg_ind
+    :param rasterData: Dictionary of numpy arrays containing the wind speed correction for every point in *reg_ind*.
     :type rasterData: dict
 
-    :return CF: the Capacity factors for all the points during that hour
+    :return CF: Capacity factors for all the valid points during that hour.
     :rtype: numpy array
     """
 
@@ -582,24 +557,22 @@ def calc_CF_wind(hour, reg_ind, turbine, m, n, merraData, rasterData):
     return CF
 
 
-def calc_FLH_wind(hours, args):
+def calc_FLH_wind(hours, args):           
     """
-    Computes Wind Onshore and Offshore FLH for points specified in key: ind_nz of the param dictionary
+    This function computes the full-load hours for all valid pixels specified in *ind_nz* in *param*. Due to parallel processing,
+    most of the inputs are collected in the list *args*.
 
-    :param hours: hour ranks of the year (from 1 to 8760)
+    :param hours: Hour ranks in a year (from 0 to 8759).
     :type hours: numpy array
-
-    :param args:
-        ``param`` (dict):
-            Dictionary including the dictionary of conversion of protection categories (protected_areas)
-        ``tech`` (str):
-            Name of the technology
-        ``rasterData`` (dict):
-            Dictionary of numpy array containing Landuse, Ross coefficients, Albedo, and wind speed correction
-        ``merraData`` (dict):
-            Dictionary of numpy array containing the weather data (Clearness and Wind speed at 50m)
-
-    :return FLH: FLH over the year for wind technologies
+    :param args: List of arguments:
+      * *param* (dict): Dictionary including multiple parameters such as the status bar limit, the name of the region, and
+        others for calculating the hourly capacity factors.
+      * *tech* (str): Name of the technology.
+      * *rasterData* (dict): Dictionary of numpy arrays containing land use types, Ross coefficients, albedo coefficients,
+        and wind speed correction for every point in *reg_ind*.
+      * *merraData* (dict): Dictionary of numpy arrays containing the weather data for every point in *reg_ind*.
+    :rtype args: list
+    :return FLH: Full-load hours over the year for the technology.
     :rtype: numpy array
     """
     # Decomposing the tuple args
@@ -635,22 +608,19 @@ def calc_FLH_wind(hours, args):
 
 def calc_TS_wind(hours, args):
     """
-    Computes the hourly Wind OnShore or OffShore capacity factor for desired quantiles.
+    This function computes the hourly onshore and offshore wind capacity factor for desired quantiles.
 
-    :param hours: hour ranks of the year (from 1 to 8760)
+    :param hours: Hour ranks of the year (from 0 to 8759).
     :type hours: numpy array
+    :param args: List of arguments:
+      * *param* (dict): Dictionary including multiple parameters such as the status bar limit, the name of the region, and
+        others for calculating the hourly capacity factors.
+      * *tech* (str): Name of the technology.
+      * *rasterData* (dict): Dictionary of numpy arrays containing the wind speed correction for every point in *reg_ind*.
+      * *merraData* (dict): Dictionary of numpy arrays containing the weather data for every point in *reg_ind*.
+    :rtype args: list
 
-    :param args:
-        ``param`` (dict):
-            Dictionary of user parameters
-        ``tech`` (str):
-            Name of technology
-        ``rasterData`` (dict):
-            Correction rasters
-        ``merraData`` (dict):
-            Weather Data raster
-
-    :return TS: Array of timeseries for desired quantiles
+    :return TS: Array of time series for the desired quantiles for each subregion.
     :rtype: numpy array
     """
     # Decomposing the tuple args
@@ -687,7 +657,11 @@ def calc_TS_wind(hours, args):
     
 def pyomo_regression_model():
     """
-    Create Pyomo Abstract Model ?????
+    This function returns an abstract pyomo model of a constrained least square problem for time series fitting to
+    match IRENA FLH and minimize difference error with EMHIRES model time series.
+    
+    :return model: Abstract pyomo model.
+    :rtype: pyomo object
     """
     model = pyo.AbstractModel()
     model.s = pyo.Set()

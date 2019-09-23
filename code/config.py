@@ -106,10 +106,11 @@ def scope_paths_and_parameters(paths, param):
 
     paths["spatial_scope"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
     paths["subregions"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
+
     
     # Name tags for the scope and the subregions
-    param["region_name"] = 'Europe'  # Name tag of the spatial scope
-    param["subregions_name"] = 'Europe_wo_Balkans_NUTS0' # Name tag of the subregions
+    param["region_name"] = 'Brazil'  # Name tag of the spatial scope
+    param["subregions_name"] = 'Brazil_states' # Name tag of the subregions
     
     # Year
     param["year"] = 2015
@@ -134,7 +135,7 @@ def computation_parameters(param):
     :return: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 18
+    param["nproc"] = 36
     param["CPU_limit"] = True
     return param
 
@@ -221,7 +222,7 @@ def time_series_parameters(param):
     * *modes* is a dictionary that groups the quantiles and assigns names for each subgroup. You can define the groups as you wish.
       If you want to use all the quantiles in one group without splitting them in subgroups, you can write::
       
-      param["modes"] = {"all": param["quantiles"]}
+       param["modes"] = {"all": param["quantiles"]}
       
     * *combo* is a dictionary of options for :mod:`Master.generate_stratified_timeseries`:
     
@@ -399,7 +400,8 @@ def pv_parameters(param):
     pv["technical"] = {"T_r": 25,  # °C
                        "loss_coeff": 0.37,
                        "tracking": 0,  # 0 for no tracking, 1 for one-axis tracking, 2 for two-axes tracking
-                       "orientation": 0  # | 0: South | 90: West | 180: North | -90: East |
+
+                       "orientation": 180  # | 0: South | 90: West | 180: North | -90: East |
                        }
     pv["mask"] = {"slope": 20,
                   "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),

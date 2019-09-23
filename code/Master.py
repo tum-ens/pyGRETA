@@ -1629,8 +1629,8 @@ if __name__ == '__main__':
     
     for tech in param["technology"]:
         print("Tech: " + tech)
-        calculate_FLH(paths, param, tech)
-        masking(paths, param, tech)
+        # calculate_FLH(paths, param, tech)
+        # masking(paths, param, tech)
         weighting(paths, param, tech)
         reporting(paths, param, tech)
         find_locations_quantiles(paths, param, tech)

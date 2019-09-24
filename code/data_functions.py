@@ -270,20 +270,9 @@ def clean_FLH_regression(param, paths):
     FLH_regression.to_csv(paths['IRENA_regression'], sep=';', decimal=',', index=True)
     print("files saved: " + paths['IRENA_regression'])
 
-    # Return Missing countries/regions
+    # Return missing countries/regions
     warn("The following countries/regions are not present in the IRENA Database: " + ','.join(missing) +
-         ".Their corresponding FLH have been left blank", UserWarning)
-    return missing
-
-    # for country in IRENA_dict.keys():
-    #     try:
-    #         FLH_regression.loc[IRENA_dict[country]] = [IRENA_summary.loc[(country, 'Onshore wind energy'), 'FLH (h)'],
-    #                                            IRENA_summary.loc[(country, 'Offshore wind energy'), 'FLH (h)'],
-    #                                            IRENA_summary.loc[(country, 'Solar photovoltaic'), 'FLH (h)'],
-    #                                            IRENA_summary.loc[(country, 'Concentrated solar power'), 'FLH (h)']]
-    #     except KeyError:
-    #         print(country)
-    #
+         ". Their corresponding FLH have been left blank.", UserWarning)
 
 
 def clean_TS_regression(param, paths, tech):

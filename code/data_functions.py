@@ -479,8 +479,8 @@ def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
     lon = np.arange((Crd_all[3] + res_desired[1] / 2), Crd_all[1], res_desired[1])[np.newaxis]
 
     # Repeating for all longitudes/latitudes
-    lat = repmat(lat.transpose(), 1, int(n_high))
-    lon = repmat(lon, int(m_high), 1)
+    lat = repmat(lat.transpose(), 1, n_high)
+    lon = repmat(lon, m_high, 1)
 
     # Solar time where shade-free exposure starts
     omegast = 12 - GCR["shadefree_period"] / 2
@@ -507,22 +507,22 @@ def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
         day = GCR["day_north"]
         # Declination angle
         delta = repmat(arcsind(0.3978) * sin(
-            day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), int(m_high), 1)
+            day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), m_high, 1)
 
     if Crd_all[0] < 0:
         day = GCR["day_south"]
         # Declination angle
         delta = repmat(arcsind(0.3978) * sin(
-            day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), int(m_high), 1)
+            day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), m_high, 1)
 
     if (Crd_all[2] * Crd_all[0]) < 0:
-        lat_pos = np.sum((lat > 0).astype(int))
+        lat_pos = int(np.sum(lat>=0, axis=0)[0])
         day = GCR["day_north"]
         # Declination angle
         delta_pos = repmat(arcsind(0.3978) * sin(
             day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), lat_pos, 1)
 
-        lat_neg = np.sum((lat < 0).astype(int))
+        lat_neg = int(np.sum(lat<0, axis=0)[0])
         day = GCR["day_south"]
         # Declination angle
         delta_neg = repmat(arcsind(0.3978) * sin(

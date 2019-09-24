@@ -441,7 +441,7 @@ References
 	John A. Duffle and William A. Beckman. Solar engineering of thermal
 	processes. Wiley, Hoboken, New Jersey, fourth edition edition, 2013.
 .. [6]
-	K. Scharmer and Jurgen Greif. Database and exploitation software, volume
+	K. Scharmer and Jürgen Greif. Database and exploitation software, volume
 	2 of The European solar radiation atlas. Presses de l'nger, Paris, 2000.
 .. [7]
 	Laura Maturi, Giorgio Belluardo, David Moser, and Matteo Del Buono.

@@ -1170,12 +1170,12 @@ def reporting(paths, param, tech):
         regions.loc[reg, "Available_Masked"] = int(available_masked)
 
         # Interrupt reporting of region if no available pixels
-        if (int(available_masked) == 0):
+        if int(available_masked) == 0:
             regions.drop([reg], axis=0, inplace=True)
             continue
 
         # Interrupt reporting of region already reported (may occur due to discrepancy in borders)
-        if (regions.loc[reg, "Region"] in regions.loc[:reg - 1, "Region"].to_list()):
+        if regions.loc[reg, "Region"] in regions.loc[:reg - 1, "Region"].to_list():
             ind_prev = regions.loc[regions["Region"] == regions.loc[reg, "Region"]].index[0]
             if regions.loc[ind_prev, "Available_Masked"] > int(available_masked):
                 regions.drop([reg], axis=0, inplace=True)

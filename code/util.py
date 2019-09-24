@@ -394,8 +394,9 @@ def check_regression_model(paths, tech):
         FLH = pd.read_csv(paths["IRENA_regression"], sep=';', decimal=',', index_col=0)
         # load TS regression file
         TS_reg = pd.read_csv(paths[tech]["TS_regression"], sep=';', decimal=',', index_col=0, header=0)
-        filter_FLH = np.logical_or(np.isnan(FLH[tech]), FLH[tech] == 0)
+
         # Create filter for nan and 0 values for FLH_regression
+        filter_FLH = np.logical_or(np.isnan(FLH[tech]), FLH[tech] == 0)
         reg_nan_null = list(FLH.loc[filter_FLH].index)
 
         if len(reg_nan_null) != 0:

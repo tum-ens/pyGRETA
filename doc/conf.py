@@ -80,7 +80,7 @@ latex_documents = {
     'toctree_only': True  # (bool) Include startdocname in the latex/pdf ? can be used to have different first pages. The first toctree entry in startdocname will be used.
     }
     
-latex_show_pagerefs = False # (True/False) Show the references at the end instead of footnotes
+latex_show_pagerefs = True # (True/False) Show the references at the end instead of footnotes
 
 
 # Remove redundant white pages 

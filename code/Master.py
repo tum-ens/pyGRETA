@@ -935,13 +935,24 @@ def calculate_FLH(paths, param, tech):
 
     hdf5storage.writes({'FLH': FLH}, paths[tech]["FLH"], store_python_metadata=True, matlab_compatible=True)
     print("\nfiles saved: " + paths[tech]["FLH"])
+
+    # Save GEOTIFF files
+    if param["savetiff"]:
+        GeoRef = param["GeoRef"]
+        array2raster(changeExt2tif(paths[tech]["mask"]),
+                     GeoRef["RasterOrigin"],
+                     GeoRef["pixelWidth"],
+                     GeoRef["pixelHeight"],
+                     FLH)
+        print("files saved:" + changeExt2tif(paths[tech]["mask"]))
+
     timecheck('End')
 
 
 def masking(paths, param, tech):
     timecheck('Start')
     mask = param[tech]["mask"]
-    GeoRef = param["GeoRef"]
+
 
     if tech in ['PV', 'CSP']:
         with rasterio.open(paths["PA"]) as src:
@@ -1024,6 +1035,7 @@ def masking(paths, param, tech):
 
     # Save GEOTIFF files
     if param["savetiff"]:
+        GeoRef = param["GeoRef"]
         array2raster(changeExt2tif(paths[tech]["mask"]),
                      GeoRef["RasterOrigin"],
                      GeoRef["pixelWidth"],
@@ -1635,12 +1647,10 @@ if __name__ == '__main__':
         reporting(paths, param, tech)
         find_locations_quantiles(paths, param, tech)
         generate_time_series(paths, param, tech)
-    # Only for countries present in IRENA FLH report
+
+    # Only for countries/region with FLH values available
     for tech in param["technology"]:
         print("Tech: " + tech)
         regression_coefficients(paths, param, tech)
         # generate_stratified_timeseries(paths, param, tech)
-        
-    # cProfile.run('initialization()', 'cprofile_test.txt')
-    # p = pstats.Stats('cprofile_test.txt')
-    # p.sort_stats('cumulative').print_stats(20)
+

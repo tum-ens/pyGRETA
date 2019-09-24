@@ -667,7 +667,7 @@ def calc_TS_wind(hours, args):
 def pyomo_regression_model():
     """
     This function returns an abstract pyomo model of a constrained least square problem for time series fitting to
-    match IRENA FLH and minimize difference error with EMHIRES model time series.
+    match model FLHs and minimize difference error with model time series.
     
     :return model: Abstract pyomo model.
     :rtype: pyomo object

@@ -105,18 +105,18 @@ def scope_paths_and_parameters(paths, param):
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
 
     paths["spatial_scope"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
-    paths["subregions"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
+    paths["subregions"] = PathTemp + "Bavaria_WGC.shp"
 
     
     # Name tags for the scope and the subregions
     param["region_name"] = 'Europe'  # Name tag of the spatial scope
-    param["subregions_name"] = 'Europe_wo_Balkans_NUTS0' # Name tag of the subregions
+    param["subregions_name"] = 'Geothermal_WGC' # Name tag of the subregions
     
     # Year
     param["year"] = 2015
 
     # Technologies
-    param["technology"] = ['PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+    param["technology"] = ['WindOn']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 
     return paths, param
 
@@ -256,7 +256,7 @@ def time_series_parameters(param):
                       "low": [20, 10, 0],
                       "all": param["quantiles"]
                       }
-    param["combo"] = {"WindOn": {'80m': [60, 80, 100], '100m': [80, 100, 120], '120m': [100, 120, 140]},
+    param["combo"] = {"WindOn": {'2015': [60, 80, 100], '2030': [80, 100, 120], '2050': [100, 120, 140]},
                       # dictionary of hub height combinations
                       "WindOff": {'80m': [80], '100m': [100], '120m': [120]},  # dictionary of hub height combinations
                       "PV": {'Solar': [0, 180, -90, 90]},  # list of orientation combinations
@@ -842,7 +842,7 @@ def regression_paths(paths, param, tech):
     year = str(param["year"])
 
     paths["FLH_regression"] = paths["regression_out"] + "FLH_regression_" + year + ".csv"
-    paths[tech]["TS_regression"] = paths["regression_out"] + "TimeSeries_regression_" + tech + '_' + year + ".csv"
+    paths[tech]["TS_regression"] = paths["regression_out"] + "TS_regression_" + tech + '_' + year + ".csv"
 
     return paths
 

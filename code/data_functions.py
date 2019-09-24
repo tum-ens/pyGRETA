@@ -242,46 +242,44 @@ def clean_FLH_regression(param, paths):
         clean_IRENA_summary(param, paths)
     IRENA_summary = pd.read_csv(paths['IRENA_summary'], sep=';', decimal=',', index_col=[0, 1])
 
-    # Load IRENA Dictionary
+    # Load IRENA dictionary
     IRENA_dict = pd.read_csv(paths["IRENA_dict"], sep=';')
-    IRENA_dict.set_index(['Countries shapefile'], inplace=True)
     IRENA_dict.dropna(inplace=True)
-    IRENA_dict = IRENA_dict['NAME_SHORT'].to_dict()
+    IRENA_dict.set_index(['NAME_SHORT'], inplace=True)
+    IRENA_dict = IRENA_dict['Countries shapefile'].to_dict()
 
     # Setup FLH_regression dataframe
     list_regions = param["regions_sub"]["NAME_SHORT"].values.tolist()
-    FLH_regression = pd.DataFrame(columns=['WindOn', 'WindOff', 'PV', 'CSP'], index=list_regions)
+    FLH_regression = pd.DataFrame(columns=['WindOn', 'WindOff', 'PV', 'CSP'], index=list_regions, dtype=float)
 
     # Fill in FLH_regression dataframe
     missing = []
     for country in list_regions:
-        # Country/region found in IRENA dict and IRENA summary
+        # Country/region found in IRENA_dict and IRENA_summary
         if country in IRENA_dict.keys():
-            FLH_regression.loc[country] = [IRENA_summary.loc[(country, 'Onshore wind energy'), 'FLH (h)'],
-                                               IRENA_summary.loc[(country, 'Offshore wind energy'), 'FLH (h)'],
-                                               IRENA_summary.loc[(country, 'Solar photovoltaic'), 'FLH (h)'],
-                                               IRENA_summary.loc[(country, 'Concentrated solar power'), 'FLH (h)']]
+            FLH_regression.loc[country] = [IRENA_summary.loc[(IRENA_dict[country], 'Onshore wind energy'), 'FLH (h)'],
+                                           IRENA_summary.loc[(IRENA_dict[country], 'Offshore wind energy'), 'FLH (h)'],
+                                           IRENA_summary.loc[(IRENA_dict[country], 'Solar photovoltaic'), 'FLH (h)'],
+                                           IRENA_summary.loc[(IRENA_dict[country], 'Concentrated solar power'), 'FLH (h)']]
         # Missing country/region, require user input
         else:
             missing.append(country)
-            FLH_regression.loc[country] = [np.nan, np.nan, np.nan, np.nan]
 
     # Save FLH_regression
-    FLH_regression.to_csv(paths['IRENA_regression'], sep=';', decimal=',', index=True)
-    print("files saved: " + paths['IRENA_regression'])
+    FLH_regression.to_csv(paths['FLH_regression'], sep=';', decimal=',', index=True)
+    print("files saved: " + paths['FLH_regression'])
 
     # Return missing countries/regions
-    warn("The following countries/regions are not present in the IRENA Database: " + ','.join(missing) +
-         ". Their corresponding FLH have been left blank.", UserWarning)
+    warn("The following countries/regions are not present in the IRENA database: " + ','.join(missing) + ". Their corresponding FLH have been left blank.", UserWarning)
 
 
 def clean_TS_regression(param, paths, tech):
     """
-    This function creates a .csv file containing the model Time-series used for regression. If the region is present in
+    This function creates a csv file containing the model Time-series used for regression. If the region is present in
     the EMHIRES text files then the TS is extracted directly from it. If the region is not present in the EMHIRES text
     files the highest FLH generated TS is used instead and is scaled to match IRENA FLH.
 
-    :param param: Dictionary containing technologies under study, IRENA_regression dataframe, list of sub-regions contained in shape-file, and year.
+    :param param: Dictionary containing technologies under study, *FLH_regression* dataframe, list of subregions contained in shapefile, and year.
     :type param: dict
     :param paths: Dictionary containing paths to EMHIRES text files
     :type paths: dict
@@ -289,14 +287,14 @@ def clean_TS_regression(param, paths, tech):
     """
 
     # load IRENA FLH data
-    irena = param["IRENA_regression"]
+    irena = pd.read_csv(paths['FLH_regression'], sep=';', decimal=',', index_col=0)
     technologies = param["technology"]
     # Find intersection between desired regions and irena regions
     list_regions = param["regions_sub"]["NAME_SHORT"].values.tolist()
     list_regions = sorted(list(set(list_regions).intersection(set(irena.index))))
 
     # Create TS_regression dataframe
-    TS_regression = pd.DataFrame(data=None, index=range(1, 8761), columns=list_regions)
+    TS_regression = pd.DataFrame(index=range(1, 8761), columns=list_regions)
 
     # Load EMHIRES data for desired year
     if tech in ['PV', 'CSP']:
@@ -324,7 +322,7 @@ def clean_TS_regression(param, paths, tech):
         # Region is present in both EMHIRES and IRENA
         if region in intersect_regions:
             # Scale EMHIRES TS to IRENA
-            TS_regression[region] = EMHIRES[region] * (IRENA_FLH / sum(EMHIRES[region]))
+            TS_regression[region] = (EMHIRES[region] * (IRENA_FLH / sum(EMHIRES[region]))).values
         # Region is not present in EMHIRES, Use scaled generated TS instead
         else:
             # Load Generated TS and Scale it with IRENA FLH
@@ -337,7 +335,8 @@ def clean_TS_regression(param, paths, tech):
                                                                                            ascending=0).index)
             GenTS["TS_Max"] = GenTS[str(settings_sorted[0])]["q" + str(np.max(param["quantiles"]))]
             # Scale max TS to IRENA
-            TS_regression[region] = GenTS["TS_Max"] * (IRENA_FLH / sum(GenTS["TS_Max"]))
+            TS_regression[region] = (GenTS["TS_Max"] * (IRENA_FLH / GenTS["TS_Max"].sum())).values
+
 
     # Save TS_regression as .csv
     TS_regression.to_csv(paths[tech]["TS_regression"], sep=';', decimal=',', index=True)
@@ -605,9 +604,11 @@ def read_generated_TS(paths, param, tech, settings, subregion):
         TS_Temp.columns = TS_Temp.iloc[0]
         TS_Temp = TS_Temp.drop(0)
         # Replace ',' with '.' for float conversion
-        for q in TS_Temp.columns:
-            TS_Temp[q] = TS_Temp[q].str.replace(',', '.')
-        GenTS[str(setting)] = TS_Temp.astype(float)
+        for q in range(0, len(TS_Temp.columns)):
+            TS_Temp.iloc[:, q] = TS_Temp.iloc[:, q].apply(lambda x: x.replace(',', '.')).astype(float)
+            TS_Temp.columns.name = ''
+            TS_Temp.reset_index(inplace=True, drop=True)
+        GenTS[str(setting)] = TS_Temp
 
     return GenTS
 
@@ -636,7 +637,7 @@ def regmodel_load_data(paths, param, tech, settings, subregion):
 
     # Setup dataframe for IRENA
     model_FLH = FLH.loc[subregion, tech]
-    if model_FLH is np.nan:
+    if np.isnan(model_FLH):
         return None
 
     # Read data from output folder
@@ -649,6 +650,7 @@ def regmodel_load_data(paths, param, tech, settings, subregion):
                                for key in GenTS.keys()),
                                index=settings,
                                columns=['FLH_all_quant']).sort_values(by='FLH_all_quant', ascending=0).index)
+    
     GenTS["TS_Max"] = np.nansum(GenTS[str(settings_sorted[0])]["q" + str(np.max(param["quantiles"]))])
     GenTS["TS_Min"] = np.nansum(GenTS[str(settings_sorted[-1])]["q" + str(np.min(param["quantiles"]))])
 
@@ -735,12 +737,14 @@ def combinations_for_regression(paths, param, tech):
             full_combi = sorted(list(settings_existing))
             if not (full_combi in combinations):
                 combinations = combinations + [full_combi]
+            combinations.remove([])
     # Case 4: more files exist than those required
     else:
         if [] in combinations:
             full_combi = sorted(list(settings_existing))
             if not (full_combi in combinations):
                 combinations = combinations + [full_combi]
+            combinations.remove([])
     return combinations
     
     

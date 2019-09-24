@@ -571,7 +571,8 @@ def calc_FLH_wind(hours, args):
       * *rasterData* (dict): Dictionary of numpy arrays containing land use types, Ross coefficients, albedo coefficients,
         and wind speed correction for every point in *reg_ind*.
       * *merraData* (dict): Dictionary of numpy arrays containing the weather data for every point in *reg_ind*.
-    :rtype args: list
+    
+    :type args: list
     :return FLH: Full-load hours over the year for the technology.
     :rtype: numpy array
     """
@@ -618,7 +619,8 @@ def calc_TS_wind(hours, args):
       * *tech* (str): Name of the technology.
       * *rasterData* (dict): Dictionary of numpy arrays containing the wind speed correction for every point in *reg_ind*.
       * *merraData* (dict): Dictionary of numpy arrays containing the weather data for every point in *reg_ind*.
-    :rtype args: list
+    
+    :type args: list
 
     :return TS: Array of time series for the desired quantiles for each subregion.
     :rtype: numpy array

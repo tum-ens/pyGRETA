@@ -1611,30 +1611,30 @@ def generate_stratified_timeseries(paths, param, tech):
 if __name__ == '__main__':
 
     paths, param = initialization()
-    # generate_weather_files(paths, param)
-    # clean_weather_data(paths, param)
-    # generate_landsea(paths, param)  # Land and Sea
-    # generate_subregions(paths, param)  # Subregions
-    # generate_area(paths, param)
-    # generate_landuse(paths, param)  # Landuse
-    # generate_bathymetry(paths, param)  # Bathymetry
-    # generate_topography(paths, param)  # Topography
-    # generate_slope(paths, param)  # Slope
-    # generate_population(paths, param)  # Population
-    # generate_protected_areas(paths, param)  # Protected areas
-    # generate_buffered_population(paths, param)  # Buffered Population
-    # generate_area(paths, param)
+    generate_weather_files(paths, param)
+    clean_weather_data(paths, param)
+    generate_landsea(paths, param)  # Land and Sea
+    generate_subregions(paths, param)  # Subregions
+    generate_area(paths, param)
+    generate_landuse(paths, param)  # Landuse
+    generate_bathymetry(paths, param)  # Bathymetry
+    generate_topography(paths, param)  # Topography
+    generate_slope(paths, param)  # Slope
+    generate_population(paths, param)  # Population
+    generate_protected_areas(paths, param)  # Protected areas
+    generate_buffered_population(paths, param)  # Buffered Population
+    generate_area(paths, param)
     
     for tech in param["technology"]:
         print("Tech: " + tech)
-        # calculate_FLH(paths, param, tech)
-        # masking(paths, param, tech)
-        # weighting(paths, param, tech)
-        # reporting(paths, param, tech)
-        # find_locations_quantiles(paths, param, tech)
-        # generate_time_series(paths, param, tech)
-    # Only for countries present in IRENA FLH report
+        calculate_FLH(paths, param, tech)
+        masking(paths, param, tech)
+        weighting(paths, param, tech)
+        reporting(paths, param, tech)
+        find_locations_quantiles(paths, param, tech)
+        generate_time_series(paths, param, tech)
+
     for tech in param["technology"]:
         print("Tech: " + tech)
-        # regression_coefficients(paths, param, tech)
+        regression_coefficients(paths, param, tech)
         generate_stratified_timeseries(paths, param, tech)

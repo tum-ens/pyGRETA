@@ -105,18 +105,18 @@ def scope_paths_and_parameters(paths, param):
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
 
     paths["spatial_scope"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
-    paths["subregions"] = PathTemp + "Bavaria_WGC.shp"
+    paths["subregions"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
 
     
     # Name tags for the scope and the subregions
     param["region_name"] = 'Europe'  # Name tag of the spatial scope
-    param["subregions_name"] = 'Geothermal_WGC' # Name tag of the subregions
+    param["subregions_name"] = 'Europe_wo_Balkans_NUTS0' # Name tag of the subregions
     
     # Year
     param["year"] = 2015
 
     # Technologies
-    param["technology"] = ['WindOn']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+    param["technology"] = ['WindOn', 'PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
 
     return paths, param
 
@@ -871,13 +871,13 @@ def emhires_input_paths(paths, param, tech):
     year = str(param["year"])
 
     if tech == 'WindOn':
-        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + year + fs + \
+        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES" + fs + \
                                  "TS.CF.COUNTRY.30yr.date.txt"
     elif tech == 'WindOff':
-        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + year + fs + \
+        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES" + fs + \
                                  "TS.CF.OFFSHORE.30yr.date.txt"
     elif tech == 'PV':
-        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + year + fs + \
+        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES" + fs + \
                                  "EMHIRESPV_TSh_CF_Country_19862015.txt"
     return paths
 

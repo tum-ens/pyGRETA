@@ -55,8 +55,8 @@ def general_settings():
     global root
 
     param = {}
-    param["author"] = 'Houssame'  # the name of the person running the script
-    param["comment"] = 'Regression-testing_Documentation-Examples'
+    param["author"] = 'Kais Siala'  # the name of the person running the script
+    param["comment"] = 'Regression-debugging'
     
     paths = {}
     fs = os.path.sep
@@ -244,7 +244,7 @@ def time_series_parameters(param):
 
     # Regression
     param["regression"] = {"solver": 'gurobi',  # string
-                           "WindOn": {'all': []},  # dictionary of hub height combinations
+                           "WindOn": {'2015': [60, 80, 100]},  # dictionary of hub height combinations
                            "WindOff": {'80m': [80]},  # dictionary of hub height combinations
                            "PV": {'all': [0, 90, -90, 180]},  # list of orientation combinations
                            "CSP": {'all': []}
@@ -674,6 +674,7 @@ def output_folders(paths, param):
       * *local_maps* is the output folder for the local maps of the spatial scope.
       * *potential* is the output folder for the ressource and technical potential maps.
       * *regional_analysis* is the output folder for the time series and the report of the subregions.
+      * *regression_in* is the folder where the regression parameters (FLH, fitting time series) are saved.
       * *regression_out* is the output folder for the regression results.
       
     All the folders are created at the beginning of the calculation, if they do not already exist,
@@ -713,11 +714,14 @@ def output_folders(paths, param):
     paths["regional_analysis"] = paths["region"] + "Renewable energy" + fs + "Regional analysis" + fs + subregions + fs
     if not os.path.isdir(paths["regional_analysis"]):
         os.makedirs(paths["regional_analysis"])
-
+    
+    # Regression parameters
+    paths["regression_in"] = paths["regional_analysis"] + "Regression outputs" + fs + "Parameters" + fs
+    if not os.path.isdir(paths["regression_in"]):
+        os.makedirs(paths["regression_in"])
+        
     # Regression output
     paths["regression_out"] = paths["regional_analysis"] + "Regression outputs" + fs
-    if not os.path.isdir(paths["regression_out"]):
-        os.makedirs(paths["regression_out"])
 
     return paths
 
@@ -818,7 +822,7 @@ def irena_paths(paths, param):
     # IRENA input
     paths[
         "IRENA"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA" + fs + "IRENA_RE_electricity_statistics_allcountries_alltech_" + year + ".csv"
-    paths["IRENA_dict"] = root + "00 Assumptions" + fs + "dict_IRENA_countries.csv"
+    paths["IRENA_dict"] = root + "00 Assumptions" + fs + "dict_countries.csv"
 
     # IRENA output
     paths["IRENA_summary"] = paths["region"] + "Renewable energy" + fs + "IRENA_summary_" + year + ".csv"
@@ -841,8 +845,8 @@ def regression_paths(paths, param, tech):
 
     year = str(param["year"])
 
-    paths["FLH_regression"] = paths["regression_out"] + "FLH_regression_" + year + ".csv"
-    paths[tech]["TS_regression"] = paths["regression_out"] + "TS_regression_" + tech + '_' + year + ".csv"
+    paths["FLH_regression"] = paths["regression_in"] + "FLH_regression_" + year + ".csv"
+    paths[tech]["TS_regression"] = paths["regression_in"] + "TS_regression_" + tech + '_' + year + ".csv"
 
     return paths
 

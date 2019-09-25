@@ -1638,7 +1638,3 @@ if __name__ == '__main__':
         print("Tech: " + tech)
         # regression_coefficients(paths, param, tech)
         generate_stratified_timeseries(paths, param, tech)
-        
-    # cProfile.run('initialization()', 'cprofile_test.txt')
-    # p = pstats.Stats('cprofile_test.txt')
-    # p.sort_stats('cumulative').print_stats(20)

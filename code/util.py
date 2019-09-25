@@ -22,8 +22,6 @@ import hdf5storage
 from multiprocessing import Pool
 from itertools import product
 import h5netcdf
-import cProfile
-import pstats
 import shutil
 import pyomo.environ as pyo
 from pyomo.opt import SolverFactory

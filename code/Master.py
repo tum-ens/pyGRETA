@@ -935,13 +935,24 @@ def calculate_FLH(paths, param, tech):
 
     hdf5storage.writes({'FLH': FLH}, paths[tech]["FLH"], store_python_metadata=True, matlab_compatible=True)
     print("\nfiles saved: " + paths[tech]["FLH"])
+
+    # Save GEOTIFF files
+    if param["savetiff"]:
+        GeoRef = param["GeoRef"]
+        array2raster(changeExt2tif(paths[tech]["mask"]),
+                     GeoRef["RasterOrigin"],
+                     GeoRef["pixelWidth"],
+                     GeoRef["pixelHeight"],
+                     FLH)
+        print("files saved:" + changeExt2tif(paths[tech]["mask"]))
+
     timecheck('End')
 
 
 def masking(paths, param, tech):
     timecheck('Start')
     mask = param[tech]["mask"]
-    GeoRef = param["GeoRef"]
+
 
     if tech in ['PV', 'CSP']:
         with rasterio.open(paths["PA"]) as src:
@@ -1024,6 +1035,7 @@ def masking(paths, param, tech):
 
     # Save GEOTIFF files
     if param["savetiff"]:
+        GeoRef = param["GeoRef"]
         array2raster(changeExt2tif(paths[tech]["mask"]),
                      GeoRef["RasterOrigin"],
                      GeoRef["pixelWidth"],
@@ -1170,12 +1182,12 @@ def reporting(paths, param, tech):
         regions.loc[reg, "Available_Masked"] = int(available_masked)
 
         # Interrupt reporting of region if no available pixels
-        if (int(available_masked) == 0):
+        if int(available_masked) == 0:
             regions.drop([reg], axis=0, inplace=True)
             continue
 
         # Interrupt reporting of region already reported (may occur due to discrepancy in borders)
-        if (regions.loc[reg, "Region"] in regions.loc[:reg - 1, "Region"].to_list()):
+        if regions.loc[reg, "Region"] in regions.loc[:reg - 1, "Region"].to_list():
             ind_prev = regions.loc[regions["Region"] == regions.loc[reg, "Region"]].index[0]
             if regions.loc[ind_prev, "Available_Masked"] > int(available_masked):
                 regions.drop([reg], axis=0, inplace=True)

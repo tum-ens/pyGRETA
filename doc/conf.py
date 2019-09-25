@@ -22,6 +22,7 @@ project = 'renewable-timeseries'
 copyright = 'ENS 2019'
 author = 'Kais Siala, Houssame Houmy'
 
+
 # The full version, including alpha/beta/rc tags
 release = '1.0.0'
 version = release
@@ -55,7 +56,7 @@ html_theme = "sphinx_rtd_theme"
 
 html_theme_options = {
     'canonical_url': '',
-    'analytics_id': 'UA-XXXXXXX-1',  #  Provided by Google in your dashboard
+    # 'analytics_id': 'UA-XXXXXXX-1',  #  Provided by Google in your dashboard
     'logo_only': False,
     'display_version': True,
     'prev_next_buttons_location': 'both',
@@ -67,6 +68,31 @@ html_theme_options = {
     'includehidden': True,
     'titles_only': False
 }
+
+# -- Options for LatexPDF output ---------------------------------------------- 
+
+latex_documents = {
+    'startdocname': '',  # (path) Start file for the documentation to be included in PDF, can be left empty to use default index.rst
+    'targetname': project,  # (str) Output name of the Latex file generated
+    'title':,  # (str) Title of the Latex/pdf file, can be left empty to use the title of startdocname
+    'author': 'Kais Siala, \\Sergio Alejandro Huezo Rodriguez, \\and Houssame Houmy. ',  # (str) Authors, use \\ to separate authors (e.i. 'John \\and Sarah')
+    'documentclass': '',  # not clear
+    'toctree_only': True  # (bool) Include startdocname in the latex/pdf ? can be used to have different first pages. The first toctree entry in startdocname will be used.
+    }
+    
+latex_show_pagerefs = True # (True/False) Show the references at the end instead of footnotes
+
+
+# Remove redundant white pages 
+# latex_elements = {
+#   'classoptions': ',oneside',
+# }
+
+# latex_toplevel_sectioning = 'section'
+# This value determines the topmost sectioning unit. It should be chosen from 'part', 'chapter' or 'section'. 
+# The default is None; the topmost sectioning unit is switched by documentclass: section is used if documentclass will be howto, otherwise chapter will be used.
+# Note that if LaTeX uses \part command, then the numbering of sectioning units one level deep gets off-sync with HTML numbering, because LaTeX numbers continuously \chapter
+
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

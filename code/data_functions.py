@@ -705,7 +705,7 @@ def regmodel_load_data(paths, param, tech, settings, subregion):
     
 def combinations_for_regression(paths, param, tech):
     """
-    ?????
+    missing documentation
     """
     subregions = param["subregions_name"]
     year = str(param["year"])
@@ -757,7 +757,7 @@ def combinations_for_regression(paths, param, tech):
     
 def combinations_for_stratified_timeseries(paths, param, tech):
     """
-    ?????
+    missing documentation
     """
     subregions = param["subregions_name"]
     year = str(param["year"])

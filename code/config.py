@@ -841,8 +841,13 @@ def regression_paths(paths, param, tech):
 
     year = str(param["year"])
 
-    paths["FLH_regression"] = paths["regression_out"] + "FLH_regression_" + year + ".csv"
-    paths[tech]["TS_regression"] = paths["regression_out"] + "TimeSeries_regression_" + tech + '_' + year + ".csv"
+    # Regression inputs
+    paths["regression_in"] = paths["regional_analysis"] + "Regression inputs" + fs
+    if not os.path.isdir(paths["regression_in"]):
+        os.makedirs(paths["regression_in"])
+
+    paths["FLH_regression"] = paths["regression_in"] + "FLH_regression_" + year + ".csv"
+    paths[tech]["TS_regression"] = paths["regression_in"] + "TimeSeries_regression_" + tech + '_' + year + ".csv"
 
     return paths
 

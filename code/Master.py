@@ -1596,7 +1596,7 @@ def generate_stratified_timeseries(paths, param, tech):
         TS_files = {}
         for setting in combo:
             setting_path = paths["regional_analysis"] + subregions + '_' + tech + '_' + str(setting) + '_TS_' + year + '.csv'
-            TS_files[setting] = pd.read_csv(setting_path, sep=';', decimal=',', header=[0,1], index_col=[0])
+            TS_files[setting] = pd.read_csv(setting_path, sep=';', decimal=',', header=[0, 1], index_col=[0])
         
         # Loop over modes and regions
         TS_df = pd.DataFrame(index=range(8760), dtype='float16')

@@ -227,6 +227,7 @@ def changem(A, newval, oldval):
 def ind2sub(array_shape, ind):
     """
     This function converts linear indices to subscripts.
+    
     :param array_shape: tuple (# of rows, # of columns)
     :param ind: Index
     :return: tuple (row values, column values)
@@ -391,7 +392,7 @@ def check_regression_model(paths, tech):
     """
     while True:
         # Load IRENA data and regions
-        FLH = pd.read_csv(paths["IRENA_regression"], sep=';', decimal=',', index_col=0)
+        FLH = pd.read_csv(paths["FLH_regression"], sep=';', decimal=',', index_col=0)
         # load TS regression file
         TS_reg = pd.read_csv(paths[tech]["TS_regression"], sep=';', decimal=',', index_col=0, header=0)
 
@@ -400,8 +401,8 @@ def check_regression_model(paths, tech):
         reg_nan_null = list(FLH.loc[filter_FLH].index)
 
         if len(reg_nan_null) != 0:
-            print('Missing data:' + ','.join(reg_nan_null))
-            ans = input("Some regions are missing FLH data for the technology of choice. Continue ? [y]/n")
+            print('Missing data:' + ', '.join(reg_nan_null))
+            ans = input("Some regions are missing FLH data for the technology of choice. Continue ? [y/n]\n")
             if ans in ['', 'y', '[y]']:
                 break
         else:

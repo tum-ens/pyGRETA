@@ -298,12 +298,11 @@ def limit_cpu(check):
 def timecheck(*args):
     """
     This function prints information about the progress of the script by displaying the function currently running, and optionally
-    an input message, with a corresponding timestamp.
+    an input message, with a corresponding timestamp. ????? mention error raised
 
     :param args: Message to be displayed with the function name and the timestamp.
     :type args: string (``optional``)
     :return: None
-    ????? mention error raised
     """
     if len(args) == 0:
         print(inspect.stack()[1].function + str(datetime.datetime.now().strftime(": %H:%M:%S:%f")) + "\n")
@@ -386,7 +385,6 @@ def create_json(filepath, param, param_keys, paths, paths_keys):
 
 def check_regression_model(paths, tech):
     """
-    ?????
     This function checks the regression model parameters for nan values, and returns the FLH and TS model dataframes.
     :param paths:
     :param tech:

@@ -1,0 +1,4 @@
+conda:
+    file: doc/DocEnv.yml
+python:
+    version: 3

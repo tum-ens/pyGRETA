@@ -71,14 +71,14 @@ html_theme_options = {
 
 # -- Options for LatexPDF output ---------------------------------------------- 
 
-latex_documents = {
-    'startdocname': '',  # (path) Start file for the documentation to be included in PDF, can be left empty to use default index.rst
-    'targetname': project,  # (str) Output name of the Latex file generated
-    'title': '',  # (str) Title of the Latex/pdf file, can be left empty to use the title of startdocname
-    'author': 'Kais Siala, \\Sergio Alejandro Huezo Rodriguez, \\and Houssame Houmy. ',  # (str) Authors, use \\ to separate authors (e.i. 'John \\and Sarah')
-    'documentclass': '',  # not clear
-    'toctree_only': True  # (bool) Include startdocname in the latex/pdf ? can be used to have different first pages. The first toctree entry in startdocname will be used.
-    }
+#latex_documents = {
+#    'startdocname': '',  # (path) Start file for the documentation to be included in PDF, can be left empty to use default index.rst
+#    'targetname': project,  # (str) Output name of the Latex file generated
+#    'title': '',  # (str) Title of the Latex/pdf file, can be left empty to use the title of startdocname
+#    'author': 'Kais Siala, \\Sergio Alejandro Huezo Rodriguez, \\and Houssame Houmy. ',  # (str) Authors, use \\ to separate authors (e.i. 'John \\and Sarah')
+#    'documentclass': '',  # not clear
+#    'toctree_only': True  # (bool) Include startdocname in the latex/pdf ? can be used to have different first pages. The first toctree entry in startdocname will be used.
+#    }
     
 latex_show_pagerefs = True # (True/False) Show the references at the end instead of footnotes
 

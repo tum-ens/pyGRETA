@@ -1,7 +1,7 @@
 from data_functions import *
 from util import *
 
-np.seterr(divide='ignore')  # Repress invalid value or division by zero error
+np.seterr(divide="ignore")  # Repress invalid value or division by zero error
 
 
 def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
@@ -47,14 +47,13 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
         return CF_pv, CF_csp
 
     # Check orientation parameter
-    if 'orientation' in pv.keys():
+    if "orientation" in pv.keys():
         orient = pv["orientation"]
     else:
         orient = 0
 
     # Compute the angles
-    A_phi, A_omega, A_delta, A_alpha, A_beta, A_azimuth, A_orientation = \
-        angles(hour, reg_ind_h, Crd_all, res_desired, orient)
+    A_phi, A_omega, A_delta, A_alpha, A_beta, A_azimuth, A_orientation = angles(hour, reg_ind_h, Crd_all, res_desired, orient)
 
     # Compute the hourly TOA radiation
     TOA_h = toa_hourly(A_alpha, hour)
@@ -83,19 +82,26 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
     # Currently ignored
     SHADING = 0
 
-    if tech == 'PV':
+    if tech == "PV":
         # Tracking
         if pv["tracking"] == 1:
             A_orientation, A_beta = tracking(1, A_phi, A_alpha, A_beta, A_azimuth)
         elif pv["tracking"] == 2:
             A_orientation, A_beta = tracking(2, A_phi, A_alpha, A_beta, A_azimuth)
 
-        aux = np.maximum(np.minimum((sind(A_delta) * sind(A_phi) * cosd(A_beta)
-                                     - sind(A_delta) * cosd(A_phi) * sind(A_beta) * cosd(A_orientation)
-                                     + cosd(A_delta) * cosd(A_phi) * cosd(A_beta) * cosd(A_omega)
-                                     + cosd(A_delta) * sind(A_phi) * sind(A_beta) * cosd(A_orientation) * cosd(A_omega)
-                                     + cosd(A_delta) * sind(A_beta) * sind(A_orientation) * sind(A_omega)),
-                                    1), -1)
+        aux = np.maximum(
+            np.minimum(
+                (
+                    sind(A_delta) * sind(A_phi) * cosd(A_beta)
+                    - sind(A_delta) * cosd(A_phi) * sind(A_beta) * cosd(A_orientation)
+                    + cosd(A_delta) * cosd(A_phi) * cosd(A_beta) * cosd(A_omega)
+                    + cosd(A_delta) * sind(A_phi) * sind(A_beta) * cosd(A_orientation) * cosd(A_omega)
+                    + cosd(A_delta) * sind(A_beta) * sind(A_orientation) * sind(A_omega)
+                ),
+                1,
+            ),
+            -1,
+        )
         A_incidence = arccosd(aux)
         # Compute the coefficients for the HDKR model
         R_b = cosd(A_incidence) / sind(A_alpha)
@@ -126,7 +132,7 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
     else:
         CF_pv = None
 
-    if tech == 'CSP':
+    if tech == "CSP":
         # Wind Speed Corrected at 2m
         w2m_h = resizem(merraData["W50M"][:, :, hour], m_high, n_high)
         w2m_h = w2m_h[reg_ind] * rasterData["A_WindSpeed_Corr"][reg_ind]
@@ -136,18 +142,24 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
 
         # For CSP: tracking like pv.tracking = 1
         A_beta = 90 - A_alpha
-        aux = np.maximum(np.minimum((sind(A_delta) * sind(A_phi) * cosd(A_beta)
-                                     - sind(A_delta) * cosd(A_phi) * sind(A_beta) * cosd(A_orientation)
-                                     + cosd(A_delta) * cosd(A_phi) * cosd(A_beta) * cosd(A_omega)
-                                     + cosd(A_delta) * sind(A_phi) * sind(A_beta) * cosd(A_orientation) * cosd(A_omega)
-                                     + cosd(A_delta) * sind(A_beta) * sind(A_orientation) * sind(A_omega)),
-                                    1), -1)
+        aux = np.maximum(
+            np.minimum(
+                (
+                    sind(A_delta) * sind(A_phi) * cosd(A_beta)
+                    - sind(A_delta) * cosd(A_phi) * sind(A_beta) * cosd(A_orientation)
+                    + cosd(A_delta) * cosd(A_phi) * cosd(A_beta) * cosd(A_omega)
+                    + cosd(A_delta) * sind(A_phi) * sind(A_beta) * cosd(A_orientation) * cosd(A_omega)
+                    + cosd(A_delta) * sind(A_beta) * sind(A_orientation) * sind(A_omega)
+                ),
+                1,
+            ),
+            -1,
+        )
         A_incidence = arccosd(aux)
         R_b = cosd(A_incidence) / sind(A_alpha)
         F_direct_csp, _, _ = coefficients(90 - A_alpha, RATIO, R_b, A_i, f)
         S = TOA_h * CLEARNESS_h * F_direct_csp * (1 - SHADING)
-        Qu = csp["Flow_coeff"] * (S - csp["AbRe_ratio"] * (csp["loss_coeff"] + csp["loss_coeff_wind"] * w2m_h ** 2)
-                                  * (csp["T_avg_HTF"] - TEMP_h))
+        Qu = csp["Flow_coeff"] * (S - csp["AbRe_ratio"] * (csp["loss_coeff"] + csp["loss_coeff_wind"] * w2m_h ** 2) * (csp["T_avg_HTF"] - TEMP_h))
         CF_csp = Qu / 1000
         CF_csp[CF_csp < 0] = 0
         CF_csp[CF_csp > 1] = 1
@@ -197,14 +209,15 @@ def calc_FLH_solar(hours, args):
         if hour <= param["status_bar_limit"]:
             # Show progress of the simulation
             status = status + 1
-            sys.stdout.write('\r')
-            sys.stdout.write(tech + ' ' + param["region_name"] + ' ' + '[%-50s] %d%%' % (
-                '=' * ((status * 50) // len(hours)), (status * 100) // len(hours)))
+            sys.stdout.write("\r")
+            sys.stdout.write(
+                tech + " " + param["region_name"] + " " + "[%-50s] %d%%" % ("=" * ((status * 50) // len(hours)), (status * 100) // len(hours))
+            )
             sys.stdout.flush()
 
-        if tech == 'PV':
+        if tech == "PV":
             CF = calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech)[0]
-        elif tech == 'CSP':
+        elif tech == "CSP":
             CF = calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech)[1]
 
         # Aggregates CF to obtain the yearly FLH
@@ -246,14 +259,15 @@ def calc_TS_solar(hours, args):
         if hour <= param["status_bar_limit"]:
             # Show progress of the simulation
             status = status + 1
-            sys.stdout.write('\r')
-            sys.stdout.write(tech + ' ' + param["subregions_name"] + ' ' + '[%-50s] %d%%' % (
-                '=' * ((status * 50) // len(hours)), (status * 100) // len(hours)))
+            sys.stdout.write("\r")
+            sys.stdout.write(
+                tech + " " + param["subregions_name"] + " " + "[%-50s] %d%%" % ("=" * ((status * 50) // len(hours)), (status * 100) // len(hours))
+            )
             sys.stdout.flush()
 
-        if tech == 'PV':
+        if tech == "PV":
             CF = calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech)[0]
-        elif tech == 'CSP':
+        elif tech == "CSP":
             CF = calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech)[1]
 
         # Aggregates CF to obtain the time series
@@ -307,9 +321,8 @@ def angles(hour, reg_ind, Crd_all, res_desired, orient):
     omega = 15 * (omegast - 12)
 
     # Declination angle
-    delta = np.tile(
-        arcsind(0.3978 * sin(N * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(N * 2 * np.pi / 365.25 - 0.0489))), k)
-    delta[phi < 0] = - delta[phi < 0]
+    delta = np.tile(arcsind(0.3978 * sin(N * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(N * 2 * np.pi / 365.25 - 0.0489))), k)
+    delta[phi < 0] = -delta[phi < 0]
 
     # Elevation angle (in degrees)
     alpha = arcsind(sind(delta) * sind(phi) + cosd(delta) * cosd(phi) * cosd(omega))
@@ -321,13 +334,11 @@ def angles(hour, reg_ind, Crd_all, res_desired, orient):
     range_lat = np.logical_and(lat >= 35, lat < 65)
     range_lon = np.logical_and(lon >= -20, lon < 30)
 
-    beta[np.logical_and(range_lat, range_lon)] = (beta[np.logical_and(range_lat,
-                                                                      range_lon)] - 35) / 65 * 45 + 35  # Europe
+    beta[np.logical_and(range_lat, range_lon)] = (beta[np.logical_and(range_lat, range_lon)] - 35) / 65 * 45 + 35  # Europe
     range_lat = np.logical_and(lat >= 20, lat < 65)
     range_lon = np.logical_and(lon >= 75, lon < 140)
 
-    beta[np.logical_and(range_lat, range_lon)] = (beta[np.logical_and(range_lat,
-                                                                      range_lon)] - 20) / 65 * 60 + 20  # Asia/China
+    beta[np.logical_and(range_lat, range_lon)] = (beta[np.logical_and(range_lat, range_lon)] - 20) / 65 * 60 + 20  # Asia/China
 
     # Azimuth angle (in degrees)
     aux = np.maximum(np.minimum(sind(delta) * cosd(phi) - cosd(delta) * sind(phi) * cosd(omega) / cosd(alpha), 1), -1)
@@ -368,8 +379,9 @@ def tracking(axis, A_phi, A_alpha, A_beta, A_azimuth):
         A_orientation = np.zeros(A_alpha.shape)
         A_orientation[A_phi < 0] = 180
 
-        x = (cosd(A_alpha) * (-sind(A_azimuth - A_orientation))) \
-            / (cosd(A_alpha) * (-cosd(A_azimuth - A_orientation)) * sind(A_beta) + sind(A_alpha) * cosd(A_beta))
+        x = (cosd(A_alpha) * (-sind(A_azimuth - A_orientation))) / (
+            cosd(A_alpha) * (-cosd(A_azimuth - A_orientation)) * sind(A_beta) + sind(A_alpha) * cosd(A_beta)
+        )
 
         # The difference should be the angular displacement
         Az_dif = A_azimuth - (A_orientation + 180)
@@ -378,8 +390,7 @@ def tracking(axis, A_phi, A_alpha, A_beta, A_azimuth):
 
         # y is used to locate R on the right quadrant
         y = np.zeros(x.shape())
-        crit = np.logical_or(x == 0,
-                             np.logical_or(np.logical_and(x > 0, Az_dif > 0), np.logical_and(x < 0, Az_dif < 0)))
+        crit = np.logical_or(x == 0, np.logical_or(np.logical_and(x > 0, Az_dif > 0), np.logical_and(x < 0, Az_dif < 0)))
         y[crit] = 0
         crit = np.logical_and(x < 0, Az_dif > 0)
         y[crit] = 180
@@ -503,8 +514,7 @@ def global2diff(k_t, dims):
     k_d[criterion] = 1 - 0.09 * k_t[criterion]
 
     criterion = np.logical_and(k_t > 0.22, k_t <= 0.8)
-    k_d[criterion] = 0.9511 - 0.1604 * k_t[criterion] + 4.388 * k_t[criterion] ** 2 - 16.638 * k_t[criterion] ** 3 \
-                     + 12.336 * k_t[criterion] ** 4
+    k_d[criterion] = 0.9511 - 0.1604 * k_t[criterion] + 4.388 * k_t[criterion] ** 2 - 16.638 * k_t[criterion] ** 3 + 12.336 * k_t[criterion] ** 4
 
     criterion = k_t > 0.8
     k_d[criterion] = 0.165
@@ -514,7 +524,7 @@ def global2diff(k_t, dims):
     return A_ratio
 
 
-def calc_CF_wind(hour, reg_ind, turbine, m, n, merraData, rasterData):         
+def calc_CF_wind(hour, reg_ind, turbine, m, n, merraData, rasterData):
     """
     This function computes the hourly capacity factor for onshore and offshore wind for all valid pixels within
     the spatial scope for a given hour.
@@ -564,7 +574,7 @@ def calc_CF_wind(hour, reg_ind, turbine, m, n, merraData, rasterData):
     return CF
 
 
-def calc_FLH_wind(hours, args):           
+def calc_FLH_wind(hours, args):
     """
     This function computes the full-load hours for all valid pixels specified in *ind_nz* in *param*. Due to parallel processing,
     most of the inputs are collected in the list *args*.
@@ -600,9 +610,10 @@ def calc_FLH_wind(hours, args):
         if hour <= param["status_bar_limit"]:
             # Show progress of the simulation
             status = status + 1
-            sys.stdout.write('\r')
-            sys.stdout.write(tech + ' ' + param["region_name"] + ' ' + '[%-50s] %d%%' % (
-                '=' * ((status * 50) // len(hours)), (status * 100) // len(hours)))
+            sys.stdout.write("\r")
+            sys.stdout.write(
+                tech + " " + param["region_name"] + " " + "[%-50s] %d%%" % ("=" * ((status * 50) // len(hours)), (status * 100) // len(hours))
+            )
             sys.stdout.flush()
 
         # Calculate hourly capacity factor
@@ -650,9 +661,10 @@ def calc_TS_wind(hours, args):
         if hour <= param["status_bar_limit"]:
             # Show progress of the simulation
             status = status + 1
-            sys.stdout.write('\r')
-            sys.stdout.write(tech + ' ' + param["subregions_name"] + ' ' + '[%-50s] %d%%' % (
-                '=' * ((status * 50) // len(hours)), (status * 100) // len(hours)))
+            sys.stdout.write("\r")
+            sys.stdout.write(
+                tech + " " + param["subregions_name"] + " " + "[%-50s] %d%%" % ("=" * ((status * 50) // len(hours)), (status * 100) // len(hours))
+            )
             sys.stdout.flush()
 
         # Calculate hourly capacity factor
@@ -663,7 +675,7 @@ def calc_TS_wind(hours, args):
         TS[:, hour] = CF
     return TS
 
-    
+
 def pyomo_regression_model():
     """
     This function returns an abstract pyomo model of a constrained least square problem for time series fitting to

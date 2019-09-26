@@ -145,10 +145,14 @@ def resizem(A_in, row_new, col_new):
     """
     row_rep = row_new // np.shape(A_in)[0]
     col_rep = col_new // np.shape(A_in)[1]
-    A_inf = (A_in.flatten(order='F')[np.newaxis])
-    A_out = reshape(repmat(
-        reshape(reshape(repmat((A_in.flatten(order='F')[np.newaxis]), row_rep, 1), (row_new, -1), order='F').T, (-1, 1),
-                order='F'), 1, col_rep).T, (col_new, row_new), order='F').T
+    A_inf = A_in.flatten(order="F")[np.newaxis]
+    A_out = reshape(
+        repmat(
+            reshape(reshape(repmat((A_in.flatten(order="F")[np.newaxis]), row_rep, 1), (row_new, -1), order="F").T, (-1, 1), order="F"), 1, col_rep
+        ).T,
+        (col_new, row_new),
+        order="F",
+    ).T
 
     return A_out
 
@@ -175,8 +179,8 @@ def array2raster(newRasterfn, rasterOrigin, pixelWidth, pixelHeight, array):
     originX = rasterOrigin[0]
     originY = rasterOrigin[1]
 
-    driver = gdal.GetDriverByName('GTiff')
-    outRaster = driver.Create(newRasterfn, cols, rows, 1, gdal.GDT_Float64, ['COMPRESS=PACKBITS'])
+    driver = gdal.GetDriverByName("GTiff")
+    outRaster = driver.Create(newRasterfn, cols, rows, 1, gdal.GDT_Float64, ["COMPRESS=PACKBITS"])
     outRaster.SetGeoTransform((originX, pixelWidth, 0, originY, 0, pixelHeight))
     outRasterSRS = osr.SpatialReference()
     outRasterSRS.ImportFromEPSG(4326)
@@ -231,7 +235,7 @@ def ind2sub(array_shape, ind):
     :param ind: Index
     :return: tuple (row values, column values)
     """
-    return np.unravel_index(ind, array_shape, order='F')
+    return np.unravel_index(ind, array_shape, order="F")
 
 
 def field_exists(field_name, shp_path):
@@ -248,7 +252,7 @@ def field_exists(field_name, shp_path):
 
 def changeExt2tif(filepath):
     base = os.path.splitext(filepath)[0]
-    return base + '.tif'
+    return base + ".tif"
 
 
 def sumnorm_MERRA2(A, m, n, res_low, res_desired):
@@ -257,8 +261,7 @@ def sumnorm_MERRA2(A, m, n, res_low, res_desired):
     col_step = int(res_low[1] / res_desired[1])
     for i in range(0, m):
         for j in range(0, n):
-            s[i, j] = np.sum(A[(row_step * i):(row_step * (i + 1)),
-                             (col_step * j):(col_step * (j + 1))]) / (row_step * col_step)
+            s[i, j] = np.sum(A[(row_step * i) : (row_step * (i + 1)), (col_step * j) : (col_step * (j + 1))]) / (row_step * col_step)
     return s
 
 
@@ -276,17 +279,17 @@ def limit_cpu(check):
     check = check[0]
     p = psutil.Process(os.getpid())
     if check:
-        if sys.platform.startswith('win'):
+        if sys.platform.startswith("win"):
             # Windows priority
             p.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
-        elif sys.platform.startswith('linux'):
+        elif sys.platform.startswith("linux"):
             # Linux priority
             p.nice(1)
     else:
-        if sys.platform.startswith('win'):
+        if sys.platform.startswith("win"):
             # Windows priority
             p.nice(psutil.NORMAL_PRIORITY_CLASS)
-        elif sys.platform.startswith('linux'):
+        elif sys.platform.startswith("linux"):
             # Linux priority
             p.nice(0)
 
@@ -301,14 +304,13 @@ def timecheck(*args):
     :return: None
     """
     if len(args) == 0:
-        print(inspect.stack()[1].function + str(datetime.datetime.now().strftime(": %H:%M:%S:%f")) + '\n')
+        print(inspect.stack()[1].function + str(datetime.datetime.now().strftime(": %H:%M:%S:%f")) + "\n")
 
     elif len(args) == 1:
-        print(inspect.stack()[1].function + ' - ' + str(args[0])
-              + str(datetime.datetime.now().strftime(": %H:%M:%S:%f")) + '\n')
+        print(inspect.stack()[1].function + " - " + str(args[0]) + str(datetime.datetime.now().strftime(": %H:%M:%S:%f")) + "\n")
 
     else:
-        raise Exception('Too many arguments have been passed.\nExpected: zero or one \nPassed: ' + format(len(args)))
+        raise Exception("Too many arguments have been passed.\nExpected: zero or one \nPassed: " + format(len(args)))
 
 
 def display_progress(message, progress_stat):
@@ -323,11 +325,11 @@ def display_progress(message, progress_stat):
     """
     length = progress_stat[0]
     status = progress_stat[1]
-    sys.stdout.write('\r')
-    sys.stdout.write(message + ' ' + '[%-50s] %d%%' % ('=' * ((status * 50) // length), (status * 100) // length))
+    sys.stdout.write("\r")
+    sys.stdout.write(message + " " + "[%-50s] %d%%" % ("=" * ((status * 50) // length), (status * 100) // length))
     sys.stdout.flush()
     if status == length:
-        print('\n')
+        print("\n")
 
 
 def create_json(filepath, param, param_keys, paths, paths_keys):
@@ -353,7 +355,7 @@ def create_json(filepath, param, param_keys, paths, paths_keys):
     :return: The json file will be saved in the desired path *filepath*.
     :rtype: None
     """
-    new_file = os.path.splitext(filepath)[0] + '.json'
+    new_file = os.path.splitext(filepath)[0] + ".json"
     new_dict = {}
     # Add standard keys
     param_keys = param_keys + ["author", "comment"]
@@ -376,7 +378,7 @@ def create_json(filepath, param, param_keys, paths, paths_keys):
     new_dict["timestamp"] = str(datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
     # Add caller function's name
     new_dict["function"] = inspect.stack()[1][3]
-    with open(new_file, 'w') as json_file:
+    with open(new_file, "w") as json_file:
         json.dump(new_dict, json_file)
 
 
@@ -389,18 +391,18 @@ def check_regression_model(paths, tech):
     """
     while True:
         # Load IRENA data and regions
-        FLH = pd.read_csv(paths["IRENA_regression"], sep=';', decimal=',', index_col=0)
+        FLH = pd.read_csv(paths["IRENA_regression"], sep=";", decimal=",", index_col=0)
         # load TS regression file
-        TS_reg = pd.read_csv(paths[tech]["TS_regression"], sep=';', decimal=',', index_col=0, header=0)
+        TS_reg = pd.read_csv(paths[tech]["TS_regression"], sep=";", decimal=",", index_col=0, header=0)
 
         # Create filter for nan and 0 values for FLH_regression
         filter_FLH = np.logical_or(np.isnan(FLH[tech]), FLH[tech] == 0)
         reg_nan_null = list(FLH.loc[filter_FLH].index)
 
         if len(reg_nan_null) != 0:
-            print('Missing data:' + ','.join(reg_nan_null))
+            print("Missing data:" + ",".join(reg_nan_null))
             ans = input("Some regions are missing FLH data for the technology of choice. Continue ? [y]/n")
-            if ans in ['', 'y', '[y]']:
+            if ans in ["", "y", "[y]"]:
                 break
         else:
             break

@@ -1,4 +1,5 @@
 # renewable-timeseries
+[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors)
 
 This is a python script that generates high-resolution potential maps and time series for user-defined regions within the globe.
 
@@ -31,3 +32,19 @@ You do not need to use the code (*but you can*) if:
 * You only need time series for specific points - use other webtools such as [Renewables.ninja](https://www.renewables.ninja/)
 * You only need time series for administrative divisions (countries, NUTS-2, etc.), for which such data is readily available - see [Renewables.ninja](https://www.renewables.ninja/) or [EMHIRES](https://ec.europa.eu/jrc/en/scientific-tool/emhires)
 
+
+## Contributors ✨
+
+Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore -->
+<table>
+  <tr>
+    <td align="center"><a href="https://github.com/kais-siala"><img src="https://avatars2.githubusercontent.com/u/21306297?v=4" width="100px;" alt="kais-siala"/><br /><sub><b>kais-siala</b></sub></a><br /><a href="#question-kais-siala" title="Answering Questions">💬</a></td>
+  </tr>
+</table>
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!

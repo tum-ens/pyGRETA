@@ -1,5 +1,5 @@
 # renewable-timeseries
-[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors)
+[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors)
 
 This is a python script that generates high-resolution potential maps and time series for user-defined regions within the globe.
 
@@ -44,6 +44,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <table>
   <tr>
     <td align="center"><a href="https://github.com/kais-siala"><img src="https://avatars2.githubusercontent.com/u/21306297?v=4" width="100px;" alt="kais-siala"/><br /><sub><b>kais-siala</b></sub></a><br /><a href="#question-kais-siala" title="Answering Questions">💬</a></td>
+    <td align="center"><a href="https://github.com/HoussameH"><img src="https://avatars2.githubusercontent.com/u/48953960?v=4" width="100px;" alt="HoussameH"/><br /><sub><b>HoussameH</b></sub></a><br /><a href="#question-HoussameH" title="Answering Questions">💬</a> <a href="https://github.com/tum-ens/renewable-timeseries/commits?author=HoussameH" title="Code">💻</a> <a href="https://github.com/tum-ens/renewable-timeseries/commits?author=HoussameH" title="Documentation">📖</a></td>
   </tr>
 </table>
 

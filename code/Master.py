@@ -1435,10 +1435,9 @@ def regression_coefficients(paths, param, tech):
         print("Combinations of hub heights to be used for the regression: ", combinations)
     elif tech in ["PV"]:
         print("Orientations to be used for the regression: ", combinations)
-
-    # Create IRENA file for regression
-
-    if not os.path.isfile(paths["IRENA_regression"]):
+    
+    # Create FLH file for regression
+    if not os.path.isfile(paths["FLH_regression"]):
         clean_FLH_regression(param, paths)
 
     # Create TS file for regression
@@ -1450,8 +1449,8 @@ def regression_coefficients(paths, param, tech):
     param["FLH_regression"] = FLH
     param["TS_regression"] = TS_reg
 
-    # Find intersection between IRENA and shapefile Subregions
-    list_regions = sorted(param["regions_sub"]["NAME_SHORT"].values.tolist())
+    # Find intersection between FLH and shapefile subregions 
+    list_regions = param["regions_sub"]["NAME_SHORT"].values.tolist()
     list_regions = sorted(list(set(list_regions).intersection(set(FLH.index))))
 
     # Summary Variables
@@ -1474,7 +1473,6 @@ def regression_coefficients(paths, param, tech):
 
             # Skip regions not present in the generated TS
             if region_data is None:
-                print(reg)
                 nodata = nodata + reg + ", "
                 continue
 
@@ -1629,15 +1627,14 @@ if __name__ == "__main__":
 
     for tech in param["technology"]:
         print("Tech: " + tech)
-        # calculate_FLH(paths, param, tech)
-        # masking(paths, param, tech)
+        calculate_FLH(paths, param, tech)
+        masking(paths, param, tech)
         weighting(paths, param, tech)
         reporting(paths, param, tech)
         find_locations_quantiles(paths, param, tech)
         generate_time_series(paths, param, tech)
 
-    # Only for countries/region with FLH values available
     for tech in param["technology"]:
         print("Tech: " + tech)
         regression_coefficients(paths, param, tech)
-        # generate_stratified_timeseries(paths, param, tech)
+        generate_stratified_timeseries(paths, param, tech)

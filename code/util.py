@@ -31,7 +31,7 @@ from warnings import warn
 
 def sind(alpha):
     """
-    Calculates the sine of an angle in degrees.
+    This function calculates the sine of an angle in degrees.
     
     :param alpha: Angle in degrees.
     :type alpha: float
@@ -43,7 +43,7 @@ def sind(alpha):
 
 def cosd(alpha):
     """
-    Calculates the cosine of an angle in degrees.
+    This function calculates the cosine of an angle in degrees.
     
     :param alpha: Angle in degrees.
     :type alpha: float
@@ -55,7 +55,7 @@ def cosd(alpha):
 
 def tand(alpha):
     """
-    Calculates the tangent of an angle in degrees.
+    This function calculates the tangent of an angle in degrees.
     
     :param alpha: Angle in degrees.
     :type alpha: float
@@ -67,7 +67,7 @@ def tand(alpha):
 
 def arcsind(digit):
     """
-    Calculates the inverse sine of a number.
+    This function calculates the inverse sine of a number.
     
     :param digit: Number between -1 and 1.
     :type digit: float
@@ -79,7 +79,7 @@ def arcsind(digit):
 
 def arccosd(digit):
     """
-    Calculates the inverse cosine of a number.
+    This function calculates the inverse cosine of a number.
     
     :param digit: Number between -1 and 1.
     :type digit: float
@@ -91,7 +91,7 @@ def arccosd(digit):
 
 def arctand(digit):
     """
-    Calculates the inverse tangent of a number.
+    This function calculates the inverse tangent of a number.
     
     :param digit: Number.
     :type digit: float
@@ -103,7 +103,7 @@ def arctand(digit):
 
 def hourofmonth():
     """
-    Calculates the rank within a year of the first hour of each month.
+    This function calculates the rank within a year of the first hour of each month.
     
     :return: The rank of the first hour of each month.
     :rtype: list
@@ -116,7 +116,7 @@ def hourofmonth():
 
 def intersection(lst1, lst2):
     """
-    Calculates the intersection between two lists.
+    This function calculates the intersection between two lists.
     
     :param lst1: First list of elements.
     :type lst1: list
@@ -132,7 +132,7 @@ def intersection(lst1, lst2):
 
 def resizem(A_in, row_new, col_new):
     """
-    Resizes regular data grid, by copying and pasting parts of the original array.
+    This function resizes regular data grid, by copying and pasting parts of the original array.
 
     :param A_in: Input matrix.
     :type A_in: numpy array
@@ -159,7 +159,7 @@ def resizem(A_in, row_new, col_new):
 
 def array2raster(newRasterfn, rasterOrigin, pixelWidth, pixelHeight, array):
     """
-    Saves array to geotiff raster format based on EPSG 4326.
+    This function saves array to geotiff raster format based on EPSG 4326.
 
     :param newRasterfn: Output path of the raster.
     :type newRasterfn: string
@@ -193,7 +193,7 @@ def array2raster(newRasterfn, rasterOrigin, pixelWidth, pixelHeight, array):
 
 def char_range(c1, c2):
     """
-    Creates a generator to iterate between the characters *c1* and *c2*, including the latter.
+    This function creates a generator to iterate between the characters *c1* and *c2*, including the latter.
     
     :param c1: First character in the iteration.
     :type c1: char
@@ -230,7 +230,8 @@ def changem(A, newval, oldval):
 
 def ind2sub(array_shape, ind):
     """
-    Convert linear indices to subscripts
+    This function converts linear indices to subscripts.
+    
     :param array_shape: tuple (# of rows, # of columns)
     :param ind: Index
     :return: tuple (row values, column values)
@@ -296,12 +297,13 @@ def limit_cpu(check):
 
 def timecheck(*args):
     """
-    Print information about the progress of the script by displaying the function currently running, and optionally
+    This function prints information about the progress of the script by displaying the function currently running, and optionally
     an input message, with a corresponding timestamp.
 
     :param args: Message to be displayed with the function name and the timestamp.
     :type args: string (``optional``)
     :return: None
+    ????? mention error raised
     """
     if len(args) == 0:
         print(inspect.stack()[1].function + str(datetime.datetime.now().strftime(": %H:%M:%S:%f")) + "\n")
@@ -315,12 +317,12 @@ def timecheck(*args):
 
 def display_progress(message, progress_stat):
     """
-    Display a progress bar for long computations. To be used as part of a loop or with multiprocessing
+    This function displays a progress bar for long computations. To be used as part of a loop or with multiprocessing.
 
-    :param message: Message to be displayed with the progress bar
+    :param message: Message to be displayed with the progress bar.
     :type message: string
-    :param progress_stat: tuple containing the total length of the calculation and the current status or progress
-    :type progress_stat: tuple (int, int)
+    :param progress_stat: Tuple containing the total length of the calculation and the current status or progress.
+    :type progress_stat: tuple(int, int)
     :return: None
     """
     length = progress_stat[0]
@@ -337,20 +339,20 @@ def create_json(filepath, param, param_keys, paths, paths_keys):
     Creates a metadata json file containing information about the file in filepath by storing the relevant keys from
     both the param and path dictionaries.
 
-    :param filepath: Path to the file for which the json file will be created
+    :param filepath: Path to the file for which the json file will be created.
     :type filepath: string
 
-    :param param: Dictionary of dictionaries containing the user input parameters and intermediate outputs
+    :param param: Dictionary of dictionaries containing the user input parameters and intermediate outputs.
     :type param: dict
 
-    :param param_keys: Keys of the parameters to be extracted from the param dictionary and saved into the json file
-    :type param_keys: iterable of strings
+    :param param_keys: Keys of the parameters to be extracted from the *param* dictionary and saved into the json file.
+    :type param_keys: list of strings
 
-    :param paths: Dictionary of dictionaries containing the paths information for all files
+    :param paths: Dictionary of dictionaries containing the paths for all files.
     :type paths: dict
 
-    :param paths_keys: Keys of the paths to be extracted from the paths dictionary and saved into the json file
-    :type paths_keys: iterable of strings
+    :param paths_keys: Keys of the paths to be extracted from the *paths* dictionary and saved into the json file.
+    :type paths_keys: list of strings
 
     :return: The json file will be saved in the desired path *filepath*.
     :rtype: None
@@ -384,14 +386,16 @@ def create_json(filepath, param, param_keys, paths, paths_keys):
 
 def check_regression_model(paths, tech):
     """
-    This function check the regression model parameters for nan values, and return the FLH and TS model dataframes.
+    ?????
+    This function checks the regression model parameters for nan values, and returns the FLH and TS model dataframes.
     :param paths:
     :param tech:
     :return:
     """
     while True:
         # Load IRENA data and regions
-        FLH = pd.read_csv(paths["IRENA_regression"], sep=";", decimal=",", index_col=0)
+        FLH = pd.read_csv(paths["FLH_regression"], sep=';', decimal=',', index_col=0)
+        
         # load TS regression file
         TS_reg = pd.read_csv(paths[tech]["TS_regression"], sep=";", decimal=",", index_col=0, header=0)
 

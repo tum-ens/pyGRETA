@@ -55,9 +55,9 @@ def general_settings():
     global root
 
     param = {}
-    param["author"] = "Houssame"  # the name of the person running the script
-    param["comment"] = "Regression-testing_Documentation-Examples"
-
+    param["author"] = "Kais Siala"  # the name of the person running the script
+    param["comment"] = "Regression-debugging"
+    
     paths = {}
     fs = os.path.sep
     current_folder = os.path.dirname(os.path.abspath(__file__))
@@ -109,14 +109,14 @@ def scope_paths_and_parameters(paths, param):
     paths["subregions"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
 
     # Name tags for the scope and the subregions
-    param["region_name"] = "Brazil"  # Name tag of the spatial scope
-    param["subregions_name"] = "Brazil_states"  # Name tag of the subregions
+    param["region_name"] = "Europe"  # Name tag of the spatial scope
+    param["subregions_name"] = "Europe_wo_Balkans_NUTS0" # Name tag of the subregions
 
     # Year
     param["year"] = 2015
 
     # Technologies
-    param["technology"] = ["PV"]  # ['PV', 'CSP', 'WindOn', 'WindOff']
+    param["technology"] = ["PV"]  # ["PV", "CSP", "WindOn", "WindOff"]
 
     return paths, param
 
@@ -245,7 +245,7 @@ def time_series_parameters(param):
     # Regression
     param["regression"] = {
         "solver": "gurobi",  # string
-        "WindOn": {"all": []},  # dictionary of hub height combinations
+        "WindOn": {"2015": [60, 80, 100]},  # dictionary of hub height combinations
         "WindOff": {"80m": [80]},  # dictionary of hub height combinations
         "PV": {"all": [0, 90, -90, 180]},  # list of orientation combinations
         "CSP": {"all": []},
@@ -254,7 +254,7 @@ def time_series_parameters(param):
     # Stratified time series
     param["modes"] = {"high": [100, 90, 80], "mid": [70, 60, 50, 40, 30], "low": [20, 10, 0], "all": param["quantiles"]}
     param["combo"] = {
-        "WindOn": {"80m": [60, 80, 100], "100m": [80, 100, 120], "120m": [100, 120, 140]},
+        "WindOn": {"2015": [60, 80, 100], "2030": [80, 100, 120], "2050": [100, 120, 140]},
         # dictionary of hub height combinations
         "WindOff": {"80m": [80], "100m": [100], "120m": [120]},  # dictionary of hub height combinations
         "PV": {"Solar": [0, 180, -90, 90]},  # list of orientation combinations
@@ -655,6 +655,7 @@ def output_folders(paths, param):
       * *local_maps* is the output folder for the local maps of the spatial scope.
       * *potential* is the output folder for the ressource and technical potential maps.
       * *regional_analysis* is the output folder for the time series and the report of the subregions.
+      * *regression_in* is the folder where the regression parameters (FLH, fitting time series) are saved.
       * *regression_out* is the output folder for the regression results.
       
     All the folders are created at the beginning of the calculation, if they do not already exist,
@@ -694,11 +695,14 @@ def output_folders(paths, param):
     paths["regional_analysis"] = paths["region"] + "Renewable energy" + fs + "Regional analysis" + fs + subregions + fs
     if not os.path.isdir(paths["regional_analysis"]):
         os.makedirs(paths["regional_analysis"])
-
+    
+    # Regression parameters
+    paths["regression_in"] = paths["regional_analysis"] + "Regression outputs" + fs + "Parameters" + fs
+    if not os.path.isdir(paths["regression_in"]):
+        os.makedirs(paths["regression_in"])
+        
     # Regression output
     paths["regression_out"] = paths["regional_analysis"] + "Regression outputs" + fs
-    if not os.path.isdir(paths["regression_out"]):
-        os.makedirs(paths["regression_out"])
 
     return paths
 
@@ -796,11 +800,13 @@ def irena_paths(paths, param):
     global fs
 
     year = str(param["year"])
+    
     # IRENA input
     paths["IRENA"] = (
         root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA" + fs + "IRENA_RE_electricity_statistics_allcountries_alltech_" + year + ".csv"
     )
-    paths["IRENA_dict"] = root + "00 Assumptions" + fs + "dict_IRENA_countries.csv"
+    paths["IRENA_dict"] = root + "00 Assumptions" + fs + "dict_countries.csv"
+
 
     # IRENA output
     paths["IRENA_summary"] = paths["region"] + "Renewable energy" + fs + "IRENA_summary_" + year + ".csv"
@@ -851,16 +857,15 @@ def emhires_input_paths(paths, param, tech):
     global root
     global fs
 
-    year = str(param["year"])
-
     if tech == "WindOn":
-        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + year + fs + "TS.CF.COUNTRY.30yr.date.txt"
+        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + fs + "TS.CF.COUNTRY.30yr.date.txt"
     elif tech == "WindOff":
-        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + year + fs + "TS.CF.OFFSHORE.30yr.date.txt"
+        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + fs + "TS.CF.OFFSHORE.30yr.date.txt"
     elif tech == "PV":
         paths[tech]["EMHIRES"] = (
-            root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + year + fs + "EMHIRESPV_TSh_CF_Country_19862015.txt"
+            root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + fs + "EMHIRESPV_TSh_CF_Country_19862015.txt"
         )
+
     return paths
 
 

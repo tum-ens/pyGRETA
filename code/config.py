@@ -55,8 +55,8 @@ def general_settings():
     global root
 
     param = {}
-    param["author"] = 'Kais Siala'  # the name of the person running the script
-    param["comment"] = 'Regression-debugging'
+    param["author"] = "Kais Siala"  # the name of the person running the script
+    param["comment"] = "Regression-debugging"
     
     paths = {}
     fs = os.path.sep
@@ -72,6 +72,7 @@ def general_settings():
 ###########################
 #### User preferences #####
 ###########################
+
 
 def scope_paths_and_parameters(paths, param):
     """
@@ -107,16 +108,15 @@ def scope_paths_and_parameters(paths, param):
     paths["spatial_scope"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
     paths["subregions"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
 
-    
     # Name tags for the scope and the subregions
-    param["region_name"] = 'Europe'  # Name tag of the spatial scope
-    param["subregions_name"] = 'Europe_wo_Balkans_NUTS0' # Name tag of the subregions
-    
+    param["region_name"] = "Europe"  # Name tag of the spatial scope
+    param["subregions_name"] = "Europe_wo_Balkans_NUTS0" # Name tag of the subregions
+
     # Year
     param["year"] = 2015
 
     # Technologies
-    param["technology"] = ['WindOn', 'PV']  # ['PV', 'CSP', 'WindOn', 'WindOff']
+    param["technology"] = ["PV"]  # ["PV", "CSP", "WindOn", "WindOff"]
 
     return paths, param
 
@@ -173,7 +173,7 @@ def weather_data_parameters(param):
     :rtype: dict
     """
 
-    param["MERRA_coverage"] = 'World'
+    param["MERRA_coverage"] = "World"
     param["MERRA_correction"] = 0.35
     return param
 
@@ -243,26 +243,24 @@ def time_series_parameters(param):
     param["quantiles"] = [100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0]
 
     # Regression
-    param["regression"] = {"solver": 'gurobi',  # string
-                           "WindOn": {'2015': [60, 80, 100]},  # dictionary of hub height combinations
-                           "WindOff": {'80m': [80]},  # dictionary of hub height combinations
-                           "PV": {'all': [0, 90, -90, 180]},  # list of orientation combinations
-                           "CSP": {'all': []}
-                           }
+    param["regression"] = {
+        "solver": "gurobi",  # string
+        "WindOn": {"2015": [60, 80, 100]},  # dictionary of hub height combinations
+        "WindOff": {"80m": [80]},  # dictionary of hub height combinations
+        "PV": {"all": [0, 90, -90, 180]},  # list of orientation combinations
+        "CSP": {"all": []},
+    }
 
     # Stratified time series
-    param["modes"] = {"high": [100, 90, 80],
-                      "mid": [70, 60, 50, 40, 30],
-                      "low": [20, 10, 0],
-                      "all": param["quantiles"]
-                      }
-    param["combo"] = {"WindOn": {'2015': [60, 80, 100], '2030': [80, 100, 120], '2050': [100, 120, 140]},
-                      # dictionary of hub height combinations
-                      "WindOff": {'80m': [80], '100m': [100], '120m': [120]},  # dictionary of hub height combinations
-                      "PV": {'Solar': [0, 180, -90, 90]},  # list of orientation combinations
-                      "CSP": {'all': []}
-                      }
-    
+    param["modes"] = {"high": [100, 90, 80], "mid": [70, 60, 50, 40, 30], "low": [20, 10, 0], "all": param["quantiles"]}
+    param["combo"] = {
+        "WindOn": {"2015": [60, 80, 100], "2030": [80, 100, 120], "2050": [100, 120, 140]},
+        # dictionary of hub height combinations
+        "WindOff": {"80m": [80], "100m": [100], "120m": [120]},  # dictionary of hub height combinations
+        "PV": {"Solar": [0, 180, -90, 90]},  # list of orientation combinations
+        "CSP": {"all": []},
+    }
+
     return param
 
 
@@ -303,19 +301,16 @@ def landuse_parameters(param):
         # 16  -- Barren or sparsely vegetated
     """
 
-    landuse = {"type": np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]),
-               "type_urban": 13,
-               "Ross_coeff": np.array(
-                   [0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208,
-                    0.0208, 0.0208, 0.0208, 0.0208, 0.0208]),
-               "albedo": np.array(
-                   [0.00, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.00, 0.20, 0.20, 0.20, 0.00,
-                    0.20]),
-               "hellmann": np.array(
-                   [0.10, 0.25, 0.25, 0.25, 0.25, 0.25, 0.20, 0.20, 0.25, 0.25, 0.15, 0.15, 0.20, 0.40, 0.20, 0.15,
-                    0.15]),
-               "height": np.array([213, 366, 366, 366, 366, 366, 320, 320, 366, 366, 274, 274, 320, 457, 320, 274, 274])
-               }
+    landuse = {
+        "type": np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]),
+        "type_urban": 13,
+        "Ross_coeff": np.array(
+            [0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208]
+        ),
+        "albedo": np.array([0.00, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.00, 0.20, 0.20, 0.20, 0.00, 0.20]),
+        "hellmann": np.array([0.10, 0.25, 0.25, 0.25, 0.25, 0.25, 0.20, 0.20, 0.25, 0.25, 0.15, 0.15, 0.20, 0.40, 0.20, 0.15, 0.15]),
+        "height": np.array([213, 366, 366, 366, 366, 366, 320, 320, 366, 366, 274, 274, 320, 457, 320, 274, 274]),
+    }
     param["landuse"] = landuse
     return param
 
@@ -332,20 +327,24 @@ def protected_areas_parameters(param):
     :return: The updated dictionary param.
     :rtype: dict
     """
-    protected_areas = {"type": np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
-                       "IUCN_Category": np.array(['Not Protected',  # 0
-                                                  'Ia',  # 1
-                                                  'Ib',  # 2
-                                                  'II',  # 3
-                                                  'III',  # 4
-                                                  'IV',  # 5
-                                                  'V',  # 6
-                                                  'VI',  # 7
-                                                  'Not Applicable',  # 8
-                                                  'Not Assigned',  # 9
-                                                  'Not Reported'  # 10
-                                                  ])
-                       }
+    protected_areas = {
+        "type": np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
+        "IUCN_Category": np.array(
+            [
+                "Not Protected",  # 0
+                "Ia",  # 1
+                "Ib",  # 2
+                "II",  # 3
+                "III",  # 4
+                "IV",  # 5
+                "V",  # 6
+                "VI",  # 7
+                "Not Applicable",  # 8
+                "Not Assigned",  # 9
+                "Not Reported",  # 10
+            ]
+        ),
+    }
 
     param["protected_areas"] = protected_areas
     return param
@@ -395,35 +394,30 @@ def pv_parameters(param):
     """
 
     pv = {}
-    pv["resource"] = {"clearness_correction": 1
-                      }
-    pv["technical"] = {"T_r": 25,  # °C
-                       "loss_coeff": 0.37,
-                       "tracking": 0,  # 0 for no tracking, 1 for one-axis tracking, 2 for two-axes tracking
-
-                       "orientation": 180  # | 0: South | 90: West | 180: North | -90: East |
-                       }
-    pv["mask"] = {"slope": 20,
-                  "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
-                  "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
-                  }
-    GCR = {"shadefree_period": 6,
-           "day_north": 79,
-           "day_south": 263
-           }
-    pv["weight"] = {"GCR": GCR,
-                    "lu_availability": np.array(
-                        [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.02, 0.00, 0.02, 0.02, 0.02, 0.00,
-                         0.02]),
-                    "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
-                    "power_density": 0.000160,
-                    "f_performance": 0.75
-                    }
+    pv["resource"] = {"clearness_correction": 1}
+    pv["technical"] = {
+        "T_r": 25,  # °C
+        "loss_coeff": 0.37,
+        "tracking": 0,  # 0 for no tracking, 1 for one-axis tracking, 2 for two-axes tracking
+        "orientation": 180,  # | 0: South | 90: West | 180: North | -90: East |
+    }
+    pv["mask"] = {
+        "slope": 20,
+        "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
+        "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
+    }
+    GCR = {"shadefree_period": 6, "day_north": 79, "day_south": 263}
+    pv["weight"] = {
+        "GCR": GCR,
+        "lu_availability": np.array([0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.02, 0.00, 0.02, 0.02, 0.02, 0.00, 0.02]),
+        "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
+        "power_density": 0.000160,
+        "f_performance": 0.75,
+    }
     del GCR
     if pv["technical"]["tracking"] != 0 and pv["technical"]["orientation"] not in [0, 180]:
-        warn('WARNING: ' + str(pv["technical"]["tracking"]) + ' axis tracking, overwrites orientation input: '
-             + str(pv["technical"]["orientation"]))
-        pv["technical"]["orientation"] = 'track_' + str(pv["technical"]["tracking"])
+        warn("WARNING: " + str(pv["technical"]["tracking"]) + " axis tracking, overwrites orientation input: " + str(pv["technical"]["orientation"]))
+        pv["technical"]["orientation"] = "track_" + str(pv["technical"]["tracking"])
     param["PV"] = pv
     return param
 
@@ -464,24 +458,25 @@ def csp_parameters(param):
     :rtype: dict
     """
     csp = {}
-    csp["resource"] = {"clearness_correction": 1
-                       }
-    csp["technical"] = {"T_avg_HTF": 350,  # °C
-                        "loss_coeff": 1.06,  # Heat Loss coefficient W/(m².K) independent of Wind Speed
-                        "loss_coeff_wind": 1.19,  # Multiplied with (Wind speed)^(0.6)
-                        "Flow_coeff": 0.95,  # heat transfer to the HTF factor (Flow or heat removal factor)
-                        "AbRe_ratio": 0.00079,  # Receiver Area / Concentrator aperture (90mm diameter/8m aperture)
-                        "Wind_cutoff": 22  # (m/s)  Maximum Wind Speed for effective tracking (Source:NREL)
-                        }
-    csp["mask"] = {"slope": 20,
-                   "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
-                   "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
-                   }
-    csp["weight"] = {"lu_availability": np.array(
-        [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.02, 0.00, 0.02, 0.02, 0.02, 0.00, 0.02]),
+    csp["resource"] = {"clearness_correction": 1}
+    csp["technical"] = {
+        "T_avg_HTF": 350,  # °C
+        "loss_coeff": 1.06,  # Heat Loss coefficient W/(m².K) independent of Wind Speed
+        "loss_coeff_wind": 1.19,  # Multiplied with (Wind speed)^(0.6)
+        "Flow_coeff": 0.95,  # heat transfer to the HTF factor (Flow or heat removal factor)
+        "AbRe_ratio": 0.00079,  # Receiver Area / Concentrator aperture (90mm diameter/8m aperture)
+        "Wind_cutoff": 22,  # (m/s)  Maximum Wind Speed for effective tracking (Source:NREL)
+    }
+    csp["mask"] = {
+        "slope": 20,
+        "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
+        "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
+    }
+    csp["weight"] = {
+        "lu_availability": np.array([0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.02, 0.00, 0.02, 0.02, 0.02, 0.00, 0.02]),
         "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
         "power_density": 0.000160,
-        "f_performance": 0.9 * 0.75
+        "f_performance": 0.9 * 0.75,
     }
     param["CSP"] = csp
     return param
@@ -525,26 +520,19 @@ def onshore_wind_parameters(param):
     :rtype: dict
     """
     windon = {}
-    windon["resource"] = {"res_correction": 1,
-                          "topo_correction": 1,
-                          "topo_weight": 'capacity'  # 'none' or 'size' or 'capacity'
-                          }
-    windon["technical"] = {"w_in": 4,
-                           "w_r": 13,
-                           "w_off": 25,
-                           "P_r": 3,
-                           "hub_height": 120
-                           }
-    windon["mask"] = {"slope": 20,
-                      "lu_suitability": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1]),
-                      "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
-                      "buffer_pixel_amount": 1
-                      }
-    windon["weight"] = {"lu_availability": np.array(
-        [0.00, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.10, 0.10, 0.10, 0.10, 0.00, 0.10, 0.00, 0.10, 0.00, 0.10]),
+    windon["resource"] = {"res_correction": 1, "topo_correction": 1, "topo_weight": "capacity"}  # 'none' or 'size' or 'capacity'
+    windon["technical"] = {"w_in": 4, "w_r": 13, "w_off": 25, "P_r": 3, "hub_height": 120}
+    windon["mask"] = {
+        "slope": 20,
+        "lu_suitability": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1]),
+        "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
+        "buffer_pixel_amount": 1,
+    }
+    windon["weight"] = {
+        "lu_availability": np.array([0.00, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.10, 0.10, 0.10, 0.10, 0.00, 0.10, 0.00, 0.10, 0.00, 0.10]),
         "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
         "power_density": 0.000008,
-        "f_performance": 0.87
+        "f_performance": 0.87,
     }
     param["WindOn"] = windon
     return param
@@ -584,22 +572,14 @@ def offshore_wind_paramters(param):
     :rtype: dict
     """
     windoff = {}
-    windoff["resource"] = {"res_correction": 1,
-                           }
-    windoff["technical"] = {"w_in": 3,
-                            "w_r": 16.5,
-                            "w_off": 34,
-                            "P_r": 7.58,
-                            "hub_height": 100
-                            }
-    windoff["mask"] = {"depth": -40,
-                       "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
-                       }
-    windoff["weight"] = {"lu_availability": np.array(
-        [0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00]),
+    windoff["resource"] = {"res_correction": 1}
+    windoff["technical"] = {"w_in": 3, "w_r": 16.5, "w_off": 34, "P_r": 7.58, "hub_height": 100}
+    windoff["mask"] = {"depth": -40, "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1])}
+    windoff["weight"] = {
+        "lu_availability": np.array([0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00]),
         "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
         "power_density": 0.000020,
-        "f_performance": 0.87
+        "f_performance": 0.87,
     }
     param["WindOff"] = windoff
     return param
@@ -608,6 +588,7 @@ def offshore_wind_paramters(param):
 ###########################
 ##### Define Paths ########
 ###########################
+
 
 def weather_input_folder(paths, param):
     """
@@ -794,8 +775,8 @@ def local_maps_paths(paths, param):
     # Correction factors for wind speeds
     turbine_height_on = str(param["WindOn"]["technical"]["hub_height"])
     turbine_height_off = str(param["WindOff"]["technical"]["hub_height"])
-    paths["CORR_ON"] = PathTemp + "_WindOn_Correction_" + turbine_height_on + '.tif'
-    paths["CORR_OFF"] = PathTemp + "_WindOff_Correction_" + turbine_height_off + '.tif'
+    paths["CORR_ON"] = PathTemp + "_WindOn_Correction_" + turbine_height_on + ".tif"
+    paths["CORR_OFF"] = PathTemp + "_WindOff_Correction_" + turbine_height_off + ".tif"
 
     return paths
 
@@ -819,10 +800,13 @@ def irena_paths(paths, param):
     global fs
 
     year = str(param["year"])
+    
     # IRENA input
-    paths[
-        "IRENA"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA" + fs + "IRENA_RE_electricity_statistics_allcountries_alltech_" + year + ".csv"
+    paths["IRENA"] = (
+        root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA" + fs + "IRENA_RE_electricity_statistics_allcountries_alltech_" + year + ".csv"
+    )
     paths["IRENA_dict"] = root + "00 Assumptions" + fs + "dict_countries.csv"
+
 
     # IRENA output
     paths["IRENA_summary"] = paths["region"] + "Renewable energy" + fs + "IRENA_summary_" + year + ".csv"
@@ -845,12 +829,17 @@ def regression_paths(paths, param, tech):
 
     year = str(param["year"])
 
+    # Regression inputs
+    paths["regression_in"] = paths["regional_analysis"] + "Regression inputs" + fs
+    if not os.path.isdir(paths["regression_in"]):
+        os.makedirs(paths["regression_in"])
+
     paths["FLH_regression"] = paths["regression_in"] + "FLH_regression_" + year + ".csv"
-    paths[tech]["TS_regression"] = paths["regression_in"] + "TS_regression_" + tech + '_' + year + ".csv"
+    paths[tech]["TS_regression"] = paths["regression_in"] + "TimeSeries_regression_" + tech + "_" + year + ".csv"
 
     return paths
 
-  
+
 def emhires_input_paths(paths, param, tech):
     """
     This function defines the path to the EMHIRES input file for each technology (only ``'WindOn'``,
@@ -868,17 +857,15 @@ def emhires_input_paths(paths, param, tech):
     global root
     global fs
 
-    year = str(param["year"])
+    if tech == "WindOn":
+        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + fs + "TS.CF.COUNTRY.30yr.date.txt"
+    elif tech == "WindOff":
+        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + fs + "TS.CF.OFFSHORE.30yr.date.txt"
+    elif tech == "PV":
+        paths[tech]["EMHIRES"] = (
+            root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + fs + "EMHIRESPV_TSh_CF_Country_19862015.txt"
+        )
 
-    if tech == 'WindOn':
-        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES" + fs + \
-                                 "TS.CF.COUNTRY.30yr.date.txt"
-    elif tech == 'WindOff':
-        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES" + fs + \
-                                 "TS.CF.OFFSHORE.30yr.date.txt"
-    elif tech == 'PV':
-        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES" + fs + \
-                                 "EMHIRESPV_TSh_CF_Country_19862015.txt"
     return paths
 
 
@@ -905,19 +892,19 @@ def potential_output_paths(paths, param, tech):
     region = param["region_name"]
     year = str(param["year"])
 
-    if tech in ['WindOn', 'WindOff']:
+    if tech in ["WindOn", "WindOff"]:
         hubheight = str(param[tech]["technical"]["hub_height"])
-        PathTemp = paths["potential"] + region + '_' + tech + '_' + hubheight
-    elif tech in ['PV']:
-        if 'orientation' in param["PV"]["technical"].keys():
+        PathTemp = paths["potential"] + region + "_" + tech + "_" + hubheight
+    elif tech in ["PV"]:
+        if "orientation" in param["PV"]["technical"].keys():
             orientation = str(param[tech]["technical"]["orientation"])
         else:
-            orientation = '0'
-        PathTemp = paths["potential"] + region + '_' + tech + '_' + orientation
+            orientation = "0"
+        PathTemp = paths["potential"] + region + "_" + tech + "_" + orientation
     else:
-        PathTemp = paths["potential"] + region + '_' + tech
+        PathTemp = paths["potential"] + region + "_" + tech
 
-    paths[tech]["FLH"] = PathTemp + '_FLH_' + year + '.mat'
+    paths[tech]["FLH"] = PathTemp + "_FLH_" + year + ".mat"
     paths[tech]["mask"] = PathTemp + "_mask_" + year + ".mat"
     paths[tech]["FLH_mask"] = PathTemp + "_FLH_mask_" + year + ".mat"
     paths[tech]["weight"] = PathTemp + "_weight_" + year + ".mat"
@@ -950,25 +937,25 @@ def regional_analysis_output_paths(paths, param, tech):
     subregions = param["subregions_name"]
     year = str(param["year"])
 
-    if tech in ['WindOn', 'WindOff']:
+    if tech in ["WindOn", "WindOff"]:
         hubheight = str(param[tech]["technical"]["hub_height"])
-        PathTemp = paths["regional_analysis"] + subregions + '_' + tech + '_' + hubheight
-    elif tech in ['PV']:
-        if 'orientation' in param["PV"]["technical"].keys():
+        PathTemp = paths["regional_analysis"] + subregions + "_" + tech + "_" + hubheight
+    elif tech in ["PV"]:
+        if "orientation" in param["PV"]["technical"].keys():
             orientation = str(param[tech]["technical"]["orientation"])
         else:
-            orientation = '0'
-        PathTemp = paths["regional_analysis"] + subregions + '_' + tech + '_' + orientation
-    elif tech in ['CSP']:
-        orientation = '0'
-        PathTemp = paths["regional_analysis"] + subregions + '_' + tech + '_' + orientation
+            orientation = "0"
+        PathTemp = paths["regional_analysis"] + subregions + "_" + tech + "_" + orientation
+    elif tech in ["CSP"]:
+        orientation = "0"
+        PathTemp = paths["regional_analysis"] + subregions + "_" + tech + "_" + orientation
 
-    paths[tech]["Locations"] = PathTemp + '_Locations.shp'
-    paths[tech]["TS"] = PathTemp + '_TS_' + year + '.csv'
-    paths[tech]["Region_Stats"] = PathTemp + '_Region_stats_' + year + '.csv'
-    paths[tech]["Sorted_FLH"] = PathTemp + '_sorted_FLH_sampled_' + year + '.mat'
+    paths[tech]["Locations"] = PathTemp + "_Locations.shp"
+    paths[tech]["TS"] = PathTemp + "_TS_" + year + ".csv"
+    paths[tech]["Region_Stats"] = PathTemp + "_Region_stats_" + year + ".csv"
+    paths[tech]["Sorted_FLH"] = PathTemp + "_sorted_FLH_sampled_" + year + ".mat"
 
-    paths[tech]["Regression_coefficients"] = paths["regression_out"] + subregions + '_' + tech + '_reg_coefficients_'
-    paths[tech]["Regression_TS"] = paths["regression_out"] + subregions + '_' + tech + '_reg_TimeSeries_'
+    paths[tech]["Regression_coefficients"] = paths["regression_out"] + subregions + "_" + tech + "_reg_coefficients_"
+    paths[tech]["Regression_TS"] = paths["regression_out"] + subregions + "_" + tech + "_reg_TimeSeries_"
 
     return paths

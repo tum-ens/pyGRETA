@@ -8,10 +8,11 @@ def define_spatial_scope(scope_shp):
     :param scope_shp:
     :return:
     """
-    scope_shp = scope_shp.to_crs({'init': 'epsg:4326'})
+    scope_shp = scope_shp.to_crs({"init": "epsg:4326"})
     r = scope_shp.total_bounds
     box = r[::-1][np.newaxis]
     return box
+
 
 def crd_merra(Crd_regions, res_weather):
     """
@@ -26,16 +27,19 @@ def crd_merra(Crd_regions, res_weather):
     """
 
     Crd = np.array(
-        [np.ceil((Crd_regions[:, 0] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
-         np.ceil(Crd_regions[:, 1] / res_weather[1]) * res_weather[1],
-         np.floor((Crd_regions[:, 2] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
-         np.floor(Crd_regions[:, 3] / res_weather[1]) * res_weather[1]])
+        [
+            np.ceil((Crd_regions[:, 0] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
+            np.ceil(Crd_regions[:, 1] / res_weather[1]) * res_weather[1],
+            np.floor((Crd_regions[:, 2] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
+            np.floor(Crd_regions[:, 3] / res_weather[1]) * res_weather[1],
+        ]
+    )
     Crd = Crd.T
     return Crd
 
 
 def crd_exact_points(Ind_points, Crd_all, res):
-    '''
+    """
     This function converts indices of points in high resolution rasters into longitude and latitude coordinates.
 
     :param Ind_points: Tuple of arrays of indices in the vertical and horizontal axes.
@@ -47,10 +51,9 @@ def crd_exact_points(Ind_points, Crd_all, res):
     
     :return Crd_points: Coordinates of the points in the vertical and horizontal dimensions.
     :rtype: list of arrays
-    '''
+    """
 
-    Crd_points = [Ind_points[0] * res[0] + Crd_all[2],
-                  Ind_points[1] * res[1] + Crd_all[3]]
+    Crd_points = [Ind_points[0] * res[0] + Crd_all[2], Ind_points[1] * res[1] + Crd_all[3]]
     return Crd_points
 
 
@@ -66,7 +69,7 @@ def subset(A, param):
     :return subset: The subset of the weather data contained in the bounding box of *spatial_scope*.
     :rtype: numpy array
     """
-    if param["MERRA_coverage"] == 'World' and param["region_name"] != 'World':
+    if param["MERRA_coverage"] == "World" and param["region_name"] != "World":
         crd = param["Crd_all"]
         res = param["res_weather"]
         southlim = int(math.floor((crd[2] + res[0] / 10 + 90 + res[0] / 2) / res[0]))
@@ -95,10 +98,14 @@ def ind_merra(Crd, Crd_all, res):
     """
     if len(Crd.shape) == 1:
         Crd = Crd[np.newaxis]
-    Ind = np.array([(Crd[:, 0] - Crd_all[2]) / res[0],
-                    (Crd[:, 1] - Crd_all[3]) / res[1],
-                    (Crd[:, 2] - Crd_all[2]) / res[0] + 1,
-                    (Crd[:, 3] - Crd_all[3]) / res[1] + 1])
+    Ind = np.array(
+        [
+            (Crd[:, 0] - Crd_all[2]) / res[0],
+            (Crd[:, 1] - Crd_all[3]) / res[1],
+            (Crd[:, 2] - Crd_all[2]) / res[0] + 1,
+            (Crd[:, 3] - Crd_all[3]) / res[1] + 1,
+        ]
+    )
     Ind = np.transpose(Ind).astype(int)
     return Ind
 
@@ -117,10 +124,14 @@ def ind_global(Crd, res_desired):
     """
     if len(Crd.shape) == 1:
         Crd = Crd[np.newaxis]
-    Ind = np.array([np.round((90 - Crd[:, 0]) / res_desired[0]) + 1,
-                    np.round((180 + Crd[:, 1]) / res_desired[1]),
-                    np.round((90 - Crd[:, 2]) / res_desired[0]),
-                    np.round((180 + Crd[:, 3]) / res_desired[1]) + 1])
+    Ind = np.array(
+        [
+            np.round((90 - Crd[:, 0]) / res_desired[0]) + 1,
+            np.round((180 + Crd[:, 1]) / res_desired[1]),
+            np.round((90 - Crd[:, 2]) / res_desired[0]),
+            np.round((180 + Crd[:, 3]) / res_desired[1]) + 1,
+        ]
+    )
     Ind = np.transpose(Ind.astype(int))
     return Ind
 
@@ -137,10 +148,12 @@ def calc_geotiff(Crd_all, res_desired):
     :return GeoRef: Georeference dictionary containing *RasterOrigin*, *RasterOrigin_alt*, *pixelWidth*, and *pixelHeight*.
     :rtype: dict
     """
-    GeoRef = {"RasterOrigin": [Crd_all[3], Crd_all[0]],
-              "RasterOrigin_alt": [Crd_all[3], Crd_all[2]],
-              "pixelWidth": res_desired[1],
-              "pixelHeight": -res_desired[0]}
+    GeoRef = {
+        "RasterOrigin": [Crd_all[3], Crd_all[0]],
+        "RasterOrigin_alt": [Crd_all[3], Crd_all[2]],
+        "pixelWidth": res_desired[1],
+        "pixelHeight": -res_desired[0],
+    }
     return GeoRef
 
 
@@ -161,19 +174,21 @@ def calc_region(region, Crd_reg, res_desired, GeoRef):
     A_region = np.ones((M, N))
     origin = [Crd_reg[3], Crd_reg[2]]
 
-    if region.geometry.geom_type == 'MultiPolygon':
+    if region.geometry.geom_type == "MultiPolygon":
         features = [feature for feature in region.geometry]
     else:
         features = [region.geometry]
     west = origin[0]
     south = origin[1]
-    profile = {'driver': 'GTiff',
-               'height': M,
-               'width': N,
-               'count': 1,
-               'dtype': rasterio.float64,
-               'crs': 'EPSG:4326',
-               'transform': rasterio.transform.from_origin(west, south, GeoRef["pixelWidth"], GeoRef["pixelHeight"])}
+    profile = {
+        "driver": "GTiff",
+        "height": M,
+        "width": N,
+        "count": 1,
+        "dtype": rasterio.float64,
+        "crs": "EPSG:4326",
+        "transform": rasterio.transform.from_origin(west, south, GeoRef["pixelWidth"], GeoRef["pixelHeight"]),
+    }
 
     with MemoryFile() as memfile:
         with memfile.open(**profile) as f:
@@ -185,53 +200,54 @@ def calc_region(region, Crd_reg, res_desired, GeoRef):
 
 
 def clean_IRENA_summary(param, paths):
-    ''' description'''
+    """ description"""
     year = str(param["year"])
-    filter_countries = param["regions_land"]['GID_0'].to_list()
-    IRENA_dict = pd.read_csv(paths["IRENA_dict"], sep=';', index_col=0)
-    IRENA_dict = IRENA_dict['Countries shapefile'].to_dict()
-    IRENA = pd.read_csv(paths["IRENA"], skiprows=7, sep=';', index_col=False, usecols=[0, 1, 2, 3])
+    filter_countries = param["regions_land"]["GID_0"].to_list()
+    IRENA_dict = pd.read_csv(paths["IRENA_dict"], sep=";", index_col=0)
+    IRENA_dict = IRENA_dict["Countries shapefile"].to_dict()
+    IRENA = pd.read_csv(paths["IRENA"], skiprows=7, sep=";", index_col=False, usecols=[0, 1, 2, 3])
     for i in IRENA.index:
-        if pd.isnull(IRENA.loc[i, 'Country/area']):
-            IRENA.loc[i, 'Country/area'] = IRENA.loc[i - 1, 'Country/area']
-        if pd.isnull(IRENA.loc[i, 'Technology']):
-            IRENA.loc[i, 'Technology'] = IRENA.loc[i - 1, 'Technology']
+        if pd.isnull(IRENA.loc[i, "Country/area"]):
+            IRENA.loc[i, "Country/area"] = IRENA.loc[i - 1, "Country/area"]
+        if pd.isnull(IRENA.loc[i, "Technology"]):
+            IRENA.loc[i, "Technology"] = IRENA.loc[i - 1, "Technology"]
 
-    for c in IRENA['Country/area'].unique():
-        IRENA.loc[IRENA['Country/area'] == c, 'Country/area'] = IRENA_dict[c]
+    for c in IRENA["Country/area"].unique():
+        IRENA.loc[IRENA["Country/area"] == c, "Country/area"] = IRENA_dict[c]
 
-    IRENA = IRENA.set_index(['Country/area', 'Technology'])
+    IRENA = IRENA.set_index(["Country/area", "Technology"])
 
     IRENA = IRENA.fillna(0).sort_index()
 
     for (c, t) in IRENA.index.unique():
         sub_df = IRENA.loc[(c, t), :]
-        inst_cap = sub_df.loc[sub_df['Indicator'] == 'Electricity capacity (MW)', year][0]
+        inst_cap = sub_df.loc[sub_df["Indicator"] == "Electricity capacity (MW)", year][0]
         if isinstance(inst_cap, str):
-            inst_cap = int(inst_cap.replace(' ', ''))
-            sub_df.loc[sub_df['Indicator'] == 'Electricity capacity (MW)', year] = inst_cap
-        gen_prod = sub_df.loc[sub_df['Indicator'] == 'Electricity generation (GWh)', year][0]
+            inst_cap = int(inst_cap.replace(" ", ""))
+            sub_df.loc[sub_df["Indicator"] == "Electricity capacity (MW)", year] = inst_cap
+        gen_prod = sub_df.loc[sub_df["Indicator"] == "Electricity generation (GWh)", year][0]
         if isinstance(gen_prod, str):
-            gen_prod = 1000 * int(gen_prod.replace(' ', ''))
-            sub_df.loc[sub_df['Indicator'] == 'Electricity generation (GWh)', year] = gen_prod
+            gen_prod = 1000 * int(gen_prod.replace(" ", ""))
+            sub_df.loc[sub_df["Indicator"] == "Electricity generation (GWh)", year] = gen_prod
         if inst_cap == 0:
             FLH = 0
         else:
             FLH = gen_prod / inst_cap
-        IRENA = IRENA.append(pd.DataFrame([['FLH (h)', FLH]], index=[(c, t)], columns=['Indicator', year])).sort_index()
+        IRENA = IRENA.append(pd.DataFrame([["FLH (h)", FLH]], index=[(c, t)], columns=["Indicator", year])).sort_index()
 
     # Filter countries
     IRENA = IRENA.reset_index()
-    IRENA = IRENA.set_index(['Country/area']).sort_index()
+    IRENA = IRENA.set_index(["Country/area"]).sort_index()
     IRENA = IRENA.loc[IRENA.index.isin(filter_countries)]
     # Reshape
     IRENA = IRENA.reset_index()
-    IRENA = IRENA.set_index(['Country/area', 'Technology'])
-    IRENA = IRENA.pivot(columns='Indicator')[year].rename(columns={'Electricity capacity (MW)': 'inst-cap (MW)',
-                                                                   'Electricity generation (GWh)': 'prod (MWh)'})
+    IRENA = IRENA.set_index(["Country/area", "Technology"])
+    IRENA = IRENA.pivot(columns="Indicator")[year].rename(
+        columns={"Electricity capacity (MW)": "inst-cap (MW)", "Electricity generation (GWh)": "prod (MWh)"}
+    )
     IRENA = IRENA.astype(float)
-    IRENA.to_csv(paths['IRENA_summary'], sep=';', decimal=',', index=True)
-    print("files saved: " + paths['IRENA_summary'])
+    IRENA.to_csv(paths["IRENA_summary"], sep=";", decimal=",", index=True)
+    print("files saved: " + paths["IRENA_summary"])
 
 
 def clean_FLH_regression(param, paths):
@@ -240,39 +256,47 @@ def clean_FLH_regression(param, paths):
     # Read IRENA summary
     if not os.path.isfile(paths["IRENA_summary"]):
         clean_IRENA_summary(param, paths)
-    IRENA_summary = pd.read_csv(paths['IRENA_summary'], sep=';', decimal=',', index_col=[0, 1])
+    IRENA_summary = pd.read_csv(paths["IRENA_summary"], sep=";", decimal=",", index_col=[0, 1])
 
     # Load IRENA dictionary
-    IRENA_dict = pd.read_csv(paths["IRENA_dict"], sep=';')
+    IRENA_dict = pd.read_csv(paths["IRENA_dict"], sep=";")
     IRENA_dict.dropna(inplace=True)
-    IRENA_dict.set_index(['NAME_SHORT'], inplace=True)
-    IRENA_dict = IRENA_dict['Countries shapefile'].to_dict()
+    IRENA_dict.set_index(["NAME_SHORT"], inplace=True)
+    IRENA_dict = IRENA_dict["Countries shapefile"].to_dict()
 
     # Setup FLH_regression dataframe
     list_regions = param["regions_sub"]["NAME_SHORT"].values.tolist()
-    FLH_regression = pd.DataFrame(columns=['WindOn', 'WindOff', 'PV', 'CSP'], index=list_regions, dtype=float)
+    FLH_regression = pd.DataFrame(columns=["WindOn", "WindOff", "PV", "CSP"], index=list_regions, dtype=float)
 
     # Fill in FLH_regression dataframe
     missing = []
     for country in list_regions:
         # Country/region found in IRENA_dict and IRENA_summary
         if country in IRENA_dict.keys():
-            FLH_regression.loc[country] = [IRENA_summary.loc[(IRENA_dict[country], 'Onshore wind energy'), 'FLH (h)'],
-                                           IRENA_summary.loc[(IRENA_dict[country], 'Offshore wind energy'), 'FLH (h)'],
-                                           IRENA_summary.loc[(IRENA_dict[country], 'Solar photovoltaic'), 'FLH (h)'],
-                                           IRENA_summary.loc[(IRENA_dict[country], 'Concentrated solar power'), 'FLH (h)']]
+            FLH_regression.loc[country] = [
+                IRENA_summary.loc[(IRENA_dict[country], "Onshore wind energy"), "FLH (h)"],
+                IRENA_summary.loc[(IRENA_dict[country], "Offshore wind energy"), "FLH (h)"],
+                IRENA_summary.loc[(IRENA_dict[country], "Solar photovoltaic"), "FLH (h)"],
+                IRENA_summary.loc[(IRENA_dict[country], "Concentrated solar power"), "FLH (h)"],
+            ]
         # Missing country/region, require user input
         else:
             missing.append(country)
 
     # Save FLH_regression
-    FLH_regression.to_csv(paths['FLH_regression'], sep=';', decimal=',', index=True)
-    print("files saved: " + paths['FLH_regression'])
+    FLH_regression.to_csv(paths["FLH_regression"], sep=";", decimal=",", index=True)
+    print("files saved: " + paths["FLH_regression"])
 
-    # Return missing countries/regions
-    warn("The following countries/regions are not present in the IRENA database: " + ','.join(missing) + ". Their corresponding FLH have been left blank.", UserWarning)
+    # Return Missing countries/regions
+    warn(
+        "The following countries/regions are not present in the IRENA Database: "
+        + ",".join(missing)
+        + ".Their corresponding FLH have been left blank",
+        UserWarning,
+    )
+    return missing
 
-
+  
 def clean_TS_regression(param, paths, tech):
     """
     This function creates a csv file containing the model Time-series used for regression. If the region is present in
@@ -297,15 +321,15 @@ def clean_TS_regression(param, paths, tech):
     TS_regression = pd.DataFrame(index=range(1, 8761), columns=list_regions)
 
     # Load EMHIRES data for desired year
-    if tech in ['PV', 'CSP']:
-        date_index = pd.date_range(start='1/1/1986', end='1/1/2016', freq='H', closed='left')
-        EMHIRES = pd.read_csv(paths[tech]["EMHIRES"], ' ')
+    if tech in ["PV", "CSP"]:
+        date_index = pd.date_range(start="1/1/1986", end="1/1/2016", freq="H", closed="left")
+        EMHIRES = pd.read_csv(paths[tech]["EMHIRES"], " ")
         EMHIRES = EMHIRES.set_index(date_index)
-        EMHIRES = EMHIRES.loc['1/1/' + str(param["year"]):'1/1/' + str(param["year"] + 1)]
+        EMHIRES = EMHIRES.loc["1/1/" + str(param["year"]) : "1/1/" + str(param["year"] + 1)]
     else:
-        EMHIRES = pd.read_csv(paths[tech]["EMHIRES"], '\t')
+        EMHIRES = pd.read_csv(paths[tech]["EMHIRES"], "\t")
         EMHIRES = EMHIRES[EMHIRES["Year"] == param["year"]].reset_index()
-        EMHIRES = EMHIRES.drop(['index', 'Time step', 'Date', 'Year', 'Month', 'Day', 'Hour'], axis=1)
+        EMHIRES = EMHIRES.drop(["index", "Time step", "Date", "Year", "Month", "Day", "Hour"], axis=1)
 
     # Find intersection between EMHIRES and list_regions
     intersect_regions = sorted(list((set(list_regions).intersection(set(EMHIRES.columns)))))
@@ -328,18 +352,18 @@ def clean_TS_regression(param, paths, tech):
             # Load Generated TS and Scale it with IRENA FLH
             GenTS = read_generated_TS(paths, param, tech, settings, region)
             # Find highest FLH valued TS
-            settings_sorted = np.array(pd.DataFrame((np.nansum(GenTS[key])
-                                                     for key in GenTS.keys()),
-                                                    index=settings,
-                                                    columns=['FLH_all_quant']).sort_values(by='FLH_all_quant',
-                                                                                           ascending=0).index)
+            settings_sorted = np.array(
+                pd.DataFrame((np.nansum(GenTS[key]) for key in GenTS.keys()), index=settings, columns=["FLH_all_quant"])
+                .sort_values(by="FLH_all_quant", ascending=0)
+                .index
+            )
             GenTS["TS_Max"] = GenTS[str(settings_sorted[0])]["q" + str(np.max(param["quantiles"]))]
             # Scale max TS to IRENA
             TS_regression[region] = (GenTS["TS_Max"] * (IRENA_FLH / GenTS["TS_Max"].sum())).values
 
 
     # Save TS_regression as .csv
-    TS_regression.to_csv(paths[tech]["TS_regression"], sep=';', decimal=',', index=True)
+    TS_regression.to_csv(paths[tech]["TS_regression"], sep=";", decimal=",", index=True)
     print("files saved: " + paths[tech]["TS_regression"])
 
 
@@ -360,7 +384,7 @@ def calc_gwa_correction(param, paths):
     GeoRef = param["GeoRef"]
 
     # Obtain wind speed at 50m
-    W50M = hdf5storage.read('W50M', paths["W50M"])
+    W50M = hdf5storage.read("W50M", paths["W50M"])
     W50M = np.mean(W50M, 2)
     W50M = resizem(W50M, m_high, n_high)
 
@@ -372,10 +396,10 @@ def calc_gwa_correction(param, paths):
     # Clean IRENA data and filter them for desired scope
     if not os.path.isfile(paths["IRENA_summary"]):
         clean_IRENA_summary(param, paths)
-    
+
     # Get the installed capacities
-    inst_cap = pd.read_csv(paths["IRENA_summary"], sep=';', decimal=',', index_col=0, usecols=[0, 1, 2])
-    inst_cap = inst_cap.loc[inst_cap["Technology"] == 'Onshore wind energy']
+    inst_cap = pd.read_csv(paths["IRENA_summary"], sep=";", decimal=",", index_col=0, usecols=[0, 1, 2])
+    inst_cap = inst_cap.loc[inst_cap["Technology"] == "Onshore wind energy"]
 
     w_size = np.zeros((nCountries, 1))
     w_cap = np.zeros((nCountries, 1))
@@ -386,8 +410,7 @@ def calc_gwa_correction(param, paths):
     for reg in range(0, nCountries):
         # Show status bar
         status = status + 1
-        sys.stdout.write('\rFinding wind correction factors ' + '[%-50s] %d%%' % (
-            '=' * ((status * 50) // nCountries), (status * 100) // nCountries))
+        sys.stdout.write("\rFinding wind correction factors " + "[%-50s] %d%%" % ("=" * ((status * 50) // nCountries), (status * 100) // nCountries))
         sys.stdout.flush()
 
         A_region = calc_region(countries_shp.iloc[reg], Crd_countries[reg, :], res_desired, GeoRef)
@@ -395,7 +418,7 @@ def calc_gwa_correction(param, paths):
         Ind_reg = np.nonzero(A_region)
         w_size[reg] = len(Ind_reg[0])
         try:
-            w_cap[reg] = inst_cap.loc[reg_name, 'inst-cap (MW)']
+            w_cap[reg] = inst_cap.loc[reg_name, "inst-cap (MW)"]
         except KeyError:
             w_cap[reg] = 0
 
@@ -404,14 +427,14 @@ def calc_gwa_correction(param, paths):
         topo_reg = TOPO[Ind_reg]
 
         # Get the sampled frequencies from the GWA
-        w50m_gwa = pd.read_csv(paths["GWA"][:-14] + reg_name + paths["GWA"][-14:], usecols=['gwa_ws']).to_numpy()[:, 0]
+        w50m_gwa = pd.read_csv(paths["GWA"][:-14] + reg_name + paths["GWA"][-14:], usecols=["gwa_ws"]).to_numpy()[:, 0]
 
         i = 0
         for combi in combi_list:
             ai, bi = combi
             w50m_corrected = w50m_reg * np.minimum(np.exp(ai * topo_reg + bi), 3.5)
             w50m_sorted = np.sort(w50m_corrected)
-            w50m_sampled = np.flipud(w50m_sorted[::(len(w50m_sorted) // len(w50m_gwa) + 1)])
+            w50m_sampled = np.flipud(w50m_sorted[:: (len(w50m_sorted) // len(w50m_gwa) + 1)])
             if len(w50m_sampled) != len(w50m_gwa):
                 len_diff = len(w50m_gwa) - len(w50m_sampled)
                 w50m_sampled = np.append(w50m_sampled, w50m_sorted[:len_diff])
@@ -437,9 +460,12 @@ def calc_gwa_correction(param, paths):
     correction_capacity = np.zeros(TOPO.shape)
     correction_capacity = np.minimum(np.exp(a_cap * TOPO + b_cap), 3.5)
 
-    hdf5storage.writes({'correction_none': correction_none, 'correction_size': correction_size,
-                        'correction_capacity': correction_capacity, }, paths["CORR_GWA"],
-                       store_python_metadata=True, matlab_compatible=True)
+    hdf5storage.writes(
+        {"correction_none": correction_none, "correction_size": correction_size, "correction_capacity": correction_capacity},
+        paths["CORR_GWA"],
+        store_python_metadata=True,
+        matlab_compatible=True,
+    )
     return
 
 
@@ -484,37 +510,31 @@ def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
     beta[range_lat] = (beta[range_lat] - 35) / 65 * 55 + 35  # Tilt angle does not increase very quickly
     range_lat = np.logical_and(lat >= 35, lat < 65)
     range_lon = np.logical_and(lon >= -20, lon < 30)
-    beta[np.logical_and(range_lat, range_lon)] = (beta[np.logical_and(range_lat,
-                                                                      range_lon)] - 35) / 65 * 45 + 35  # Europe
+    beta[np.logical_and(range_lat, range_lon)] = (beta[np.logical_and(range_lat, range_lon)] - 35) / 65 * 45 + 35  # Europe
     range_lat = np.logical_and(lat >= 20, lat < 65)
     range_lon = np.logical_and(lon >= 75, lon < 140)
-    beta[np.logical_and(range_lat, range_lon)] = (beta[np.logical_and(range_lat,
-                                                                      range_lon)] - 20) / 65 * 60 + 20  # Asia/China
+    beta[np.logical_and(range_lat, range_lon)] = (beta[np.logical_and(range_lat, range_lon)] - 20) / 65 * 60 + 20  # Asia/China
 
     if Crd_all[2] > 0:
         day = GCR["day_north"]
         # Declination angle
-        delta = repmat(arcsind(0.3978) * sin(
-            day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), m_high, 1)
+        delta = repmat(arcsind(0.3978) * sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), m_high, 1)
 
     if Crd_all[0] < 0:
         day = GCR["day_south"]
         # Declination angle
-        delta = repmat(arcsind(0.3978) * sin(
-            day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), m_high, 1)
+        delta = repmat(arcsind(0.3978) * sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), m_high, 1)
 
     if (Crd_all[2] * Crd_all[0]) < 0:
-        lat_pos = int(np.sum(lat>=0, axis=0)[0])
+        lat_pos = int(np.sum(lat >= 0, axis=0)[0])
         day = GCR["day_north"]
         # Declination angle
-        delta_pos = repmat(arcsind(0.3978) * sin(
-            day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), lat_pos, 1)
+        delta_pos = repmat(arcsind(0.3978) * sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), lat_pos, 1)
 
-        lat_neg = int(np.sum(lat<0, axis=0)[0])
+        lat_neg = int(np.sum(lat < 0, axis=0)[0])
         day = GCR["day_south"]
         # Declination angle
-        delta_neg = repmat(arcsind(0.3978) * sin(
-            day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), lat_neg, 1)
+        delta_neg = repmat(arcsind(0.3978) * sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), lat_neg, 1)
         delta = np.append(delta_neg, delta_pos, axis=0)
 
     # Elevation angle
@@ -546,7 +566,7 @@ def sampled_sorting(Raster, sampling):
     :rtype: List
     """
     # Flatten the raster and sort raster from highest to lowest
-    Sorted_FLH = np.sort(Raster.flatten(order='F'))
+    Sorted_FLH = np.sort(Raster.flatten(order="F"))
     Sorted_FLH = np.flipud(Sorted_FLH)
 
     # Loop over list with sampling increment
@@ -582,16 +602,16 @@ def read_generated_TS(paths, param, tech, settings, subregion):
     subregions = param["subregions_name"]
     year = str(param["year"])
 
-    bef_setting = paths["regional_analysis"] + subregions + '_' + tech + '_'
-    if tech == 'CSP':
-        bef_setting = paths["regional_analysis"] + subregions + '_' + tech
-    aft_setting = '_TS_' + year + '.csv'
+    bef_setting = paths["regional_analysis"] + subregions + "_" + tech + "_"
+    if tech == "CSP":
+        bef_setting = paths["regional_analysis"] + subregions + "_" + tech
+    aft_setting = "_TS_" + year + ".csv"
 
     # Setup the data dictionary for generated TS for each quantile
     GenTS = {}
 
     for setting in settings:
-        TS_Temp = pd.read_csv(bef_setting + str(setting) + aft_setting, sep=';', decimal=',', dtype=str)
+        TS_Temp = pd.read_csv(bef_setting + str(setting) + aft_setting, sep=";", decimal=",", dtype=str)
 
         filter_reg = [col for col in TS_Temp if col.startswith(subregion)]
         # Remove undesired regions
@@ -605,8 +625,8 @@ def read_generated_TS(paths, param, tech, settings, subregion):
         TS_Temp = TS_Temp.drop(0)
         # Replace ',' with '.' for float conversion
         for q in range(0, len(TS_Temp.columns)):
-            TS_Temp.iloc[:, q] = TS_Temp.iloc[:, q].apply(lambda x: x.replace(',', '.')).astype(float)
-            TS_Temp.columns.name = ''
+            TS_Temp.iloc[:, q] = TS_Temp.iloc[:, q].apply(lambda x: x.replace(",", ".")).astype(float)
+            TS_Temp.columns.name = ""
             TS_Temp.reset_index(inplace=True, drop=True)
         GenTS[str(setting)] = TS_Temp
 
@@ -646,11 +666,11 @@ def regmodel_load_data(paths, param, tech, settings, subregion):
         return None
 
     # reorder hubheights to go from max TS to min TS:
-    settings_sorted = np.array(pd.DataFrame((np.nansum(GenTS[key])
-                               for key in GenTS.keys()),
-                               index=settings,
-                               columns=['FLH_all_quant']).sort_values(by='FLH_all_quant', ascending=0).index)
-    
+    settings_sorted = np.array(
+        pd.DataFrame((np.nansum(GenTS[key]) for key in GenTS.keys()), index=settings, columns=["FLH_all_quant"])
+        .sort_values(by="FLH_all_quant", ascending=0)
+        .index
+    )
     GenTS["TS_Max"] = np.nansum(GenTS[str(settings_sorted[0])]["q" + str(np.max(param["quantiles"]))])
     GenTS["TS_Min"] = np.nansum(GenTS[str(settings_sorted[-1])]["q" + str(np.min(param["quantiles"]))])
 
@@ -661,18 +681,18 @@ def regmodel_load_data(paths, param, tech, settings, subregion):
 
     if solution_check == (False, True):
         Timeseries = GenTS[str(settings_sorted[0])]["q" + str(np.max(param["quantiles"]))]
-    
+
     elif solution_check == (True, False):
         Timeseries = GenTS[str(settings_sorted[-1])]["q" + str(np.min(param["quantiles"]))]
-    
+
     elif solution_check == (True, True):
         Timeseries = {}
 
         for s in settings_sorted:
             for q in param["quantiles"]:
                 for t in time:
-                    Timeseries[(s, q, t)] = np.array(GenTS[str(s)]['q' + str(q)])[t - 1]
-    
+                    Timeseries[(s, q, t)] = np.array(GenTS[str(s)]["q" + str(q)])[t - 1]
+
     # Setup dataframe for TS Models
     TS_reg = param["TS_regression"]
     ts = np.array(TS_reg[subregion].values)
@@ -681,43 +701,45 @@ def regmodel_load_data(paths, param, tech, settings, subregion):
     for t in time:
         TS[(t,)] = ts[t - 1]
     # Create data_input dictionary
-    data = {None: {
-        "s": {None: settings_sorted},
-        "q": {None: param["quantiles"]},
-        "FLH": {None: model_FLH},
-        "shape": TS,
-        "t": {None: np.array(time)},
-        "TS": Timeseries,
-        "IRENA_best_worst": solution_check,
-        "GenTS": GenTS
-    }}
+    data = {
+        None: {
+            "s": {None: settings_sorted},
+            "q": {None: param["quantiles"]},
+            "FLH": {None: model_FLH},
+            "shape": TS,
+            "t": {None: np.array(time)},
+            "TS": Timeseries,
+            "IRENA_best_worst": solution_check,
+            "GenTS": GenTS,
+        }
+    }
     return data
 
-    
+
 def combinations_for_regression(paths, param, tech):
     """
-    ?????
+    missing documentation
     """
     subregions = param["subregions_name"]
     year = str(param["year"])
-    
+
     # Reads the files present in input folder
-    inputfiles = glob(paths["regional_analysis"] + subregions + '_' + tech + '*_TS_' + year + '.csv')
-    
+    inputfiles = glob(paths["regional_analysis"] + subregions + "_" + tech + "*_TS_" + year + ".csv")
+
     # Case 1: no files existing
     if len(inputfiles) == 0:
-        warn('Generate time series first, before doing the regression!', UserWarning)
+        warn("Generate time series first, before doing the regression!", UserWarning)
         return
-        
+
     # Get existing settings
     settings_existing = []
     for filename in inputfiles:
-        bef_setting = paths["regional_analysis"] + subregions + '_' + tech + '_'
-        aft_setting = '_TS_' + year + '.csv'
-        settings_existing = settings_existing + [int(filename.replace(bef_setting, '').replace(aft_setting, ''))]
+        bef_setting = paths["regional_analysis"] + subregions + "_" + tech + "_"
+        aft_setting = "_TS_" + year + ".csv"
+        settings_existing = settings_existing + [int(filename.replace(bef_setting, "").replace(aft_setting, ""))]
     settings_existing = set(settings_existing)
     print("\nFor technology " + tech + ", time series for the following settings have been detected: ", settings_existing)
-    
+
     # Get required settings
     combinations = param["regression"][tech].values()
     combinations_sorted = []
@@ -725,11 +747,11 @@ def combinations_for_regression(paths, param, tech):
         combinations_sorted = combinations_sorted + [sorted(combi)]
     combinations = combinations_sorted
     settings_required = set([item for sublist in combinations for item in sublist])
-    
+
     # Case 2: some files are missing
     if not settings_required.issubset(settings_existing):
         print("\nFor technology " + tech + ", time series for the following settings are required: ", settings_required)
-        warn('Not all time series are available! Generate the missing time series first, then do the regression.', UserWarning)
+        warn("Not all time series are available! Generate the missing time series first, then do the regression.", UserWarning)
         return
     # Case 3: all the required files exist (and nothing more)
     if settings_existing.issubset(settings_required):
@@ -746,33 +768,33 @@ def combinations_for_regression(paths, param, tech):
                 combinations = combinations + [full_combi]
             combinations.remove([])
     return combinations
-    
-    
+
+
 def combinations_for_stratified_timeseries(paths, param, tech):
     """
-    ?????
+    missing documentation
     """
     subregions = param["subregions_name"]
     year = str(param["year"])
-    
+
     # Reads the files present in input folder
-    inputfiles = glob(paths["regression_out"] + subregions + '_' + tech + '_reg_coefficients*' + year + '.csv')
-    
+    inputfiles = glob(paths["regression_out"] + subregions + "_" + tech + "_reg_coefficients*" + year + ".csv")
+
     # Case 1: no files existing
     if len(inputfiles) == 0:
-        warn('Run the regression first, before creating stratified time series!', UserWarning)
+        warn("Run the regression first, before creating stratified time series!", UserWarning)
         return
-        
+
     # Get existing settings
     settings_existing = []
     for filename in inputfiles:
-        bef_setting = paths["regression_out"] + subregions + '_' + tech + '_reg_coefficients_'
-        aft_setting = '_' + year + '.csv'
-        list_settings = filename.replace(bef_setting, '').replace(aft_setting, '').split('_')
+        bef_setting = paths["regression_out"] + subregions + "_" + tech + "_reg_coefficients_"
+        aft_setting = "_" + year + ".csv"
+        list_settings = filename.replace(bef_setting, "").replace(aft_setting, "").split("_")
         settings_existing = settings_existing + [sorted([int(x) for x in list_settings])]
     settings_sorted = sorted(settings_existing)
     print("\nFor technology " + tech + ", regression coefficients for the following combinations have been detected: ", settings_existing)
-    
+
     # Get required settings
     combinations = param["combo"][tech].values()
     combinations_sorted = []
@@ -785,7 +807,10 @@ def combinations_for_stratified_timeseries(paths, param, tech):
     # Case 2: some files are missing
     if combinations != settings_sorted:
         print("\nFor technology " + tech + ", regression coefficients for the following combinations are required: ", combinations)
-        warn('Not all regression coefficients are available! Generate the missing regression coefficients first, then create stratified time series.', UserWarning)
+        warn(
+            "Not all regression coefficients are available! Generate the missing regression coefficients first, then create stratified time series.",
+            UserWarning,
+        )
         return
     return settings_existing, inputfiles
 
@@ -811,14 +836,14 @@ def get_merra_raster_Data(paths, param, tech):
     merraData = {}
     rasterData = {}
     # Wind Speed Data
-    merraData["W50M"] = hdf5storage.read('W50M', paths["W50M"])
-    if tech in ['PV', 'CSP']:
+    merraData["W50M"] = hdf5storage.read("W50M", paths["W50M"])
+    if tech in ["PV", "CSP"]:
 
         # Other weather Data
         # Clearness index - stored variable CLEARNESS
-        merraData["CLEARNESS"] = hdf5storage.read('CLEARNESS', paths["CLEARNESS"])
+        merraData["CLEARNESS"] = hdf5storage.read("CLEARNESS", paths["CLEARNESS"])
         # Temperature 2m above the ground - stored variable T2M
-        merraData["T2M"] = hdf5storage.read('T2M', paths["T2M"])
+        merraData["T2M"] = hdf5storage.read("T2M", paths["T2M"])
 
         # Calculate A matrices correction
         # A_lu
@@ -826,26 +851,24 @@ def get_merra_raster_Data(paths, param, tech):
             w = src.read(1)
         rasterData["A_lu"] = np.flipud(w)
         # A_Ross (Temperature coefficients for heating losses)
-        rasterData["A_Ross"] = changem(rasterData["A_lu"], param["landuse"]["Ross_coeff"],
-                                       param["landuse"]["type"]).astype('float16')
+        rasterData["A_Ross"] = changem(rasterData["A_lu"], param["landuse"]["Ross_coeff"], param["landuse"]["type"]).astype("float16")
         # A_albedo (Reflectivity coefficients)
-        rasterData["A_albedo"] = changem(rasterData["A_lu"], param["landuse"]["albedo"],
-                                         param["landuse"]["type"]).astype('float16')
+        rasterData["A_albedo"] = changem(rasterData["A_lu"], param["landuse"]["albedo"], param["landuse"]["type"]).astype("float16")
         # A_WS_Coef wind Speed at 2m above the ground
         A_hellmann = changem(rasterData["A_lu"], landuse["hellmann"], landuse["type"])
-        rasterData["A_WindSpeed_Corr"] = ((2 / 50) ** A_hellmann).astype('float16')
+        rasterData["A_WindSpeed_Corr"] = ((2 / 50) ** A_hellmann).astype("float16")
         del A_hellmann
 
-    elif tech in ['WindOn', 'WindOff']:
+    elif tech in ["WindOn", "WindOff"]:
         reg_ind = param["Ind_nz"]
         # A_cf
-        if tech == 'WindOn':
+        if tech == "WindOn":
             paths_corr = paths["CORR_ON"]
         else:
             paths_corr = paths["CORR_OFF"]
         with rasterio.open(paths_corr) as src:
             w = src.read(1)
-        rasterData["A_cf"] = np.flipud(w).astype('float16')
+        rasterData["A_cf"] = np.flipud(w).astype("float16")
         rasterData["A_cf"] = rasterData["A_cf"][reg_ind]
         del w
     return merraData, rasterData

@@ -1,6 +1,6 @@
-****************
-Theoretical part
-****************
+******
+Theory
+******
 Solar
 =====
 Solar Angles
@@ -24,7 +24,7 @@ Earth's axis, which is 23.45° tilted, so the declination ranges between -23.4°
 and 23.45° through the year. The declination could be interpreted as the latitude
 where the Sun's rays perpendicularly strike the Earth's surface at solar noon.
 This value is the same for all the locations within the globe for a given day and
-is calculated as follows [6]_:
+is calculated as follows :cite:`Scharmer.2000`:
 
 .. math::
 
@@ -38,7 +38,7 @@ The time is important to define the position of the Sun in the
 sky. However, it is easier to use the time if it is converted into solar time. To
 do so, a few corrections are needed. The equation of time is an empirical
 equation which corrects the error caused by the axial tilt of the Earth and the
-eccentricity of its orbit [6]_:
+eccentricity of its orbit :cite:`Scharmer.2000`:
 
 .. math::
 	EOT=-0.128 \sin\Big(\frac{360}{365.25}N-2.8\Big)-0.165 \sin\Big(\frac{720}{365.25}N +19.7\Big)
@@ -69,7 +69,7 @@ sunrise and the sunset. The sunrise and sunset have the same value, however,
 the sunrise is considered negative and the sunset positive. They depend on the
 day of the year and the location on the Earth (denoted by the declination and
 the latitude :math:`\phi` respectively) and they are calculated for a horizontal surface as
-follows [9]_:
+follows :cite:`Klein.1977`:
 
 .. math::
 	\omega_s=\arccos(-\tan\phi\tan\delta)
@@ -78,7 +78,7 @@ Due to self-shading, a tilted plane might be exposed to different sunrise and
 sunset's values. Also, if the plane is not facing the equator, the sunrise and
 sunset angles will be numerically different for such surfaces. The following
 equations consider this orientation changes for the sunrise and sunset values of
-a tilted plane [9]_.
+a tilted plane :cite:`Klein.1977`.
 
 .. math::
 	a=\frac{\cos\phi}{\tan\beta}+\sin\phi
@@ -108,7 +108,7 @@ be calculated in order to calculate the incidence angle.
 
 The elevation angle :math:`\alpha` or altitude angle measures the angular distance
 between the Sun and the horizon. It ranges from 0° at the sunrise to 90° at the
-noon (the value at the noon varies depending on the day of the year [10]_.
+noon (the value at the noon varies depending on the day of the year) :cite:`William.2014`.
 
 .. math::
 	\alpha=\arcsin[\sin\delta \sin\phi+\cos\delta\cos\phi\cos\omega]
@@ -118,7 +118,7 @@ of the Sun. It could be seen as a compass direction with 0° to the North and
 180° to the South. The range of values of the azimuth angle varies over the
 year, going from 90° at the sunrise to 270° at the sunset during the equinoxes.
 The equation for the azimuth depends on the time of the day. For the solar
-morning, it is [10]_:
+morning, it is :cite:`William.2014`:
 
 .. math::
 	Az_{am}=\arccos\Big(\frac{\sin\delta\cos\phi-\cos\delta\sin\phi\cos\omega}{\cos\alpha}\Big)
@@ -129,7 +129,7 @@ and for the afternoon:
 	Az_{pm}=360-Az_{am}
 
 With the already calculated angles, it is possible to calculate the incidence angle,
-which is the angle between the surface's normal and the Sun's beam radiation [3]_:
+which is the angle between the surface's normal and the Sun's beam radiation :cite:`Reindl.1988`:
 
 .. math::
 	\begin{split}
@@ -146,7 +146,7 @@ When one-axis tracking is active, the tilt angle :math:`\beta` and the azimuthal
 of the panel change constantly as the panel follows the sun. In this model a tilted on-axis tracking with east-west tracking is considered.
 The rotation of the plane around the axis is deffned by the rotation angle
 R, it is calculated in order to achieve the smallest incidence angle for the plane
-by the following equations [11]_:
+by the following equations :cite:`William.2013`:
 
 .. math::
 	X=\frac{-\cos\alpha \sin(A_z-\gamma_a)}{-\cos\alpha \cos(A_z-\gamma_a)\sin\beta_a+\sin\alpha \cos\beta_a}
@@ -184,7 +184,7 @@ Solar Power
 To calculate the solar power we must start with the solar constant. However,
 the irradiance striking the top of the Earth's atmosphere (TOA) varies over the
 year. This is due to the eccentricity of the Earth's orbit and its tilted axis. The
-TOA is calculated according to the following equation [3]_:
+TOA is calculated according to the following equation :cite:`Reindl.1988`:
 
 .. math::
 	TOA=G_{sc}\Big[1+0.03344  \cos\Big(\frac{2 \pi N}{365.25}-0.048869\Big)\Big] \sin\alpha
@@ -216,7 +216,7 @@ forfor the diffuse radiation, the radiation that comes to a surface from all dir
 as its trajectory is changed by the atmosphere. These two components have
 different contributions to the total irradiance on a tilted surface, so it is necessary
 to distinguish between them. This can be done using the correlation of Erbs
-et al [1]_, which calculates the ratio R of the beam and diffuse radiation as a
+et al :cite:`Erbs.1982`, which calculates the ratio R of the beam and diffuse radiation as a
 function of the clearness index.
 
 .. math::
@@ -228,12 +228,12 @@ function of the clearness index.
     \end{cases}
 	
 Furthermore, diffuse radiation could be divided into more components. The
-HDKR model [5]_, [3]_ developed by Hay, Davies, Klucher, and Reindl in 1979
+HDKR model :cite:`Duffie.2013,Reindl.1988`,  developed by Hay, Davies, Klucher, and Reindl in 1979
 assumes isotropic diffuse radiation, which means that the diffuse radiation is
 uniformly distributed across the sky. However, it also considers a higher radiation
 intensity around the Sun, the circumsolar diffuse radiation, and a horizontal
 brightening correction. To use the HDKR model, some factors must be defined
-first [3]_. The ratio of incident beam to horizontal beam:
+first :cite:`Reindl.1988`. The ratio of incident beam to horizontal beam:
 
 .. math::
 	R_b=\frac{\cos\theta_i}{\sin\alpha}
@@ -274,7 +274,7 @@ results in a reduction of the band gap of the solar cell which is translated int
 a reduction of the open circuit voltage. The overall effect is a reduction of the
 power output of the PV system. To calculate the power loss of a solar cell it is
 necessary to know its temperature. This can be expressed as a function of the
-incident radiation and the ambient temperature [7]_:
+incident radiation and the ambient temperature :cite:`Maturi.2014`:
 
 .. math::
 	T_{cell}=T_{amb}+kG_T
@@ -354,9 +354,9 @@ Wind Shear
 ----------
 While the wind is hardly affected by the Earth's surface at a
 height of about one kilometer, at lower heights in the atmosphere the friction of
-the Earth's surface reduces the speed of the wind [2]_. One of the most common
+the Earth's surface reduces the speed of the wind :cite:`Danish.2003`. One of the most common
 expressions describing this phenomenon is the Hellmann exponential law, which
-correlates the wind speed at two different heights [8]_.
+correlates the wind speed at two different heights :cite:`Kaltschmitt.2007`.
 
 .. math::
 	v=v_0\Big(\frac{H}{H_0}\Big)^\alpha
@@ -369,7 +369,7 @@ Wind Power
 ----------
 The wind turbines convert the kinetic energy of the air into torque. The
 power that a turbine can extract from the wind is described by the following
-expression [4]_:
+expression :cite:`Masters.2004`:
 
 .. math::
 	P=\frac{1}{2}\rho A v^3 C_p
@@ -420,44 +420,3 @@ it does not change in both generation states (actual and theoretical maximum
 power). While the density could vary for both states, the overall impact of a
 change in density is negligible compared to the wind speed and therefore it is
 not included in the calculation.
-
-References
-==========
-
-.. [1]
-	D. G. Erbs, S. A. Klein, and J. A. Duffle. Estimation of the diffuse radiation
-	fraction for hourly, daily and monthly-average global radiation. Solar
-	Energy, 28(4):293-302, 1982.
-.. [2]	
-	Danish Wind Industry Association. Wind energy reference manual, 2003.
-.. [3]
-	Douglas T. Reindl. Estimating diffuse radiation on horizontal surfaces
-	and total radiation on tilted surfaces. Master's dissertation, University of
-	Wisconsin, Madison, 1988.
-.. [4]
-	Gilbert M. Masters. Renewable and efficient electric power systems. Wiley-
-	Interscience and [Chichester : John Wiley], Hoboken, N.J., 2004.
-.. [5]	
-	John A. Duffle and William A. Beckman. Solar engineering of thermal
-	processes. Wiley, Hoboken, New Jersey, fourth edition edition, 2013.
-.. [6]
-	K. Scharmer and Jürgen Greif. Database and exploitation software, volume
-	2 of The European solar radiation atlas. Presses de l'nger, Paris, 2000.
-.. [7]
-	Laura Maturi, Giorgio Belluardo, David Moser, and Matteo Del Buono.
-	Bipv system performance and efficiency drops: Overview on pv module
-	temperature conditions of different module types. Energy Procedia,
-	48:1311-1319, 2014.
-.. [8]
-	Martin Kaltschmitt, Wolfgang Streicher, and Andreas Wiese. Renew-
-	able energy: Technology, economics, and environment / [editors] Martin
-	Kaltschmitt, Wolfgang Streicher, Andreas Wiese. Springer, Berlin and New
-	York, 2007.
-.. [9]
-	S. A. Klein. Calculation of monthly average insolation on tilted surfaces.
-	Solar Energy, 19(4):325-329, 1977.
-.. [10]
-	William B. Stine and Michael Geyer. Powerfromthesun.net, 05.03.2014.
-.. [11]
-	William F. Marion and Aron P. Dobos. Rotation angle for the optimum
-	tracking of one-axis trackers.

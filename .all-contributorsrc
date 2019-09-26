@@ -13,6 +13,17 @@
       "contributions": [
         "question"
       ]
+    },
+    {
+      "login": "HoussameH",
+      "name": "HoussameH",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/48953960?v=4",
+      "profile": "https://github.com/HoussameH",
+      "contributions": [
+        "question",
+        "code",
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7,

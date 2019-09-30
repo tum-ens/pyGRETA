@@ -11,7 +11,15 @@
       "avatar_url": "https://avatars2.githubusercontent.com/u/21306297?v=4",
       "profile": "https://github.com/kais-siala",
       "contributions": [
-        "question"
+        "question",
+        "bug",
+        "code",
+        "doc",
+        "ideas",
+        "maintenance",
+        "review",
+        "test",
+        "talk"
       ]
     }
   ],

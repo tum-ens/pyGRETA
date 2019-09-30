@@ -1,0 +1,16 @@
+name: DocEnv
+dependencies:
+  - alabaster
+  - python=3.5
+  - sphinx_rtd_theme
+  - jinja2
+  - tornado
+  - nbformat
+  - jupyter_client
+  - ipykernel
+  - sphinx
+  - six
+  - pip:
+    - sphinxcontrib-bibtex
+prefix: C:\Users\houss\.conda\envs\DocEnv
+

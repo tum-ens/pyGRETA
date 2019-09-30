@@ -90,6 +90,13 @@ Continue here if you want to understand in detail the model implementation.
 Dependencies
 ------------
 
+Bibliography	
+------------
+
+.. toctree::
+   :maxdepth: 1
+   
+   zref
 
 Indices and tables
 ------------------

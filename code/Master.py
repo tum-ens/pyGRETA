@@ -38,6 +38,7 @@ def initialization():
     countries_shp = countries_shp.to_crs({"init": "epsg:4326"})
 
     # Crop all polygons and take the part inside the bounding box
+    countries_shp["geometry"] = countries_shp["geometry"].buffer(0)
     countries_shp["geometry"] = countries_shp["geometry"].intersection(bounds_box)
     countries_shp = countries_shp[countries_shp.geometry.area > 0]
     param["regions_land"] = countries_shp
@@ -56,6 +57,7 @@ def initialization():
     eez_shp = eez_shp.to_crs({"init": "epsg:4326"})
 
     # Crop all polygons and take the part inside the bounding box
+    eez_shp["geometry"] = eez_shp["geometry"].buffer(0)
     eez_shp["geometry"] = eez_shp["geometry"].intersection(bounds_box)
     eez_shp = eez_shp[eez_shp.geometry.area > 0]
     param["regions_sea"] = eez_shp
@@ -1623,7 +1625,7 @@ if __name__ == "__main__":
     generate_population(paths, param)  # Population
     generate_protected_areas(paths, param)  # Protected areas
     generate_buffered_population(paths, param)  # Buffered Population
-    generate_area(paths, param)
+    generate_wind_correction(paths, param)
 
     for tech in param["technology"]:
         print("Tech: " + tech)

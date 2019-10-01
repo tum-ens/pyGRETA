@@ -925,8 +925,8 @@ def calculate_FLH(paths, param, tech):
     # Save GEOTIFF files
     if param["savetiff"]:
         GeoRef = param["GeoRef"]
-        array2raster(changeExt2tif(paths[tech]["mask"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], FLH)
-        print("files saved:" + changeExt2tif(paths[tech]["mask"]))
+        array2raster(changeExt2tif(paths[tech]["FLH"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], FLH)
+        print("files saved:" + changeExt2tif(paths[tech]["FLH"]))
 
     timecheck("End")
 

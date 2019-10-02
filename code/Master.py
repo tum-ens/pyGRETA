@@ -750,6 +750,17 @@ def generate_buffered_population(paths, param):
 
 
 def generate_area(paths, param):
+    """
+    This function saves a raster of area values for all pixels contained in the desired spatial scope. The area of
+    the pixels increases as the pixel is further from the equator.
+
+    :param paths: Ditionary of dictionaries containing the path to the output file
+    :type paths: dict
+    :param param: Ditionary of dictionaries containing spatial scope coordinates and desired resolution
+    :type param: dict
+
+    :return: None
+    """
     timecheck("Start")
     Crd_all = param["Crd_all"]
     n_high = param["n_high"]
@@ -789,6 +800,7 @@ def generate_area(paths, param):
 
     # Save to HDF File
     hdf5storage.writes({"A_area": A_area}, paths["AREA"], store_python_metadata=True, matlab_compatible=True)
+    create_json(paths["AREA"], param, ["Crd_all", "res_desired", "n_high"], paths, [])
     print("files saved: " + paths["AREA"])
 
     timecheck("End")
@@ -1087,6 +1099,19 @@ def weighting(paths, param, tech):
 
 
 def reporting(paths, param, tech):
+    """
+    This function creates a .csv file containing various statistics about each region contained in the subregion
+    shapefile. Additionally, an ordered sample of length set by the user is also extracted and saved in a .mat file
+    for each subregion.
+
+    :param paths: Dictionary of dictionaries containing the paths to FLH, Masking, Weighting, and Area rasters.
+    :type paths: dict
+    :param param: Dictionary of dictionaries containing Technology parameters, and sampling parameters.
+    :type param: dict
+    :param tech: Technology under study.
+    :type tech: str
+    :return: None
+    """
     timecheck("Start")
     # read FLH, masking, area, and weighting matrix
     FLH = hdf5storage.read("FLH", paths[tech]["FLH"])
@@ -1266,8 +1291,8 @@ def reporting(paths, param, tech):
 def find_locations_quantiles(paths, param, tech):
     """
     This function finds the coordinates and indices for the user defined quantiles of the ordered FLH for each region.
-    It creates a shapefile containing the position of the quantiles for each region, and two mat files with the
-    coordinates and indices of the quantiles.
+    It creates a shapefile containing the position of the quantiles for each region, and two .mat files with their
+    coordinates and indices.
 
     :param paths: Dictionary of dictionaries containing path values for FLH mat files, region statistics, and output paths
     :type paths: dict

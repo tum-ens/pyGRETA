@@ -34,9 +34,9 @@ You do not need to use the code (*but you can*) if:
 * You only need time series for administrative divisions (countries, NUTS-2, etc.), for which such data is readily available - see [Renewables.ninja](https://www.renewables.ninja/) or [EMHIRES](https://ec.europa.eu/jrc/en/scientific-tool/emhires)
 
 ## Outputs
-
-<img src="doc\img\Australia_PV_wo_quant.png" alt="Australia_PV_wo_quant" width="400px">    <img src="doc\img\Australia_WindOn_with_quant.png" alt="Australia_WindOn_with_quant" width="400px">
-
+<div align="center">
+<img src="doc\img\Australia_PV_wo_quant.png" alt="Australia_PV_wo_quant" width="400px"><img src="doc\img\Australia_WindOn_with_quant.png" alt="Australia_WindOn_with_quant" width="400px">
+</div>
  
 ## Contributors ✨
 

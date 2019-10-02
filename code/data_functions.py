@@ -291,7 +291,7 @@ def clean_FLH_regression(param, paths):
     warn(
         "The following countries/regions are not present in the IRENA Database: "
         + ",".join(missing)
-        + ".Their corresponding FLH have been left blank",
+        + ".\nTheir corresponding FLH have been left blank.",
         UserWarning,
     )
     return missing

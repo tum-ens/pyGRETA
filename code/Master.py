@@ -1019,10 +1019,10 @@ def masking(paths, param, tech):
     if param["savetiff"]:
         GeoRef = param["GeoRef"]
         array2raster(changeExt2tif(paths[tech]["mask"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_mask)
-        print("files saved:" + changeExt2tif(paths[tech]["mask"]))
+        print("files saved: " + changeExt2tif(paths[tech]["mask"]))
 
         array2raster(changeExt2tif(paths[tech]["FLH_mask"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], FLH_mask)
-        print("files saved:" + changeExt2tif(paths[tech]["FLH_mask"]))
+        print("files saved: " + changeExt2tif(paths[tech]["FLH_mask"]))
 
     timecheck("End")
 

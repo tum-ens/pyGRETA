@@ -35,7 +35,7 @@ You do not need to use the code (*but you can*) if:
 
 ## Outputs
 
-<img src="doc\img\Australia_PV_wo_quant.png" alt="Australia_PV_wo_quant" width="400px"> <img src="doc\img\Australia_WindOn_with_quant.png" alt="Australia_WindOn_with_quant" width="400px">
+<center><img src="doc\img\Australia_PV_wo_quant.png" alt="Australia_PV_wo_quant" width="400px"> <img src="doc\img\Australia_WindOn_with_quant.png" alt="Australia_WindOn_with_quant" width="400px"></center>
 
  
 ## Contributors ✨

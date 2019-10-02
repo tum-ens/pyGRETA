@@ -33,7 +33,10 @@ You do not need to use the code (*but you can*) if:
 * You only need time series for specific points - use other webtools such as [Renewables.ninja](https://www.renewables.ninja/)
 * You only need time series for administrative divisions (countries, NUTS-2, etc.), for which such data is readily available - see [Renewables.ninja](https://www.renewables.ninja/) or [EMHIRES](https://ec.europa.eu/jrc/en/scientific-tool/emhires)
 
+## Outputs
 
+![alt_text](doc\img\Australia_PV_wo_quant.png)
+ 
 ## Contributors ✨
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):

@@ -1264,6 +1264,19 @@ def reporting(paths, param, tech):
 
 
 def find_locations_quantiles(paths, param, tech):
+    """
+    This function finds the coordinates and indices for the user defined quantiles of the ordered FLH for each region.
+    It creates a shapefile containing the position of the quantiles for each region, and two mat files with the
+    coordinates and indices of the quantiles.
+
+    :param paths: Dictionary of dictionaries containing path values for FLH mat files, region statistics, and output paths
+    :type paths: dict
+    :param param: Dictionary of dictionaries containing the user defined quantiles, FLH resolution, spatial scope
+    :type param: dict
+    :param tech: technology under study
+    :type tech: str
+    :return: None
+    """
     timecheck("Start")
     FLH_mask = hdf5storage.read("FLH_mask", paths[tech]["FLH_mask"])
     quantiles = param["quantiles"]

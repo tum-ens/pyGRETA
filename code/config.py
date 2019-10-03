@@ -110,7 +110,7 @@ def scope_paths_and_parameters(paths, param):
 
     # Name tags for the scope and the subregions
     param["region_name"] = "Europe"  # Name tag of the spatial scope
-    param["subregions_name"] = "Europe_wo_Balkans_NUTS0" # Name tag of the subregions
+    param["subregions_name"] = "Europe_wo_Balkans_NUTS0"  # Name tag of the subregions
 
     # Year
     param["year"] = 2015

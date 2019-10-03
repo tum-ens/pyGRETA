@@ -751,8 +751,8 @@ def generate_buffered_population(paths, param):
 
 def generate_area(paths, param):
     """
-    This function saves a raster of area values for all pixels contained in the desired spatial scope. The area of
-    the pixels increases as the pixel is further from the equator.
+    This function retreives the coordinates of the spatial scope and computes the pixel area gradient of the corresponding
+    raster. The area of the pixels increases as the pixel is farther from the equator.
 
     :param paths: Ditionary of dictionaries containing the path to the output file
     :type paths: dict
@@ -1104,9 +1104,26 @@ def weighting(paths, param, tech):
 
 def reporting(paths, param, tech):
     """
-    This function creates a .csv file containing various statistics about each region contained in the subregion
-    shapefile. Additionally, an ordered sample of length set by the user is also extracted and saved in a .mat file
-    for each subregion.
+    This function reads the FLH files and the subregion shapefiles, and creates a .csv file containing various statistics:
+
+    * Available number of pixels
+    * Available number of pixels after masking
+    * Available Area in km2
+    * FLH Mean
+    * FLH Median
+    * FLH Max
+    * FLH Min
+    * FLH Mean after masking
+    * FLH Median after masking
+    * FLH Max after masking
+    * FLH Min after masking
+    * FLH Standard deviation after masking
+    * Power Potential in GW
+    * Power Potential in GW after weighting
+    * Energy Potential in TWh
+    * Energy Potential in TWh after weighting
+    * Energy Potential in TWh after masking and weighting
+    * Sorted sample of FLH values for each region
 
     :param paths: Dictionary of dictionaries containing the paths to FLH, Masking, Weighting, and Area rasters.
     :type paths: dict
@@ -1296,7 +1313,7 @@ def reporting(paths, param, tech):
 
 def find_locations_quantiles(paths, param, tech):
     """
-    This function finds the coordinates and indices for the user defined quantiles of the ordered FLH for each region.
+    This function reads the masked FLH raster and finds the coordinates and indices for the user defined quantiles for each region.
     It creates a shapefile containing the position of the quantiles for each region, and two .mat files with their
     coordinates and indices.
 
@@ -1386,17 +1403,18 @@ def find_locations_quantiles(paths, param, tech):
 
 def generate_time_series(paths, param, tech):
     """
-        This function generate yearly capacity factor time-series for the technology of choice at specified locations:
-        Either user defined locations or Quantile locations generated in find_locations_quantiles.
-        The timeseries are saved in .csv files.
+    This function generate yearly capacity factor time-series for the technology of choice at specified locations:
+    Either user defined locations or Quantile locations generated in find_locations_quantiles.
+    The timeseries are saved in .csv files.
 
-        :param paths: Dictionary of dictionaries containing paths to coordinate and indices of the quantile locations.
-        :type paths: dict
-        :param param: Dictionary of dictionaries containing processing parameters, and user defined locations.
-        :type param: dict
-        :param tech: Technology under study
-        :type tech: str
-        :return: None
+    :param paths: Dictionary of dictionaries containing paths to coordinate and indices of the quantile locations.
+    :type paths: dict
+    :param param: Dictionary of dictionaries containing processing parameters, and user defined locations.
+    :type param: dict
+    :param tech: Technology under study
+    :type tech: str
+
+    :return: None
     """
     timecheck("Start")
 
@@ -1461,7 +1479,7 @@ def generate_time_series(paths, param, tech):
 
 def regression_coefficients(paths, param, tech):
     """
-    Solves the following optimization problem:
+    This function solves the following optimization problem:
 
     Express a given model timeseries provided by EMHIRES as a combination timeseries
     for different Hub-Heights/orientations and Quantiles, while constraining the total sum of

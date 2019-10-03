@@ -1378,6 +1378,19 @@ def find_locations_quantiles(paths, param, tech):
 
 
 def generate_time_series(paths, param, tech):
+    """
+        This function generate yearly capacity factor time-series for the technology of choice at specified locations:
+        Either user defined locations or Quantile locations generated in find_locations_quantiles.
+        The timeseries are saved in .csv files.
+
+        :param paths: Dictionary of dictionaries containing paths to coordinate and indices of the quantile locations.
+        :type paths: dict
+        :param param: Dictionary of dictionaries containing processing parameters, and user defined locations.
+        :type param: dict
+        :param tech: Technology under study
+        :type tech: str
+        :return: None
+    """
     timecheck("Start")
 
     nproc = param["nproc"]

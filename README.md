@@ -38,7 +38,7 @@ You do not need to use the code (*but you can*) if:
 <img src="doc\img\Australia_PV_wo_quant.png" alt="Australia_PV_wo_quant" width="400px"><img src="doc\img\Australia_WindOn_with_quant.png" alt="Australia_WindOn_with_quant" width="400px">
 </div>
 <div align="center">
-<img src="doc\img\AustraliaQ50WindvsSolar.png" alt="Australia_PV_wo_quant" width="800px">
+<img src="doc\img\AustraliaQ50WindvsSolar.png" alt="Australia_PV_wo_quant">
 </div>
  
 ## Contributors ✨

@@ -57,6 +57,25 @@ def crd_exact_points(Ind_points, Crd_all, res):
     return Crd_points
 
 
+def ind_exact_points(Crd_points, Crd_all, res):
+    """
+    This function converts latitude and longitude of points in high resolution rasters into indices.
+
+    :param Crd_points: Coordinates of the points in the vertical and horizontal dimensions.
+    :type Crd_points: tuple of arrays
+    :param Crd_all: Array of coordinates of the bounding box of the spatial scope.
+    :type Crd_all: numpy array
+    :param res: Data resolution in the vertical and horizontal dimensions.
+    :type res: list
+
+    :return Ind_points: Tuple of arrays of indices in the vertical and horizontal axes.
+    :rtype: list of arrays
+    """
+    Ind_points = [np.around((Crd_points[0] - Crd_all[2]) / res[0]).astype(int),
+                  np.around((Crd_points[1] - Crd_all[3]) / res[1]).astype(int)]
+    return Ind_points
+
+
 def subset(A, param):
     """
     This function retrieves a subset of the global MERRA-2 coverage based on weather resolution and the

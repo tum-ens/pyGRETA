@@ -1354,7 +1354,18 @@ def find_locations_quantiles(paths, param, tech):
     param[tech]["Ind_points"] = reg_ind
     param[tech]["Crd_points"] = crd_exact_points(reg_ind, Crd_all, res_desired)
     param[tech]["Crd_points"] = (param[tech]["Crd_points"][0], param[tech]["Crd_points"][1], list_names, list_quantiles)
-
+    # Used to get TS for desired coordinates
+    # points = hdf5storage.read("Crd_points", "crd_points_masked.mat")
+    # lat = points[0][0]
+    # lon = points[0][1]
+    # crd = (lon[0], lat[0])
+    # ind = ind_exact_points(crd, Crd_all, res_desired)
+    # list_names = ['AU'] * len(ind[0])
+    # points = range(1, len(ind[0])+1)
+    # list_points = ["p" + str(po) for po in points]
+    # param[tech]["Ind_points"] = ind
+    # param[tech]["Crd_points"] = (crd[0], crd[1], list_names, list_points)
+    # # pdb.set_trace()
     # Format point locations
     points = [(param[tech]["Crd_points"][1][i], param[tech]["Crd_points"][0][i]) for i in range(0, len(param[tech]["Crd_points"][0]))]
 

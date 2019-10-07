@@ -243,11 +243,11 @@ def clean_IRENA_summary(param, paths):
         inst_cap = sub_df.loc[sub_df["Indicator"] == "Electricity capacity (MW)", year][0]
         if isinstance(inst_cap, str):
             inst_cap = int(inst_cap.replace(" ", ""))
-            sub_df.loc[sub_df["Indicator"] == "Electricity capacity (MW)", year] = inst_cap
+            IRENA.loc[(IRENA.index.isin([(c, t), ])) & (IRENA["Indicator"] == "Electricity capacity (MW)"), year] = inst_cap
         gen_prod = sub_df.loc[sub_df["Indicator"] == "Electricity generation (GWh)", year][0]
         if isinstance(gen_prod, str):
             gen_prod = 1000 * int(gen_prod.replace(" ", ""))
-            sub_df.loc[sub_df["Indicator"] == "Electricity generation (GWh)", year] = gen_prod
+            IRENA.loc[(IRENA.index.isin([(c, t), ])) & (IRENA["Indicator"] == "Electricity generation (GWh)"), year] = gen_prod
         if inst_cap == 0:
             FLH = 0
         else:

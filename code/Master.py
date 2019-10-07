@@ -751,8 +751,8 @@ def generate_buffered_population(paths, param):
 
 def generate_area(paths, param):
     """
-    This function saves a raster of area values for all pixels contained in the desired spatial scope. The area of
-    the pixels increases as the pixel is further from the equator.
+    This function retreives the coordinates of the spatial scope and computes the pixel area gradient of the corresponding
+    raster. The area of the pixels increases as the pixel is farther from the equator.
 
     :param paths: Ditionary of dictionaries containing the path to the output file
     :type paths: dict
@@ -846,6 +846,7 @@ def generate_wind_correction(paths, param):
             gwa_correction = hdf5storage.read("correction_" + param["WindOn"]["resource"]["topo_weight"], paths["CORR_GWA"])
             A_cf_on = A_cf_on * gwa_correction
         array2raster(paths["CORR_ON"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf_on)
+        create_json(paths["CORR_ON"], param, ["region_name", "subregions_name", "year", "WindOn", "res_weather", "res_desired"], paths, ["CORR_GWA"])
         print("\nfiles saved: " + paths["CORR_ON"])
 
     # Offshore resolution correction
@@ -871,6 +872,8 @@ def generate_wind_correction(paths, param):
         A_cf_off = A_cf_off * A_eez
 
         array2raster(paths["CORR_OFF"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf_off)
+        create_json(paths["CORR_ON"], param,
+                    ["region_name", "subregions_name", "year", "WindOff", "res_weather", "res_desired"], paths, ["CORR_GWA"])
         print("\nfiles saved: " + paths["CORR_OFF"])
     timecheck("End")
 
@@ -934,6 +937,7 @@ def calculate_FLH(paths, param, tech):
     FLH[FLH == 0] = np.nan
 
     hdf5storage.writes({"FLH": FLH}, paths[tech]["FLH"], store_python_metadata=True, matlab_compatible=True)
+    create_json(paths[tech]["FLH"], param, ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired", "res_weather"], paths, ["spatial_scope", "subregions"])
     print("\nfiles saved: " + paths[tech]["FLH"])
 
     # Save GEOTIFF files
@@ -1100,9 +1104,26 @@ def weighting(paths, param, tech):
 
 def reporting(paths, param, tech):
     """
-    This function creates a .csv file containing various statistics about each region contained in the subregion
-    shapefile. Additionally, an ordered sample of length set by the user is also extracted and saved in a .mat file
-    for each subregion.
+    This function reads the FLH files and the subregion shapefiles, and creates a .csv file containing various statistics:
+
+    * Available number of pixels
+    * Available number of pixels after masking
+    * Available Area in km2
+    * FLH Mean
+    * FLH Median
+    * FLH Max
+    * FLH Min
+    * FLH Mean after masking
+    * FLH Median after masking
+    * FLH Max after masking
+    * FLH Min after masking
+    * FLH Standard deviation after masking
+    * Power Potential in GW
+    * Power Potential in GW after weighting
+    * Energy Potential in TWh
+    * Energy Potential in TWh after weighting
+    * Energy Potential in TWh after masking and weighting
+    * Sorted sample of FLH values for each region
 
     :param paths: Dictionary of dictionaries containing the paths to FLH, Masking, Weighting, and Area rasters.
     :type paths: dict
@@ -1270,6 +1291,7 @@ def reporting(paths, param, tech):
 
     # Export the dataframe as CSV
     regions.to_csv(paths[tech]["Region_Stats"], sep=";", decimal=",", index=True)
+    create_json(paths[tech]["Region_Stats"], param, [tech, "region_name", "subregions_name", "year", "res_desired"], paths, ["spatial_scope", "subregions"])
     print("files saved: " + paths[tech]["Region_Stats"])
 
     # Save Sorted lists to .mat file
@@ -1284,13 +1306,14 @@ def reporting(paths, param, tech):
             store_python_metadata=True,
             matlab_compatible=True,
         )
+    create_json(paths[tech]["Sorted_FLH"], param, [tech, "region_name", "subregions_name", "year", "res_desired", "report_sampling"], paths, ["spatial_scope", "subregions"])
     print("files saved: " + paths[tech]["Sorted_FLH"])
     timecheck("End")
 
 
 def find_locations_quantiles(paths, param, tech):
     """
-    This function finds the coordinates and indices for the user defined quantiles of the ordered FLH for each region.
+    This function reads the masked FLH raster and finds the coordinates and indices for the user defined quantiles for each region.
     It creates a shapefile containing the position of the quantiles for each region, and two .mat files with their
     coordinates and indices.
 
@@ -1384,23 +1407,25 @@ def find_locations_quantiles(paths, param, tech):
     hdf5storage.writes(
         {"Crd_points": param[tech]["Crd_points"]}, paths[tech]["Locations"][:-4] + "_Crd.mat", store_python_metadata=True, matlab_compatible=True
     )
+    create_json(paths[tech]["Locations"], param, [tech, "quantiles", "region_name", "subregions_name",], paths, ["spatial_scope", "subregions",])
     print("files saved: " + paths[tech]["Locations"])
     timecheck("End")
 
 
 def generate_time_series(paths, param, tech):
     """
-        This function generate yearly capacity factor time-series for the technology of choice at specified locations:
-        Either user defined locations or Quantile locations generated in find_locations_quantiles.
-        The timeseries are saved in .csv files.
+    This function generate yearly capacity factor time-series for the technology of choice at specified locations:
+    Either user defined locations or Quantile locations generated in find_locations_quantiles.
+    The timeseries are saved in .csv files.
 
-        :param paths: Dictionary of dictionaries containing paths to coordinate and indices of the quantile locations.
-        :type paths: dict
-        :param param: Dictionary of dictionaries containing processing parameters, and user defined locations.
-        :type param: dict
-        :param tech: Technology under study
-        :type tech: str
-        :return: None
+    :param paths: Dictionary of dictionaries containing paths to coordinate and indices of the quantile locations.
+    :type paths: dict
+    :param param: Dictionary of dictionaries containing processing parameters, and user defined locations.
+    :type param: dict
+    :param tech: Technology under study
+    :type tech: str
+
+    :return: None
     """
     timecheck("Start")
 
@@ -1458,13 +1483,14 @@ def generate_time_series(paths, param, tech):
     column_names = pd.MultiIndex.from_tuples(tuples, names=["NAME_SHORT", "Quantile"])
     results = pd.DataFrame(TS.transpose(), columns=column_names)
     results.to_csv(paths[tech]["TS"], sep=";", decimal=",")
+    create_json(paths[tech]["TS"], param, [tech, "quantiles", "region_name", "subregions_name", "year"], paths, [tech, "spatial_scope", "subregions",])
     print("files saved: " + paths[tech]["TS"])
     timecheck("End")
 
 
 def regression_coefficients(paths, param, tech):
     """
-    Solves the following optimization problem:
+    This function solves the following optimization problem:
 
     Express a given model timeseries provided by EMHIRES as a combination timeseries
     for different Hub-Heights/orientations and Quantiles, while constraining the total sum of
@@ -1604,6 +1630,7 @@ def regression_coefficients(paths, param, tech):
             st = st + str(setting) + "_"
 
         summary.to_csv(paths[tech]["Regression_coefficients"] + st + year + ".csv", sep=";", decimal=",")
+        create_json(paths[tech]["Regression_coefficients"], param, ["quantiles", "regression"], paths, ["spatial_scope", "subregions",])
         print("\nfiles saved: " + paths[tech]["Regression_coefficients"] + st + year + ".csv")
 
     timecheck("End")
@@ -1666,8 +1693,9 @@ def generate_stratified_timeseries(paths, param, tech):
         st = ""
         for setting in combo:
             st = st + str(setting) + "_"
-
+        param["st"] = st
         TS_df.to_csv(paths[tech]["Regression_TS"] + st + year + ".csv", sep=";", decimal=",")
+        create_json(paths[tech]["Regression_TS"] + st + year + ".csv", param, [tech, "quantiles", "modes", "combo", "subregions_name", "year"], paths, ["spatial_scope", "subregions",])
         print("File Saved: " + paths[tech]["Regression_TS"] + st + year + ".csv")
     timecheck("End")
 

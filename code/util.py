@@ -35,6 +35,7 @@ def sind(alpha):
     
     :param alpha: Angle in degrees.
     :type alpha: float
+
     :return: The sine of the angle.
     :rtype: float
     """
@@ -47,6 +48,7 @@ def cosd(alpha):
     
     :param alpha: Angle in degrees.
     :type alpha: float
+
     :return: The cosine of the angle.
     :rtype: float
     """
@@ -59,6 +61,7 @@ def tand(alpha):
     
     :param alpha: Angle in degrees.
     :type alpha: float
+
     :return: The tangent of the angle.
     :rtype: float
     """
@@ -71,6 +74,7 @@ def arcsind(digit):
     
     :param digit: Number between -1 and 1.
     :type digit: float
+
     :return: The inverse sine of the number in degrees.
     :rtype: float
     """
@@ -83,6 +87,7 @@ def arccosd(digit):
     
     :param digit: Number between -1 and 1.
     :type digit: float
+
     :return: The inverse cosine of the number in degrees.
     :rtype: float
     """
@@ -95,6 +100,7 @@ def arctand(digit):
     
     :param digit: Number.
     :type digit: float
+
     :return: The inverse tangent of the number in degrees.
     :rtype: float
     """
@@ -122,6 +128,7 @@ def intersection(lst1, lst2):
     :type lst1: list
     :param lst2: Second list of elements.
     :type lst2: list
+
     :return: The unique elements that exist in both lists, without repetition.
     :rtype: list
     """
@@ -140,6 +147,7 @@ def resizem(A_in, row_new, col_new):
     :type row_new: integer
     :param col_new: New number of columns.
     :type col_new: integer
+
     :return: Resized matrix.
     :rtype: numpy array
     """
@@ -171,6 +179,7 @@ def array2raster(newRasterfn, rasterOrigin, pixelWidth, pixelHeight, array):
     :type pixelHeight: integer
     :param array: Array to be converted into a raster.
     :type array: numpy array
+
     :return: The raster file will be saved in the desired path *newRasterfn*.
     :rtype: None
     """
@@ -199,6 +208,7 @@ def char_range(c1, c2):
     :type c1: char
     :param c2: Last character in the iteration (included).
     :type c2: char
+
     :return: Generator to iterate between the characters *c1* and *c2*.
     :rtype: python generator
     """
@@ -218,6 +228,7 @@ def changem(A, newval, oldval):
     :type newval: numpy array
     :param oldval: Vector of old values to be replaced.
     :param oldval: numpy array
+
     :return: The updated array.
     :rtype: numpy array
     """
@@ -234,13 +245,24 @@ def ind2sub(array_shape, ind):
     
     :param array_shape: tuple (# of rows, # of columns)
     :param ind: Index
+
     :return: tuple (row values, column values)
     """
     return np.unravel_index(ind, array_shape, order="F")
 
 
 def field_exists(field_name, shp_path):
+    """
+    This function returns a bool of whether the specified field exist or not in the shapefile linked by a path.
 
+    :param field_name: Name of the field to be checked for
+    :type field_name: str
+    :param shp_path: Path to the shapefile
+    :type shp_path: str
+
+    :return: ``True`` if it exists or ``False`` if it doesn't exist
+    :rtype: bool
+    """
     shp = ogr.Open(shp_path, 0)
     lyr = shp.GetLayer()
     lyr_dfn = lyr.GetLayerDefn()
@@ -252,11 +274,31 @@ def field_exists(field_name, shp_path):
 
 
 def changeExt2tif(filepath):
+    """
+    This function changes the extension of a file path, to .tif.
+
+    :param filepath: Path to the file
+    :type filepath: str
+
+    :return: New path with .tif as extension
+    :rtype: str
+    """
     base = os.path.splitext(filepath)[0]
     return base + ".tif"
 
 
 def sumnorm_MERRA2(A, m, n, res_low, res_desired):
+    """
+    Missing description
+
+    :param A:
+    :param m:
+    :param n:
+    :param res_low:
+    :param res_desired:
+
+    :return:
+    """
     s = np.zeros((m, n))
     row_step = int(res_low[0] / res_desired[0])
     col_step = int(res_low[1] / res_desired[1])
@@ -274,9 +316,9 @@ def limit_cpu(check):
         if ``False``, the process is given the same priority as all other user processes currently running on the machine,
         leading to faster calculation times.
     :type check: boolean
+
     :return: None
     """
-
     check = check[0]
     p = psutil.Process(os.getpid())
     if check:
@@ -302,6 +344,7 @@ def timecheck(*args):
 
     :param args: Message to be displayed with the function name and the timestamp.
     :type args: string (``optional``)
+
     :return: None
     """
     if len(args) == 0:
@@ -322,6 +365,7 @@ def display_progress(message, progress_stat):
     :type message: string
     :param progress_stat: Tuple containing the total length of the calculation and the current status or progress.
     :type progress_stat: tuple(int, int)
+
     :return: None
     """
     length = progress_stat[0]
@@ -340,16 +384,12 @@ def create_json(filepath, param, param_keys, paths, paths_keys):
 
     :param filepath: Path to the file for which the json file will be created.
     :type filepath: string
-
     :param param: Dictionary of dictionaries containing the user input parameters and intermediate outputs.
     :type param: dict
-
     :param param_keys: Keys of the parameters to be extracted from the *param* dictionary and saved into the json file.
     :type param_keys: list of strings
-
     :param paths: Dictionary of dictionaries containing the paths for all files.
     :type paths: dict
-
     :param paths_keys: Keys of the paths to be extracted from the *paths* dictionary and saved into the json file.
     :type paths_keys: list of strings
 
@@ -386,9 +426,16 @@ def create_json(filepath, param, param_keys, paths, paths_keys):
 def check_regression_model(paths, tech):
     """
     This function checks the regression model parameters for nan values, and returns the FLH and TS model dataframes.
-    :param paths:
-    :param tech:
-    :return:
+    If missing values are present in the input .csv files, the users are prompted if they wish to continue or can modify
+    the corresponding files.
+
+    :param paths: Dictionary of dictionaries containing the paths to the FLH and TS model regression .csv files.
+    :type paths: dict
+    :param tech: Technology under study.
+    :type tech: str
+
+    :return: two pandas dataframes
+    :rtype: Pandas Dataframes
     """
     while True:
         # Load IRENA data and regions

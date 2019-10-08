@@ -3,10 +3,13 @@ from util import *
 
 def define_spatial_scope(scope_shp):
     """
-    Missing description
+    This function reads the spatial scope shapefile and returns its bounding box.
 
-    :param scope_shp:
-    :return:
+    :param scope_shp: Spatial scope shapefile
+    :type scope_shp: Geopandas dataframe
+
+    :return box: list of the bounding box coordinates
+    :rtype box: list
     """
     scope_shp = scope_shp.to_crs({"init": "epsg:4326"})
     r = scope_shp.total_bounds
@@ -22,10 +25,10 @@ def crd_merra(Crd_regions, res_weather):
     :type Crd_regions: numpy array
     :param res_weather: Weather data resolution.
     :type res_weather: list
+
     :return Crd: Coordinates of the bounding box covering MERRA-2 data for each region.
     :rtype: numpy array
     """
-
     Crd = np.array(
         [
             np.ceil((Crd_regions[:, 0] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
@@ -52,9 +55,27 @@ def crd_exact_points(Ind_points, Crd_all, res):
     :return Crd_points: Coordinates of the points in the vertical and horizontal dimensions.
     :rtype: list of arrays
     """
-
     Crd_points = [Ind_points[0] * res[0] + Crd_all[2], Ind_points[1] * res[1] + Crd_all[3]]
     return Crd_points
+
+
+def ind_exact_points(Crd_points, Crd_all, res):
+    """
+    This function converts latitude and longitude of points in high resolution rasters into indices.
+
+    :param Crd_points: Coordinates of the points in the vertical and horizontal dimensions.
+    :type Crd_points: tuple of arrays
+    :param Crd_all: Array of coordinates of the bounding box of the spatial scope.
+    :type Crd_all: numpy array
+    :param res: Data resolution in the vertical and horizontal dimensions.
+    :type res: list
+
+    :return Ind_points: Tuple of arrays of indices in the vertical and horizontal axes.
+    :rtype: list of arrays
+    """
+    Ind_points = [np.around((Crd_points[0] - Crd_all[2]) / res[0]).astype(int),
+                  np.around((Crd_points[1] - Crd_all[3]) / res[1]).astype(int)]
+    return Ind_points
 
 
 def subset(A, param):
@@ -66,6 +87,7 @@ def subset(A, param):
     :type A: numpy array
     :param param: Dictionary of parameters containing MERRA-2 coverage and the name of the region.
     :type param: dict
+
     :return subset: The subset of the weather data contained in the bounding box of *spatial_scope*.
     :rtype: numpy array
     """
@@ -94,7 +116,7 @@ def ind_merra(Crd, Crd_all, res):
     :type res: list
     
     :return Ind: Indices within the spatial scope of MERRA-2 data.
-    :rtype: 
+    :rtype: numpy array
     """
     if len(Crd.shape) == 1:
         Crd = Crd[np.newaxis]
@@ -145,6 +167,7 @@ def calc_geotiff(Crd_all, res_desired):
     :type Crd_all: numpy array
     :param res_desired: Desired data resolution in the vertical and horizontal dimensions.
     :type res_desired: list
+
     :return GeoRef: Georeference dictionary containing *RasterOrigin*, *RasterOrigin_alt*, *pixelWidth*, and *pixelHeight*.
     :rtype: dict
     """
@@ -159,13 +182,20 @@ def calc_geotiff(Crd_all, res_desired):
 
 def calc_region(region, Crd_reg, res_desired, GeoRef):
     """
-    Missing description
+    This function reads the region geometry, and returns a masking raster equal to 1 for pixels within and 0 outside of
+    the region.
 
-    :param region:
-    :param Crd_reg:
-    :param res_desired:
-    :param GeoRef:
-    :return:
+    :param region: Region geometry
+    :type region: Geopandas series
+    :param Crd_reg: Coordinates of the region
+    :type Crd_reg: list
+    :param res_desired: Desired high resolution of the output raster
+    :type res_desired: list
+    :param GeoRef: Georeference dictionary containing *RasterOrigin*, *RasterOrigin_alt*, *pixelWidth*, and *pixelHeight*.
+    :type GeoRef: dict
+
+    :return A_region: Masking raster of the region.
+    :rtype A_region: numpy array
     """
     latlim = Crd_reg[2] - Crd_reg[0]
     lonlim = Crd_reg[3] - Crd_reg[1]
@@ -200,7 +230,17 @@ def calc_region(region, Crd_reg, res_desired, GeoRef):
 
 
 def clean_IRENA_summary(param, paths):
-    """ description"""
+    """
+    This function reads the IRENA database, format the output for selected regions and computes the FLH based on the
+    installed capacity and yearly energy production. The results are saved in .csv file.
+
+    :param param: Dictionary of dictionaries containing list of subregions, and year.
+    :type param: dict
+    :param paths: Dictionary of dictionaries containing the paths to the IRENA country name dictionary, and IRENA database.
+    :type paths: dict
+
+    :return: None
+    """
     year = str(param["year"])
     filter_countries = param["regions_land"]["GID_0"].to_list()
     IRENA_dict = pd.read_csv(paths["IRENA_dict"], sep=";", index_col=0)
@@ -224,11 +264,11 @@ def clean_IRENA_summary(param, paths):
         inst_cap = sub_df.loc[sub_df["Indicator"] == "Electricity capacity (MW)", year][0]
         if isinstance(inst_cap, str):
             inst_cap = int(inst_cap.replace(" ", ""))
-            sub_df.loc[sub_df["Indicator"] == "Electricity capacity (MW)", year] = inst_cap
+            IRENA.loc[(IRENA.index.isin([(c, t), ])) & (IRENA["Indicator"] == "Electricity capacity (MW)"), year] = inst_cap
         gen_prod = sub_df.loc[sub_df["Indicator"] == "Electricity generation (GWh)", year][0]
         if isinstance(gen_prod, str):
             gen_prod = 1000 * int(gen_prod.replace(" ", ""))
-            sub_df.loc[sub_df["Indicator"] == "Electricity generation (GWh)", year] = gen_prod
+            IRENA.loc[(IRENA.index.isin([(c, t), ])) & (IRENA["Indicator"] == "Electricity generation (GWh)"), year] = gen_prod
         if inst_cap == 0:
             FLH = 0
         else:
@@ -252,6 +292,18 @@ def clean_IRENA_summary(param, paths):
 
 def clean_FLH_regression(param, paths):
     """
+    This function creates a .csv file containing the model FLH used for regression. If the region is present in the
+    IRENA database then the FLH are extracted directly from there. In case it is not present, a place holder for the
+    regions is written in the csv file and it is the user's responsibility to fill in an appropriate value.
+    The function will warn the user, and print all regions that are left blank.
+
+    :param param: Dictionary of dictionaries containing the list of regions.
+    :type param: dict
+    :param paths: Dictionary of dictionaries containing the paths to IRENA_summary, IRENA_dict.
+    :type paths: dict
+
+    :return: list of string of the missing regions.
+    :rtype: list of str
     """
     # Read IRENA summary
     if not os.path.isfile(paths["IRENA_summary"]):
@@ -291,7 +343,7 @@ def clean_FLH_regression(param, paths):
     warn(
         "The following countries/regions are not present in the IRENA Database: "
         + ",".join(missing)
-        + ".Their corresponding FLH have been left blank",
+        + ".\nTheir corresponding FLH have been left blank.",
         UserWarning,
     )
     return missing
@@ -299,7 +351,7 @@ def clean_FLH_regression(param, paths):
   
 def clean_TS_regression(param, paths, tech):
     """
-    This function creates a csv file containing the model Time-series used for regression. If the region is present in
+    This function creates a .csv file containing the model Time-series used for regression. If the region is present in
     the EMHIRES text files then the TS is extracted directly from it. If the region is not present in the EMHIRES text
     files the highest FLH generated TS is used instead and is scaled to match IRENA FLH.
 
@@ -307,6 +359,7 @@ def clean_TS_regression(param, paths, tech):
     :type param: dict
     :param paths: Dictionary containing paths to EMHIRES text files
     :type paths: dict
+
     :return: None
     """
 
@@ -373,6 +426,7 @@ def calc_gwa_correction(param, paths):
 
     :param param:
     :param paths:
+
     :return:
     """
     m_high = param["m_high"]
@@ -484,10 +538,10 @@ def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
     :param res_desired: map's high resolution
     :type res_desired: list
     :param GCR: includes the user-defined day and the duration of the shade-free period
+
     :return: GCR raster
     :rtype: numpy array
     """
-
     # Vector of latitudes between (south) and (north), with resolution (res_should) degrees
     lat = np.arange((Crd_all[2] + res_desired[0] / 2), Crd_all[0], res_desired[0])[np.newaxis]
     lon = np.arange((Crd_all[3] + res_desired[1] / 2), Crd_all[1], res_desired[1])[np.newaxis]
@@ -596,9 +650,8 @@ def read_generated_TS(paths, param, tech, settings, subregion):
     :type subregion: str
 
     :return GenTS: Dictionary of timeseries indexed by setting and quantile
-    :rtype GenTS: dict
+    :rtype: dict
     """
-
     subregions = param["subregions_name"]
     year = str(param["year"])
 
@@ -646,10 +699,10 @@ def regmodel_load_data(paths, param, tech, settings, subregion):
     :type settings: list
     :param subregion: code name of region
     :type subregion: str
+
     :return: Dictionary containing regression parameters
     :rtype: dict
     """
-
     subregions = param["subregions_name"]
     year = str(param["year"])
     FLH = param["FLH_regression"]
@@ -718,7 +771,21 @@ def regmodel_load_data(paths, param, tech, settings, subregion):
 
 def combinations_for_regression(paths, param, tech):
     """
-    missing documentation
+    This function reads the list of generated time-series for different hub-heights and orientations, compares it to the
+    user defined combinations and returns a list of lists containing all the available combinations. The function will
+    returns a warning if the user input and the available time-series are not congruent.
+
+    :param paths: Dictionary of dictionaries containing the paths to the regional analysis output folder.
+    :type paths: dict
+    :param param: Dictionary of dictionaries containing a list of sub-regions' name, user defined combinations.
+    :type param: dict
+    :param tech: Technology under study.
+    :type tech: str
+
+    :return: List of combinations
+    :rtype: list of lists
+    :raise missing data: If no time series are available for this technology
+    :raise missing combination: If a hub-height or orientation is missing based on user defined combinations
     """
     subregions = param["subregions_name"]
     year = str(param["year"])
@@ -772,7 +839,21 @@ def combinations_for_regression(paths, param, tech):
 
 def combinations_for_stratified_timeseries(paths, param, tech):
     """
-    missing documentation
+    This function reads the list of generated regression coefficients for different hub-heights and orientations,
+    compares it to the user defined modes and combos and returns a list of lists containing all the available
+    combinations. The function will returns a warning if the user input and the available time series are not congruent.
+
+    :param paths: Dictionary of dictionaries containing the paths to the regression output folder.
+    :type paths: dict
+    :param param: Dictionary of dictionaries containing the year, the user defined combos, and list of sub-regions' name.
+    :type param: dict
+    :param tech: Technology under study.
+    :type tech: str
+
+    :return: List of combinations
+    :rtype: list of lists
+    :raise No coefficients: If regression coefficients are not available.
+    :raise Missing coefficients: If regression coefficients are missing based on user defined combos and mode.
     """
     subregions = param["subregions_name"]
     year = str(param["year"])
@@ -819,13 +900,10 @@ def get_merra_raster_Data(paths, param, tech):
     """
     Returns tuple of two dictionaries containing weather and correction rasters for specified technology.
 
-    :param paths: dictionary of dictionaries containing the paths to the input weather and raster data
+    :param paths: dictionary of dictionaries containing the paths to the input weather and raster data.
     :type paths: dict
-
-    :param param: dictionary of dictionaries containing landuse, Ross coefficients, Albedo, and hellman coefficient
-        correspondance.
+    :param param: dictionary of dictionaries containing landuse, Ross coefficients, Albedo, and hellman coefficient.
     :type param: dict
-
     :param tech: Technology under study
     :type tech: str
 

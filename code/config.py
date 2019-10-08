@@ -99,6 +99,7 @@ def scope_paths_and_parameters(paths, param):
     :type paths: dict
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionaries paths and param.
     :rtype: tuple (dict, dict)
     """
@@ -132,6 +133,7 @@ def computation_parameters(param):
 
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary param.
     :rtype: dict
     """
@@ -148,10 +150,10 @@ def resolution_parameters(param):
 
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary param.
     :rtype: dict
     """
-
     param["res_weather"] = np.array([1 / 2, 5 / 8])
     param["res_desired"] = np.array([1 / 240, 1 / 240])
     return param
@@ -169,10 +171,10 @@ def weather_data_parameters(param):
 
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary param.
     :rtype: dict
     """
-
     param["MERRA_coverage"] = "World"
     param["MERRA_correction"] = 0.35
     return param
@@ -189,10 +191,10 @@ def file_saving_options(param):
     
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary param.
     :rtype: dict
     """
-
     # Mask / Weight
     param["savetiff"] = True  # Save geotiff files of mask and weight rasters
 
@@ -235,10 +237,10 @@ def time_series_parameters(param):
     
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary param.
     :rtype: dict
     """
-
     # Quantiles for time series
     param["quantiles"] = [100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0]
 
@@ -254,10 +256,10 @@ def time_series_parameters(param):
     # Stratified time series
     param["modes"] = {"high": [100, 90, 80], "mid": [70, 60, 50, 40, 30], "low": [20, 10, 0], "all": param["quantiles"]}
     param["combo"] = {
+        # dictionary of hub height and orientation combinations
         "WindOn": {"2015": [60, 80, 100], "2030": [80, 100, 120], "2050": [100, 120, 140]},
-        # dictionary of hub height combinations
-        "WindOff": {"80m": [80], "100m": [100], "120m": [120]},  # dictionary of hub height combinations
-        "PV": {"Solar": [0, 180, -90, 90]},  # list of orientation combinations
+        "WindOff": {"80m": [80], "100m": [100], "120m": [120]},
+        "PV": {"Solar": [0, 180, -90, 90]},
         "CSP": {"all": []},
     }
 
@@ -277,6 +279,7 @@ def landuse_parameters(param):
     
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary param.
     :rtype: dict
 
@@ -300,7 +303,6 @@ def landuse_parameters(param):
         # 15  -- Snow and ice
         # 16  -- Barren or sparsely vegetated
     """
-
     landuse = {
         "type": np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]),
         "type_urban": 13,
@@ -324,6 +326,7 @@ def protected_areas_parameters(param):
     
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary param.
     :rtype: dict
     """
@@ -387,12 +390,12 @@ def pv_parameters(param):
     
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary param.
     :rtype: dict
     :raise Tracking Warning: If *tracking* is not set to 0 and *orientation* is given as a value other than 0 or 180 (South or North), the orientation is ignored.
 
     """
-
     pv = {}
     pv["resource"] = {"clearness_correction": 1}
     pv["technical"] = {
@@ -454,6 +457,7 @@ def csp_parameters(param):
     
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary param.
     :rtype: dict
     """
@@ -516,6 +520,7 @@ def onshore_wind_parameters(param):
     
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary param.
     :rtype: dict
     """
@@ -568,6 +573,7 @@ def offshore_wind_paramters(param):
     
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary param.
     :rtype: dict
     """
@@ -598,6 +604,7 @@ def weather_input_folder(paths, param):
     :type paths: dict
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary paths.
     :rtype: dict
     """
@@ -626,6 +633,7 @@ def global_maps_input_paths(paths):
     
     :param paths: Dictionary including the paths.
     :type paths: dict
+
     :return: The updated dictionary paths.
     :rtype: dict
     """
@@ -664,6 +672,7 @@ def output_folders(paths, param):
     :type paths: dict
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary paths.
     :rtype: dict
     """
@@ -719,6 +728,7 @@ def weather_output_paths(paths, param):
     :type paths: dict
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary paths.
     :rtype: dict
     """
@@ -753,10 +763,10 @@ def local_maps_paths(paths, param):
     :type paths: dict
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary paths.
     :rtype: dict
     """
-
     # Local maps
     PathTemp = paths["local_maps"] + param["region_name"]
     paths["LAND"] = PathTemp + "_Land.tif"  # Land pixels
@@ -793,6 +803,7 @@ def irena_paths(paths, param):
     :type paths: dict
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary paths.
     :rtype: dict
     """
@@ -823,10 +834,10 @@ def regression_paths(paths, param, tech):
     
     :param paths: Dictionary including the paths.
     :type paths: dict
+
     :return: The updated dictionary paths.
     :rtype: dict
     """
-
     year = str(param["year"])
 
     # Regression inputs
@@ -851,6 +862,7 @@ def emhires_input_paths(paths, param, tech):
     :type param: dict
     :param tech: Name of the technology.
     :type tech: string
+
     :return: The updated dictionary paths.
     :rtype: dict
     """
@@ -885,10 +897,10 @@ def potential_output_paths(paths, param, tech):
     :type param: dict
     :param tech: Name of the technology.
     :type tech: string
+
     :return: The updated dictionary paths.
     :rtype: dict
     """
-
     region = param["region_name"]
     year = str(param["year"])
 
@@ -930,10 +942,10 @@ def regional_analysis_output_paths(paths, param, tech):
     :type param: dict
     :param tech: Name of the technology.
     :type tech: string
+
     :return: The updated dictionary paths.
     :rtype: dict
     """
-
     subregions = param["subregions_name"]
     year = str(param["year"])
 

@@ -116,7 +116,7 @@ def ind_merra(Crd, Crd_all, res):
     :type res: list
     
     :return Ind: Indices within the spatial scope of MERRA-2 data.
-    :rtype: 
+    :rtype: numpy array
     """
     if len(Crd.shape) == 1:
         Crd = Crd[np.newaxis]
@@ -650,7 +650,7 @@ def read_generated_TS(paths, param, tech, settings, subregion):
     :type subregion: str
 
     :return GenTS: Dictionary of timeseries indexed by setting and quantile
-    :rtype GenTS: dict
+    :rtype: dict
     """
     subregions = param["subregions_name"]
     year = str(param["year"])

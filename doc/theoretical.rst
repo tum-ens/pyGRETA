@@ -319,7 +319,7 @@ Convection Losses
 The receiver of parabolic troughs are kept in a vacuum glass tube to prevent convection as much as possible. 
 Radiative heat losses are still present and ultimatly results in convective losses between the glass tube and the air.
 These heat losses are increased when wind is blowing around the receiver. The typical heat losses for a receiver 
-can be estimated through the following empirical equation:
+can be estimated through the following empirical equation :cite:`Duffie.2013`:
 
 .. math::
 	Q_{Loss} =  A_r(U_{L_{cst}} + U_{L_{Wind}} \cdot V_{Wind}^{0.6})(T_i-T_a)

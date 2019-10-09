@@ -350,6 +350,18 @@ Where :math:`S` is the component of the DNI captured by the collector at an angl
 
 Wind
 ====
+Wind Speed
+----------
+In order to use a single value for the following wind power calculations, a norm is calculated 
+as if both variables were vectors, so the absolute velocity is:
+
+.. math::
+	W_{50M} = \sqrt{V50M^2+U50M^2}
+
+However, the wind velocities extracted from MERRA-2 are given for a height
+of 50 meters, which does not correspond to the hub height of the wind turbines.
+Therefore, They must be extrapolated.
+
 Wind Shear
 ----------
 While the wind is hardly affected by the Earth's surface at a

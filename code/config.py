@@ -101,7 +101,7 @@ def scope_paths_and_parameters(paths, param):
     :type param: dict
 
     :return: The updated dictionaries paths and param.
-    :rtype: tuple (dict, dict)
+    :rtype: tuple(dict, dict)
     """
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
@@ -145,7 +145,7 @@ def computation_parameters(param):
 def resolution_parameters(param):
     """
     This function defines the resolution of weather data (low resolution), and the desired resolution of output rasters (high resolution).
-    Both are numpy array with two numbers. The first number is the resolution in the vertical dimension (in degrees of latitude),
+    Both are numpy arrays with two numbers. The first number is the resolution in the vertical dimension (in degrees of latitude),
     the second is for the horizontal dimension (in degrees of longitude).
 
     :param param: Dictionary including the user preferences.
@@ -184,7 +184,7 @@ def file_saving_options(param):
     """
     This function sets some options for saving files.
     
-    * *savetiff* is a boolean that determines whether tif rasters for the potentials are saved (True), or whether only mat files are saved (False).
+    * *savetiff* is a boolean that determines whether tif rasters for the potentials are saved (``True``), or whether only mat files are saved (``False``).
       The latter are saved in any case.
     
     *  *report_sampling* is an integer that sets the sample size for the sorted FLH values per region (relevant for :mod:`Master.reporting`).
@@ -813,11 +813,10 @@ def irena_paths(paths, param):
     year = str(param["year"])
     
     # IRENA input
-    paths["IRENA"] = (
-        root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA" + fs + "IRENA_RE_electricity_statistics_allcountries_alltech_" + year + ".csv"
-    )
+    paths["IRENA"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA" + \
+	                 fs + "IRENA_RE_electricity_statistics_allcountries_alltech_" + year + ".csv"
+    
     paths["IRENA_dict"] = root + "00 Assumptions" + fs + "dict_countries.csv"
-
 
     # IRENA output
     paths["IRENA_summary"] = paths["region"] + "Renewable energy" + fs + "IRENA_summary_" + year + ".csv"
@@ -829,7 +828,7 @@ def regression_paths(paths, param, tech):
     """
     This function defines the paths for the regression parameters:
     
-      * *IRENA_regression* is a csv file containing FLH statistics for the subregions and the four technologies for a specific *year*, based on the previously created *IRENA_summary*.
+      * *FLH_regression* is a csv file containing FLH statistics for the subregions and the four technologies for a specific *year*, based on the previously created *IRENA_summary*.
       * *TS_regression* is a csv file containing time series to match for the subregions and the four technologies. ?????
     
     :param paths: Dictionary including the paths.
@@ -839,11 +838,6 @@ def regression_paths(paths, param, tech):
     :rtype: dict
     """
     year = str(param["year"])
-
-    # Regression inputs
-    paths["regression_in"] = paths["regional_analysis"] + "Regression inputs" + fs
-    if not os.path.isdir(paths["regression_in"]):
-        os.makedirs(paths["regression_in"])
 
     paths["FLH_regression"] = paths["regression_in"] + "FLH_regression_" + year + ".csv"
     paths[tech]["TS_regression"] = paths["regression_in"] + "TimeSeries_regression_" + tech + "_" + year + ".csv"
@@ -913,8 +907,9 @@ def potential_output_paths(paths, param, tech):
         else:
             orientation = "0"
         PathTemp = paths["potential"] + region + "_" + tech + "_" + orientation
-    else:
-        PathTemp = paths["potential"] + region + "_" + tech
+    elif tech in ["CSP"]:
+        orientation = "0"
+        PathTemp = paths["potential"] + region + "_" + tech + "_" + orientation
 
     paths[tech]["FLH"] = PathTemp + "_FLH_" + year + ".mat"
     paths[tech]["mask"] = PathTemp + "_mask_" + year + ".mat"

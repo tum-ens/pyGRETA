@@ -656,8 +656,6 @@ def read_generated_TS(paths, param, tech, settings, subregion):
     year = str(param["year"])
 
     bef_setting = paths["regional_analysis"] + subregions + "_" + tech + "_"
-    if tech == "CSP":
-        bef_setting = paths["regional_analysis"] + subregions + "_" + tech
     aft_setting = "_TS_" + year + ".csv"
 
     # Setup the data dictionary for generated TS for each quantile

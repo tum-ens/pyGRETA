@@ -57,7 +57,7 @@ def general_settings():
     param = {}
     param["author"] = "Kais Siala"  # the name of the person running the script
     param["comment"] = "Regression-debugging"
-    
+
     paths = {}
     fs = os.path.sep
     current_folder = os.path.dirname(os.path.abspath(__file__))
@@ -704,12 +704,12 @@ def output_folders(paths, param):
     paths["regional_analysis"] = paths["region"] + "Renewable energy" + fs + "Regional analysis" + fs + subregions + fs
     if not os.path.isdir(paths["regional_analysis"]):
         os.makedirs(paths["regional_analysis"])
-    
+
     # Regression parameters
     paths["regression_in"] = paths["regional_analysis"] + "Regression outputs" + fs + "Parameters" + fs
     if not os.path.isdir(paths["regression_in"]):
         os.makedirs(paths["regression_in"])
-        
+
     # Regression output
     paths["regression_out"] = paths["regional_analysis"] + "Regression outputs" + fs
 
@@ -811,13 +811,12 @@ def irena_paths(paths, param):
     global fs
 
     year = str(param["year"])
-    
+
     # IRENA input
     paths["IRENA"] = (
         root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA" + fs + "IRENA_RE_electricity_statistics_allcountries_alltech_" + year + ".csv"
     )
     paths["IRENA_dict"] = root + "00 Assumptions" + fs + "dict_countries.csv"
-
 
     # IRENA output
     paths["IRENA_summary"] = paths["region"] + "Renewable energy" + fs + "IRENA_summary_" + year + ".csv"
@@ -874,9 +873,7 @@ def emhires_input_paths(paths, param, tech):
     elif tech == "WindOff":
         paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + fs + "TS.CF.OFFSHORE.30yr.date.txt"
     elif tech == "PV":
-        paths[tech]["EMHIRES"] = (
-            root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + fs + "EMHIRESPV_TSh_CF_Country_19862015.txt"
-        )
+        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + fs + "EMHIRESPV_TSh_CF_Country_19862015.txt"
 
     return paths
 

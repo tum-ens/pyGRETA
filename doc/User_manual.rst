@@ -136,6 +136,21 @@ used for this model are defined by pixels of 1/240° longitude and 1/240° latit
 This resolution will be used for further calculations and it will be addressed as
 high resolution.
 
+Shapefile of the region of interest
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The strength of the tool relies on its versaility, since it can be used for any user-defined regions provided in 
+a shapefile. I you are interested in administrative divisions, you may cnsider downloading the shapefiles from 
+the Global Administration Divisions `(GADM) <https://gadm.org/download_country_v3.html>`_. You can also create your 
+own shapefiles using a GIS software. In any case, you need to have at least one attribute called *NAME_SHORT* containg 
+a string (array of characters) designating each sub-region.
+
+Shapefile of protected areas
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Any database for prtoected areas can be used with this tool, in particular the World Database on Protected Areas 
+published by the Internation Union for Conservation of Nature found `(IUCN) <https://www.protectedplanet.net/>`_.
+The shapefile has many attributes, but only on is used in the tool: *IUCN_CAT*. If another database is used, an 
+equivalent attribute with the different categories of the protection has to be used and config.py has to be updated accordingly.
+
 Expected outputs
 ----------------
 

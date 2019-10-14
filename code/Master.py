@@ -881,8 +881,7 @@ def generate_wind_correction(paths, param):
         A_cf_off = A_cf_off * A_eez
 
         array2raster(paths["CORR_OFF"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf_off)
-        create_json(paths["CORR_ON"], param,
-                    ["region_name", "subregions_name", "year", "WindOff", "res_weather", "res_desired"], paths, ["CORR_GWA"])
+        create_json(paths["CORR_ON"], param, ["region_name", "subregions_name", "year", "WindOff", "res_weather", "res_desired"], paths, ["CORR_GWA"])
         print("\nfiles saved: " + paths["CORR_OFF"])
     timecheck("End")
 
@@ -959,7 +958,13 @@ def calculate_FLH(paths, param, tech):
     FLH[FLH == 0] = np.nan
 
     hdf5storage.writes({"FLH": FLH}, paths[tech]["FLH"], store_python_metadata=True, matlab_compatible=True)
-    create_json(paths[tech]["FLH"], param, ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired", "res_weather"], paths, [tech ,"spatial_scope", "subregions"])
+    create_json(
+        paths[tech]["FLH"],
+        param,
+        ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired", "res_weather"],
+        paths,
+        [tech, "spatial_scope", "subregions"],
+    )
     print("\nfiles saved: " + paths[tech]["FLH"])
 
     # Save GEOTIFF files
@@ -1067,7 +1072,13 @@ def masking(paths, param, tech):
     hdf5storage.writes({"FLH_mask": FLH_mask}, paths[tech]["FLH_mask"], store_python_metadata=True, matlab_compatible=True)
     print("files saved: " + paths[tech]["FLH_mask"])
 
-    create_json(paths[tech]["mask"], param, ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired", "GeoRef", "landuse", "protected_areas", ], paths, [tech, "spatial_scope", "subregions", "PA", "LU", "SLOPE", "BATH"])
+    create_json(
+        paths[tech]["mask"],
+        param,
+        ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired", "GeoRef", "landuse", "protected_areas"],
+        paths,
+        [tech, "spatial_scope", "subregions", "PA", "LU", "SLOPE", "BATH"],
+    )
 
     # Save GEOTIFF files
     if param["savetiff"]:
@@ -1136,8 +1147,13 @@ def weighting(paths, param, tech):
     print("files saved: " + paths[tech]["weight"])
     hdf5storage.writes({"FLH_weight": FLH_weight}, paths[tech]["FLH_weight"], store_python_metadata=True, matlab_compatible=True)
     print("files saved: " + paths[tech]["FLH_weight"])
-    create_json(paths[tech]["weight"], param,
-                ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired", "GeoRef",], paths, [tech, "spatial_scope", "subregions", "AREA", "PA", "LU",])
+    create_json(
+        paths[tech]["weight"],
+        param,
+        ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired", "GeoRef"],
+        paths,
+        [tech, "spatial_scope", "subregions", "AREA", "PA", "LU"],
+    )
     # Save GEOTIFF files
     if param["savetiff"]:
         array2raster(changeExt2tif(paths[tech]["weight"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_weight)
@@ -1338,7 +1354,13 @@ def reporting(paths, param, tech):
 
     # Export the dataframe as CSV
     regions.to_csv(paths[tech]["Region_Stats"], sep=";", decimal=",", index=True)
-    create_json(paths[tech]["Region_Stats"], param, ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired"], paths, ["spatial_scope", "subregions"])
+    create_json(
+        paths[tech]["Region_Stats"],
+        param,
+        ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired"],
+        paths,
+        ["spatial_scope", "subregions"],
+    )
     print("files saved: " + paths[tech]["Region_Stats"])
 
     # Save Sorted lists to .mat file
@@ -1353,7 +1375,13 @@ def reporting(paths, param, tech):
             store_python_metadata=True,
             matlab_compatible=True,
         )
-    create_json(paths[tech]["Sorted_FLH"], param, ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired", "report_sampling"], paths, ["spatial_scope", "subregions"])
+    create_json(
+        paths[tech]["Sorted_FLH"],
+        param,
+        ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired", "report_sampling"],
+        paths,
+        ["spatial_scope", "subregions"],
+    )
     print("files saved: " + paths[tech]["Sorted_FLH"])
     timecheck("End")
 
@@ -1425,6 +1453,7 @@ def find_locations_quantiles(paths, param, tech):
     param[tech]["Ind_points"] = reg_ind
     param[tech]["Crd_points"] = crd_exact_points(reg_ind, Crd_all, res_desired)
     param[tech]["Crd_points"] = (param[tech]["Crd_points"][0], param[tech]["Crd_points"][1], list_names, list_quantiles)
+
     # Used to get TS for desired coordinates
     # points = hdf5storage.read("Crd_points", "crd_points_masked.mat")
     # lat = points[0][0]
@@ -1436,7 +1465,7 @@ def find_locations_quantiles(paths, param, tech):
     # list_points = ["p" + str(po) for po in points]
     # param[tech]["Ind_points"] = ind
     # param[tech]["Crd_points"] = (crd[0], crd[1], list_names, list_points)
-    # # pdb.set_trace()
+
     # Format point locations
     points = [(param[tech]["Crd_points"][1][i], param[tech]["Crd_points"][0][i]) for i in range(0, len(param[tech]["Crd_points"][0]))]
 
@@ -1455,7 +1484,13 @@ def find_locations_quantiles(paths, param, tech):
     hdf5storage.writes(
         {"Crd_points": param[tech]["Crd_points"]}, paths[tech]["Locations"][:-4] + "_Crd.mat", store_python_metadata=True, matlab_compatible=True
     )
-    create_json(paths[tech]["Locations"], param, ["author", "comment", tech, "quantiles", "region_name", "subregions_name",], paths, ["spatial_scope", "subregions",])
+    create_json(
+        paths[tech]["Locations"],
+        param,
+        ["author", "comment", tech, "quantiles", "region_name", "subregions_name"],
+        paths,
+        ["spatial_scope", "subregions"],
+    )
     print("files saved: " + paths[tech]["Locations"])
     timecheck("End")
 
@@ -1530,7 +1565,13 @@ def generate_time_series(paths, param, tech):
     column_names = pd.MultiIndex.from_tuples(tuples, names=["NAME_SHORT", "Quantile"])
     results = pd.DataFrame(TS.transpose(), columns=column_names)
     results.to_csv(paths[tech]["TS"], sep=";", decimal=",")
-    create_json(paths[tech]["TS"], param, ["author", "comment", tech, "quantiles", "region_name", "subregions_name", "year"], paths, [tech, "spatial_scope", "subregions",])
+    create_json(
+        paths[tech]["TS"],
+        param,
+        ["author", "comment", tech, "quantiles", "region_name", "subregions_name", "year"],
+        paths,
+        [tech, "spatial_scope", "subregions"],
+    )
     print("files saved: " + paths[tech]["TS"])
     timecheck("End")
 
@@ -1573,7 +1614,7 @@ def regression_coefficients(paths, param, tech):
         print("Combinations of hub heights to be used for the regression: ", combinations)
     elif tech in ["PV"]:
         print("Orientations to be used for the regression: ", combinations)
-    
+
     # Create FLH file for regression
     if not os.path.isfile(paths["FLH_regression"]):
         clean_FLH_regression(param, paths)
@@ -1587,7 +1628,7 @@ def regression_coefficients(paths, param, tech):
     param["FLH_regression"] = FLH
     param["TS_regression"] = TS_reg
 
-    # Find intersection between FLH and shapefile subregions 
+    # Find intersection between FLH and shapefile subregions
     list_regions = param["regions_sub"]["NAME_SHORT"].values.tolist()
     list_regions = sorted(list(set(list_regions).intersection(set(FLH.index))))
 
@@ -1678,7 +1719,13 @@ def regression_coefficients(paths, param, tech):
             st = st + str(setting) + "_"
 
         summary.to_csv(paths[tech]["Regression_coefficients"] + st + year + ".csv", sep=";", decimal=",")
-        create_json(paths[tech]["Regression_coefficients"], param, ["author", "comment", "quantiles", "regression", "combinations"], paths, [tech, "spatial_scope", "subregions",])
+        create_json(
+            paths[tech]["Regression_coefficients"],
+            param,
+            ["author", "comment", "quantiles", "regression", "combinations"],
+            paths,
+            [tech, "spatial_scope", "subregions"],
+        )
         print("\nfiles saved: " + paths[tech]["Regression_coefficients"] + st + year + ".csv")
 
     timecheck("End")
@@ -1754,7 +1801,13 @@ def generate_stratified_timeseries(paths, param, tech):
             st = st + str(setting) + "_"
         param["st"] = st
         TS_df.to_csv(paths[tech]["Regression_TS"] + st + year + ".csv", sep=";", decimal=",")
-        create_json(paths[tech]["Regression_TS"] + st + year + ".csv", param, ["author", "comment", tech, "quantiles", "modes", "combo", "subregions_name", "year"], paths, ["spatial_scope", "subregions",])
+        create_json(
+            paths[tech]["Regression_TS"] + st + year + ".csv",
+            param,
+            ["author", "comment", tech, "quantiles", "modes", "combo", "subregions_name", "year"],
+            paths,
+            ["spatial_scope", "subregions"],
+        )
         print("File Saved: " + paths[tech]["Regression_TS"] + st + year + ".csv")
     timecheck("End")
 
@@ -1762,11 +1815,11 @@ def generate_stratified_timeseries(paths, param, tech):
 if __name__ == "__main__":
 
     paths, param = initialization()
-    generate_weather_files(paths, param)
-    clean_weather_data(paths, param)
+    generate_weather_files(paths, param)  # MERRA Weather data
+    clean_weather_data(paths, param)  # Outlier smoothing
     generate_landsea(paths, param)  # Land and Sea
     generate_subregions(paths, param)  # Subregions
-    generate_area(paths, param)
+    generate_area(paths, param)  # Area Gradient
     generate_landuse(paths, param)  # Landuse
     generate_bathymetry(paths, param)  # Bathymetry
     generate_topography(paths, param)  # Topography
@@ -1774,7 +1827,10 @@ if __name__ == "__main__":
     generate_population(paths, param)  # Population
     generate_protected_areas(paths, param)  # Protected areas
     generate_buffered_population(paths, param)  # Buffered Population
-    generate_wind_correction(paths, param)
+
+    # Wind Speed correction for hub_height and ????
+    if "WindOn" in param["technology"] or "WindOff" in param["technology"]:
+        generate_wind_correction(paths, param)
 
     for tech in param["technology"]:
         print("Tech: " + tech)

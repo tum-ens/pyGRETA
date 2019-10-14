@@ -73,8 +73,7 @@ def ind_exact_points(Crd_points, Crd_all, res):
     :return Ind_points: Tuple of arrays of indices in the vertical and horizontal axes.
     :rtype: list of arrays
     """
-    Ind_points = [np.around((Crd_points[0] - Crd_all[2]) / res[0]).astype(int),
-                  np.around((Crd_points[1] - Crd_all[3]) / res[1]).astype(int)]
+    Ind_points = [np.around((Crd_points[0] - Crd_all[2]) / res[0]).astype(int), np.around((Crd_points[1] - Crd_all[3]) / res[1]).astype(int)]
     return Ind_points
 
 
@@ -264,11 +263,11 @@ def clean_IRENA_summary(param, paths):
         inst_cap = sub_df.loc[sub_df["Indicator"] == "Electricity capacity (MW)", year][0]
         if isinstance(inst_cap, str):
             inst_cap = int(inst_cap.replace(" ", ""))
-            IRENA.loc[(IRENA.index.isin([(c, t), ])) & (IRENA["Indicator"] == "Electricity capacity (MW)"), year] = inst_cap
+            IRENA.loc[(IRENA.index.isin([(c, t)])) & (IRENA["Indicator"] == "Electricity capacity (MW)"), year] = inst_cap
         gen_prod = sub_df.loc[sub_df["Indicator"] == "Electricity generation (GWh)", year][0]
         if isinstance(gen_prod, str):
             gen_prod = 1000 * int(gen_prod.replace(" ", ""))
-            IRENA.loc[(IRENA.index.isin([(c, t), ])) & (IRENA["Indicator"] == "Electricity generation (GWh)"), year] = gen_prod
+            IRENA.loc[(IRENA.index.isin([(c, t)])) & (IRENA["Indicator"] == "Electricity generation (GWh)"), year] = gen_prod
         if inst_cap == 0:
             FLH = 0
         else:
@@ -348,7 +347,7 @@ def clean_FLH_regression(param, paths):
     )
     return missing
 
-  
+
 def clean_TS_regression(param, paths, tech):
     """
     This function creates a .csv file containing the model Time-series used for regression. If the region is present in
@@ -364,7 +363,7 @@ def clean_TS_regression(param, paths, tech):
     """
 
     # load IRENA FLH data
-    irena = pd.read_csv(paths['FLH_regression'], sep=';', decimal=',', index_col=0)
+    irena = pd.read_csv(paths["FLH_regression"], sep=";", decimal=",", index_col=0)
     technologies = param["technology"]
     # Find intersection between desired regions and irena regions
     list_regions = param["regions_sub"]["NAME_SHORT"].values.tolist()
@@ -413,7 +412,6 @@ def clean_TS_regression(param, paths, tech):
             GenTS["TS_Max"] = GenTS[str(settings_sorted[0])]["q" + str(np.max(param["quantiles"]))]
             # Scale max TS to IRENA
             TS_regression[region] = (GenTS["TS_Max"] * (IRENA_FLH / GenTS["TS_Max"].sum())).values
-
 
     # Save TS_regression as .csv
     TS_regression.to_csv(paths[tech]["TS_regression"], sep=";", decimal=",", index=True)

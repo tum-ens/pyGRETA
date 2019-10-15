@@ -1,4 +1,5 @@
-
+from correction_functions import clean_IRENA_summary
+from util import *
 
 def pyomo_regression_model():
     """
@@ -108,7 +109,7 @@ def clean_FLH_regression(paths, param):
     )
     print("files saved: " + paths["FLH_regression"])
 
-    # Return Missing countries/regions
+    # Return missing countries/regions
     warn(
         "The following countries/regions are not present in the IRENA Database: "
         + ",".join(missing)
@@ -563,16 +564,16 @@ def combinations_for_regression(paths, param, tech):
 def check_regression_model(paths, tech):
     """
     This function checks the regression model parameters for nan values, and returns the FLH and TS model dataframes.
-    If missing values are present in the input .csv files, the users are prompted if they wish to continue or can modify
+    If missing values are present in the input CSV files, the users are prompted if they wish to continue or can modify
     the corresponding files.
 
-    :param paths: Dictionary of dictionaries containing the paths to the FLH and TS model regression .csv files.
+    :param paths: Dictionary of dictionaries containing the paths to the FLH and TS model regression CSV files.
     :type paths: dict
     :param tech: Technology under study.
     :type tech: str
 
-    :return: two pandas dataframes
-    :rtype: Pandas Dataframes
+    :return (FLH, TS_reg): Tuple of pandas dataframes for FLH and TS.
+    :rtype: Tuple of pandas dataframes
     """
     while True:
         # Load IRENA data and regions

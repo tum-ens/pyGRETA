@@ -1,4 +1,5 @@
-
+from spatial_functions import *
+from potential import get_merra_raster_data
 
 def find_locations_quantiles(paths, param, tech):
     """
@@ -145,7 +146,7 @@ def generate_time_series(paths, param, tech):
 
     # Obtain weather and correction matrices
     param["Ind_nz"] = param[tech]["Ind_points"]
-    merraData, rasterData = get_merra_raster_Data(paths, param, tech)
+    merraData, rasterData = get_merra_raster_data(paths, param, tech)
 
     if tech in ["PV", "CSP"]:
 

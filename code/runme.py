@@ -1,22 +1,16 @@
-from model_functions import *
+from initialization import initialization
+from input_maps import generate_input_maps
+from correction_functions import generate_wind_correction
+from potential import calculate_FLH, masking, weighting, reporting
+from time_series import find_locations_quantiles, generate_time_series, generate_stratified_timeseries
+from regression import regression_coefficients
 
 if __name__ == "__main__":
 
     paths, param = initialization()
-    generate_weather_files(paths, param)  # MERRA Weather data
-    clean_weather_data(paths, param)  # Outlier smoothing
-    generate_landsea(paths, param)  # Land and Sea
-    generate_subregions(paths, param)  # Subregions
-    generate_area(paths, param)  # Area Gradient
-    generate_landuse(paths, param)  # Landuse
-    generate_bathymetry(paths, param)  # Bathymetry
-    generate_topography(paths, param)  # Topography
-    generate_slope(paths, param)  # Slope
-    generate_population(paths, param)  # Population
-    generate_protected_areas(paths, param)  # Protected areas
-    generate_buffered_population(paths, param)  # Buffered Population
+    generate_input_maps(paths, param)
 
-    # Wind Speed correction for hub_height and ????
+    # Wind speed correction
     if "WindOn" in param["technology"] or "WindOff" in param["technology"]:
         generate_wind_correction(paths, param)
 

@@ -1,4 +1,5 @@
-
+from physical_models import calc_CF_solar, calc_CF_wind
+from spatial_functions import *
 
 def calculate_FLH(paths, param, tech):
     """
@@ -41,7 +42,7 @@ def calculate_FLH(paths, param, tech):
     del w
 
     # Obtain weather and correction matrices
-    merraData, rasterData = get_merra_raster_Data(paths, param, tech)
+    merraData, rasterData = get_merra_raster_data(paths, param, tech)
 
     if tech in ["PV", "CSP"]:
 
@@ -91,7 +92,7 @@ def calculate_FLH(paths, param, tech):
     timecheck("End")
 
 
-def get_merra_raster_Data(paths, param, tech):
+def get_merra_raster_data(paths, param, tech):
     """
     This function returns a tuple of two dictionaries containing weather and correction rasters for specified technology.
 
@@ -180,11 +181,7 @@ def calc_FLH_solar(hours, args):
         if hour <= param["status_bar_limit"]:
             # Show progress of the simulation
             status = status + 1
-            sys.stdout.write("\r")
-            sys.stdout.write(
-                tech + " " + param["region_name"] + " " + "[%-50s] %d%%" % ("=" * ((status * 50) // len(hours)), (status * 100) // len(hours))
-            )
-            sys.stdout.flush()
+            display_progress(tech + " " + param["region_name"], [len(hours), status])
 
         if tech == "PV":
             CF = calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech)[0]
@@ -234,11 +231,7 @@ def calc_FLH_wind(hours, args):
         if hour <= param["status_bar_limit"]:
             # Show progress of the simulation
             status = status + 1
-            sys.stdout.write("\r")
-            sys.stdout.write(
-                tech + " " + param["region_name"] + " " + "[%-50s] %d%%" % ("=" * ((status * 50) // len(hours)), (status * 100) // len(hours))
-            )
-            sys.stdout.flush()
+            display_progress(tech + " " + param["region_name"], [len(hours), status])
 
         # Calculate hourly capacity factor
         CF = calc_CF_wind(hour, reg_ind, turbine, m_high, n_high, merraData, rasterData)

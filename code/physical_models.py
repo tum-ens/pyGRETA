@@ -1,6 +1,5 @@
-from data_functions import *
+from spatial_functions import crd_exact_points
 from util import *
-
 np.seterr(divide="ignore")  # Repress invalid value or division by zero error
 
 
@@ -174,12 +173,6 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
         CF_csp = None
 
     return CF_pv, CF_csp
-
-
-
-
-
-
 
 
 def angles(hour, reg_ind, Crd_all, res_desired, orient):

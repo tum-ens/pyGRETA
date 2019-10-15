@@ -1,3 +1,32 @@
+from spatial_functions import *
+from correction_functions import clean_weather_data
+
+def generate_input_maps(paths, param):
+    """
+    This function calls the individual functions that generate the maps for the geographic scope.
+    
+    :param paths: Dictionary including the paths.
+    :type paths: dict
+    :param param: Dictionary including the user preferences.
+    :type param: dict
+    
+    :return: The maps are saved directly in the desired paths.
+    :rtype: None
+    """
+    generate_weather_files(paths, param)  # MERRA Weather data
+    clean_weather_data(paths, param)  # Outlier smoothing
+    generate_landsea(paths, param)  # Land and Sea
+    generate_subregions(paths, param)  # Subregions
+    generate_area(paths, param)  # Area Gradient
+    generate_landuse(paths, param)  # Landuse
+    generate_bathymetry(paths, param)  # Bathymetry
+    generate_topography(paths, param)  # Topography
+    generate_slope(paths, param)  # Slope
+    generate_population(paths, param)  # Population
+    generate_protected_areas(paths, param)  # Protected areas
+    generate_buffered_population(paths, param)  # Buffered Population
+
+
 def generate_weather_files(paths, param):
     """
     This function reads the daily NetCDF data (from MERRA-2) for SWGDN, SWTDN, T2M, U50M, and V50M,

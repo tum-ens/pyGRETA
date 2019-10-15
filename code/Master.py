@@ -867,7 +867,7 @@ def generate_wind_correction(paths, param):
         del A_land
         if topo_correction:
             if not os.path.isfile(paths["CORR_GWA"]):
-                calc_gwa_correction(param, paths)
+                calc_gwa_correction(paths, param)
             gwa_correction = hdf5storage.read("correction_" + param["WindOn"]["resource"]["topo_weight"], paths["CORR_GWA"])
             A_cf_on = A_cf_on * gwa_correction
         array2raster(paths["CORR_ON"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf_on)

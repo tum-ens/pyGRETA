@@ -23,16 +23,6 @@ In the folder ``code``, you will find multiple files:
 
 .. tabularcolumns:: |p{3cm}|p{6cm}|
 
-.. Needs to be filled up.... 
-	.. list-table::
-	   :header-rows: 1
-
-* - File
-  - Description
-  
-* - config.py
-  - used for configuration, see below.
-
 +-----------------------+---------------------------------------------------------------------------+
 | File                  | Description                                                               |
 +=======================+===========================================================================+

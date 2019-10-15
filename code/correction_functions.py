@@ -139,7 +139,7 @@ def calc_gwa_correction(paths, param):
     This function creates a correction matrix for onshore wind based on the topography and the frequency distribution of wind speed in each country in the Global
     Wind Atlas.
     We first read the MERRA-2 data for wind and increase its resolution without editing it. We also read the topographic data for the whole scope.
-    For each country, we filter the two datasets based on valid pixels and obtain *w50m_reg* and *topo_reg*. We correct the wind data based on the following formula::
+    For each country, we filter the two datasets based on valid pixels and obtain *w50m_reg* and *topo_reg*. We correct the wind data based on the following formula:
     
         :math:`w50m_{corrected} = w50m_{reg} * min(exp(ai * topo_{reg} + bi), 3.5)`
         

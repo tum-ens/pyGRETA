@@ -208,7 +208,7 @@ def regression_coefficients(paths, param, tech):
 	FLH to the reference value is used in the final output.
 	
 	The output consists of coefficients between 0 and 1 that could be multiplied later with the individual time series
-	in :mod:`Master.generate_stratified_timeseries`. The sum of the coefficients for each combination is equal to 1.
+	in :mod:`time_series.generate_stratified_timeseries`. The sum of the coefficients for each combination is equal to 1.
 
     :param paths: Dictionary including the paths to the time series for each subregion, technology setting, and quantile, to the output paths for the coefficients.
     :type paths: dict

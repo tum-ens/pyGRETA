@@ -1,5 +1,5 @@
 from initialization import initialization
-from input_maps import generate_input_maps
+from input_maps import *
 from correction_functions import generate_wind_correction
 from potential import calculate_FLH, masking, weighting, reporting
 from time_series import find_locations_quantiles, generate_time_series, generate_stratified_timeseries

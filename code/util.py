@@ -129,7 +129,7 @@ def intersection(lst1, lst2):
     :param lst2: Second list of elements.
     :type lst2: list
 
-    :return: The unique elements that exist in both lists, without repetition.
+    :return lst3: The unique elements that exist in both lists, without repetition.
     :rtype: list
     """
     temp = set(lst2)
@@ -148,7 +148,7 @@ def resizem(A_in, row_new, col_new):
     :param col_new: New number of columns.
     :type col_new: integer
 
-    :return: Resized matrix.
+    :return A_out: Resized matrix.
     :rtype: numpy array
     """
     row_rep = row_new // np.shape(A_in)[0]
@@ -197,7 +197,7 @@ def changem(A, newval, oldval):
     :param oldval: Vector of old values to be replaced.
     :param oldval: numpy array
 
-    :return: The updated array.
+    :return Out: The updated array.
     :rtype: numpy array
     """
     Out = np.zeros(A.shape)
@@ -211,24 +211,27 @@ def ind2sub(array_shape, ind):
     """
     This function converts linear indices to subscripts.
     
-    :param array_shape: tuple (# of rows, # of columns)
-    :param ind: Index
+    :param array_shape: Dimensions of the array (# of rows, # of columns).
+    :type array_shape: tuple (int, int)
+    :param ind: Linear index.
+    :type index: int
 
-    :return: tuple (row values, column values)
+    :return: Tuple of indices in each dimension (row index, column index).
+    :rtype: tuple(int, int)
     """
     return np.unravel_index(ind, array_shape, order="F")
 
 
 def field_exists(field_name, shp_path):
     """
-    This function returns a bool of whether the specified field exist or not in the shapefile linked by a path.
+    This function returns whether the specified field exists or not in the shapefile linked by a path.
 
-    :param field_name: Name of the field to be checked for
+    :param field_name: Name of the field to be checked for.
     :type field_name: str
-    :param shp_path: Path to the shapefile
+    :param shp_path: Path to the shapefile.
     :type shp_path: str
 
-    :return: ``True`` if it exists or ``False`` if it doesn't exist
+    :return: ``True`` if it exists or ``False`` if it doesn't exist.
     :rtype: bool
     """
     shp = ogr.Open(shp_path, 0)
@@ -243,12 +246,12 @@ def field_exists(field_name, shp_path):
 
 def changeExt2tif(filepath):
     """
-    This function changes the extension of a file path, to .tif.
+    This function changes the extension of a file path to .tif.
 
-    :param filepath: Path to the file
+    :param filepath: Path to the file.
     :type filepath: str
 
-    :return: New path with .tif as extension
+    :return: New path with .tif as extension.
     :rtype: str
     """
     base = os.path.splitext(filepath)[0]
@@ -257,15 +260,23 @@ def changeExt2tif(filepath):
 
 def sumnorm_MERRA2(A, m, n, res_low, res_desired):
     """
-    Missing description
+    This function calculates the average of high resolution data if it is aggregated into a lower resolution.
 
-    :param A:
-    :param m:
-    :param n:
-    :param res_low:
-    :param res_desired:
+    :param A: High-resolution data.
+    :type A: numpy array
+    :param m: Number of rows in the low resolution.
+    :type m: int
+    :param n: Number of columns in the low resolution.
+    :type n: int
+    :param res_low: Numpy array with with two numbers. The first number is the resolution in the vertical dimension (in degrees of latitude),
+    the second is for the horizontal dimension (in degrees of longitude).
+    :type res_low: numpy array
+    :param res_desired: Numpy array with with two numbers. The first number is the resolution in the vertical dimension (in degrees of latitude),
+    the second is for the horizontal dimension (in degrees of longitude).
+    :type res_desired: numpy array
 
-    :return:
+    :return s: Aggregated average of *A* on the low resolution.
+    :rtype: numpy array
     """
     s = np.zeros((m, n))
     row_step = int(res_low[0] / res_desired[0])
@@ -278,14 +289,15 @@ def sumnorm_MERRA2(A, m, n, res_low, res_desired):
 
 def limit_cpu(check):
     """
-    Set priority of a process for cpu time and ram allocation at two levels: average or below average.
+    This functions sets the priority of a process for CPU time and RAM allocation at two levels: average or below average.
 
     :param check: If ``True``, the process is set a below average priority rating allowing other programs to run undisturbed.
         if ``False``, the process is given the same priority as all other user processes currently running on the machine,
         leading to faster calculation times.
     :type check: boolean
 
-    :return: None
+    :return: The priority of the process is set.
+    :rtype: None
     """
     check = check[0]
     p = psutil.Process(os.getpid())
@@ -313,7 +325,8 @@ def timecheck(*args):
     :param args: Message to be displayed with the function name and the timestamp.
     :type args: string (``optional``)
 
-    :return: None
+    :return: The time stamp is printed.
+    :rtype: None
     """
     if len(args) == 0:
         print(inspect.stack()[1].function + str(datetime.datetime.now().strftime(": %H:%M:%S:%f")) + "\n")
@@ -334,7 +347,8 @@ def display_progress(message, progress_stat):
     :param progress_stat: Tuple containing the total length of the calculation and the current status or progress.
     :type progress_stat: tuple(int, int)
 
-    :return: None
+    :return: The status bar is printed.
+    :rtype: None
     """
     length = progress_stat[0]
     status = progress_stat[1]
@@ -347,21 +361,21 @@ def display_progress(message, progress_stat):
 
 def create_json(filepath, param, param_keys, paths, paths_keys):
     """
-    Creates a metadata json file containing information about the file in filepath by storing the relevant keys from
+    Creates a metadata JSON file containing information about the file in filepath by storing the relevant keys from
     both the param and path dictionaries.
 
-    :param filepath: Path to the file for which the json file will be created.
+    :param filepath: Path to the file for which the JSON file will be created.
     :type filepath: string
     :param param: Dictionary of dictionaries containing the user input parameters and intermediate outputs.
     :type param: dict
-    :param param_keys: Keys of the parameters to be extracted from the *param* dictionary and saved into the json file.
+    :param param_keys: Keys of the parameters to be extracted from the *param* dictionary and saved into the JSON file.
     :type param_keys: list of strings
     :param paths: Dictionary of dictionaries containing the paths for all files.
     :type paths: dict
-    :param paths_keys: Keys of the paths to be extracted from the *paths* dictionary and saved into the json file.
+    :param paths_keys: Keys of the paths to be extracted from the *paths* dictionary and saved into the JSON file.
     :type paths_keys: list of strings
 
-    :return: The json file will be saved in the desired path *filepath*.
+    :return: The JSON file will be saved in the desired path *filepath*.
     :rtype: None
     """
     new_file = os.path.splitext(filepath)[0] + ".json"

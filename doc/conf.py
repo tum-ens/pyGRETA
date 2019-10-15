@@ -83,7 +83,16 @@ html_theme_options = {
 latex_documents = [(master_doc, project+'.tex', project, 'Kais Siala, \\and Houssame Houmy, \\and Sergio Alejandro Huezo Rodriguez.', 'manual', True)]
 
 # Remove redundant white pages 
-latex_elements = {'classoptions': ',oneside',}
+latex_elements = {
+    'classoptions': ',oneside',
+    'papersize': 'letterpaper',
+    'pointsize': '11pt',
+    'preamble': r'''
+        \usepackage{charter}
+        \usepackage[defaultsans]{lato}
+        \usepackage{inconsolata},
+    ''',
+}
 
 # latex_toplevel_sectioning = 'section'
 # This value determines the topmost sectioning unit. It should be chosen from 'part', 'chapter' or 'section'. 

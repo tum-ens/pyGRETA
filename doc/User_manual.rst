@@ -80,8 +80,8 @@ The *GHI* and *TOA* data are time-averaged hourly values given in W/m while *T2M
 values in Kelvin. *V50M* and *U50M* are instantaneous hourly values given in m/s.
 
 The spatial arrangement of the data consists of a global horizontal grid structure with a resolution of 576 points in
-the longitudinal direction and 361 points in the latitudinal direction, resulting in pixels of :math:`$5/8\degree$`
-longitude by :math:`$1/2\degree$` latitude :cite:`MERRA2.`.
+the longitudinal direction and 361 points in the latitudinal direction, resulting in pixels of 5/8° longitude 
+and 1/2° latitude :cite:`MERRA2.`.
 
 Expected outputs
 ----------------

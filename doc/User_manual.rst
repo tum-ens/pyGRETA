@@ -83,6 +83,74 @@ The spatial arrangement of the data consists of a global horizontal grid structu
 the longitudinal direction and 361 points in the latitudinal direction, resulting in pixels of 5/8° longitude 
 and 1/2° latitude :cite:`MERRA2.`.
 
+It is possible to download MERRA-2 dataset for the whole globe or just for a subset of your region of interest.
+Depending on the "MERRA_coverage" parameter in config.py, the script can accept both datasets. Note that downloading 
+the coverage for the whole globe is easier but will require a significant amount of space on your drive (coverage 
+of the whole globe requires 13.6 Gb).
+
+In both cases, please following these instructions to download the MERRA-2 dataset:
+
+1. In order to download MERRA-2 data using the FTP server, you first need to create an Eathdata account (more on that on their `website <https://disc.gsfc.nasa.gov/data-access>`_).
+2. Navigate to the link for the FTP sever `here <https://disc.gsfc.nasa.gov/daac-bin/FTPSubset2.pl>`_.
+3. In *Data Product*, choose :math:`\texttt{tavg1\_2d\_slv\_NX}` and select the *Parameters* T2M, U50M, V50M to downaload the temperature and the wind speed datasets.
+4. In *Spatial Search*, enter the coordinates of the bounding box around your region of interest or leave the default values for the whole globe. 
+   To avoid problems at the edge of the MERRA-2 cells, use the following set of formulas:
+
+   .. math::
+   	   \begin{align*}
+           minLat &= \left\lfloor\dfrac{s + 90 + 3/10}{1/2}\right\rfloor  \\
+           maxLat &= \left\lceil\dfrac{n + 90 + 1/5}{1/2}\right\rceil  \\
+           minLon &= \left\lfloor\dfrac{w + 180 + 1/16}{5/8}\right\rfloor  \\
+           maxLon &= \left\lceil\dfrac{e + 180 - 1/16}{5/8}\right\rceil 
+       \end{align*}
+	
+   where *[s n w e]* are the southern, northern, western, and eastern bounds of
+   the region of interest, which you can read from the shapefile properties in
+   a GIS software.
+	
+5. In *Temporal Order Option*, choose the year(s) of interest.
+6. Leave the other fields unchanged (no time subsets, no regridding, and NetCDF4 for the output file format).
+7. Repeat the steps 4-6 for the *Data Product* :math:`\texttt{tavg1\_2d\_rad\_Nx}`, for which you select the *Parameters* SWGDN and SWTDN, the surface incoming shortwave flux and the top of the atmosphere incoming shortwave flux.
+8. Follow the instructions in the `website <https://disc.gsfc.nasa.gov/data-access>`_ to actually download the NetCDF4 files from the urls listed in the text files you obtained. 
+
+If you follow these steps to download the data for the year 2015, you will obtain 730 NetCDF files, one for each day of the year and for each data product. 
+
+Land use Map
+^^^^^^^^^^^^
+Another important input for this model is the land use type. 
+A Land use map is useful in the sense that other parameters can be associated with different landuse types, namely:
+
+* Urban areas
+* Ross Coefficient
+* Hellmann Coefficient
+* Albedo
+* Suitability
+* Availability
+* Installation Cost
+* ...
+
+By assigning a value of those parameters to each land use type, a land use raster geographically allocates 
+such parameters, which play an important role in the calculations for solar power and wind speed correction. 
+The spatial resolution of the land use raster, and therefore the other geographic intermediate rasters,
+used for this model are defined by pixels of 1/240° longitude and 1/240° latitude.
+This resolution will be used for further calculations and it will be addressed as
+high resolution.
+
+Shapefile of the region of interest
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The strength of the tool relies on its versaility, since it can be used for any user-defined regions provided in 
+a shapefile. I you are interested in administrative divisions, you may cnsider downloading the shapefiles from 
+the Global Administration Divisions `(GADM) <https://gadm.org/download_country_v3.html>`_. You can also create your 
+own shapefiles using a GIS software. In any case, you need to have at least one attribute called *NAME_SHORT* containg 
+a string (array of characters) designating each sub-region.
+
+Shapefile of protected areas
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Any database for prtoected areas can be used with this tool, in particular the World Database on Protected Areas 
+published by the Internation Union for Conservation of Nature found `(IUCN) <https://www.protectedplanet.net/>`_.
+The shapefile has many attributes, but only on is used in the tool: *IUCN_CAT*. If another database is used, an 
+equivalent attribute with the different categories of the protection has to be used and config.py has to be updated accordingly.
+
 Expected outputs
 ----------------
 

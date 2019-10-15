@@ -376,6 +376,7 @@ def clean_TS_regression(paths, param, tech):
 
     # load IRENA FLH data
     irena = pd.read_csv(paths["FLH_regression"], sep=";", decimal=",", index_col=0)
+
     # Find intersection between desired regions and irena regions
     list_regions = param["regions_sub"]["NAME_SHORT"].values.tolist()
     list_regions = sorted(list(set(list_regions).intersection(set(irena.index))))

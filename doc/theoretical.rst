@@ -319,7 +319,7 @@ Convection Losses
 The receiver of parabolic troughs are kept in a vacuum glass tube to prevent convection as much as possible. 
 Radiative heat losses are still present and ultimatly results in convective losses between the glass tube and the air.
 These heat losses are increased when wind is blowing around the receiver. The typical heat losses for a receiver 
-can be estimated through the following empirical equation:
+can be estimated through the following empirical equation :cite:`Duffie.2013`:
 
 .. math::
 	Q_{Loss} =  A_r(U_{L_{cst}} + U_{L_{Wind}} \cdot V_{Wind}^{0.6})(T_i-T_a)
@@ -350,6 +350,18 @@ Where :math:`S` is the component of the DNI captured by the collector at an angl
 
 Wind
 ====
+Wind Speed
+----------
+In order to use a single value for the following wind power calculations, a norm is calculated 
+as if both variables were vectors, so the absolute velocity is:
+
+.. math::
+	W_{50M} = \sqrt{V50M^2+U50M^2}
+
+However, the wind velocities extracted from MERRA-2 are given for a height
+of 50 meters, which does not correspond to the hub height of the wind turbines.
+Therefore, They must be extrapolated.
+
 Wind Shear
 ----------
 While the wind is hardly affected by the Earth's surface at a

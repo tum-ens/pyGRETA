@@ -439,8 +439,8 @@ def check_regression_model(paths, tech):
     """
     while True:
         # Load IRENA data and regions
-        FLH = pd.read_csv(paths["FLH_regression"], sep=';', decimal=',', index_col=0)
-        
+        FLH = pd.read_csv(paths["FLH_regression"], sep=";", decimal=",", index_col=0)
+
         # load TS regression file
         TS_reg = pd.read_csv(paths[tech]["TS_regression"], sep=";", decimal=",", index_col=0, header=0)
 

@@ -12,7 +12,7 @@ def initialization():
     used for saving tif files.
 
     :return: The updated dictionaries param and paths.
-    :rtype: tuple (dict, dict)
+    :rtype: tuple(dict, dict)
     """
     timecheck("Start")
     # import param and paths
@@ -113,7 +113,7 @@ def initialization():
 
 def generate_weather_files(paths, param):
     """
-    This function reads the daily NetCDF data (from MERRA-2) for SWGDN, SWTDN, T2M, U50m, and V50m,
+    This function reads the daily NetCDF data (from MERRA-2) for SWGDN, SWTDN, T2M, U50M, and V50M,
     and saves them in matrices with yearly time series with low spatial resolution.
     This function has to be run only once.
 
@@ -203,7 +203,7 @@ def generate_weather_files(paths, param):
 
 def clean_weather_data(paths, param):
     """
-    This function detects data outliers in the wind input file W50M.mat. An outlier is a data point, for which
+    This function detects data outliers in the wind input file W50M.mat. An outlier is a data point for which
     the absolute value of the difference between the yearly average value and the mean of the direct neighbors
     (Moore neighborhood) is higher than a user-defined threshold *MERRA_correction*. It replaces the hourly values
     with the hourly values of the mean of the neighbors, and overwrites the original W50M.mat file.
@@ -331,7 +331,7 @@ def generate_landsea(paths, param):
 
 def generate_subregions(paths, param):
     """
-    This function reads the shapefiles of the subregions within the scope, and creates a raster out of it.
+    This function reads the shapefile of the subregions within the scope, and creates a raster out of it.
 
     :param paths: Dictionary including the paths *SUB*, *LAND*, *EEZ*.
     :type paths: dict
@@ -572,7 +572,7 @@ def generate_slope(paths, param):
 def generate_population(paths, param):
     """
     This function reads the tiles that make the global map of population, picks those that lie completely or partially in the scope,
-    and creates a raster out of them for the desired scope. The values are in population by pixel.
+    and creates a raster out of them for the desired scope. The values are in population per pixel.
 
     :param paths: Dictionary including the paths to the tiles of the global population raster Pop_tiles and to the output path POP.
     :type paths: dict
@@ -721,8 +721,8 @@ def generate_protected_areas(paths, param):
 
 def generate_buffered_population(paths, param):
     """
-    This function reads the land use raster, identifies urban areas, and exclude pixels around them based on a
-    user-defined buffer (buffer_pixel_amount). It creates a masking raster of boolean values (0 or 1) for the scope.
+    This function reads the land use raster, identifies urban areas, and excludes pixels around them based on a
+    user-defined buffer *buffer_pixel_amount*. It creates a masking raster of boolean values (0 or 1) for the scope.
     Zero means the pixel is excluded, one means it is suitable.
     The function is useful in case there is a policy to exclude renewable energy projects next to urban settlements.
 
@@ -755,21 +755,22 @@ def generate_buffered_population(paths, param):
 def generate_area(paths, param):
     """
     This function retreives the coordinates of the spatial scope and computes the pixel area gradient of the corresponding
-    raster. The area of the pixels increases as the pixel is farther from the equator.
+    raster.
 
-    :param paths: Ditionary of dictionaries containing the path to the output file
+    :param paths: Dictionary of dictionaries containing the path to the output file.
     :type paths: dict
-    :param param: Ditionary of dictionaries containing spatial scope coordinates and desired resolution
+    :param param: Dictionary of dictionaries containing spatial scope coordinates and desired resolution.
     :type param: dict
 
-    :return: None
+    :return: The mat file for AREA is saved in its respective path, along with its metadata in a JSON file.
+    :rtype: None
     """
     timecheck("Start")
     Crd_all = param["Crd_all"]
     n_high = param["n_high"]
     res_desired = param["res_desired"]
 
-    # Calculate available Area
+    # Calculate available area
     # WSG84 ellipsoid constants
     a = 6378137  # major axis
     b = 6356752.3142  # minor axis
@@ -811,10 +812,25 @@ def generate_area(paths, param):
 
 def generate_wind_correction(paths, param):
     """
-    Missing description
-    :param paths:
-    :param param:
-    :return:
+    This function creates a matrix of correction factors for onshore and/or offshore wind.
+	There are different types of correction:
+	
+	* Gradient correction: Adjusts for the hub height of the wind turbines, based on the Hellmann coefficients of each land use type.
+	  This correction applies always.
+	* Resolution correction: Performs a redistribution of wind speed when increasing the resolution based on land use types, while ensuring that
+	  the average of each MERRA-2 cell at 50m is still the same. This correction is optional, and is activated if *res_correction* is 1.
+	  If not activated, the same value from the low resolution is repeated.
+    * Topographic/Orographic correction: Takes into account the elevation of the terrain, because MERRA-2 usually underestimates
+	  the wind speed in mountains. This correction is optional, uses data from the Global Wind Atlas for all countries in the scope,
+	  and is activated only for onshore wind if *topo_correction* is 1.
+    
+	:param paths: Dictionary of dictionaries containing the paths to the land, land use, and topography rasters, and to the output files CORR_ON and CORR_OFF.
+    :type paths: dict
+    :param param: Dictionary of dictionaries containing user-preferences regarding the wind correction, landuse, hub height, weather and desired resolutions.
+    :type param: dict
+	
+    :return: The rasters for wind correction CORR_ON and/or CORR_OFF are saved directly in the user-defined paths, along with their metadata in JSON files.
+	:rtype: None
     """
     timecheck("Start")
     res_correction_on = param["WindOn"]["resource"]["res_correction"]
@@ -855,7 +871,7 @@ def generate_wind_correction(paths, param):
             gwa_correction = hdf5storage.read("correction_" + param["WindOn"]["resource"]["topo_weight"], paths["CORR_GWA"])
             A_cf_on = A_cf_on * gwa_correction
         array2raster(paths["CORR_ON"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf_on)
-        create_json(paths["CORR_ON"], param, ["region_name", "subregions_name", "year", "WindOn", "res_weather", "res_desired"], paths, ["CORR_GWA"])
+        create_json(paths["CORR_ON"], param, ["region_name", "year", "WindOn", "landuse", "res_weather", "res_desired"], paths, ["LAND", "CORR_GWA"])
         print("\nfiles saved: " + paths["CORR_ON"])
 
     # Offshore resolution correction
@@ -881,25 +897,25 @@ def generate_wind_correction(paths, param):
         A_cf_off = A_cf_off * A_eez
 
         array2raster(paths["CORR_OFF"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf_off)
-        create_json(paths["CORR_ON"], param,
-                    ["region_name", "subregions_name", "year", "WindOff", "res_weather", "res_desired"], paths, ["CORR_GWA"])
+        create_json(paths["CORR_ON"], param, ["region_name", "year", "WindOff", "landuse", "res_weather", "res_desired"], paths, ["CORR_GWA"])
         print("\nfiles saved: " + paths["CORR_OFF"])
     timecheck("End")
 
 
 def calculate_FLH(paths, param, tech):
     """
-    This function calculates the yearly FLH for a technology over a spatial scope, and saves the potential
-    raster as .mat and .tiff files along with the .json metadata file.
+    This function calculates the yearly FLH for a technology for all valid pixels in a spatial scope. Valid pixels are land pixels
+	for WindOn, PV and CSP, and sea pixels for WindOff. The FLH values are calculated by summing up hourly capacity factors.
 
-    :param paths: Dictionary of dictionaries containing the paths to the input weather data, spatial scope rasters, and correction rasters.
+    :param paths: Dictionary of dictionaries containing the paths to the input weather data, land, sea and land use rasters, and correction rasters.
     :type paths: dict
-    :param param: Dictionary of dictionaries containing the spatial scope, technology, and computation parameters.
+    :param param: Dictionary of dictionaries containing the spatial scope, and technology and computation parameters.
     :type param: dict
     :param tech: Technology under study.
     :type tech: str
 
-    :return: None
+    :return: The raster of FLH potential is saved as mat and tif files, along with the json metadata file.
+	:rtype: None
     """
     timecheck("Start")
     print("Region: " + param["region_name"])
@@ -959,7 +975,13 @@ def calculate_FLH(paths, param, tech):
     FLH[FLH == 0] = np.nan
 
     hdf5storage.writes({"FLH": FLH}, paths[tech]["FLH"], store_python_metadata=True, matlab_compatible=True)
-    create_json(paths[tech]["FLH"], param, ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired", "res_weather"], paths, ["spatial_scope", "subregions"])
+    create_json(
+        paths[tech]["FLH"],
+        param,
+        ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired", "res_weather"],
+        paths,
+        ["spatial_scope"],
+    )
     print("\nfiles saved: " + paths[tech]["FLH"])
 
     # Save GEOTIFF files
@@ -973,18 +995,19 @@ def calculate_FLH(paths, param, tech):
 
 def masking(paths, param, tech):
     """
-    This fucntion reads the user defined landuse and protected areas suitability, as well as, the landuse raster map
-    for the spatial scope and generates a masking raster to exclude the unsuitable and protected pixels. Both the masked
-    and the masked potential rasters can be saved as .tiff and .mat files along with a metadata .json file.
+    This function first reads the rasters for land use, slope, bathymetry, and protected areas for the scope. Based on user-defined assumptions on
+	their suitabilities, it generates a masking raster to exclude the unsuitable pixels. Both the mask itself
+    and the masked potential rasters can be saved.
 
-    :param paths: Dictionary of dictionaries containing.
+    :param paths: Dictionary of dictionaries containing user-defined parameters for masking, protected areas, and landuse.
     :type paths: dict
-    :param param: Dictionary of dictionaries containing.
+    :param param: Dictionary of dictionaries containing the paths to the land use, protected areas, slope and bathymetry, in addition to output paths.
     :type param: dict
     :param tech: Technology under study.
     :type tech: str
 
-    :return: None
+    :return: The files for the mask and the masked FLH are saved as tif and mat files, along with their metadata json files.
+	:rtype: None
     """
     timecheck("Start")
     mask = param[tech]["mask"]
@@ -1066,8 +1089,13 @@ def masking(paths, param, tech):
     print("files saved: " + paths[tech]["mask"])
     hdf5storage.writes({"FLH_mask": FLH_mask}, paths[tech]["FLH_mask"], store_python_metadata=True, matlab_compatible=True)
     print("files saved: " + paths[tech]["FLH_mask"])
-
-    create_json(paths[tech]["mask"], param, [tech, "region_name", "subregions_name", "year", "res_desired", "GeoRef", "landuse", "protected_areas", ], paths, ["spatial_scope", "subregions", "PA", "LU", "SLOPE", "BATH"])
+    create_json(
+        paths[tech]["mask"],
+        param,
+        ["author", "comment", tech, "region_name", "year", "GeoRef", "landuse", "protected_areas"],
+        paths,
+        ["spatial_scope", "PA", "LU", "SLOPE", "BATH"],
+    )
 
     # Save GEOTIFF files
     if param["savetiff"]:
@@ -1083,11 +1111,20 @@ def masking(paths, param, tech):
 
 def weighting(paths, param, tech):
     """
-    Missing Description
-    :param paths:
-    :param param:
-    :param tech:
-    :return:
+    This function weights the power potential by including assumptions on the power density and the available area.
+	Therefor, it reads the rasters for land use and protected areas for the scope. Based on user-defined assumptions on
+	their availabilities, it generates a weighting raster to exclude the unsuitable pixels. Both the weight itself
+    and the weighted potential rasters can be saved.
+
+    :param paths: Dictionary of dictionaries containing user-defined parameters for weighting, protected areas, and landuse.
+    :type paths: dict
+    :param param: Dictionary of dictionaries containing the paths to the land use, protected areas, area, in addition to output paths.
+    :type param: dict
+    :param tech: Technology under study.
+    :type tech: str
+
+    :return: The files for the weight and the weighted FLH are saved as tif and mat files, along with their metadata json files.
+	:rtype: None
     """
     timecheck("Start")
     weight = param[tech]["weight"]
@@ -1136,6 +1173,13 @@ def weighting(paths, param, tech):
     print("files saved: " + paths[tech]["weight"])
     hdf5storage.writes({"FLH_weight": FLH_weight}, paths[tech]["FLH_weight"], store_python_metadata=True, matlab_compatible=True)
     print("files saved: " + paths[tech]["FLH_weight"])
+    create_json(
+        paths[tech]["weight"],
+        param,
+        ["author", "comment", tech, "region_name", "year", "GeoRef", "landuse", "protected_areas"],
+        paths,
+        ["spatial_scope", "PA", "LU", "AREA"],
+    )
 
     # Save GEOTIFF files
     if param["savetiff"]:
@@ -1149,35 +1193,25 @@ def weighting(paths, param, tech):
 
 def reporting(paths, param, tech):
     """
-    This function reads the FLH files and the subregion shapefiles, and creates a .csv file containing various statistics:
+    This function reads the FLH files and the subregion shapefile, and creates a CSV file containing various statistics:
 
-    * Available number of pixels
-    * Available number of pixels after masking
-    * Available Area in km2
-    * FLH Mean
-    * FLH Median
-    * FLH Max
-    * FLH Min
-    * FLH Mean after masking
-    * FLH Median after masking
-    * FLH Max after masking
-    * FLH Min after masking
-    * FLH Standard deviation after masking
-    * Power Potential in GW
-    * Power Potential in GW after weighting
-    * Energy Potential in TWh
-    * Energy Potential in TWh after weighting
-    * Energy Potential in TWh after masking and weighting
+    * Available number of pixels, before and after masking
+    * Available area in in km²
+    * FLH mean, median, max, min values, before and after masking
+    * FLH standard deviation after masking
+    * Power Potential in GW, before and after weighting
+    * Energy Potential in TWh in total, after weighting, and after masking and weighting
     * Sorted sample of FLH values for each region
 
     :param paths: Dictionary of dictionaries containing the paths to FLH, Masking, Weighting, and Area rasters.
     :type paths: dict
-    :param param: Dictionary of dictionaries containing Technology parameters, and sampling parameters.
+    :param param: Dictionary of dictionaries containing technology parameters and sampling parameters.
     :type param: dict
     :param tech: Technology under study.
     :type tech: str
 
-    :return: None
+    :return: The CSV files with the report and the sorted FLH are saved directly in the desired paths, along with the corresponding metadata in JSON files.
+	:rtype: None
     """
     timecheck("Start")
     # read FLH, masking, area, and weighting matrix
@@ -1337,10 +1371,16 @@ def reporting(paths, param, tech):
 
     # Export the dataframe as CSV
     regions.to_csv(paths[tech]["Region_Stats"], sep=";", decimal=",", index=True)
-    create_json(paths[tech]["Region_Stats"], param, [tech, "region_name", "subregions_name", "year", "res_desired"], paths, ["spatial_scope", "subregions"])
+    create_json(
+        paths[tech]["Region_Stats"],
+        param,
+        ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired", "Crd_all", "GeoRef"],
+        paths,
+        ["spatial_scope", "subregions", "AREA", tech],
+    )
     print("files saved: " + paths[tech]["Region_Stats"])
 
-    # Save Sorted lists to .mat file
+    # Save sorted lists to mat file
     for reg in sorted_FLH_list.keys():
         hdf5storage.writes(
             {
@@ -1352,25 +1392,33 @@ def reporting(paths, param, tech):
             store_python_metadata=True,
             matlab_compatible=True,
         )
-    create_json(paths[tech]["Sorted_FLH"], param, [tech, "region_name", "subregions_name", "year", "res_desired", "report_sampling"], paths, ["spatial_scope", "subregions"])
+    create_json(
+        paths[tech]["Sorted_FLH"],
+        param,
+        ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired", "Crd_all", "GeoRef", "report_sampling"],
+        paths,
+        ["spatial_scope", "subregions", "AREA", tech],
+    )
     print("files saved: " + paths[tech]["Sorted_FLH"])
     timecheck("End")
 
 
 def find_locations_quantiles(paths, param, tech):
     """
-    This function reads the masked FLH raster and finds the coordinates and indices for the user defined quantiles for each region.
-    It creates a shapefile containing the position of the quantiles for each region, and two .mat files with their
+    This function reads the masked FLH raster and finds the coordinates and indices of the pixels for the user-defined quantiles for each region.
+    It creates a shapefile containing the position of those points for each region, and two MAT files with their
     coordinates and indices.
 
-    :param paths: Dictionary of dictionaries containing path values for FLH mat files, region statistics, and output paths
+    :param paths: Dictionary of dictionaries containing path values for FLH MAT files, region statistics, and output paths.
     :type paths: dict
-    :param param: Dictionary of dictionaries containing the user defined quantiles, FLH resolution, spatial scope
+    :param param: Dictionary of dictionaries containing the user-defined quantiles, FLH resolution, and spatial scope.
     :type param: dict
-    :param tech: technology under study
+    :param tech: Technology under study.
     :type tech: str
 
-    :return: None
+    :return: The shapefile with the locations and the two MAT files for the coordinates and the indices are saved
+	directly in the given paths, along with their corresponding metadata in JSON files.
+	:rtype: None
     """
     timecheck("Start")
     FLH_mask = hdf5storage.read("FLH_mask", paths[tech]["FLH_mask"])
@@ -1454,25 +1502,33 @@ def find_locations_quantiles(paths, param, tech):
     hdf5storage.writes(
         {"Crd_points": param[tech]["Crd_points"]}, paths[tech]["Locations"][:-4] + "_Crd.mat", store_python_metadata=True, matlab_compatible=True
     )
-    create_json(paths[tech]["Locations"], param, [tech, "quantiles", "region_name", "subregions_name",], paths, ["spatial_scope", "subregions",])
+    create_json(
+        paths[tech]["Locations"],
+        param,
+        ["author", "comment", tech, "region_name", "subregions_name", "quantiles", "Crd_all"],
+        paths,
+        ["spatial_scope", "subregions"],
+    )
     print("files saved: " + paths[tech]["Locations"])
     timecheck("End")
 
 
 def generate_time_series(paths, param, tech):
     """
-    This function generate yearly capacity factor time-series for the technology of choice at specified locations:
-    Either user defined locations or Quantile locations generated in find_locations_quantiles.
-    The timeseries are saved in .csv files.
+    This function generates yearly capacity factor time-series for the technology of choice at specified locations:
+    either user-defined locations or quantile locations generated in find_locations_quantiles.
+    The timeseries are saved in CSV files.
 
     :param paths: Dictionary of dictionaries containing paths to coordinate and indices of the quantile locations.
     :type paths: dict
-    :param param: Dictionary of dictionaries containing processing parameters, and user defined locations.
+    :param param: Dictionary of dictionaries containing processing parameters, and user-defined locations.
     :type param: dict
-    :param tech: Technology under study
+    :param tech: Technology under study.
     :type tech: str
 
-    :return: None
+    :return: The CSV file with the time series for all subregions and quantiles is saved directly in the given path,
+	along with the corresponding metadata in a JSON file.
+	:rtype: None
     """
     timecheck("Start")
     nproc = param["nproc"]
@@ -1529,33 +1585,48 @@ def generate_time_series(paths, param, tech):
     column_names = pd.MultiIndex.from_tuples(tuples, names=["NAME_SHORT", "Quantile"])
     results = pd.DataFrame(TS.transpose(), columns=column_names)
     results.to_csv(paths[tech]["TS"], sep=";", decimal=",")
-    create_json(paths[tech]["TS"], param, [tech, "quantiles", "region_name", "subregions_name", "year"], paths, [tech, "spatial_scope", "subregions",])
+    create_json(
+        paths[tech]["TS"],
+        param,
+        ["author", "comment", tech, "quantiles", "region_name", "subregions_name", "year", "Crd_all"],
+        paths,
+        [tech, "spatial_scope", "subregions"],
+    )
     print("files saved: " + paths[tech]["TS"])
     timecheck("End")
 
 
 def regression_coefficients(paths, param, tech):
     """
-    This function solves the following optimization problem:
+    This function solves the following optimization problem: A combination of quantiles, hub heights or orientations is to be found, so that
+	the error to a given historical time series (e.g. from EMHIRES for European countries) is minimized, while
+	constraining the FLH to match a given value (for example from IRENA). The settings of the combinations can be
+	defined by the user.
+	
+	The function starts by identifying the existing settings (hub heights, orientations) and quantiles.
+	If the combinations of time series requested by the user cannot be found, a warning is raised.
+	
+	It later runs the optimization and identifies the subregions for which a solution was found. If the optimization
+	is infeasible (too high or too low FLH values compared to the reference to be matched), the time series with the closest
+	FLH to the reference value is used in the final output.
+	
+	The output consists of coefficients between 0 and 1 that could be multiplied later with the individual time series
+	in :mod:`Master.generate_stratified_timeseries`. The sum of the coefficients for each combination is equal to 1.
 
-    Express a given model timeseries provided by EMHIRES as a combination timeseries
-    for different Hub-Heights/orientations and Quantiles, while constraining the total sum of
-    the obtained TS to the FLH given by IRENA
-
-    :param paths: Dictionary including the paths to the shapefile of the globally protected areas, to the landuse raster of the scope, and to the output path PA.
+    :param paths: Dictionary including the paths to the time series for each subregion, technology setting, and quantile, to the output paths for the coefficients.
     :type paths: dict
-    :param param: Dictionary including the dictionary of regression parameters and year.
+    :param param: Dictionary including the dictionary of regression parameters, quantiles, and year.
     :type param: dict
-    :param tech: Name of the technology used for calculations
+    :param tech: Technology under study.
     :type tech: str
 
     :return:
-        Copy the regression parameters Irena FLH and EMHIRES TS under Regression_Outputs folder,
-
-        Save the regression coefficients, and the result Time-series in a .csv file under Regression_Outputs folder
+        The regression parameters (e.g. IRENA FLH and EMHIRES TS) are copied under *regression_in* folder, and
+		the regression coefficients are saved in a CSV file under *regression_out* folder, along with the metadata
+		in a JSON file.
     :rtype: None
-    :raise Missing Data: No Time-series present for technology tech
-    :raise Missing Data for Setting: Missing Time-series with desired settings (hub-heights/orientations)
+    :raise Missing Data: No time series present for technology *tech*.
+    :raise Missing Data for Setting: Missing time series for desired settings (hub heights / orientations).
     """
     timecheck("Start")
     year = str(param["year"])
@@ -1571,25 +1642,25 @@ def regression_coefficients(paths, param, tech):
         print("Combinations of hub heights to be used for the regression: ", combinations)
     elif tech in ["PV"]:
         print("Orientations to be used for the regression: ", combinations)
-    
+
     # Create FLH file for regression
     if not os.path.isfile(paths["FLH_regression"]):
-        clean_FLH_regression(param, paths)
+        clean_FLH_regression(paths, param)
 
     # Create TS file for regression
     if not os.path.isfile(paths[tech]["TS_regression"]):
-        clean_TS_regression(param, paths, tech)
+        clean_TS_regression(paths, param, tech)
 
     FLH, TS_reg = check_regression_model(paths, tech)
 
     param["FLH_regression"] = FLH
     param["TS_regression"] = TS_reg
 
-    # Find intersection between FLH and shapefile subregions 
+    # Find intersection between FLH and shapefile subregions
     list_regions = param["regions_sub"]["NAME_SHORT"].values.tolist()
     list_regions = sorted(list(set(list_regions).intersection(set(FLH.index))))
 
-    # Summary Variables
+    # Summary variables
     summary = None
     nodata = ""
     no_sol_high = ""
@@ -1676,7 +1747,13 @@ def regression_coefficients(paths, param, tech):
             st = st + str(setting) + "_"
 
         summary.to_csv(paths[tech]["Regression_coefficients"] + st + year + ".csv", sep=";", decimal=",")
-        create_json(paths[tech]["Regression_coefficients"], param, ["quantiles", "regression"], paths, ["spatial_scope", "subregions",])
+        create_json(
+            paths[tech]["Regression_coefficients"],
+            param,
+            ["author", "comment", tech, "region_name", "subregions_name", "quantiles", "regression", "year", "Crd_all"],
+            paths,
+            ["spatial_scope", "subregions"],
+        )
         print("\nfiles saved: " + paths[tech]["Regression_coefficients"] + st + year + ".csv")
 
     timecheck("End")
@@ -1684,18 +1761,20 @@ def regression_coefficients(paths, param, tech):
 
 def generate_stratified_timeseries(paths, param, tech):
     """
-    This function reads the coefficients obtained from the regression function  as well as the geneated timeseries for
-    the hubheight and orientation combinations and quantiles to combine them according to user defined
-    modes (quantile combination) and combos (hubheights or orientation combinations) and saves the results into a .csv file.
+    This function reads the coefficients obtained from the regression function as well as the generated time series for
+    the combinations of hub heights / orientations and quantiles, to combine them according to user-defined
+    *modes* (quantile combination) and *combos* (hub heights / orientation combinations) and saves the results (time series) 
+	in a CSV file.
 
-    :param param: Dictionary of dictionaries containing the list of subregions, the modes, and the combos.
-    :type param: dict
-    :param paths: Dictionary of dictionaries containing the paths to the regression coeffceints and the timeseries.
+    :param paths: Dictionary of dictionaries containing the paths to the regression coefficients and the time series.
     :type paths: dict
+	:param param: Dictionary of dictionaries containing the list of subregions, the modes, and the combos.
+    :type param: dict
     :param tech: Technology under study.
     :type tech: str
 
-    :return: None
+    :return: The stratified time series for each region, mode, and combo are saved directly in the given path, along with the metadata in a JSON file.
+	:rtype: None
     """
     timecheck("Start")
     modes = param["modes"]
@@ -1752,7 +1831,13 @@ def generate_stratified_timeseries(paths, param, tech):
             st = st + str(setting) + "_"
         param["st"] = st
         TS_df.to_csv(paths[tech]["Regression_TS"] + st + year + ".csv", sep=";", decimal=",")
-        create_json(paths[tech]["Regression_TS"] + st + year + ".csv", param, [tech, "quantiles", "modes", "combo", "subregions_name", "year"], paths, ["spatial_scope", "subregions",])
+        create_json(
+            paths[tech]["Regression_TS"] + st + year + ".csv",
+            param,
+            ["author", "comment", tech, "quantiles", "modes", "combo", "region_name", "subregions_name", "year"],
+            paths,
+            ["spatial_scope", "subregions"],
+        )
         print("File Saved: " + paths[tech]["Regression_TS"] + st + year + ".csv")
     timecheck("End")
 

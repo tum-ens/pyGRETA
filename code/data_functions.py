@@ -5,11 +5,11 @@ def define_spatial_scope(scope_shp):
     """
     This function reads the spatial scope shapefile and returns its bounding box.
 
-    :param scope_shp: Spatial scope shapefile
+    :param scope_shp: Spatial scope shapefile.
     :type scope_shp: Geopandas dataframe
 
-    :return box: list of the bounding box coordinates
-    :rtype box: list
+    :return box: List of the bounding box coordinates.
+    :rtype: list
     """
     scope_shp = scope_shp.to_crs({"init": "epsg:4326"})
     r = scope_shp.total_bounds
@@ -73,8 +73,7 @@ def ind_exact_points(Crd_points, Crd_all, res):
     :return Ind_points: Tuple of arrays of indices in the vertical and horizontal axes.
     :rtype: list of arrays
     """
-    Ind_points = [np.around((Crd_points[0] - Crd_all[2]) / res[0]).astype(int),
-                  np.around((Crd_points[1] - Crd_all[3]) / res[1]).astype(int)]
+    Ind_points = [np.around((Crd_points[0] - Crd_all[2]) / res[0]).astype(int), np.around((Crd_points[1] - Crd_all[3]) / res[1]).astype(int)]
     return Ind_points
 
 
@@ -160,7 +159,7 @@ def ind_global(Crd, res_desired):
 
 def calc_geotiff(Crd_all, res_desired):
     """
-    This function returns dictionary containing the Georefferencing parameters for geotiff creation,
+    This function returns a dictionary containing the georeferencing parameters for geotiff creation,
     based on the desired extent and resolution.
 
     :param Crd_all: Coordinates of the bounding box of the spatial scope.
@@ -195,7 +194,7 @@ def calc_region(region, Crd_reg, res_desired, GeoRef):
     :type GeoRef: dict
 
     :return A_region: Masking raster of the region.
-    :rtype A_region: numpy array
+    :rtype: numpy array
     """
     latlim = Crd_reg[2] - Crd_reg[0]
     lonlim = Crd_reg[3] - Crd_reg[1]
@@ -229,7 +228,7 @@ def calc_region(region, Crd_reg, res_desired, GeoRef):
     return A_region
 
 
-def clean_IRENA_summary(param, paths):
+def clean_IRENA_summary(paths, param):
     """
     This function reads the IRENA database, format the output for selected regions and computes the FLH based on the
     installed capacity and yearly energy production. The results are saved in .csv file.
@@ -239,7 +238,8 @@ def clean_IRENA_summary(param, paths):
     :param paths: Dictionary of dictionaries containing the paths to the IRENA country name dictionary, and IRENA database.
     :type paths: dict
 
-    :return: None
+    :return: The CSV file containing the summary of IRENA data for the countries within the scope is saved directly in the desired path, along with the corresponding metadata in a JSON file.
+	:rtype: None
     """
     year = str(param["year"])
     filter_countries = param["regions_land"]["GID_0"].to_list()
@@ -264,11 +264,11 @@ def clean_IRENA_summary(param, paths):
         inst_cap = sub_df.loc[sub_df["Indicator"] == "Electricity capacity (MW)", year][0]
         if isinstance(inst_cap, str):
             inst_cap = int(inst_cap.replace(" ", ""))
-            IRENA.loc[(IRENA.index.isin([(c, t), ])) & (IRENA["Indicator"] == "Electricity capacity (MW)"), year] = inst_cap
+            IRENA.loc[(IRENA.index.isin([(c, t)])) & (IRENA["Indicator"] == "Electricity capacity (MW)"), year] = inst_cap
         gen_prod = sub_df.loc[sub_df["Indicator"] == "Electricity generation (GWh)", year][0]
         if isinstance(gen_prod, str):
             gen_prod = 1000 * int(gen_prod.replace(" ", ""))
-            IRENA.loc[(IRENA.index.isin([(c, t), ])) & (IRENA["Indicator"] == "Electricity generation (GWh)"), year] = gen_prod
+            IRENA.loc[(IRENA.index.isin([(c, t)])) & (IRENA["Indicator"] == "Electricity generation (GWh)"), year] = gen_prod
         if inst_cap == 0:
             FLH = 0
         else:
@@ -287,27 +287,30 @@ def clean_IRENA_summary(param, paths):
     )
     IRENA = IRENA.astype(float)
     IRENA.to_csv(paths["IRENA_summary"], sep=";", decimal=",", index=True)
+    create_json(paths["IRENA_summary"], param, ["author", "comment", tech, "region_name", "year"], paths, ["regions_land", "IRENA", "IRENA_dict"])
     print("files saved: " + paths["IRENA_summary"])
 
 
-def clean_FLH_regression(param, paths):
+def clean_FLH_regression(paths, param):
     """
-    This function creates a .csv file containing the model FLH used for regression. If the region is present in the
-    IRENA database then the FLH are extracted directly from there. In case it is not present, a place holder for the
+    This function creates a CSV file containing the model FLH used for regression. If the region is present in the
+    IRENA database, then the FLH are extracted directly from there. In case it is not present, a place holder for the
     regions is written in the csv file and it is the user's responsibility to fill in an appropriate value.
     The function will warn the user, and print all regions that are left blank.
 
     :param param: Dictionary of dictionaries containing the list of regions.
     :type param: dict
-    :param paths: Dictionary of dictionaries containing the paths to IRENA_summary, IRENA_dict.
+    :param paths: Dictionary of dictionaries containing the paths to *IRENA_summary*, *IRENA_dict*.
     :type paths: dict
 
-    :return: list of string of the missing regions.
+    :return missing: List of string of the missing regions. The CSV file for the the FLH needed for the regression is saved directly in
+	the given path, along with the corresponding metadata in a JSON file.
     :rtype: list of str
+	:raise Missing Regions: No FLH values exist for certain regions.
     """
     # Read IRENA summary
     if not os.path.isfile(paths["IRENA_summary"]):
-        clean_IRENA_summary(param, paths)
+        clean_IRENA_summary(paths, param)
     IRENA_summary = pd.read_csv(paths["IRENA_summary"], sep=";", decimal=",", index_col=[0, 1])
 
     # Load IRENA dictionary
@@ -337,6 +340,13 @@ def clean_FLH_regression(param, paths):
 
     # Save FLH_regression
     FLH_regression.to_csv(paths["FLH_regression"], sep=";", decimal=",", index=True)
+    create_json(
+        paths["FLH_regression"],
+        param,
+        ["author", "comment", tech, "region_name", "subregions_name", "year", "Crd_all"],
+        paths,
+        ["IRENA_dict", "IRENA_summary"],
+    )
     print("files saved: " + paths["FLH_regression"])
 
     # Return Missing countries/regions
@@ -348,24 +358,24 @@ def clean_FLH_regression(param, paths):
     )
     return missing
 
-  
-def clean_TS_regression(param, paths, tech):
-    """
-    This function creates a .csv file containing the model Time-series used for regression. If the region is present in
-    the EMHIRES text files then the TS is extracted directly from it. If the region is not present in the EMHIRES text
-    files the highest FLH generated TS is used instead and is scaled to match IRENA FLH.
 
-    :param param: Dictionary containing technologies under study, *FLH_regression* dataframe, list of subregions contained in shapefile, and year.
+def clean_TS_regression(paths, param, tech):
+    """
+    This function creates a CSV file containing the model time series used for regression. If the region is present in
+    the EMHIRES text files then the TS is extracted directly from it. If the region is not present in the EMHIRES text
+    files, the highest FLH generated TS is used instead and is scaled to match IRENA FLH.
+
+    :param param: Dictionary containing the *FLH_regression* dataframe, list of subregions contained in shapefile, and year.
     :type param: dict
-    :param paths: Dictionary containing paths to EMHIRES text files
+    :param paths: Dictionary containing paths to EMHIRES text files.
     :type paths: dict
 
-    :return: None
+    :return: The time series used for the regression are saved directly in the given path, along with the corresponding metadata in a JSON file. 
+	:rtype: None
     """
 
     # load IRENA FLH data
-    irena = pd.read_csv(paths['FLH_regression'], sep=';', decimal=',', index_col=0)
-    technologies = param["technology"]
+    irena = pd.read_csv(paths["FLH_regression"], sep=";", decimal=",", index_col=0)
     # Find intersection between desired regions and irena regions
     list_regions = param["regions_sub"]["NAME_SHORT"].values.tolist()
     list_regions = sorted(list(set(list_regions).intersection(set(irena.index))))
@@ -400,9 +410,9 @@ def clean_TS_regression(param, paths, tech):
         if region in intersect_regions:
             # Scale EMHIRES TS to IRENA
             TS_regression[region] = (EMHIRES[region] * (IRENA_FLH / sum(EMHIRES[region]))).values
-        # Region is not present in EMHIRES, Use scaled generated TS instead
+        # Region is not present in EMHIRES, use scaled generated TS instead
         else:
-            # Load Generated TS and Scale it with IRENA FLH
+            # Load generated TS and scale it with IRENA FLH
             GenTS = read_generated_TS(paths, param, tech, settings, region)
             # Find highest FLH valued TS
             settings_sorted = np.array(
@@ -414,9 +424,11 @@ def clean_TS_regression(param, paths, tech):
             # Scale max TS to IRENA
             TS_regression[region] = (GenTS["TS_Max"] * (IRENA_FLH / GenTS["TS_Max"].sum())).values
 
-
-    # Save TS_regression as .csv
+    # Save TS_regression as CSV
     TS_regression.to_csv(paths[tech]["TS_regression"], sep=";", decimal=",", index=True)
+    create_json(
+        paths[tech]["TS_regression"], param, ["author", "comment", tech, "region_name", "subregions_name", "year"], paths, ["FLH_regression", tech]
+    )
     print("files saved: " + paths[tech]["TS_regression"])
 
 
@@ -656,8 +668,6 @@ def read_generated_TS(paths, param, tech, settings, subregion):
     year = str(param["year"])
 
     bef_setting = paths["regional_analysis"] + subregions + "_" + tech + "_"
-    if tech == "CSP":
-        bef_setting = paths["regional_analysis"] + subregions + "_" + tech
     aft_setting = "_TS_" + year + ".csv"
 
     # Setup the data dictionary for generated TS for each quantile

@@ -231,7 +231,7 @@ def calc_region(region, Crd_reg, res_desired, GeoRef):
 def clean_IRENA_summary(paths, param):
     """
     This function reads the IRENA database, format the output for selected regions and computes the FLH based on the
-    installed capacity and yearly energy production. The results are saved in .csv file.
+    installed capacity and yearly energy production. The results are saved in CSV file.
 
     :param param: Dictionary of dictionaries containing list of subregions, and year.
     :type param: dict
@@ -365,10 +365,10 @@ def clean_TS_regression(paths, param, tech):
     the EMHIRES text files then the TS is extracted directly from it. If the region is not present in the EMHIRES text
     files, the highest FLH generated TS is used instead and is scaled to match IRENA FLH.
 
-    :param param: Dictionary containing the *FLH_regression* dataframe, list of subregions contained in shapefile, and year.
-    :type param: dict
     :param paths: Dictionary containing paths to EMHIRES text files.
     :type paths: dict
+    :param param: Dictionary containing the *FLH_regression* dataframe, list of subregions contained in shapefile, and year.
+    :type param: dict
 
     :return: The time series used for the regression are saved directly in the given path, along with the corresponding metadata in a JSON file. 
 	:rtype: None
@@ -433,14 +433,28 @@ def clean_TS_regression(paths, param, tech):
     print("files saved: " + paths[tech]["TS_regression"])
 
 
-def calc_gwa_correction(param, paths):
+def calc_gwa_correction(paths, param):
     """
-    Missing description
+    This function creates a correction matrix for onshore wind based on the topography and the frequency distribution of wind speed in each country in the Global
+    Wind Atlas.
+    We first read the MERRA-2 data for wind and increase its resolution without editing it. We also read the topographic data for the whole scope.
+    For each country, we filter the two datasets based on valid pixels and obtain *w50m_reg* and *topo_reg*. We correct the wind data based on the following formula::
+    
+        :math:`w50m_{corrected} = w50m_{reg} * min(exp(ai * topo_{reg} + bi), 3.5)`
+        
+    where *ai* and *bi* are two parameters that have to be determined, so that the error (difference to the sorted frequencies of wind speeds from the GWA) is minimalized
+    for the whole scope. Instead of using a nonlinear optimization, we simply iterate over a range of discrete possibilities for *ai* and *bi*, save the errors, then pick
+    the combinations that minimize the error.
+    It is possible to weight the error of each country based on its area or on its installed onshore wind capacity, or to give the same weight to all the countries.
+    Finally, the three possible correction matrices are saved.
 
-    :param param:
-    :param paths:
+    :param paths: Dictionary that contains the paths to wind speed data, topography, IRENA summary, Global Wind Atlass folder, and to the output location.
+    :type paths: dict
+    :param param: Dictionary that contains assumptions about the desired resolution, size of the output, shapefile of countries, and georeference dictionary.
+    :type param: dict
 
-    :return:
+    :return: The correction matrices are saved in the same MAT file, directly in the given path, along with the metadata in the corresponding JSON file.
+    :rtype: None
     """
     m_high = param["m_high"]
     n_high = param["n_high"]
@@ -533,6 +547,9 @@ def calc_gwa_correction(param, paths):
         store_python_metadata=True,
         matlab_compatible=True,
     )
+    create_json(
+        paths["CORR_GWA"], param, ["author", "comment", "region_name", "subregions_name", "year", "Crd_all", "res_desired", "GeoRef"], paths, ["W50M", "TOPO", "IRENA_summary"]
+    )
     return
 
 
@@ -542,17 +559,18 @@ def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
     The sizing of the PV system is conducted on a user-defined day for a shade-free exposure
     to the sun during a given number of hours.
 
-    :param Crd_all: desired geographic extent of the whole region (north, east, south, west)
+    :param Crd_all: Desired geographic extent of the whole region (north, east, south, west).
     :type Crd_all: list
-    :param m_high: number of rows
+    :param m_high: Number of rows.
     :type m_high: int
-    :param n_high: number of columns
+    :param n_high: Number of columns.
     :type n_high: int
-    :param res_desired: map's high resolution
+    :param res_desired: Resolution of the high resolution map.
     :type res_desired: list
-    :param GCR: includes the user-defined day and the duration of the shade-free period
+    :param GCR: Dictionary that includes the user-defined day and the duration of the shade-free period.
+    :type GCR: dict
 
-    :return: GCR raster
+    :return A_GCR: GCR weighting raster.
     :rtype: numpy array
     """
     # Vector of latitudes between (south) and (north), with resolution (res_should) degrees
@@ -624,20 +642,19 @@ def sampled_sorting(Raster, sampling):
     """
     This function returns a list with a defined length of sorted values sampled from a numpy array.
 
-    :param Raster: Input raster to be sorted
+    :param Raster: Input raster to be sorted.
     :type Raster: numpy array
-    :param sampling: Number of values to be sampled from the raster, defines length of outputted list
+    :param sampling: Number of values to be sampled from the raster, defines length of output list.
     :type sampling: int
 
-    :return: List of sorted values sampled from Raster.
-    :rtype: List
+    :return s: List of sorted values sampled from *Raster*.
+    :rtype: list
     """
     # Flatten the raster and sort raster from highest to lowest
     Sorted_FLH = np.sort(Raster.flatten(order="F"))
     Sorted_FLH = np.flipud(Sorted_FLH)
 
     # Loop over list with sampling increment
-
     s = Sorted_FLH[0]  # Highest value
     for n in np.arange(sampling, len(Sorted_FLH), sampling):
         s = np.append(s, Sorted_FLH[n])
@@ -648,21 +665,21 @@ def sampled_sorting(Raster, sampling):
 
 def read_generated_TS(paths, param, tech, settings, subregion):
     """
-    This function returns a dictionary containing the available Time series generated by the script based on
+    This function returns a dictionary containing the available time series generated by the script based on
     the desired technology and settings.
 
-    :param paths: Dictionary including output folder for regional_analysis
+    :param paths: Dictionary including output folder for regional analysis.
     :type paths: dict
-    :param param: Dictionary including list of subregions and year
+    :param param: Dictionary including list of subregions and year.
     :type param: dict
-    :param tech: Technology
+    :param tech: Technology under study.
     :type tech: str
-    :param settings: list of lists containing setting combinations
-    :type settigns: list of list
-    :param subregion: name of the subregion
+    :param settings: List of lists containing setting combinations.
+    :type settigns: list
+    :param subregion: Name of the subregion.
     :type subregion: str
 
-    :return GenTS: Dictionary of timeseries indexed by setting and quantile
+    :return GenTS: Dictionary of time series indexed by setting and quantile.
     :rtype: dict
     """
     subregions = param["subregions_name"]
@@ -702,16 +719,18 @@ def regmodel_load_data(paths, param, tech, settings, subregion):
     This function returns a dictionary used to initialize a pyomo abstract model for the regression analysis
     of each region.
 
-    :param paths: dictionary of dictionaries containing the paths to the Timeseries csv files
-    :param param: dictionry of dictionaries contating IRENA's region list, FLHs and EMHIRES model timeseries.
-    :param tech: name of the technology under study
+    :param paths: Dictionary of dictionaries containing the paths to the CSV time series files.
+    :type paths: dict
+    :param param: Dictionary of dictionaries contating IRENA's region list, FLHs and EMHIRES model timeseries.
+    :type param: dict
+    :param tech: Technology under study.
     :type tech: str
-    :param settings: list of all the settings (hub heights/orientations) to be used in the regression
+    :param settings: List of all the settings (hub heights/orientations) to be used in the regression.
     :type settings: list
-    :param subregion: code name of region
+    :param subregion: Name of subregion.
     :type subregion: str
 
-    :return: Dictionary containing regression parameters
+    :return data: Dictionary containing regression parameters.
     :rtype: dict
     """
     subregions = param["subregions_name"]
@@ -782,21 +801,21 @@ def regmodel_load_data(paths, param, tech, settings, subregion):
 
 def combinations_for_regression(paths, param, tech):
     """
-    This function reads the list of generated time-series for different hub-heights and orientations, compares it to the
-    user defined combinations and returns a list of lists containing all the available combinations. The function will
-    returns a warning if the user input and the available time-series are not congruent.
+    This function reads the list of generated time series for different hub heights and orientations, compares it to the
+    user-defined combinations and returns a list of lists containing all the available combinations. The function will
+    return a warning if the user input and the available time series are not congruent.
 
     :param paths: Dictionary of dictionaries containing the paths to the regional analysis output folder.
     :type paths: dict
-    :param param: Dictionary of dictionaries containing a list of sub-regions' name, user defined combinations.
+    :param param: Dictionary of dictionaries containing the subregions name, year, and user-defined combinations.
     :type param: dict
     :param tech: Technology under study.
     :type tech: str
 
-    :return: List of combinations
-    :rtype: list of lists
-    :raise missing data: If no time series are available for this technology
-    :raise missing combination: If a hub-height or orientation is missing based on user defined combinations
+    :return combinations: List of combinations for regression.
+    :rtype: list
+    :raise missing data: If no time series are available for this technology, a warning is raised.
+    :raise missing combination: If a hub height or orientation is missing based on user-defined combinations, a warning is raised.
     """
     subregions = param["subregions_name"]
     year = str(param["year"])
@@ -850,21 +869,22 @@ def combinations_for_regression(paths, param, tech):
 
 def combinations_for_stratified_timeseries(paths, param, tech):
     """
-    This function reads the list of generated regression coefficients for different hub-heights and orientations,
-    compares it to the user defined modes and combos and returns a list of lists containing all the available
-    combinations. The function will returns a warning if the user input and the available time series are not congruent.
+    This function reads the list of generated regression coefficients for different hub heights and orientations,
+    compares it to the user-defined modes and combos and returns a list of lists containing all the available
+    combinations. The function will return a warning if the user input and the available time series are not congruent.
 
     :param paths: Dictionary of dictionaries containing the paths to the regression output folder.
     :type paths: dict
-    :param param: Dictionary of dictionaries containing the year, the user defined combos, and list of sub-regions' name.
+    :param param: Dictionary of dictionaries containing the year, the user defined combos, and subregions name.
     :type param: dict
     :param tech: Technology under study.
     :type tech: str
 
-    :return: List of combinations
-    :rtype: list of lists
-    :raise No coefficients: If regression coefficients are not available.
-    :raise Missing coefficients: If regression coefficients are missing based on user defined combos and mode.
+    :return settings_existing: List of existing settings to be used in stratified time series.
+    :return inputfiles: List of regression outputs to be used in generating the stratified time series.
+    :rtype: tuple (list, list)
+    :raise No coefficients: If regression coefficients are not available, a warning is raised.
+    :raise Missing coefficients: If regression coefficients are missing based on user-defined combos and mode, a warning is raised.
     """
     subregions = param["subregions_name"]
     year = str(param["year"])
@@ -909,16 +929,16 @@ def combinations_for_stratified_timeseries(paths, param, tech):
 
 def get_merra_raster_Data(paths, param, tech):
     """
-    Returns tuple of two dictionaries containing weather and correction rasters for specified technology.
+    This function returns a tuple of two dictionaries containing weather and correction rasters for specified technology.
 
-    :param paths: dictionary of dictionaries containing the paths to the input weather and raster data.
+    :param paths: Dictionary of dictionaries containing the paths to the input weather and raster data.
     :type paths: dict
-    :param param: dictionary of dictionaries containing landuse, Ross coefficients, Albedo, and hellman coefficient.
+    :param param: Dictionary of dictionaries containing land use, Ross coefficients, albedo, and Hellmann coefficients.
     :type param: dict
-    :param tech: Technology under study
+    :param tech: Technology under study.
     :type tech: str
 
-    :return: tuple of dictionaries for the weather and correction data
+    :return (merraData, rasterData): Dictionaries for the weather data and for the correction data.
     :rtype: tuple (dict, dict)
     """
     landuse = param["landuse"]

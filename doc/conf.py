@@ -14,6 +14,7 @@ import os
 import sys
 sys.path.append(os.path.abspath('../code/'))
 import sphinx_rtd_theme
+import sphinxcontrib.bibtex
 
 
 # -- Project information -----------------------------------------------------

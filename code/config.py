@@ -57,7 +57,7 @@ def general_settings():
     param = {}
     param["author"] = "Kais Siala"  # the name of the person running the script
     param["comment"] = "Regression-debugging"
-    
+
     paths = {}
     fs = os.path.sep
     current_folder = os.path.dirname(os.path.abspath(__file__))
@@ -99,8 +99,9 @@ def scope_paths_and_parameters(paths, param):
     :type paths: dict
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionaries paths and param.
-    :rtype: tuple (dict, dict)
+    :rtype: tuple(dict, dict)
     """
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
@@ -110,7 +111,7 @@ def scope_paths_and_parameters(paths, param):
 
     # Name tags for the scope and the subregions
     param["region_name"] = "Europe"  # Name tag of the spatial scope
-    param["subregions_name"] = "Europe_wo_Balkans_NUTS0" # Name tag of the subregions
+    param["subregions_name"] = "Europe_wo_Balkans_NUTS0"  # Name tag of the subregions
 
     # Year
     param["year"] = 2015
@@ -132,6 +133,7 @@ def computation_parameters(param):
 
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary param.
     :rtype: dict
     """
@@ -143,15 +145,15 @@ def computation_parameters(param):
 def resolution_parameters(param):
     """
     This function defines the resolution of weather data (low resolution), and the desired resolution of output rasters (high resolution).
-    Both are numpy array with two numbers. The first number is the resolution in the vertical dimension (in degrees of latitude),
+    Both are numpy arrays with two numbers. The first number is the resolution in the vertical dimension (in degrees of latitude),
     the second is for the horizontal dimension (in degrees of longitude).
 
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary param.
     :rtype: dict
     """
-
     param["res_weather"] = np.array([1 / 2, 5 / 8])
     param["res_desired"] = np.array([1 / 240, 1 / 240])
     return param
@@ -169,10 +171,10 @@ def weather_data_parameters(param):
 
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary param.
     :rtype: dict
     """
-
     param["MERRA_coverage"] = "World"
     param["MERRA_correction"] = 0.35
     return param
@@ -182,17 +184,17 @@ def file_saving_options(param):
     """
     This function sets some options for saving files.
     
-    * *savetiff* is a boolean that determines whether tif rasters for the potentials are saved (True), or whether only mat files are saved (False).
+    * *savetiff* is a boolean that determines whether tif rasters for the potentials are saved (``True``), or whether only mat files are saved (``False``).
       The latter are saved in any case.
     
     *  *report_sampling* is an integer that sets the sample size for the sorted FLH values per region (relevant for :mod:`Master.reporting`).
     
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary param.
     :rtype: dict
     """
-
     # Mask / Weight
     param["savetiff"] = True  # Save geotiff files of mask and weight rasters
 
@@ -235,10 +237,10 @@ def time_series_parameters(param):
     
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary param.
     :rtype: dict
     """
-
     # Quantiles for time series
     param["quantiles"] = [100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0]
 
@@ -254,10 +256,10 @@ def time_series_parameters(param):
     # Stratified time series
     param["modes"] = {"high": [100, 90, 80], "mid": [70, 60, 50, 40, 30], "low": [20, 10, 0], "all": param["quantiles"]}
     param["combo"] = {
+        # dictionary of hub height and orientation combinations
         "WindOn": {"2015": [60, 80, 100], "2030": [80, 100, 120], "2050": [100, 120, 140]},
-        # dictionary of hub height combinations
-        "WindOff": {"80m": [80], "100m": [100], "120m": [120]},  # dictionary of hub height combinations
-        "PV": {"Solar": [0, 180, -90, 90]},  # list of orientation combinations
+        "WindOff": {"80m": [80], "100m": [100], "120m": [120]},
+        "PV": {"Solar": [0, 180, -90, 90]},
         "CSP": {"all": []},
     }
 
@@ -277,6 +279,7 @@ def landuse_parameters(param):
     
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary param.
     :rtype: dict
 
@@ -300,7 +303,6 @@ def landuse_parameters(param):
         # 15  -- Snow and ice
         # 16  -- Barren or sparsely vegetated
     """
-
     landuse = {
         "type": np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]),
         "type_urban": 13,
@@ -324,6 +326,7 @@ def protected_areas_parameters(param):
     
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary param.
     :rtype: dict
     """
@@ -387,12 +390,12 @@ def pv_parameters(param):
     
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary param.
     :rtype: dict
     :raise Tracking Warning: If *tracking* is not set to 0 and *orientation* is given as a value other than 0 or 180 (South or North), the orientation is ignored.
 
     """
-
     pv = {}
     pv["resource"] = {"clearness_correction": 1}
     pv["technical"] = {
@@ -454,6 +457,7 @@ def csp_parameters(param):
     
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary param.
     :rtype: dict
     """
@@ -516,6 +520,7 @@ def onshore_wind_parameters(param):
     
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary param.
     :rtype: dict
     """
@@ -568,6 +573,7 @@ def offshore_wind_paramters(param):
     
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary param.
     :rtype: dict
     """
@@ -598,6 +604,7 @@ def weather_input_folder(paths, param):
     :type paths: dict
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary paths.
     :rtype: dict
     """
@@ -626,6 +633,7 @@ def global_maps_input_paths(paths):
     
     :param paths: Dictionary including the paths.
     :type paths: dict
+
     :return: The updated dictionary paths.
     :rtype: dict
     """
@@ -664,6 +672,7 @@ def output_folders(paths, param):
     :type paths: dict
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary paths.
     :rtype: dict
     """
@@ -695,12 +704,12 @@ def output_folders(paths, param):
     paths["regional_analysis"] = paths["region"] + "Renewable energy" + fs + "Regional analysis" + fs + subregions + fs
     if not os.path.isdir(paths["regional_analysis"]):
         os.makedirs(paths["regional_analysis"])
-    
+
     # Regression parameters
     paths["regression_in"] = paths["regional_analysis"] + "Regression outputs" + fs + "Parameters" + fs
     if not os.path.isdir(paths["regression_in"]):
         os.makedirs(paths["regression_in"])
-        
+
     # Regression output
     paths["regression_out"] = paths["regional_analysis"] + "Regression outputs" + fs
 
@@ -719,6 +728,7 @@ def weather_output_paths(paths, param):
     :type paths: dict
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary paths.
     :rtype: dict
     """
@@ -753,10 +763,10 @@ def local_maps_paths(paths, param):
     :type paths: dict
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary paths.
     :rtype: dict
     """
-
     # Local maps
     PathTemp = paths["local_maps"] + param["region_name"]
     paths["LAND"] = PathTemp + "_Land.tif"  # Land pixels
@@ -793,6 +803,7 @@ def irena_paths(paths, param):
     :type paths: dict
     :param param: Dictionary including the user preferences.
     :type param: dict
+
     :return: The updated dictionary paths.
     :rtype: dict
     """
@@ -800,13 +811,13 @@ def irena_paths(paths, param):
     global fs
 
     year = str(param["year"])
-    
+
     # IRENA input
     paths["IRENA"] = (
         root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA" + fs + "IRENA_RE_electricity_statistics_allcountries_alltech_" + year + ".csv"
     )
-    paths["IRENA_dict"] = root + "00 Assumptions" + fs + "dict_countries.csv"
 
+    paths["IRENA_dict"] = root + "00 Assumptions" + fs + "dict_countries.csv"
 
     # IRENA output
     paths["IRENA_summary"] = paths["region"] + "Renewable energy" + fs + "IRENA_summary_" + year + ".csv"
@@ -818,21 +829,16 @@ def regression_paths(paths, param, tech):
     """
     This function defines the paths for the regression parameters:
     
-      * *IRENA_regression* is a csv file containing FLH statistics for the subregions and the four technologies for a specific *year*, based on the previously created *IRENA_summary*.
+      * *FLH_regression* is a csv file containing FLH statistics for the subregions and the four technologies for a specific *year*, based on the previously created *IRENA_summary*.
       * *TS_regression* is a csv file containing time series to match for the subregions and the four technologies. ?????
     
     :param paths: Dictionary including the paths.
     :type paths: dict
+
     :return: The updated dictionary paths.
     :rtype: dict
     """
-
     year = str(param["year"])
-
-    # Regression inputs
-    paths["regression_in"] = paths["regional_analysis"] + "Regression inputs" + fs
-    if not os.path.isdir(paths["regression_in"]):
-        os.makedirs(paths["regression_in"])
 
     paths["FLH_regression"] = paths["regression_in"] + "FLH_regression_" + year + ".csv"
     paths[tech]["TS_regression"] = paths["regression_in"] + "TimeSeries_regression_" + tech + "_" + year + ".csv"
@@ -851,6 +857,7 @@ def emhires_input_paths(paths, param, tech):
     :type param: dict
     :param tech: Name of the technology.
     :type tech: string
+
     :return: The updated dictionary paths.
     :rtype: dict
     """
@@ -862,9 +869,7 @@ def emhires_input_paths(paths, param, tech):
     elif tech == "WindOff":
         paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + fs + "TS.CF.OFFSHORE.30yr.date.txt"
     elif tech == "PV":
-        paths[tech]["EMHIRES"] = (
-            root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + fs + "EMHIRESPV_TSh_CF_Country_19862015.txt"
-        )
+        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + fs + "EMHIRESPV_TSh_CF_Country_19862015.txt"
 
     return paths
 
@@ -885,10 +890,10 @@ def potential_output_paths(paths, param, tech):
     :type param: dict
     :param tech: Name of the technology.
     :type tech: string
+
     :return: The updated dictionary paths.
     :rtype: dict
     """
-
     region = param["region_name"]
     year = str(param["year"])
 
@@ -901,8 +906,9 @@ def potential_output_paths(paths, param, tech):
         else:
             orientation = "0"
         PathTemp = paths["potential"] + region + "_" + tech + "_" + orientation
-    else:
-        PathTemp = paths["potential"] + region + "_" + tech
+    elif tech in ["CSP"]:
+        orientation = "0"
+        PathTemp = paths["potential"] + region + "_" + tech + "_" + orientation
 
     paths[tech]["FLH"] = PathTemp + "_FLH_" + year + ".mat"
     paths[tech]["mask"] = PathTemp + "_mask_" + year + ".mat"
@@ -930,10 +936,10 @@ def regional_analysis_output_paths(paths, param, tech):
     :type param: dict
     :param tech: Name of the technology.
     :type tech: string
+
     :return: The updated dictionary paths.
     :rtype: dict
     """
-
     subregions = param["subregions_name"]
     year = str(param["year"])
 

@@ -165,39 +165,7 @@ def resizem(A_in, row_new, col_new):
     return A_out
 
 
-def array2raster(newRasterfn, rasterOrigin, pixelWidth, pixelHeight, array):
-    """
-    This function saves array to geotiff raster format based on EPSG 4326.
 
-    :param newRasterfn: Output path of the raster.
-    :type newRasterfn: string
-    :param rasterOrigin: Latitude and longitude of the Northwestern corner of the raster.
-    :type rasterOrigin: list of two floats
-    :param pixelWidth:  Pixel width (might be negative).
-    :type pixelWidth: integer
-    :param pixelHeight: Pixel height (might be negative).
-    :type pixelHeight: integer
-    :param array: Array to be converted into a raster.
-    :type array: numpy array
-
-    :return: The raster file will be saved in the desired path *newRasterfn*.
-    :rtype: None
-    """
-    cols = array.shape[1]
-    rows = array.shape[0]
-    originX = rasterOrigin[0]
-    originY = rasterOrigin[1]
-
-    driver = gdal.GetDriverByName("GTiff")
-    outRaster = driver.Create(newRasterfn, cols, rows, 1, gdal.GDT_Float64, ["COMPRESS=PACKBITS"])
-    outRaster.SetGeoTransform((originX, pixelWidth, 0, originY, 0, pixelHeight))
-    outRasterSRS = osr.SpatialReference()
-    outRasterSRS.ImportFromEPSG(4326)
-    outRaster.SetProjection(outRasterSRS.ExportToWkt())
-    outband = outRaster.GetRasterBand(1)
-    outband.WriteArray(np.flipud(array))
-    outband.FlushCache()
-    outband = None
 
 
 def char_range(c1, c2):
@@ -454,39 +422,3 @@ def create_json(filepath, param, param_keys, paths, paths_keys):
     with open(new_file, "w") as json_file:
         json.dump(new_dict, json_file)
     print("files saved: " + new_file)
-
-
-def check_regression_model(paths, tech):
-    """
-    This function checks the regression model parameters for nan values, and returns the FLH and TS model dataframes.
-    If missing values are present in the input .csv files, the users are prompted if they wish to continue or can modify
-    the corresponding files.
-
-    :param paths: Dictionary of dictionaries containing the paths to the FLH and TS model regression .csv files.
-    :type paths: dict
-    :param tech: Technology under study.
-    :type tech: str
-
-    :return: two pandas dataframes
-    :rtype: Pandas Dataframes
-    """
-    while True:
-        # Load IRENA data and regions
-        FLH = pd.read_csv(paths["FLH_regression"], sep=";", decimal=",", index_col=0)
-
-        # load TS regression file
-        TS_reg = pd.read_csv(paths[tech]["TS_regression"], sep=";", decimal=",", index_col=0, header=0)
-
-        # Create filter for nan and 0 values for FLH_regression
-        filter_FLH = np.logical_or(np.isnan(FLH[tech]), FLH[tech] == 0)
-        reg_nan_null = list(FLH.loc[filter_FLH].index)
-
-        if len(reg_nan_null) != 0:
-            print("Missing data:" + ",".join(reg_nan_null))
-            ans = input("Some regions are missing FLH data for the technology of choice. Continue ? [y]/n")
-            if ans in ["", "y", "[y]"]:
-                break
-        else:
-            break
-
-    return FLH, TS_reg

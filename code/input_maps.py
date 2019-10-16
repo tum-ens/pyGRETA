@@ -1,5 +1,6 @@
-from spatial_functions import *
 from correction_functions import clean_weather_data
+from spatial_functions import *
+
 
 def generate_input_maps(paths, param):
     """
@@ -14,7 +15,6 @@ def generate_input_maps(paths, param):
     :rtype: None
     """
     generate_weather_files(paths, param)  # MERRA Weather data
-    clean_weather_data(paths, param)  # Outlier smoothing
     generate_landsea(paths, param)  # Land and Sea
     generate_subregions(paths, param)  # Subregions
     generate_area(paths, param)  # Area Gradient
@@ -29,13 +29,14 @@ def generate_input_maps(paths, param):
 
 def generate_weather_files(paths, param):
     """
-    This function reads the daily NetCDF data (from MERRA-2) for SWGDN, SWTDN, T2M, U50M, and V50M,
-    and saves them in matrices with yearly time series with low spatial resolution.
+    This function reads the daily NetCDF data (from MERRA-2) for SWGDN, SWTDN, T2M, U50m, and V50m,
+    and saves them in matrices with yearly time series with low spatial resolution. Depending on the *MERRA_correction*
+    parameter this function will also call clean_weather_data() to remove data outliers.
     This function has to be run only once.
 
     :param paths: Dictionary including the paths to the MERRA-2 input files *MERRA_IN*, and to the desired output locations for *T2M*, *W50M* and *CLEARNESS*.
     :type paths: dict
-    :param param: Dictionary including the year and the spatial scope.
+    :param param: Dictionary including the year, the spatial scope, and the MERRA_correction parameter.
     :type param: dict
 
     :return: The files T2M.mat, W50M.mat, and CLEARNESS.mat are saved directly in the defined paths, along with their metadata in JSON files.
@@ -109,11 +110,33 @@ def generate_weather_files(paths, param):
             sys.stdout.write("\n")
             timecheck("Writing Files: T2M, W50M, CLEARNESS")
             hdf5storage.writes({"T2M": T2M}, paths["T2M"], store_python_metadata=True, matlab_compatible=True)
-            create_json(paths["T2M"], param, ["MERRA_coverage", "region_name", "Crd_all", "res_weather"], paths, ["MERRA_IN", "T2M"])
             hdf5storage.writes({"W50M": W50M}, paths["W50M"], store_python_metadata=True, matlab_compatible=True)
-            create_json(paths["W50M"], param, ["MERRA_coverage", "region_name", "Crd_all", "res_weather"], paths, ["MERRA_IN", "W50M"])
             hdf5storage.writes({"CLEARNESS": CLEARNESS}, paths["CLEARNESS"], store_python_metadata=True, matlab_compatible=True)
-            create_json(paths["CLEARNESS"], param, ["MERRA_coverage", "region_name", "Crd_all", "res_weather"], paths, ["MERRA_IN", "CLEARNESS"])
+
+            if param["MERRA_correction"]:
+                clean_weather_data(paths, param)
+
+            create_json(
+                paths["W50M"],
+                param,
+                ["MERRA_coverage", "region_name", "Crd_all", "res_weather", "MERRA_correction", "MERRA_correction_factor"],
+                paths,
+                ["MERRA_IN", "W50M"],
+            )
+            create_json(
+                paths["T2M"],
+                param,
+                ["MERRA_coverage", "region_name", "Crd_all", "res_weather", "MERRA_correction", "MERRA_correction_factor"],
+                paths,
+                ["MERRA_IN", "T2M"],
+            )
+            create_json(
+                paths["CLEARNESS"],
+                param,
+                ["MERRA_coverage", "region_name", "Crd_all", "res_weather", "MERRA_correction", "MERRA_correction_factor"],
+                paths,
+                ["MERRA_IN", "CLEARNESS"],
+            )
     timecheck("End")
 
 
@@ -464,7 +487,7 @@ def generate_population(paths, param):
     GeoRef = param["GeoRef"]
     with rasterio.open(paths["Pop_global"]) as src:
         A_POP = src.read(1)
-    A_POP = resizem(A_POP, 180 * 240, 360 * 240) / 4 # density is divided by 4
+    A_POP = resizem(A_POP, 180 * 240, 360 * 240) / 4  # density is divided by 4
     A_POP = np.flipud(A_POP[Ind[0] - 1 : Ind[2], Ind[3] - 1 : Ind[1]])
     array2raster(paths["POP"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_POP)
     create_json(paths["POP"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["Pop_tiles", "POP"])

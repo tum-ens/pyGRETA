@@ -1,5 +1,6 @@
 from util import *
 
+
 def define_spatial_scope(scope_shp):
     """
     This function reads the spatial scope shapefile and returns its bounding box.

@@ -1,5 +1,7 @@
 from spatial_functions import *
+from physical_models import calc_CF_solar, calc_CF_wind
 from potential import get_merra_raster_data
+
 
 def find_locations_quantiles(paths, param, tech):
     """
@@ -227,11 +229,7 @@ def calc_TS_solar(hours, args):
         if hour <= param["status_bar_limit"]:
             # Show progress of the simulation
             status = status + 1
-            sys.stdout.write("\r")
-            sys.stdout.write(
-                tech + " " + param["subregions_name"] + " " + "[%-50s] %d%%" % ("=" * ((status * 50) // len(hours)), (status * 100) // len(hours))
-            )
-            sys.stdout.flush()
+            display_progress(tech + " " + param["subregions_name"] + " ", (len(hours), status))
 
         if tech == "PV":
             CF = calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech)[0]
@@ -280,11 +278,7 @@ def calc_TS_wind(hours, args):
         if hour <= param["status_bar_limit"]:
             # Show progress of the simulation
             status = status + 1
-            sys.stdout.write("\r")
-            sys.stdout.write(
-                tech + " " + param["subregions_name"] + " " + "[%-50s] %d%%" % ("=" * ((status * 50) // len(hours)), (status * 100) // len(hours))
-            )
-            sys.stdout.flush()
+            display_progress(tech + " " + param["subregions_name"] + " ", (len(hours), status))
 
         # Calculate hourly capacity factor
         CF = calc_CF_wind(hour, reg_ind, turbine, m_high, n_high, merraData, rasterData)

@@ -1,68 +1,70 @@
-from spatial_scope import calc_region
+from spatial_functions import calc_region, array2raster
 from util import *
+
 
 def clean_weather_data(paths, param):
     """
-    This function detects data outliers in the wind input file W50M.mat. An outlier is a data point for which
+    This function detects data outliers in the weather input .mat files. An outlier is a data point, for which
     the absolute value of the difference between the yearly average value and the mean of the direct neighbors
-    (Moore neighborhood) is higher than a user-defined threshold *MERRA_correction*. It replaces the hourly values
-    with the hourly values of the mean of the neighbors, and overwrites the original W50M.mat file.
+    (Moore neighborhood) is higher than a user-defined threshold *MERRA_correction_factor*. It replaces the hourly values
+    with the hourly values of the mean of the neighbors, and overwrites the original .mat file.
 
-    :param paths: Dictionary including the path to the file W50M.mat.
+    :param paths: Dictionary including the path to the weather .mat files.
     :type paths: dict
-    :param param: Dictionary including the threshold value *MERRA_correction*.
+    :param param: Dictionary including the threshold value *MERRA_correction_factor*.
     :type param: dict
 
-    :return: The file W50M.mat is overwritten after the correction, along with its metadata in a JSON file.
+    :return: The file weather .mat files are overwritten after the correction.
     :rtype: None
     """
     timecheck("Start")
-    # Read Wind Data
-    W50M = hdf5storage.read("W50M", paths["W50M"])
-    wind = np.mean(W50M, 2)
+    for p in ["W50M", "CLEARNESS", "T2M"]:
 
-    # Set convolution mask
-    kernel = np.ones((3, 3))
-    kernel[1, 1] = 0
+        # Read Weather Data
+        weather = hdf5storage.read(p, paths[p])
+        mean = np.mean(weather, 2)
 
-    # Compute average Convolution
-    averagewind = generic_filter(wind, np.nanmean, footprint=kernel, mode="constant", cval=np.NaN)
-    ratio = wind / averagewind
+        # Set convolution mask
+        kernel = np.ones((3, 3))
+        kernel[1, 1] = 0
 
-    # Extract over threshold Points
-    points = np.where(abs(ratio - np.mean(ratio)) > param["MERRA_correction"])
+        # Compute average Convolution
+        neighbors = generic_filter(mean, np.nanmean, footprint=kernel, mode="constant", cval=np.NaN)
+        ratio = mean / neighbors
 
-    # Correct points hourly
-    for t in range(W50M.shape[2]):
-        W50M[points[0], points[1], t] = W50M[points[0], points[1], t] / ratio[points[0], points[1]]
+        # Extract over threshold Points
+        points = np.where(abs(ratio - np.mean(ratio)) > param["MERRA_correction_factor"][p])
 
-    # Save corrected Wind
-    hdf5storage.writes({"W50M": W50M}, paths["W50M"], store_python_metadata=True, matlab_compatible=True)
-    create_json(paths["W50M"], param, ["MERRA_coverage", "region_name", "Crd_all", "res_weather", "MERRA_correction"], paths, ["MERRA_IN", "W50M"])
+        # Correct points hourly
+        for t in range(weather.shape[2]):
+            weather[points[0], points[1], t] = weather[points[0], points[1], t] / ratio[points[0], points[1]]
+
+        # Save corrected Wind
+        hdf5storage.writes({p: weather}, paths[p], store_python_metadata=True, matlab_compatible=True)
     timecheck("End")
-	
+
 
 def generate_wind_correction(paths, param):
     """
     This function creates a matrix of correction factors for onshore and/or offshore wind.
-	There are different types of correction:
-	
-	* Gradient correction: Adjusts for the hub height of the wind turbines, based on the Hellmann coefficients of each land use type.
-	  This correction applies always.
-	* Resolution correction: Performs a redistribution of wind speed when increasing the resolution based on land use types, while ensuring that
-	  the average of each MERRA-2 cell at 50m is still the same. This correction is optional, and is activated if *res_correction* is 1.
-	  If not activated, the same value from the low resolution is repeated.
+    There are different types of correction:
+
+    * Gradient correction: Adjusts for the hub height of the wind turbines, based on the Hellmann coefficients of each land use type.
+        This correction applies always.
+    * Resolution correction: Performs a redistribution of wind speed when increasing the resolution based on land use types, while ensuring that
+        the average of each MERRA-2 cell at 50m is still the same. This correction is optional, and is activated if *res_correction* is 1.
+        If not activated, the same value from the low resolution is repeated.
     * Topographic/Orographic correction: Takes into account the elevation of the terrain, because MERRA-2 usually underestimates
-	  the wind speed in mountains. This correction is optional, uses data from the Global Wind Atlas for all countries in the scope,
-	  and is activated only for onshore wind if *topo_correction* is 1.
-    
-	:param paths: Dictionary of dictionaries containing the paths to the land, land use, and topography rasters, and to the output files CORR_ON and CORR_OFF.
+        the wind speed in mountains. This correction is optional, uses data from the Global Wind Atlas for all countries in the scope,
+        and is activated only for onshore wind if *topo_correction* is 1.
+
+    :param paths: Dictionary of dictionaries containing the paths to the land, land use, and topography rasters, and to the output files CORR_ON and CORR_OFF.
     :type paths: dict
     :param param: Dictionary of dictionaries containing user-preferences regarding the wind correction, landuse, hub height, weather and desired resolutions.
     :type param: dict
-	
+
     :return: The rasters for wind correction CORR_ON and/or CORR_OFF are saved directly in the user-defined paths, along with their metadata in JSON files.
-	:rtype: None
+    :rtype: None
     """
     timecheck("Start")
     res_correction_on = param["WindOn"]["resource"]["res_correction"]
@@ -132,7 +134,7 @@ def generate_wind_correction(paths, param):
         create_json(paths["CORR_ON"], param, ["region_name", "year", "WindOff", "landuse", "res_weather", "res_desired"], paths, ["CORR_GWA"])
         print("\nfiles saved: " + paths["CORR_OFF"])
     timecheck("End")
-	
+
 
 def calc_gwa_correction(paths, param):
     """
@@ -192,8 +194,7 @@ def calc_gwa_correction(paths, param):
     for reg in range(0, nCountries):
         # Show status bar
         status = status + 1
-        sys.stdout.write("\rFinding wind correction factors " + "[%-50s] %d%%" % ("=" * ((status * 50) // nCountries), (status * 100) // nCountries))
-        sys.stdout.flush()
+        display_progress("Finding wind correction factors", (nCountries, status))
 
         A_region = calc_region(countries_shp.iloc[reg], Crd_countries[reg, :], res_desired, GeoRef)
         reg_name = countries_shp.iloc[reg]["GID_0"]
@@ -249,7 +250,11 @@ def calc_gwa_correction(paths, param):
         matlab_compatible=True,
     )
     create_json(
-        paths["CORR_GWA"], param, ["author", "comment", "region_name", "subregions_name", "year", "Crd_all", "res_desired", "GeoRef"], paths, ["W50M", "TOPO", "IRENA_summary"]
+        paths["CORR_GWA"],
+        param,
+        ["author", "comment", "region_name", "subregions_name", "year", "Crd_all", "res_desired", "GeoRef"],
+        paths,
+        ["W50M", "TOPO", "IRENA_summary"],
     )
     return
 
@@ -265,7 +270,7 @@ def clean_IRENA_summary(paths, param):
     :type paths: dict
 
     :return: The CSV file containing the summary of IRENA data for the countries within the scope is saved directly in the desired path, along with the corresponding metadata in a JSON file.
-	:rtype: None
+    :rtype: None
     """
     year = str(param["year"])
     filter_countries = param["regions_land"]["GID_0"].to_list()
@@ -313,5 +318,5 @@ def clean_IRENA_summary(paths, param):
     )
     IRENA = IRENA.astype(float)
     IRENA.to_csv(paths["IRENA_summary"], sep=";", decimal=",", index=True)
-    create_json(paths["IRENA_summary"], param, ["author", "comment", tech, "region_name", "year"], paths, ["regions_land", "IRENA", "IRENA_dict"])
+    create_json(paths["IRENA_summary"], param, ["author", "comment", "region_name", "year"], paths, ["regions_land", "IRENA", "IRENA_dict"])
     print("files saved: " + paths["IRENA_summary"])

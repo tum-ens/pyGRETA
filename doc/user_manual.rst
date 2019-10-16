@@ -64,7 +64,7 @@ runme.py
 --------
 ``runme.py`` calls the main functions of the code:
 
-.. literalinclude:: example.py
+.. literalinclude:: ../code/runme.py
    :language: python
    :linenos:
    :emphasize-lines: 14,25-28,32-33,40,44
@@ -108,7 +108,6 @@ In both cases, please follow these instructions to download the MERRA-2 dataset:
 3. In *Data Product*, choose tavg1_2d_slv_NX and select the *Parameters* T2M, U50M, V50M to downaload the temperature and the wind speed datasets.
 4. In *Spatial Search*, enter the coordinates of the bounding box around your region of interest or leave the default values for the whole globe. 
    To avoid problems at the edge of the MERRA-2 cells, use the following set of formulas:
-
    .. math::
      \begin{align*}
            minLat &= \left\lfloor\dfrac{s+0.25}{0.5}\right\rfloor \cdot 0.5 - \epsilon  \\

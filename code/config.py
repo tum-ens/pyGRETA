@@ -644,7 +644,7 @@ def global_maps_input_paths(paths):
     PathTemp = root + "01 Raw inputs" + fs + "Maps" + fs
     paths["LU_global"] = PathTemp + "Landuse" + fs + "LCType.tif"
     paths["Topo_tiles"] = PathTemp + "Topography" + fs
-    paths["Pop_tiles"] = PathTemp + "Population" + fs
+    paths["Pop_global"] = PathTemp + "Population" + fs + "gpw_v4_population_count_rev10_2015_30_sec.tif"
     paths["Bathym_global"] = PathTemp + "Bathymetry" + fs + "ETOPO1_Ice_c_geotiff.tif"
     paths["Protected"] = PathTemp + "Protected Areas" + fs + "WDPA_Nov2018-shapefile-polygons.shp"
     paths["GWA"] = PathTemp + "Global Wind Atlas" + fs + fs + "windSpeed.csv"

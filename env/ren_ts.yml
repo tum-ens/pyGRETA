@@ -1,0 +1,21 @@
+name: ren_ts
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - fiona=1.8.6
+  - gdal=2.4.2
+  - geopandas=0.5.1
+  - h5netcdf=0.7.4
+  - hdf5storage=0.1.15
+  - numpy=1.17.2
+  - pandas=0.25.1
+  - pip=19.2.3
+  - pyomo=5.6.6
+  - python=3.6.7
+  - psutil=5.6.2
+  - rasterio=1.0.28
+  - scipy=1.3.1
+  - shapely=1.6.4
+prefix: C:\ProgramData\Anaconda3\envs\ren_ts
+

@@ -192,7 +192,7 @@ def changem(A, newval, oldval):
     :param newval: Vector of new values to be set.
     :type newval: numpy array
     :param oldval: Vector of old values to be replaced.
-    :param oldval: numpy array
+    :type oldval: numpy array
 
     :return Out: The updated array.
     :rtype: numpy array
@@ -319,11 +319,11 @@ def timecheck(*args):
     This function prints information about the progress of the script by displaying the function currently running, and optionally
     an input message, with a corresponding timestamp. If more than one argument is passed to the function, it will raise an exception.
 
-    :param args: Message to be displayed with the function name and the timestamp.
-    :type args: string (``optional``)
+    :param args: Message to be displayed with the function name and the timestamp (optional).
+    :type args: string
 
     :return: The time stamp is printed.
-    :rtype: None*
+    :rtype: None
     :raise: Too many arguments have been passed to the function, the maximum is only one string.
     """
     if len(args) == 0:

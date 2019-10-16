@@ -21,7 +21,7 @@ Then activate the environment::
 
 In the folder ``code``, you will find multiple files:
 
-.. tabularcolumns:: |p{4cm}|p{7cm}|
+.. tabularcolumns:: |p{3.7cm}|p{9cm}|
 
 +-------------------------+---------------------------------------------------------------------------+
 | File                    | Description                                                               |
@@ -88,7 +88,7 @@ the longitudinal direction and 361 points in the latitudinal direction, resultin
 and 1/2° latitude :cite:`MERRA2.`.
 
 It is possible to download MERRA-2 dataset for the whole globe or just for a subset of your region of interest.
-Depending on the "MERRA_coverage" parameter in config.py, the script can accept both datasets. Note that downloading 
+Depending on the *MERRA_coverage* parameter in config.py, the script can accept both datasets. Note that downloading 
 the coverage for the whole globe is easier but will require a significant amount of space on your drive (coverage 
 of the whole globe requires 13.6 Gb for one year).
 
@@ -96,25 +96,25 @@ In both cases, please follow these instructions to download the MERRA-2 dataset:
 
 1. In order to download MERRA-2 data using the FTP server, you first need to create an Eathdata account (more on that on their `website <https://disc.gsfc.nasa.gov/data-access>`_).
 2. Navigate to the link for the FTP sever `here <https://disc.gsfc.nasa.gov/daac-bin/FTPSubset2.pl>`_.
-3. In *Data Product*, choose :math:`\texttt{tavg1_2d_slv_NX}` and select the *Parameters* T2M, U50M, V50M to downaload the temperature and the wind speed datasets.
+3. In *Data Product*, choose :math:`\\texttt{tavg1_2d_slv_NX}` and select the *Parameters* T2M, U50M, V50M to downaload the temperature and the wind speed datasets.
 4. In *Spatial Search*, enter the coordinates of the bounding box around your region of interest or leave the default values for the whole globe. 
    To avoid problems at the edge of the MERRA-2 cells, use the following set of formulas:
 
    .. math::
    	   \begin{align*}
-           minLat &= \left\lfloor\dfrac{s + 90 + 3/10}{1/2}\right\rfloor  \\
-           maxLat &= \left\lceil\dfrac{n + 90 + 1/5}{1/2}\right\rceil  \\
-           minLon &= \left\lfloor\dfrac{w + 180 + 1/16}{5/8}\right\rfloor  \\
-           maxLon &= \left\lceil\dfrac{e + 180 - 1/16}{5/8}\right\rceil 
+           minLat &= \left\lfloor\dfrac{s+0.25}{0.5}\right\rfloor \cdot 0.5 - \epsilon  \\
+           maxLat &= \left\lceil\dfrac{n-0.25}{0.5}\right\rceil \cdot 0.5 + \epsilon \\
+           minLon &= \left\lfloor\dfrac{w+0.3125}{0.625}\right\rfloor \cdot 0.625 - \epsilon  \\
+           \left\lceil\dfrac{e-0.3125}{0.625}\right\rceil \cdot 0.625 + \epsilon 
        \end{align*}
 	
    where *[s n w e]* are the southern, northern, western, and eastern bounds of
    the region of interest, which you can read from the shapefile properties in
-   a GIS software.
+   a GIS software, and :math:`\\epsilon` a small number.
 	
 5. In *Temporal Order Option*, choose the year(s) of interest.
 6. Leave the other fields unchanged (no time subsets, no regridding, and NetCDF4 for the output file format).
-7. Repeat the steps 4-6 for the *Data Product* :math:`\texttt{tavg1_2d_rad_Nx}`, for which you select the *Parameters* SWGDN and SWTDN, the surface incoming shortwave flux and the top of the atmosphere incoming shortwave flux.
+7. Repeat the steps 4-6 for the *Data Product* :math:`\\texttt{tavg1_2d_rad_Nx}`, for which you select the *Parameters* SWGDN and SWTDN, the surface incoming shortwave flux and the top of the atmosphere incoming shortwave flux.
 8. Follow the instructions in the `website <https://disc.gsfc.nasa.gov/data-access>`_ to actually download the NetCDF4 files from the urls listed in the text files you obtained. 
 
 If you follow these steps to download the data for the year 2015, you will obtain 730 NetCDF files, one for each day of the year and for each data product. 

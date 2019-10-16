@@ -34,8 +34,10 @@ You do not need to use the code (*but you can*) if:
 * You only need time series for administrative divisions (countries, NUTS-2, etc.), for which such data is readily available - see [Renewables.ninja](https://www.renewables.ninja/) or [EMHIRES](https://ec.europa.eu/jrc/en/scientific-tool/emhires)
 
 ## Outputs
+
+Potential maps for solar PV and onshore wind in Australia, using weather data for 2015:
 <div align="center">
-<img src="doc\img\Australia_PV_wo_quant.png" alt="Australia_PV_wo_quant" width="400px"><img src="doc\img\Australia_WindOn_with_quant.png" alt="Australia_WindOn_with_quant" width="400px">
+<img src="doc\img\FLH_solar.png" alt="FLH_solar_PV_Australia_2015" width="400px"><img src="doc\img\FLH_wind.png" alt="FLH_wind_onshore_Australia_2015" width="400px">
 </div>
 <div align="center">
 <img src="doc\img\AustraliaQ50WindvsSolar.png" alt="Australia_PV_wo_quant" width="100%">

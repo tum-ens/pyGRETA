@@ -1,5 +1,5 @@
-from spatial_functions import *
 from correction_functions import clean_weather_data
+from spatial_functions import *
 
 
 def generate_input_maps(paths, param):

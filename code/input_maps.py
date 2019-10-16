@@ -324,12 +324,12 @@ def generate_topography(paths, param):
     This function reads the tiles that make the global map of topography, picks those that lie completely or partially in the scope,
     and creates a raster out of them for the desired scope. The values are in meter.
 
-    :param paths: Dictionary including the paths to the tiles of the global topography raster Topo_tiles and to the output path TOPO.
+    :param paths: Dictionary including the paths to the tiles of the global topography raster *Topo_tiles* and to the output path *TOPO*.
     :type paths: dict
     :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
     :type param: dict
 
-    :return: The tif file for TOPO is saved in its respective path, along with its metadata in a JSON file.
+    :return: The tif file for *TOPO* is saved in its respective path, along with its metadata in a JSON file.
     :rtype: None
     """
     timecheck("Start")
@@ -389,7 +389,7 @@ def generate_slope(paths, param):
     This function reads the topography raster for the scope, and creates a raster of slope out of it. The slope is calculated in
     percentage, although this can be changed easily at the end of the code.
 
-    :param paths: Dictionary including the paths to the topography map of the scope TOPO and to the output path SLOPE.
+    :param paths: Dictionary including the paths to the topography map of the scope *TOPO* and to the output path *SLOPE*.
     :type paths: dict
     :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
     :type param: dict
@@ -446,15 +446,15 @@ def generate_slope(paths, param):
 
 def generate_population(paths, param):
     """
-    This function reads the tiles that make the global map of population, picks those that lie completely or partially in the scope,
-    and creates a raster out of them for the desired scope. The values are in population per pixel.
+    This function reads the global map of population density, resizes it, and creates a raster out of it for the desired scope.
+    The values are in population per pixel.
 
-    :param paths: Dictionary including the paths to the tiles of the global population raster Pop_tiles and to the output path POP.
+    :param paths: Dictionary including the paths to the global population raster *Pop_global* and to the output path *POP*.
     :type paths: dict
     :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
     :type param: dict
 
-    :return: The tif file for POP is saved in its respective path, along with its metadata in a JSON file.
+    :return: The tif file for *POP* is saved in its respective path, along with its metadata in a JSON file.
     :rtype: None
     """
     timecheck("Start")
@@ -462,48 +462,10 @@ def generate_population(paths, param):
     Crd_all = param["Crd_all"]
     Ind = ind_global(Crd_all, res_desired)[0]
     GeoRef = param["GeoRef"]
-    Pop = np.zeros((180 * 240, 360 * 240))
-    tile_extents = np.zeros((24, 4), dtype=int)
-    i = 1
-    j = 1
-
-    for letter in char_range("A", "X"):
-        north = (i - 1) * 45 * 240 + 1
-        east = j * 60 * 240
-        south = i * 45 * 240
-        west = (j - 1) * 60 * 240 + 1
-        tile_extents[ord(letter) - ord("A"), :] = [north, east, south, west]
-        j = j + 1
-        if j == 7:
-            i = i + 1
-            j = 1
-    n_min = (Ind[0] // (45 * 240)) * 45 * 240 + 1
-    e_max = (Ind[1] // (60 * 240) + 1) * 60 * 240
-    s_max = (Ind[2] // (45 * 240) + 1) * 45 * 240
-    w_min = (Ind[3] // (60 * 240)) * 60 * 240 + 1
-
-    need = np.logical_and(
-        (np.logical_and((tile_extents[:, 0] >= n_min), (tile_extents[:, 1] <= e_max))),
-        np.logical_and((tile_extents[:, 2] <= s_max), (tile_extents[:, 3] >= w_min)),
-    )
-
-    status = 0
-    for letter in char_range("A", "X"):
-        index = ord(letter) - ord("A")
-        if need[index]:
-            # Show status bar
-            status = status + 1
-            sys.stdout.write("\r")
-            sys.stdout.write(
-                "Generating population map from tiles " + "[%-50s] %d%%" % ("=" * ((status * 50) // sum(need)), (status * 100) // sum(need))
-            )
-            sys.stdout.flush()
-
-            with rasterio.open(paths["Pop_tiles"] + letter + ".tif") as src:
-                tile = src.read()
-            Pop[tile_extents[index, 0] - 1 : tile_extents[index, 2], tile_extents[index, 3] - 1 : tile_extents[index, 1]] = tile[0]
-
-    A_POP = np.flipud(Pop[Ind[0] - 1 : Ind[2], Ind[3] - 1 : Ind[1]])
+    with rasterio.open(paths["Pop_global"]) as src:
+        A_POP = src.read(1)
+    A_POP = resizem(A_POP, 180 * 240, 360 * 240) / 4 # density is divided by 4
+    A_POP = np.flipud(A_POP[Ind[0] - 1 : Ind[2], Ind[3] - 1 : Ind[1]])
     array2raster(paths["POP"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_POP)
     create_json(paths["POP"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["Pop_tiles", "POP"])
     print("\nfiles saved: " + paths["POP"])

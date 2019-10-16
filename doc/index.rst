@@ -62,7 +62,7 @@ These documents give a general overview and help you getting started from the in
 .. toctree::
    :maxdepth: 3
    
-   User_manual
+   user_manual
 	
 
 Mathematical documentation
@@ -74,7 +74,7 @@ the logic behind the equations, and the structure of the features.
 .. toctree::
    :maxdepth: 2
 
-   theoretical
+   theory
 
 Technical documentation
 ^^^^^^^^^^^^^^^^^^^^^^^

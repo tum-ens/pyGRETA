@@ -177,9 +177,7 @@ def weather_data_parameters(param):
     """
     param["MERRA_coverage"] = "World"
     param["MERRA_correction"] = True
-    param["MERRA_correction_factor"] = {"W50M": 0.35,  # Wind Speed
-                                        "CLEARNESS": 0.35,  # Clearness index
-                                        "T2M": 0.35}  # Temperature at 2 m
+    param["MERRA_correction_factor"] = {"W50M": 0.35, "CLEARNESS": 0.35, "T2M": 0.35}  # Wind Speed  # Clearness index  # Temperature at 2 m
     return param
 
 

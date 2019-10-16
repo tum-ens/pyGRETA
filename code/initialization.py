@@ -1,6 +1,7 @@
 from config import configuration
 from spatial_functions import *
 
+
 def initialization():
     """
     This function reads the user-defined parameters and paths from :mod:`config.py`, then adds additional parameters related

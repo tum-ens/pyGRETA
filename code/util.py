@@ -165,9 +165,6 @@ def resizem(A_in, row_new, col_new):
     return A_out
 
 
-
-
-
 def char_range(c1, c2):
     """
     This function creates a generator to iterate between the characters *c1* and *c2*, including the latter.

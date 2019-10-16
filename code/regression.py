@@ -1,6 +1,7 @@
 from correction_functions import clean_IRENA_summary
 from util import *
 
+
 def pyomo_regression_model():
     """
     This function returns an abstract pyomo model of a constrained least square problem for time series fitting to
@@ -64,9 +65,9 @@ def clean_FLH_regression(paths, param):
     :type paths: dict
 
     :return missing: List of string of the missing regions. The CSV file for the the FLH needed for the regression is saved directly in
-	the given path, along with the corresponding metadata in a JSON file.
+    the given path, along with the corresponding metadata in a JSON file.
     :rtype: list of str
-	:raise Missing Regions: No FLH values exist for certain regions.
+    :raise Missing Regions: No FLH values exist for certain regions.
     """
     # Read IRENA summary
     if not os.path.isfile(paths["IRENA_summary"]):
@@ -131,7 +132,7 @@ def clean_TS_regression(paths, param, tech):
     :type param: dict
 
     :return: The time series used for the regression are saved directly in the given path, along with the corresponding metadata in a JSON file. 
-	:rtype: None
+    :rtype: None
     """
 
     # load IRENA FLH data
@@ -196,19 +197,19 @@ def clean_TS_regression(paths, param, tech):
 def regression_coefficients(paths, param, tech):
     """
     This function solves the following optimization problem: A combination of quantiles, hub heights or orientations is to be found, so that
-	the error to a given historical time series (e.g. from EMHIRES for European countries) is minimized, while
-	constraining the FLH to match a given value (for example from IRENA). The settings of the combinations can be
-	defined by the user.
-	
-	The function starts by identifying the existing settings (hub heights, orientations) and quantiles.
-	If the combinations of time series requested by the user cannot be found, a warning is raised.
-	
-	It later runs the optimization and identifies the subregions for which a solution was found. If the optimization
-	is infeasible (too high or too low FLH values compared to the reference to be matched), the time series with the closest
-	FLH to the reference value is used in the final output.
-	
-	The output consists of coefficients between 0 and 1 that could be multiplied later with the individual time series
-	in :mod:`time_series.generate_stratified_timeseries`. The sum of the coefficients for each combination is equal to 1.
+    the error to a given historical time series (e.g. from EMHIRES for European countries) is minimized, while
+    constraining the FLH to match a given value (for example from IRENA). The settings of the combinations can be
+    defined by the user.
+
+    The function starts by identifying the existing settings (hub heights, orientations) and quantiles.
+    If the combinations of time series requested by the user cannot be found, a warning is raised.
+
+    It later runs the optimization and identifies the subregions for which a solution was found. If the optimization
+    is infeasible (too high or too low FLH values compared to the reference to be matched), the time series with the closest
+    FLH to the reference value is used in the final output.
+
+    The output consists of coefficients between 0 and 1 that could be multiplied later with the individual time series
+    in :mod:`time_series.generate_stratified_timeseries`. The sum of the coefficients for each combination is equal to 1.
 
     :param paths: Dictionary including the paths to the time series for each subregion, technology setting, and quantile, to the output paths for the coefficients.
     :type paths: dict
@@ -219,8 +220,8 @@ def regression_coefficients(paths, param, tech):
 
     :return:
         The regression parameters (e.g. IRENA FLH and EMHIRES TS) are copied under *regression_in* folder, and
-		the regression coefficients are saved in a CSV file under *regression_out* folder, along with the metadata
-		in a JSON file.
+        the regression coefficients are saved in a CSV file under *regression_out* folder, along with the metadata
+        in a JSON file.
     :rtype: None
     :raise Missing Data: No time series present for technology *tech*.
     :raise Missing Data for Setting: Missing time series for desired settings (hub heights / orientations).

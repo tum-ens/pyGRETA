@@ -1,6 +1,7 @@
 from spatial_functions import calc_region, array2raster
 from util import *
 
+
 def clean_weather_data(paths, param):
     """
     This function detects data outliers in the weather input .mat files. An outlier is a data point, for which
@@ -46,24 +47,24 @@ def clean_weather_data(paths, param):
 def generate_wind_correction(paths, param):
     """
     This function creates a matrix of correction factors for onshore and/or offshore wind.
-	There are different types of correction:
-	
-	* Gradient correction: Adjusts for the hub height of the wind turbines, based on the Hellmann coefficients of each land use type.
-	  This correction applies always.
-	* Resolution correction: Performs a redistribution of wind speed when increasing the resolution based on land use types, while ensuring that
-	  the average of each MERRA-2 cell at 50m is still the same. This correction is optional, and is activated if *res_correction* is 1.
-	  If not activated, the same value from the low resolution is repeated.
+    There are different types of correction:
+
+    * Gradient correction: Adjusts for the hub height of the wind turbines, based on the Hellmann coefficients of each land use type.
+        This correction applies always.
+    * Resolution correction: Performs a redistribution of wind speed when increasing the resolution based on land use types, while ensuring that
+        the average of each MERRA-2 cell at 50m is still the same. This correction is optional, and is activated if *res_correction* is 1.
+        If not activated, the same value from the low resolution is repeated.
     * Topographic/Orographic correction: Takes into account the elevation of the terrain, because MERRA-2 usually underestimates
-	  the wind speed in mountains. This correction is optional, uses data from the Global Wind Atlas for all countries in the scope,
-	  and is activated only for onshore wind if *topo_correction* is 1.
-    
-	:param paths: Dictionary of dictionaries containing the paths to the land, land use, and topography rasters, and to the output files CORR_ON and CORR_OFF.
+        the wind speed in mountains. This correction is optional, uses data from the Global Wind Atlas for all countries in the scope,
+        and is activated only for onshore wind if *topo_correction* is 1.
+
+    :param paths: Dictionary of dictionaries containing the paths to the land, land use, and topography rasters, and to the output files CORR_ON and CORR_OFF.
     :type paths: dict
     :param param: Dictionary of dictionaries containing user-preferences regarding the wind correction, landuse, hub height, weather and desired resolutions.
     :type param: dict
-	
+
     :return: The rasters for wind correction CORR_ON and/or CORR_OFF are saved directly in the user-defined paths, along with their metadata in JSON files.
-	:rtype: None
+    :rtype: None
     """
     timecheck("Start")
     res_correction_on = param["WindOn"]["resource"]["res_correction"]
@@ -133,7 +134,7 @@ def generate_wind_correction(paths, param):
         create_json(paths["CORR_ON"], param, ["region_name", "year", "WindOff", "landuse", "res_weather", "res_desired"], paths, ["CORR_GWA"])
         print("\nfiles saved: " + paths["CORR_OFF"])
     timecheck("End")
-	
+
 
 def calc_gwa_correction(paths, param):
     """
@@ -249,7 +250,11 @@ def calc_gwa_correction(paths, param):
         matlab_compatible=True,
     )
     create_json(
-        paths["CORR_GWA"], param, ["author", "comment", "region_name", "subregions_name", "year", "Crd_all", "res_desired", "GeoRef"], paths, ["W50M", "TOPO", "IRENA_summary"]
+        paths["CORR_GWA"],
+        param,
+        ["author", "comment", "region_name", "subregions_name", "year", "Crd_all", "res_desired", "GeoRef"],
+        paths,
+        ["W50M", "TOPO", "IRENA_summary"],
     )
     return
 
@@ -265,7 +270,7 @@ def clean_IRENA_summary(paths, param):
     :type paths: dict
 
     :return: The CSV file containing the summary of IRENA data for the countries within the scope is saved directly in the desired path, along with the corresponding metadata in a JSON file.
-	:rtype: None
+    :rtype: None
     """
     year = str(param["year"])
     filter_countries = param["regions_land"]["GID_0"].to_list()

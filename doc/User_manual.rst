@@ -136,7 +136,7 @@ A land use map is useful in the sense that other parameters can be associated wi
 For each land use type, we can assign a value for these parameters which affect
 the calculations for solar power and wind speed correction.
 The global land use raster for which :mod:`input_maps.generate_landuse` has been written cannot be downloaded anymore (broken link),
-but a newer version is available `here <https://lpdaac.usgs.gov/products/mcd12q1v006/>`_. 
+but a newer version is available from the `LP DAAC <https://lpdaac.usgs.gov/products/mcd12q1v006/>`_. 
 However, this new version requires additional data processing.
 The spatial resolution of the land use raster, and therefore of the other geographic intermediate rasters
 used in this model, is 1/240° longitude and 1/240° latitude.
@@ -156,7 +156,7 @@ own shapefiles using a GIS software.
 
 Shapefile of countries
 ^^^^^^^^^^^^^^^^^^^^^^
-A shapefile of all the countries of the world is also needed. It can be downloaded `here <https://gadm.org/download_world.html>`_.
+A shapefile of all the countries of the world is also needed. It can be downloaded again from `GADM <https://gadm.org/download_world.html>`_.
 The attribute "GID_0" contains the ISO 3166-1 Alpha-3 codes of the countries, and is currently hard coded in the script.
 
 .. WARNING::
@@ -165,22 +165,22 @@ The attribute "GID_0" contains the ISO 3166-1 Alpha-3 codes of the countries, an
 
 Shapefile of Exclusive Economic Zones (EEZ)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-A shapefile of the maritime boundaries of all countries is available `here <http://www.vliz.be/en/imis?dasid=5465&doiid=312>`_.
+A shapefile of the maritime boundaries of all countries is available at the `VLIZ <http://www.vliz.be/en/imis?dasid=5465&doiid=312>`_.
 It is used to identify offshore areas.
 
 Raster of topography / elevation data
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-A high resolution raster (15 arcsec = 1/240° longitude and 1/240° latitude) made of 24 tiles can be downloaded `here
+A high resolution raster (15 arcsec = 1/240° longitude and 1/240° latitude) made of 24 tiles can be downloaded from `viewfinder panoramas
 <http://viewfinderpanoramas.org/Coverage%20map%20viewfinderpanoramas_org15.htm>`_.
 
 Raster of bathymetry
 ^^^^^^^^^^^^^^^^^^^^
-A high resolution raster (60 arcsec) of bathymetry can be downloaded `here
+A high resolution raster (60 arcsec) of bathymetry can be downloaded from the National Oceanic and Atmospheric Administration `(NOAA)
 <https://ngdc.noaa.gov/mgg/global/global.html>`_. The one used in the database is ETOPO1 Ice Surface, cell-registered.
 
 Raster of population density
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-A high resolution raster (30 arcsec) of population density can be downloaded `here
+A high resolution raster (30 arcsec) of population density can be downloaded from `SEDAC
 <https://sedac.ciesin.columbia.edu/data/set/gpw-v4-population-density-rev11/data-download>`_ after registration.
 
 Shapefile of protected areas

@@ -65,7 +65,7 @@ def clean_FLH_regression(paths, param):
     :type paths: dict
 
     :return missing: List of string of the missing regions. The CSV file for the the FLH needed for the regression is saved directly in
-    the given path, along with the corresponding metadata in a JSON file.
+        the given path, along with the corresponding metadata in a JSON file.
     :rtype: list of str
     :raise Missing Regions: No FLH values exist for certain regions.
     """

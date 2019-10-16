@@ -84,13 +84,13 @@ latex_documents = [(master_doc, project+'.tex', project, 'Kais Siala, \\and Hous
 
 # Remove redundant white pages 
 latex_elements = {
-    'classoptions': ',oneside',
+    'classoptions': 'oneside',
     'papersize': 'letterpaper',
     'pointsize': '11pt',
     'preamble': r'''
         \usepackage{charter}
         \usepackage[defaultsans]{lato}
-        \usepackage{inconsolata},
+        \usepackage{inconsolata}
     ''',
 }
 

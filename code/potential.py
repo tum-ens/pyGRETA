@@ -1,10 +1,11 @@
 from physical_models import calc_CF_solar, calc_CF_wind
 from spatial_functions import *
 
+
 def calculate_FLH(paths, param, tech):
     """
     This function calculates the yearly FLH for a technology for all valid pixels in a spatial scope. Valid pixels are land pixels
-	for WindOn, PV and CSP, and sea pixels for WindOff. The FLH values are calculated by summing up hourly capacity factors.
+    for WindOn, PV and CSP, and sea pixels for WindOff. The FLH values are calculated by summing up hourly capacity factors.
 
     :param paths: Dictionary of dictionaries containing the paths to the input weather data, land, sea and land use rasters, and correction rasters.
     :type paths: dict
@@ -14,7 +15,7 @@ def calculate_FLH(paths, param, tech):
     :type tech: str
 
     :return: The raster of FLH potential is saved as mat and tif files, along with the json metadata file.
-	:rtype: None
+    :rtype: None
     """
     timecheck("Start")
     print("Region: " + param["region_name"])
@@ -245,7 +246,7 @@ def calc_FLH_wind(hours, args):
 def masking(paths, param, tech):
     """
     This function first reads the rasters for land use, slope, bathymetry, and protected areas for the scope. Based on user-defined assumptions on
-	their suitabilities, it generates a masking raster to exclude the unsuitable pixels. Both the mask itself
+    their suitabilities, it generates a masking raster to exclude the unsuitable pixels. Both the mask itself
     and the masked potential rasters can be saved.
 
     :param paths: Dictionary of dictionaries containing user-defined parameters for masking, protected areas, and landuse.
@@ -256,7 +257,7 @@ def masking(paths, param, tech):
     :type tech: str
 
     :return: The files for the mask and the masked FLH are saved as tif and mat files, along with their metadata json files.
-	:rtype: None
+    :rtype: None
     """
     timecheck("Start")
     mask = param[tech]["mask"]
@@ -447,8 +448,8 @@ def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
 def weighting(paths, param, tech):
     """
     This function weights the power potential by including assumptions on the power density and the available area.
-	Therefor, it reads the rasters for land use and protected areas for the scope. Based on user-defined assumptions on
-	their availabilities, it generates a weighting raster to exclude the unsuitable pixels. Both the weight itself
+    Therefore, it reads the rasters for land use and protected areas for the scope. Based on user-defined assumptions on
+    their availabilities, it generates a weighting raster to exclude the unsuitable pixels. Both the weight itself
     and the weighted potential rasters can be saved.
 
     :param paths: Dictionary of dictionaries containing user-defined parameters for weighting, protected areas, and landuse.
@@ -459,7 +460,7 @@ def weighting(paths, param, tech):
     :type tech: str
 
     :return: The files for the weight and the weighted FLH are saved as tif and mat files, along with their metadata json files.
-	:rtype: None
+    :rtype: None
     """
     timecheck("Start")
     weight = param[tech]["weight"]
@@ -571,7 +572,7 @@ def reporting(paths, param, tech):
     :type tech: str
 
     :return: The CSV files with the report and the sorted FLH are saved directly in the desired paths, along with the corresponding metadata in JSON files.
-	:rtype: None
+    :rtype: None
     """
     timecheck("Start")
     # read FLH, masking, area, and weighting matrix

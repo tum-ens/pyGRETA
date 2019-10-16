@@ -1,6 +1,7 @@
 from spatial_functions import *
 from correction_functions import clean_weather_data
 
+
 def generate_input_maps(paths, param):
     """
     This function calls the individual functions that generate the maps for the geographic scope.
@@ -115,9 +116,27 @@ def generate_weather_files(paths, param):
             if param["MERRA_correction"]:
                 clean_weather_data(paths, param)
 
-            create_json(paths["W50M"], param, ["MERRA_coverage", "region_name", "Crd_all", "res_weather", "MERRA_correction", "MERRA_correction_factor"], paths, ["MERRA_IN", "W50M"])
-            create_json(paths["T2M"], param, ["MERRA_coverage", "region_name", "Crd_all", "res_weather", "MERRA_correction", "MERRA_correction_factor"], paths, ["MERRA_IN", "T2M"])
-            create_json(paths["CLEARNESS"], param, ["MERRA_coverage", "region_name", "Crd_all", "res_weather", "MERRA_correction", "MERRA_correction_factor"], paths, ["MERRA_IN", "CLEARNESS"])
+            create_json(
+                paths["W50M"],
+                param,
+                ["MERRA_coverage", "region_name", "Crd_all", "res_weather", "MERRA_correction", "MERRA_correction_factor"],
+                paths,
+                ["MERRA_IN", "W50M"],
+            )
+            create_json(
+                paths["T2M"],
+                param,
+                ["MERRA_coverage", "region_name", "Crd_all", "res_weather", "MERRA_correction", "MERRA_correction_factor"],
+                paths,
+                ["MERRA_IN", "T2M"],
+            )
+            create_json(
+                paths["CLEARNESS"],
+                param,
+                ["MERRA_coverage", "region_name", "Crd_all", "res_weather", "MERRA_correction", "MERRA_correction_factor"],
+                paths,
+                ["MERRA_IN", "CLEARNESS"],
+            )
     timecheck("End")
 
 
@@ -468,7 +487,7 @@ def generate_population(paths, param):
     GeoRef = param["GeoRef"]
     with rasterio.open(paths["Pop_global"]) as src:
         A_POP = src.read(1)
-    A_POP = resizem(A_POP, 180 * 240, 360 * 240) / 4 # density is divided by 4
+    A_POP = resizem(A_POP, 180 * 240, 360 * 240) / 4  # density is divided by 4
     A_POP = np.flipud(A_POP[Ind[0] - 1 : Ind[2], Ind[3] - 1 : Ind[1]])
     array2raster(paths["POP"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_POP)
     create_json(paths["POP"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["Pop_tiles", "POP"])

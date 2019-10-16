@@ -59,6 +59,15 @@ The paths are initialized in a way that follows a particular folder hierarchy. H
    :maxdepth: 3
    
    source/config
+   
+runme.py
+--------
+``runme.py`` calls the main functions of the code:
+
+.. literalinclude:: example.py
+   :language: python
+   :linenos:
+   :emphasize-lines: 14,25-28,32-33,40,44
 
 
 Recommended input sources
@@ -96,7 +105,7 @@ In both cases, please follow these instructions to download the MERRA-2 dataset:
 
 1. In order to download MERRA-2 data using the FTP server, you first need to create an Eathdata account (more on that on their `website <https://disc.gsfc.nasa.gov/data-access>`_).
 2. Navigate to the link for the FTP sever `here <https://disc.gsfc.nasa.gov/daac-bin/FTPSubset2.pl>`_.
-3. In *Data Product*, choose :math:`\\texttt{tavg1\_2d\_slv\_NX}` and select the *Parameters* T2M, U50M, V50M to downaload the temperature and the wind speed datasets.
+3. In *Data Product*, choose tavg1_2d_slv_NX and select the *Parameters* T2M, U50M, V50M to downaload the temperature and the wind speed datasets.
 4. In *Spatial Search*, enter the coordinates of the bounding box around your region of interest or leave the default values for the whole globe. 
    To avoid problems at the edge of the MERRA-2 cells, use the following set of formulas:
 
@@ -114,7 +123,7 @@ In both cases, please follow these instructions to download the MERRA-2 dataset:
 	
 5. In *Temporal Order Option*, choose the year(s) of interest.
 6. Leave the other fields unchanged (no time subsets, no regridding, and NetCDF4 for the output file format).
-7. Repeat the steps 4-6 for the *Data Product* :math:`\\texttt{tavg1\_2d\_rad\_Nx}`, for which you select the *Parameters* SWGDN and SWTDN, the surface incoming shortwave flux and the top of the atmosphere incoming shortwave flux.
+7. Repeat the steps 4-6 for the *Data Product* tavg1_2d_rad_Nx, for which you select the *Parameters* SWGDN and SWTDN, the surface incoming shortwave flux and the top of the atmosphere incoming shortwave flux.
 8. Follow the instructions in the `website <https://disc.gsfc.nasa.gov/data-access>`_ to actually download the NetCDF4 files from the urls listed in the text files you obtained. 
 
 If you follow these steps to download the data for the year 2015, you will obtain 730 NetCDF files, one for each day of the year and for each data product. 

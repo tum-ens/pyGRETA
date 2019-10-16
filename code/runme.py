@@ -9,7 +9,7 @@ if __name__ == "__main__":
 
     paths, param = initialization()
 
-    # Generate Input raster maps
+    # Generate input raster maps
     #############################
     generate_input_maps(paths, param)
 
@@ -20,14 +20,14 @@ if __name__ == "__main__":
     for tech in param["technology"]:
         print("Tech: " + tech)
 
-        # Generate Potential Maps and Reports
+        # Generate potential maps and reports
         #####################################
         calculate_FLH(paths, param, tech)
         masking(paths, param, tech)
         weighting(paths, param, tech)
         reporting(paths, param, tech)
 
-        # Generate Timeseries
+        # Generate timeseries
         #####################
         find_locations_quantiles(paths, param, tech)
         generate_time_series(paths, param, tech)
@@ -39,6 +39,6 @@ if __name__ == "__main__":
         ################################################################
         regression_coefficients(paths, param, tech)
 
-        # Generate Stratified timeseries
+        # Generate stratified timeseries
         ################################
         generate_stratified_timeseries(paths, param, tech)

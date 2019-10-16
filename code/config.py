@@ -55,8 +55,8 @@ def general_settings():
     global root
 
     param = {}
-    param["author"] = "Kais Siala"  # the name of the person running the script
-    param["comment"] = "Regression-debugging"
+    param["author"] = "Houssame Houmy"  # the name of the person running the script
+    param["comment"] = "Test_new_code_structure"
 
     paths = {}
     fs = os.path.sep
@@ -106,18 +106,18 @@ def scope_paths_and_parameters(paths, param):
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
 
-    paths["spatial_scope"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
-    paths["subregions"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
+    paths["spatial_scope"] = PathTemp + "gadm36_GHA_0.shp"
+    paths["subregions"] = PathTemp + "gadm36_GHA_1.shp"
 
     # Name tags for the scope and the subregions
-    param["region_name"] = "Europe"  # Name tag of the spatial scope
-    param["subregions_name"] = "Europe_wo_Balkans_NUTS0"  # Name tag of the subregions
+    param["region_name"] = "Ghana"  # Name tag of the spatial scope
+    param["subregions_name"] = "gadm36_GHA_1"  # Name tag of the subregions
 
     # Year
     param["year"] = 2015
 
     # Technologies
-    param["technology"] = ["PV"]  # ["PV", "CSP", "WindOn", "WindOff"]
+    param["technology"] = ["WindOn"]  # ["PV", "CSP", "WindOn", "WindOff"]
 
     return paths, param
 
@@ -176,7 +176,10 @@ def weather_data_parameters(param):
     :rtype: dict
     """
     param["MERRA_coverage"] = "World"
-    param["MERRA_correction"] = 0.35
+    param["MERRA_correction"] = True
+    param["MERRA_correction_factor"] = {"W50M": 0.35,  # Wind Speed
+                                        "CLEARNESS": 0.35,  # Clearness index
+                                        "T2M": 0.35}  # Temperature at 2 m
     return param
 
 

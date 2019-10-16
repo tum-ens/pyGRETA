@@ -14,7 +14,6 @@ def generate_input_maps(paths, param):
     :rtype: None
     """
     generate_weather_files(paths, param)  # MERRA Weather data
-    clean_weather_data(paths, param)  # Outlier smoothing
     generate_landsea(paths, param)  # Land and Sea
     generate_subregions(paths, param)  # Subregions
     generate_area(paths, param)  # Area Gradient
@@ -22,20 +21,21 @@ def generate_input_maps(paths, param):
     generate_bathymetry(paths, param)  # Bathymetry
     generate_topography(paths, param)  # Topography
     generate_slope(paths, param)  # Slope
-    generate_population(paths, param)  # Population
+    # generate_population(paths, param)  # Population
     generate_protected_areas(paths, param)  # Protected areas
     generate_buffered_population(paths, param)  # Buffered Population
 
 
 def generate_weather_files(paths, param):
     """
-    This function reads the daily NetCDF data (from MERRA-2) for SWGDN, SWTDN, T2M, U50M, and V50M,
-    and saves them in matrices with yearly time series with low spatial resolution.
+    This function reads the daily NetCDF data (from MERRA-2) for SWGDN, SWTDN, T2M, U50m, and V50m,
+    and saves them in matrices with yearly time series with low spatial resolution. Depending on the *MERRA_correction*
+    parameter this function will also call clean_weather_data() to remove data outliers.
     This function has to be run only once.
 
     :param paths: Dictionary including the paths to the MERRA-2 input files *MERRA_IN*, and to the desired output locations for *T2M*, *W50M* and *CLEARNESS*.
     :type paths: dict
-    :param param: Dictionary including the year and the spatial scope.
+    :param param: Dictionary including the year, the spatial scope, and the MERRA_correction parameter.
     :type param: dict
 
     :return: The files T2M.mat, W50M.mat, and CLEARNESS.mat are saved directly in the defined paths, along with their metadata in JSON files.
@@ -109,11 +109,15 @@ def generate_weather_files(paths, param):
             sys.stdout.write("\n")
             timecheck("Writing Files: T2M, W50M, CLEARNESS")
             hdf5storage.writes({"T2M": T2M}, paths["T2M"], store_python_metadata=True, matlab_compatible=True)
-            create_json(paths["T2M"], param, ["MERRA_coverage", "region_name", "Crd_all", "res_weather"], paths, ["MERRA_IN", "T2M"])
             hdf5storage.writes({"W50M": W50M}, paths["W50M"], store_python_metadata=True, matlab_compatible=True)
-            create_json(paths["W50M"], param, ["MERRA_coverage", "region_name", "Crd_all", "res_weather"], paths, ["MERRA_IN", "W50M"])
             hdf5storage.writes({"CLEARNESS": CLEARNESS}, paths["CLEARNESS"], store_python_metadata=True, matlab_compatible=True)
-            create_json(paths["CLEARNESS"], param, ["MERRA_coverage", "region_name", "Crd_all", "res_weather"], paths, ["MERRA_IN", "CLEARNESS"])
+
+            if param["MERRA_correction"]:
+                clean_weather_data(paths, param)
+
+            create_json(paths["W50M"], param, ["MERRA_coverage", "region_name", "Crd_all", "res_weather", "MERRA_correction", "MERRA_correction_factor"], paths, ["MERRA_IN", "W50M"])
+            create_json(paths["T2M"], param, ["MERRA_coverage", "region_name", "Crd_all", "res_weather", "MERRA_correction", "MERRA_correction_factor"], paths, ["MERRA_IN", "T2M"])
+            create_json(paths["CLEARNESS"], param, ["MERRA_coverage", "region_name", "Crd_all", "res_weather", "MERRA_correction", "MERRA_correction_factor"], paths, ["MERRA_IN", "CLEARNESS"])
     timecheck("End")
 
 

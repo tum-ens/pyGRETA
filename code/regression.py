@@ -103,7 +103,7 @@ def clean_FLH_regression(paths, param):
     create_json(
         paths["FLH_regression"],
         param,
-        ["author", "comment", tech, "region_name", "subregions_name", "year", "Crd_all"],
+        ["author", "comment", "region_name", "subregions_name", "year", "Crd_all"],
         paths,
         ["IRENA_dict", "IRENA_summary"],
     )

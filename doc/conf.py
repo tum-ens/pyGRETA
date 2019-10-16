@@ -80,7 +80,7 @@ html_theme_options = {
 # 'documentclass': '',  # not clear
 # 'toctree_only': True  # (bool) Include startdocname in the latex/pdf ? can be used to have different first pages. The first toctree entry in startdocname will be used.
 
-latex_documents = [(master_doc, project+'.tex', project, 'Kais Siala \\and Houssame Houmy \\and Sergio Alejandro Huezo Rodriguez', 'manual', True)]
+latex_documents = [(master_doc, project+'.tex', project, 'Kais Siala \\\and Houssame Houmy \\\and Sergio Alejandro Huezo Rodriguez', 'manual', True)]
 
 # Remove redundant white pages 
 latex_elements = {

@@ -12,7 +12,7 @@ Main configuration function
    All the paths will be defined relatively to the root, which is located in a relative position to the current folder.
    
 The code differentiates between the geographic scope and the subregions of interest.
-You can run the first part of the script ``Master.py`` once and save results for the whole scope, and then repeat the second part using different subregions within the scope.
+You can run the first part of the script ``runme.py`` once and save results for the whole scope, and then repeat the second part using different subregions within the scope.
 
 .. automodule:: config
    :noindex:
@@ -55,4 +55,4 @@ Paths
 
 .. automodule:: config
    :noindex:
-   :members: weather_input_folder, global_maps_input_paths, output_folders, weather_output_paths, local_maps_paths, irena_paths, emhires_input_paths, potential_output_paths, regional_analysis_output_paths
+   :members: weather_input_folder, global_maps_input_paths, output_folders, weather_output_paths, local_maps_paths, irena_paths, regression_paths, emhires_input_paths, potential_output_paths, regional_analysis_output_paths

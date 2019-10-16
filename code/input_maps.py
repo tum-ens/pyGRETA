@@ -21,7 +21,7 @@ def generate_input_maps(paths, param):
     generate_bathymetry(paths, param)  # Bathymetry
     generate_topography(paths, param)  # Topography
     generate_slope(paths, param)  # Slope
-    # generate_population(paths, param)  # Population
+    generate_population(paths, param)  # Population
     generate_protected_areas(paths, param)  # Protected areas
     generate_buffered_population(paths, param)  # Buffered Population
 

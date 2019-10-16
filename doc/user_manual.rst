@@ -100,13 +100,13 @@ In both cases, please follow these instructions to download the MERRA-2 dataset:
 4. In *Spatial Search*, enter the coordinates of the bounding box around your region of interest or leave the default values for the whole globe. 
    To avoid problems at the edge of the MERRA-2 cells, use the following set of formulas:
 
-.. math::
-   \begin{align*}
+   .. math::
+     \begin{align*}
            minLat &= \left\lfloor\dfrac{s+0.25}{0.5}\right\rfloor \cdot 0.5 - \epsilon  \\
            maxLat &= \left\lceil\dfrac{n-0.25}{0.5}\right\rceil \cdot 0.5 + \epsilon \\
            minLon &= \left\lfloor\dfrac{w+0.3125}{0.625}\right\rfloor \cdot 0.625 - \epsilon  \\
            maxLon &= \left\lceil\dfrac{e-0.3125}{0.625}\right\rceil \cdot 0.625 + \epsilon 
-    \end{align*}
+      \end{align*}
 	
    where *[s n w e]* are the southern, northern, western, and eastern bounds of
    the region of interest, which you can read from the shapefile properties in
@@ -136,7 +136,7 @@ A land use map is useful in the sense that other parameters can be associated wi
 For each land use type, we can assign a value for these parameters which affect
 the calculations for solar power and wind speed correction.
 The global land use raster for which :mod:`input_maps.generate_landuse` has been written cannot be downloaded anymore (broken link),
-but a newer version is available from the `USGS website <https://lpdaac.usgs.gov/products/mcd12q1v006/>`_. 
+but a newer version is available from the `USGS <https://lpdaac.usgs.gov/products/mcd12q1v006/>`_ website. 
 However, this new version requires additional data processing.
 The spatial resolution of the land use raster, and therefore of the other geographic intermediate rasters
 used in this model, is 1/240° longitude and 1/240° latitude.
@@ -145,7 +145,7 @@ Shapefile of the region of interest
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The strength of the tool relies on its versatility, since it can be used for any user-defined regions provided in 
 a shapefile. If you are interested in administrative divisions, you may consider downloading the shapefiles from 
-the `Global Administration Divisions (GADM) <https://gadm.org/download_country_v3.html>`_. You can also create your 
+the website of the Global Administration Divisions `(GADM) <https://gadm.org/download_country_v3.html>`_. You can also create your 
 own shapefiles using a GIS software.
 
 .. WARNING::
@@ -163,7 +163,7 @@ The attribute "GID_0" contains the ISO 3166-1 Alpha-3 codes of the countries, an
 
 Shapefile of Exclusive Economic Zones (EEZ)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-A shapefile of the maritime boundaries of all countries is available at the `website of the Flanders Marine Institute <http://www.vliz.be/en/imis?dasid=5465&doiid=312>`_.
+A shapefile of the maritime boundaries of all countries is available at the website of the Flanders Marine Institute `(VLIZ) <http://www.vliz.be/en/imis?dasid=5465&doiid=312>`_.
 It is used to identify offshore areas.
 
 Raster of topography / elevation data
@@ -173,7 +173,7 @@ A high resolution raster (15 arcsec = 1/240° longitude and 1/240° latitude) ma
 
 Raster of bathymetry
 ^^^^^^^^^^^^^^^^^^^^
-A high resolution raster (60 arcsec) of bathymetry can be downloaded from the website of the `National Oceanic and Atmospheric Administration (NOAA)
+A high resolution raster (60 arcsec) of bathymetry can be downloaded from the website of the National Oceanic and Atmospheric Administration `(NOAA)
 <https://ngdc.noaa.gov/mgg/global/global.html>`_. The one used in the database is ETOPO1 Ice Surface, cell-registered.
 
 Raster of population density
@@ -184,7 +184,7 @@ A high resolution raster (30 arcsec) of population density can be downloaded fro
 Shapefile of protected areas
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Any database for prtoected areas can be used with this tool, in particular the World Database on Protected Areas 
-published by the `International Union for Conservation of Nature (IUCN) <https://www.protectedplanet.net/>`_.
+published by the International Union for Conservation of Nature `(IUCN) <https://www.protectedplanet.net/>`_.
 The shapefile has many attributes, but only one is used in the tool: "IUCN_CAT". If another database is used, an 
 equivalent attribute with the different categories of the protection has to be used and :mod:`config.py` has to be updated accordingly.
 

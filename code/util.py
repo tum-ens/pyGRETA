@@ -129,7 +129,7 @@ def intersection(lst1, lst2):
     :param lst2: Second list of elements.
     :type lst2: list
 
-    :return: The unique elements that exist in both lists, without repetition.
+    :return lst3: The unique elements that exist in both lists, without repetition.
     :rtype: list
     """
     temp = set(lst2)
@@ -148,7 +148,7 @@ def resizem(A_in, row_new, col_new):
     :param col_new: New number of columns.
     :type col_new: integer
 
-    :return: Resized matrix.
+    :return A_out: Resized matrix.
     :rtype: numpy array
     """
     row_rep = row_new // np.shape(A_in)[0]
@@ -165,39 +165,7 @@ def resizem(A_in, row_new, col_new):
     return A_out
 
 
-def array2raster(newRasterfn, rasterOrigin, pixelWidth, pixelHeight, array):
-    """
-    This function saves array to geotiff raster format based on EPSG 4326.
 
-    :param newRasterfn: Output path of the raster.
-    :type newRasterfn: string
-    :param rasterOrigin: Latitude and longitude of the Northwestern corner of the raster.
-    :type rasterOrigin: list of two floats
-    :param pixelWidth:  Pixel width (might be negative).
-    :type pixelWidth: integer
-    :param pixelHeight: Pixel height (might be negative).
-    :type pixelHeight: integer
-    :param array: Array to be converted into a raster.
-    :type array: numpy array
-
-    :return: The raster file will be saved in the desired path *newRasterfn*.
-    :rtype: None
-    """
-    cols = array.shape[1]
-    rows = array.shape[0]
-    originX = rasterOrigin[0]
-    originY = rasterOrigin[1]
-
-    driver = gdal.GetDriverByName("GTiff")
-    outRaster = driver.Create(newRasterfn, cols, rows, 1, gdal.GDT_Float64, ["COMPRESS=PACKBITS"])
-    outRaster.SetGeoTransform((originX, pixelWidth, 0, originY, 0, pixelHeight))
-    outRasterSRS = osr.SpatialReference()
-    outRasterSRS.ImportFromEPSG(4326)
-    outRaster.SetProjection(outRasterSRS.ExportToWkt())
-    outband = outRaster.GetRasterBand(1)
-    outband.WriteArray(np.flipud(array))
-    outband.FlushCache()
-    outband = None
 
 
 def char_range(c1, c2):
@@ -229,7 +197,7 @@ def changem(A, newval, oldval):
     :param oldval: Vector of old values to be replaced.
     :param oldval: numpy array
 
-    :return: The updated array.
+    :return Out: The updated array.
     :rtype: numpy array
     """
     Out = np.zeros(A.shape)
@@ -243,24 +211,27 @@ def ind2sub(array_shape, ind):
     """
     This function converts linear indices to subscripts.
     
-    :param array_shape: tuple (# of rows, # of columns)
-    :param ind: Index
+    :param array_shape: Dimensions of the array (# of rows, # of columns).
+    :type array_shape: tuple (int, int)
+    :param ind: Linear index.
+    :type index: int
 
-    :return: tuple (row values, column values)
+    :return: Tuple of indices in each dimension (row index, column index).
+    :rtype: tuple(int, int)
     """
     return np.unravel_index(ind, array_shape, order="F")
 
 
 def field_exists(field_name, shp_path):
     """
-    This function returns a bool of whether the specified field exist or not in the shapefile linked by a path.
+    This function returns whether the specified field exists or not in the shapefile linked by a path.
 
-    :param field_name: Name of the field to be checked for
+    :param field_name: Name of the field to be checked for.
     :type field_name: str
-    :param shp_path: Path to the shapefile
+    :param shp_path: Path to the shapefile.
     :type shp_path: str
 
-    :return: ``True`` if it exists or ``False`` if it doesn't exist
+    :return: ``True`` if it exists or ``False`` if it doesn't exist.
     :rtype: bool
     """
     shp = ogr.Open(shp_path, 0)
@@ -275,12 +246,12 @@ def field_exists(field_name, shp_path):
 
 def changeExt2tif(filepath):
     """
-    This function changes the extension of a file path, to .tif.
+    This function changes the extension of a file path to .tif.
 
-    :param filepath: Path to the file
+    :param filepath: Path to the file.
     :type filepath: str
 
-    :return: New path with .tif as extension
+    :return: New path with .tif as extension.
     :rtype: str
     """
     base = os.path.splitext(filepath)[0]
@@ -289,15 +260,23 @@ def changeExt2tif(filepath):
 
 def sumnorm_MERRA2(A, m, n, res_low, res_desired):
     """
-    Missing description
+    This function calculates the average of high resolution data if it is aggregated into a lower resolution.
 
-    :param A:
-    :param m:
-    :param n:
-    :param res_low:
-    :param res_desired:
+    :param A: High-resolution data.
+    :type A: numpy array
+    :param m: Number of rows in the low resolution.
+    :type m: int
+    :param n: Number of columns in the low resolution.
+    :type n: int
+    :param res_low: Numpy array with with two numbers. The first number is the resolution in the vertical dimension (in degrees of latitude),
+    the second is for the horizontal dimension (in degrees of longitude).
+    :type res_low: numpy array
+    :param res_desired: Numpy array with with two numbers. The first number is the resolution in the vertical dimension (in degrees of latitude),
+    the second is for the horizontal dimension (in degrees of longitude).
+    :type res_desired: numpy array
 
-    :return:
+    :return s: Aggregated average of *A* on the low resolution.
+    :rtype: numpy array
     """
     s = np.zeros((m, n))
     row_step = int(res_low[0] / res_desired[0])
@@ -310,14 +289,15 @@ def sumnorm_MERRA2(A, m, n, res_low, res_desired):
 
 def limit_cpu(check):
     """
-    Set priority of a process for cpu time and ram allocation at two levels: average or below average.
+    This functions sets the priority of a process for CPU time and RAM allocation at two levels: average or below average.
 
     :param check: If ``True``, the process is set a below average priority rating allowing other programs to run undisturbed.
         if ``False``, the process is given the same priority as all other user processes currently running on the machine,
         leading to faster calculation times.
     :type check: boolean
 
-    :return: None
+    :return: The priority of the process is set.
+    :rtype: None
     """
     check = check[0]
     p = psutil.Process(os.getpid())
@@ -345,7 +325,8 @@ def timecheck(*args):
     :param args: Message to be displayed with the function name and the timestamp.
     :type args: string (``optional``)
 
-    :return: None
+    :return: The time stamp is printed.
+    :rtype: None
     """
     if len(args) == 0:
         print(inspect.stack()[1].function + str(datetime.datetime.now().strftime(": %H:%M:%S:%f")) + "\n")
@@ -366,7 +347,8 @@ def display_progress(message, progress_stat):
     :param progress_stat: Tuple containing the total length of the calculation and the current status or progress.
     :type progress_stat: tuple(int, int)
 
-    :return: None
+    :return: The status bar is printed.
+    :rtype: None
     """
     length = progress_stat[0]
     status = progress_stat[1]
@@ -379,21 +361,21 @@ def display_progress(message, progress_stat):
 
 def create_json(filepath, param, param_keys, paths, paths_keys):
     """
-    Creates a metadata json file containing information about the file in filepath by storing the relevant keys from
+    Creates a metadata JSON file containing information about the file in filepath by storing the relevant keys from
     both the param and path dictionaries.
 
-    :param filepath: Path to the file for which the json file will be created.
+    :param filepath: Path to the file for which the JSON file will be created.
     :type filepath: string
     :param param: Dictionary of dictionaries containing the user input parameters and intermediate outputs.
     :type param: dict
-    :param param_keys: Keys of the parameters to be extracted from the *param* dictionary and saved into the json file.
+    :param param_keys: Keys of the parameters to be extracted from the *param* dictionary and saved into the JSON file.
     :type param_keys: list of strings
     :param paths: Dictionary of dictionaries containing the paths for all files.
     :type paths: dict
-    :param paths_keys: Keys of the paths to be extracted from the *paths* dictionary and saved into the json file.
+    :param paths_keys: Keys of the paths to be extracted from the *paths* dictionary and saved into the JSON file.
     :type paths_keys: list of strings
 
-    :return: The json file will be saved in the desired path *filepath*.
+    :return: The JSON file will be saved in the desired path *filepath*.
     :rtype: None
     """
     new_file = os.path.splitext(filepath)[0] + ".json"
@@ -454,39 +436,3 @@ def create_json(filepath, param, param_keys, paths, paths_keys):
     with open(new_file, "w") as json_file:
         json.dump(new_dict, json_file)
     print("files saved: " + new_file)
-
-
-def check_regression_model(paths, tech):
-    """
-    This function checks the regression model parameters for nan values, and returns the FLH and TS model dataframes.
-    If missing values are present in the input .csv files, the users are prompted if they wish to continue or can modify
-    the corresponding files.
-
-    :param paths: Dictionary of dictionaries containing the paths to the FLH and TS model regression .csv files.
-    :type paths: dict
-    :param tech: Technology under study.
-    :type tech: str
-
-    :return: two pandas dataframes
-    :rtype: Pandas Dataframes
-    """
-    while True:
-        # Load IRENA data and regions
-        FLH = pd.read_csv(paths["FLH_regression"], sep=";", decimal=",", index_col=0)
-
-        # load TS regression file
-        TS_reg = pd.read_csv(paths[tech]["TS_regression"], sep=";", decimal=",", index_col=0, header=0)
-
-        # Create filter for nan and 0 values for FLH_regression
-        filter_FLH = np.logical_or(np.isnan(FLH[tech]), FLH[tech] == 0)
-        reg_nan_null = list(FLH.loc[filter_FLH].index)
-
-        if len(reg_nan_null) != 0:
-            print("Missing data:" + ",".join(reg_nan_null))
-            ans = input("Some regions are missing FLH data for the technology of choice. Continue ? [y]/n")
-            if ans in ["", "y", "[y]"]:
-                break
-        else:
-            break
-
-    return FLH, TS_reg

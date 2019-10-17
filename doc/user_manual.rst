@@ -67,7 +67,7 @@ runme.py
 .. literalinclude:: ../code/runme.py
    :language: python
    :linenos:
-   :emphasize-lines: 14,25-28,32-33,40,44
+   :emphasize-lines: 12-13,22-26,28-30,35-36,38-39
 
 
 Recommended input sources
@@ -209,7 +209,7 @@ need, choose 50m height, and download the plot data for the wind speed in a fold
 
 Recommended workflow
 --------------------
-The script is designed to be modular and split into four main modules: 1. :mod:`lib.input_maps`, 2. :mod:`lib.potential`, 3. :mod:`lib.time_series`, and 4. :mod:`lib.regression`. 
+The script is designed to be modular and split into four main modules: :mod:`lib.input_maps`, :mod:`lib.potential`, :mod:`lib.time_series`, and :mod:`lib.regression`. 
 
 .. WARNING:: The outputs of each module, serve as inputs to the following module. Therefore, a user will have to run the script sequentially.
 
@@ -267,6 +267,12 @@ It also generates a .csv report containing metrics for each sub-region:
 * Energy Potential in TWh in total, after weighting, and after masking and weighting
 * Sorted sample of FLH values for each region
 
+.. image:: img/FLH_solar.png
+   :width: 49%
+   
+.. image:: img/FLH_wind.png
+   :width: 49%  
+
 Example:
 - FLH
 - Masked FLH
@@ -282,9 +288,13 @@ the FLH raster maps generated in the previously mentioned module.
 It is therefore important for the FLH raster maps to be generated first, in order to locate the quantiles. 
 However, generating time series for user defined locations do not require the potential maps to be generated before hand.
 
+.. image:: img/AustraliaQ50WindvsSolar.png
+   :width: 100%
+
 Exampe:
 - Locations of quantiles
 - Timeseries graph
+
 
 .. _Regression:
 
@@ -292,7 +302,6 @@ Regression
 ^^^^^^^^^^
 Once a set timeseries for different parameters (hub-heights for Wind Onshore and Offshore, orientations for Solar PV) are generated. 
 The regression.py module allow the user to find parameter and quantiles coefficients to match a certain model FLH and Time-series.
-This is usefull for determining the ... continued here
 
 Example:
 - Graphic of regression coefficients with FLH and TS model

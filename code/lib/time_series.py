@@ -17,8 +17,8 @@ def find_locations_quantiles(paths, param, tech):
     :type tech: str
 
     :return: The shapefile with the locations and the two MAT files for the coordinates and the indices are saved
-	directly in the given paths, along with their corresponding metadata in JSON files.
-	:rtype: None
+             directly in the given paths, along with their corresponding metadata in JSON files.
+    :rtype: None
     """
     timecheck("Start")
     FLH_mask = hdf5storage.read("FLH_mask", paths[tech]["FLH_mask"])
@@ -128,8 +128,8 @@ def generate_time_series(paths, param, tech):
     :type tech: str
 
     :return: The CSV file with the time series for all subregions and quantiles is saved directly in the given path,
-	along with the corresponding metadata in a JSON file.
-	:rtype: None
+             along with the corresponding metadata in a JSON file.
+    :rtype: None
     """
     timecheck("Start")
     nproc = param["nproc"]
@@ -206,10 +206,10 @@ def calc_TS_solar(hours, args):
     :param args: List of arguments:
     
         * *param* (dict): Dictionary including multiple parameters such as the status bar limit, the name of the region, and
-        others for calculating the hourly capacity factors.
+          others for calculating the hourly capacity factors.
         * *tech* (str): Name of the technology.
         * *rasterData* (dict): Dictionary of numpy arrays containing land use types, Ross coefficients, albedo coefficients,
-        and wind speed correction for every point in *reg_ind*.
+          and wind speed correction for every point in *reg_ind*.
         * *merraData* (dict): Dictionary of numpy arrays containing the weather data for every point in *reg_ind*.
 
     :type args: list
@@ -252,7 +252,7 @@ def calc_TS_wind(hours, args):
     :param args: List of arguments:
     
         * *param* (dict): Dictionary including multiple parameters such as the status bar limit, the name of the region, and
-        others for calculating the hourly capacity factors.
+          others for calculating the hourly capacity factors.
         * *tech* (str): Name of the technology.
         * *rasterData* (dict): Dictionary of numpy arrays containing the wind speed correction for every point in *reg_ind*.
         * *merraData* (dict): Dictionary of numpy arrays containing the weather data for every point in *reg_ind*.

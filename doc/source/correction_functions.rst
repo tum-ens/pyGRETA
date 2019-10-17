@@ -1,5 +1,5 @@
 correction\_functions.py
 ========================
 
-.. automodule:: lib/correction_functions
+.. automodule:: lib.correction_functions
    :members:

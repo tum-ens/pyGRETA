@@ -1,5 +1,5 @@
 spatial\_functions.py
 =====================
 
-.. automodule:: lib/spatial_functions
+.. automodule:: lib.spatial_functions
    :members:

@@ -1,5 +1,5 @@
 regression.py
 ==============
 
-.. automodule:: lib/regression
+.. automodule:: lib.regression
    :members:

@@ -1,5 +1,5 @@
 potential.py
 ============
 
-.. automodule:: lib/potential
+.. automodule:: lib.potential
    :members:

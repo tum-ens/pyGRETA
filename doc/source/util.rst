@@ -1,5 +1,5 @@
 util.py
 ===========
 
-.. automodule:: lib/util
+.. automodule:: lib.util
    :members:

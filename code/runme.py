@@ -10,7 +10,6 @@ if __name__ == "__main__":
     paths, param = initialization()
 
     # Generate Input raster maps
-    #############################
     generate_input_maps(paths, param)
 
     # Wind speed correction
@@ -21,14 +20,12 @@ if __name__ == "__main__":
         print("Tech: " + tech)
 
         # Generate Potential Maps and Reports
-        #####################################
         calculate_FLH(paths, param, tech)
         masking(paths, param, tech)
         weighting(paths, param, tech)
         reporting(paths, param, tech)
 
         # Generate Timeseries
-        #####################
         find_locations_quantiles(paths, param, tech)
         generate_time_series(paths, param, tech)
 
@@ -36,9 +33,7 @@ if __name__ == "__main__":
         print("Tech: " + tech)
 
         # Generate regression coefficients for FLH and TS model matching
-        ################################################################
         regression_coefficients(paths, param, tech)
 
         # Generate Stratified timeseries
-        ################################
         generate_stratified_timeseries(paths, param, tech)

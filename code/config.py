@@ -368,7 +368,7 @@ def pv_parameters(param):
       * *T_r* is the rated temperature in °C.
       * *loss_coeff* is the loss coefficient (relevant for :mod:`physical_models.loss`).
       * *tracking* is either 0 for no tracking, 1 for one-axis tracking, or 2 for two-axes tracking.
-      * *orientation* is the azimuth orientation of the module in degrees.
+      * *orientation* is the azimuth orientation of the module in degrees relative to the equator.
       * The tilt angle from the horizontal is chosen optimally in the code, see :mod:`physical_models.angles`.
     
     * *mask* is a dictionary including the parameters related to the masking:
@@ -404,7 +404,7 @@ def pv_parameters(param):
         "T_r": 25,  # °C
         "loss_coeff": 0.37,
         "tracking": 0,  # 0 for no tracking, 1 for one-axis tracking, 2 for two-axes tracking
-        "orientation": 180,  # | 0: South | 90: West | 180: North | -90: East |
+        "orientation": 180,  # | 0: Towards equator | 90: West | 180: Away from equator | -90: East |
     }
     pv["mask"] = {
         "slope": 20,

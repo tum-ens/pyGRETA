@@ -278,6 +278,10 @@ It also generates a .csv report containing metrics for each sub-region:
 
 .. NOTE:: Missing Masked FLH and Weighted FLH, as well as, Report sample
 
+.. csv-table:: Potential Report Sample 
+   :widths: 15 30 20 20 20 30 30 30 40 40
+   :header: "Region", "Available Area (km2)", "FLH Mean", "FLH Max", "FLH Min", "FLH Mean Masked", "FLH Max Masked", "FLH Min Masked", "Power Potential (GW)", "Energy Potential (TWh)"
+   :file: img/sample report.csv
 .. _timeSeries:
 
 Timeseries for Quantiles and user defined Locations

@@ -217,7 +217,7 @@ The use cases associated with each module with examples of their outputs are pre
 
 .. NOTE:: Include here a graphic with the use cases and miniatures of outputs.
 
-It is recommended to thoroughly read through the configuration file `config.py` and modify the input paths and 
+It is recommended to thoroughly read through the configuration file :mod:`config.py` and modify the input paths and 
 computation parameters before starting script.
 Once the configuration file is set, open the runme.py file to define what use case you will be using the script for.
 

@@ -21,7 +21,7 @@ Then activate the environment::
 
 In the folder ``code``, you will find multiple files:
 
-.. tabularcolumns:: |p{4cm}|p{7cm}|
+.. tabularcolumns:: |p{3.7cm}|p{9cm}|
 
 +-------------------------+---------------------------------------------------------------------------+
 | File                    | Description                                                               |
@@ -59,6 +59,15 @@ The paths are initialized in a way that follows a particular folder hierarchy. H
    :maxdepth: 3
    
    source/config
+   
+runme.py
+--------
+``runme.py`` calls the main functions of the code:
+
+.. literalinclude:: ../code/runme.py
+   :language: python
+   :linenos:
+   :emphasize-lines: 12-13,22-26,28-30,35-36,38-39
 
 
 Recommended input sources
@@ -88,7 +97,7 @@ the longitudinal direction and 361 points in the latitudinal direction, resultin
 and 1/2° latitude :cite:`MERRA2.`.
 
 It is possible to download MERRA-2 dataset for the whole globe or just for a subset of your region of interest.
-Depending on the "MERRA_coverage" parameter in config.py, the script can accept both datasets. Note that downloading 
+Depending on the *MERRA_coverage* parameter in config.py, the script can accept both datasets. Note that downloading 
 the coverage for the whole globe is easier but will require a significant amount of space on your drive (coverage 
 of the whole globe requires 13.6 Gb for one year).
 
@@ -99,18 +108,19 @@ In both cases, please follow these instructions to download the MERRA-2 dataset:
 3. In *Data Product*, choose tavg1_2d_slv_NX and select the *Parameters* T2M, U50M, V50M to downaload the temperature and the wind speed datasets.
 4. In *Spatial Search*, enter the coordinates of the bounding box around your region of interest or leave the default values for the whole globe. 
    To avoid problems at the edge of the MERRA-2 cells, use the following set of formulas:
-
+   
    .. math::
-   	   \begin{align*}
-           minLat &= \left\lfloor\dfrac{s + 90 + 3/10}{1/2}\right\rfloor  \\
-           maxLat &= \left\lceil\dfrac{n + 90 + 1/5}{1/2}\right\rceil  \\
-           minLon &= \left\lfloor\dfrac{w + 180 + 1/16}{5/8}\right\rfloor  \\
-           maxLon &= \left\lceil\dfrac{e + 180 - 1/16}{5/8}\right\rceil 
-       \end{align*}
+     \noindent
+     \begin{align*}
+           minLat &= \left\lfloor\dfrac{s+0.25}{0.5}\right\rfloor \cdot 0.5 - \epsilon  \\
+           maxLat &= \left\lceil\dfrac{n-0.25}{0.5}\right\rceil \cdot 0.5 + \epsilon \\
+           minLon &= \left\lfloor\dfrac{w+0.3125}{0.625}\right\rfloor \cdot 0.625 - \epsilon  \\
+           maxLon &= \left\lceil\dfrac{e-0.3125}{0.625}\right\rceil \cdot 0.625 + \epsilon 
+     \end{align*}
 	
    where *[s n w e]* are the southern, northern, western, and eastern bounds of
    the region of interest, which you can read from the shapefile properties in
-   a GIS software.
+   a GIS software, and :math:`\\epsilon` a small number.
 	
 5. In *Temporal Order Option*, choose the year(s) of interest.
 6. Leave the other fields unchanged (no time subsets, no regridding, and NetCDF4 for the output file format).
@@ -136,18 +146,16 @@ A land use map is useful in the sense that other parameters can be associated wi
 For each land use type, we can assign a value for these parameters which affect
 the calculations for solar power and wind speed correction.
 The global land use raster for which :mod:`input_maps.generate_landuse` has been written cannot be downloaded anymore (broken link),
-but a newer version is available from the `LP DAAC <https://lpdaac.usgs.gov/products/mcd12q1v006/>`_. 
+but a newer version is available from the `USGS <https://lpdaac.usgs.gov/products/mcd12q1v006/>`_ website. 
 However, this new version requires additional data processing.
 The spatial resolution of the land use raster, and therefore of the other geographic intermediate rasters
 used in this model, is 1/240° longitude and 1/240° latitude.
-This resolution will be used for further calculations and it will be referred to as
-high resolution.
 
 Shapefile of the region of interest
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The strength of the tool relies on its versatility, since it can be used for any user-defined regions provided in 
-a shapefile. I you are interested in administrative divisions, you may consider downloading the shapefiles from 
-the Global Administration Divisions `(GADM) <https://gadm.org/download_country_v3.html>`_. You can also create your 
+a shapefile. If you are interested in administrative divisions, you may consider downloading the shapefiles from 
+the website of the Global Administration Divisions `(GADM) <https://gadm.org/download_country_v3.html>`_. You can also create your 
 own shapefiles using a GIS software.
 
 .. WARNING::
@@ -165,7 +173,7 @@ The attribute "GID_0" contains the ISO 3166-1 Alpha-3 codes of the countries, an
 
 Shapefile of Exclusive Economic Zones (EEZ)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-A shapefile of the maritime boundaries of all countries is available at the `VLIZ <http://www.vliz.be/en/imis?dasid=5465&doiid=312>`_.
+A shapefile of the maritime boundaries of all countries is available at the website of the Flanders Marine Institute `(VLIZ) <http://www.vliz.be/en/imis?dasid=5465&doiid=312>`_.
 It is used to identify offshore areas.
 
 Raster of topography / elevation data
@@ -175,12 +183,12 @@ A high resolution raster (15 arcsec = 1/240° longitude and 1/240° latitude) ma
 
 Raster of bathymetry
 ^^^^^^^^^^^^^^^^^^^^
-A high resolution raster (60 arcsec) of bathymetry can be downloaded from the National Oceanic and Atmospheric Administration `(NOAA)
+A high resolution raster (60 arcsec) of bathymetry can be downloaded from the website of the National Oceanic and Atmospheric Administration `(NOAA)
 <https://ngdc.noaa.gov/mgg/global/global.html>`_. The one used in the database is ETOPO1 Ice Surface, cell-registered.
 
 Raster of population density
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-A high resolution raster (30 arcsec) of population density can be downloaded from `SEDAC
+A high resolution raster (30 arcsec) of population density can be downloaded from the website of `SEDAC
 <https://sedac.ciesin.columbia.edu/data/set/gpw-v4-population-density-rev11/data-download>`_ after registration.
 
 Shapefile of protected areas
@@ -201,7 +209,7 @@ need, choose 50m height, and download the plot data for the wind speed in a fold
 
 Recommended workflow
 --------------------
-The script is designed to be modular and split into four main modules: 1. input_maps, 2. potential, 3. time_series, and 4. regression. 
+The script is designed to be modular and split into four main modules: :mod:`lib.input_maps`, :mod:`lib.potential`, :mod:`lib.time_series`, and :mod:`lib.regression`. 
 
 .. WARNING:: The outputs of each module, serve as inputs to the following module. Therefore, a user will have to run the script sequentially.
 
@@ -213,11 +221,11 @@ The recommended use cases of each module will be presented in the order in which
 4. :ref:`Regression`
 5. :ref:`Strat`
 
-
-
 The use cases associated with each module with examples of their outputs are presented below.
 
-It is recommended to thoroughly read through the configuration file `config.py` and modify the input paths and 
+.. NOTE:: Include here a graphic with the use cases and miniatures of outputs.
+
+It is recommended to thoroughly read through the configuration file :mod:`config.py` and modify the input paths and 
 computation parameters before starting script.
 Once the configuration file is set, open the runme.py file to define what use case you will be using the script for.
 
@@ -259,6 +267,12 @@ It also generates a .csv report containing metrics for each sub-region:
 * Energy Potential in TWh in total, after weighting, and after masking and weighting
 * Sorted sample of FLH values for each region
 
+.. image:: img/FLH_solar.png
+   :width: 49%
+   
+.. image:: img/FLH_wind.png
+   :width: 49%  
+
 Example:
 - FLH
 - Masked FLH
@@ -274,9 +288,13 @@ the FLH raster maps generated in the previously mentioned module.
 It is therefore important for the FLH raster maps to be generated first, in order to locate the quantiles. 
 However, generating time series for user defined locations do not require the potential maps to be generated before hand.
 
+.. image:: img/AustraliaQ50WindvsSolar.png
+   :width: 100%
+
 Exampe:
 - Locations of quantiles
 - Timeseries graph
+
 
 .. _Regression:
 
@@ -284,11 +302,18 @@ Regression
 ^^^^^^^^^^
 Once a set timeseries for different parameters (hub-heights for Wind Onshore and Offshore, orientations for Solar PV) are generated. 
 The regression.py module allow the user to find parameter and quantiles coefficients to match a certain model FLH and Time-series.
-This is usefull for determining the ... continued here
+
+Example:
+- Graphic of regression coefficients with FLH and TS model
 
 .. _Strat:
 
 Stratified Timeseries
 ^^^^^^^^^^^^^^^^^^^^^
-The stratified timeseries function from the time-series.py module is used to ...
+Part of the time_series.py module, the generate_stratified_tiemseries function reads the regression coefficients, as well as, 
+the generated quantile's time series and combine them into user defined modes (quantiles combinations) and combo (hub-heights or orientations combinations). 
+
+Example:
+- Graphic of Modes and Combos
+
 

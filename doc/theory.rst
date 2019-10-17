@@ -340,7 +340,7 @@ A typical value for parabolic toughts is of 95%.
 CSP Capacity Factor Calculation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The capacity factor of a solar field is the ratio of the actual useful heat collected to the theoretical maximum heat output of 1000 W/m2. It is given by the formula:
+The capacity factor of a solar field is the ratio of the actual useful heat collected to the theoretical maximum heat output of 1000 W/m². It is given by the formula:
 
 .. math::
 	CF_{csp} = \frac{F_r(S - Q_{Loss})}{1000}

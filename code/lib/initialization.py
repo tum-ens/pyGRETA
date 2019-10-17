@@ -1,5 +1,5 @@
 from config import configuration
-from spatial_functions import *
+from lib.spatial_functions import *
 
 
 def initialization():

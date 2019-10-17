@@ -1,5 +1,5 @@
 input\_maps.py
 ==============
 
-.. automodule:: input_maps
+.. automodule:: lib/input_maps
    :members:

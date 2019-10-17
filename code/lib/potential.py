@@ -1,5 +1,5 @@
-from physical_models import calc_CF_solar, calc_CF_wind
-from spatial_functions import *
+from lib.physical_models import calc_CF_solar, calc_CF_wind
+from lib.spatial_functions import *
 
 
 def calculate_FLH(paths, param, tech):

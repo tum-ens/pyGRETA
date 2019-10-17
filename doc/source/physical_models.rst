@@ -1,5 +1,5 @@
 physical\_models.py
 ===================
 
-.. automodule:: physical_models
+.. automodule:: lib.physical_models
    :members:

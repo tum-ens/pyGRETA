@@ -1,5 +1,5 @@
 time\_series.py
 ===============
 
-.. automodule:: time_series
+.. automodule:: lib.time_series
    :members:

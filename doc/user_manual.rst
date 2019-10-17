@@ -209,4 +209,102 @@ need, choose 50m height, and download the plot data for the wind speed in a fold
 
 Recommended workflow
 --------------------
-The script is designed to be modular, yet there is a recommended workflow to follow for your first run...
+The script is designed to be modular and split into four main modules: 1. :mod:`lib.input_maps`, 2. :mod:`lib.potential`, 3. :mod:`lib.time_series`, and 4. :mod:`lib.regression`. 
+
+.. WARNING:: The outputs of each module, serve as inputs to the following module. Therefore, a user will have to run the script sequentially.
+
+The recommended use cases of each module will be presented in the order in which the user will have to run them. 
+
+1. :ref:`inputMaps`
+2. :ref:`potentialMaps`
+3. :ref:`timeSeries`
+4. :ref:`Regression`
+5. :ref:`Strat`
+
+The use cases associated with each module with examples of their outputs are presented below.
+
+.. NOTE:: Include here a graphic with the use cases and miniatures of outputs.
+
+It is recommended to thoroughly read through the configuration file :mod:`config.py` and modify the input paths and 
+computation parameters before starting script.
+Once the configuration file is set, open the runme.py file to define what use case you will be using the script for.
+
+.. _inputMaps:
+
+Inputs Raster Maps
+^^^^^^^^^^^^^^^^^^
+The input_maps module is used to generate raster maps for the spatial scope defined by the user. These maps include:
+
+* Weather Data
+* Land and sea masking
+* Sub-region masking
+* Land cover
+* Bathymetry
+* Topography
+* Slope
+* Population and the Population buffer
+* Area gradient
+
+All these maps are needed before the potential or timeseries modules can be used for a specific spatial scope.
+
+Example:
+- Example of each maps in a scare frame
+
+.. _potentialMaps:
+
+Potential Maps and Reports
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+The Potential.py module serves to generate Potential raster maps for all four technologies supported by the script.
+This module generates a Full Load Hour (FLH) raster map, masking and masked rasters for unsuitable and protected areas, 
+and a weighting and weighted raster used for energy and power potential calculations.
+It also generates a .csv report containing metrics for each sub-region:
+
+* Available number of pixels, before and after masking
+* Available area in in km²
+* FLH mean, median, max, min values, before and after masking
+* FLH standard deviation after masking
+* Power Potential in GW, before and after weighting
+* Energy Potential in TWh in total, after weighting, and after masking and weighting
+* Sorted sample of FLH values for each region
+
+Example:
+- FLH
+- Masked FLH
+- Weighted Masked FLH
+- Sample of report
+
+.. _timeSeries:
+
+Timeseries for Quantiles and user defined Locations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The time_series.py module allows to generate timeseries for quantiles as well as user defined locations based on 
+the FLH raster maps generated in the previously mentioned module.
+It is therefore important for the FLH raster maps to be generated first, in order to locate the quantiles. 
+However, generating time series for user defined locations do not require the potential maps to be generated before hand.
+
+Exampe:
+- Locations of quantiles
+- Timeseries graph
+
+.. _Regression:
+
+Regression
+^^^^^^^^^^
+Once a set timeseries for different parameters (hub-heights for Wind Onshore and Offshore, orientations for Solar PV) are generated. 
+The regression.py module allow the user to find parameter and quantiles coefficients to match a certain model FLH and Time-series.
+This is usefull for determining the ... continued here
+
+Example:
+- Graphic of regression coefficients with FLH and TS model
+
+.. _Strat:
+
+Stratified Timeseries
+^^^^^^^^^^^^^^^^^^^^^
+Part of the time_series.py module, the generate_stratified_tiemseries function reads the regression coefficients, as well as, 
+the generated quantile's time series and combine them into user defined modes (quantiles combinations) and combo (hub-heights or orientations combinations). 
+
+Example:
+- Graphic of Modes and Combos
+
+

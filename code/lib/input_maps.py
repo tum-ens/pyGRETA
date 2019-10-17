@@ -1,5 +1,5 @@
-from correction_functions import clean_weather_data
-from spatial_functions import *
+from lib.correction_functions import clean_weather_data
+from lib.spatial_functions import *
 
 
 def generate_input_maps(paths, param):
@@ -486,13 +486,13 @@ def generate_population(paths, param):
     Ind = ind_global(Crd_all, res_desired)[0]
     GeoRef = param["GeoRef"]
     with rasterio.open(paths["Pop_global"]) as src:
-        A_POP_part = src.read(1) # map is only between latitudes -60 and 85
-    A_POP = np.zeros(21600, 43200)
+        A_POP_part = src.read(1)  # map is only between latitudes -60 and 85
+    A_POP = np.zeros((21600, 43200))
     A_POP[600:18000, :] = A_POP_part
     A_POP = resizem(A_POP, 180 * 240, 360 * 240) / 4  # density is divided by 4
     A_POP = np.flipud(A_POP[Ind[0] - 1 : Ind[2], Ind[3] - 1 : Ind[1]])
     array2raster(paths["POP"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_POP)
-    create_json(paths["POP"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["Pop_tiles", "POP"])
+    create_json(paths["POP"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["Pop_global", "POP"])
     print("\nfiles saved: " + paths["POP"])
     timecheck("End")
 

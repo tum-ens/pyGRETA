@@ -1,5 +1,5 @@
 initialization.py
 =================
 
-.. automodule:: initialization
+.. automodule:: lib.initialization
    :members:

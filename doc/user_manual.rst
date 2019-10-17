@@ -110,7 +110,6 @@ In both cases, please follow these instructions to download the MERRA-2 dataset:
    To avoid problems at the edge of the MERRA-2 cells, use the following set of formulas:
    
    .. math::
-     \noindent
      \begin{align*}
            minLat &= \left\lfloor\dfrac{s+0.25}{0.5}\right\rfloor \cdot 0.5 - \epsilon  \\
            maxLat &= \left\lceil\dfrac{n-0.25}{0.5}\right\rceil \cdot 0.5 + \epsilon \\
@@ -145,7 +144,7 @@ A land use map is useful in the sense that other parameters can be associated wi
 
 For each land use type, we can assign a value for these parameters which affect
 the calculations for solar power and wind speed correction.
-The global land use raster for which :mod:`input_maps.generate_landuse` has been written cannot be downloaded anymore (broken link),
+The global land use raster for which :mod:`lib.input_maps.generate_landuse` has been written cannot be downloaded anymore (broken link),
 but a newer version is available from the `USGS <https://lpdaac.usgs.gov/products/mcd12q1v006/>`_ website. 
 However, this new version requires additional data processing.
 The spatial resolution of the land use raster, and therefore of the other geographic intermediate rasters
@@ -247,11 +246,19 @@ The input_maps module is used to generate raster maps for the spatial scope defi
 
 All these maps are needed before the potential or timeseries modules can be used for a specific spatial scope.
 
-.. image:: img/landuse.png
-   :width: 49%
+.. figure:: img/landuse.png
+   :figwidth: 75%
+   :align: center
+   :alt: Land Use Raster Map - Australia
+   
+   Land Use Raster Map - Australia
 
-.. image:: img/topography.png
-   :width: 49%
+.. figure:: img/topography.png
+   :figwidth: 70%
+   :align: center
+   :alt: Topography Raster Map - Australia
+   
+   Topography Raster Map - Australia
 
 .. _potentialMaps:
 
@@ -269,12 +276,20 @@ It also generates a .csv report containing metrics for each sub-region:
 * Power Potential in GW, before and after weighting
 * Energy Potential in TWh in total, after weighting, and after masking and weighting
 * Sorted sample of FLH values for each region
-
-.. image:: img/FLH_solar.png
-   :width: 49%
    
-.. image:: img/FLH_wind.png
-   :width: 49%  
+.. figure:: img/FLH_solar.png
+   :figwidth: 75%
+   :align: center
+   :alt: FLH Solar PV Raster Map - Australia
+   
+   FLH Solar PV Raster Map - Australia 
+
+.. figure:: img/FLH_wind.png
+   :figwidth: 75%
+   :align: center
+   :alt: FLH Wind Onshore Raster Map - Australia
+   
+   FLH Wind Onshore Raster Map - Australia
 
 .. NOTE:: Missing Masked FLH and Weighted FLH, as well as, Report sample
 
@@ -282,6 +297,9 @@ It also generates a .csv report containing metrics for each sub-region:
    :widths: 15 30 20 20 20 30 30 30 40 40
    :header: "Region", "Available Area (km2)", "FLH Mean", "FLH Max", "FLH Min", "FLH Mean Masked", "FLH Max Masked", "FLH Min Masked", "Power Potential (GW)", "Energy Potential (TWh)"
    :file: img/sample report.csv
+
+.. WARNING:: Tables might be hard to display in latex, consider adding htmlonly direction
+
 .. _timeSeries:
 
 Timeseries for Quantiles and user defined Locations

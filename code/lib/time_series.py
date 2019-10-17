@@ -1,6 +1,6 @@
-from spatial_functions import *
-from physical_models import calc_CF_solar, calc_CF_wind
-from potential import get_merra_raster_data
+from lib.spatial_functions import *
+from lib.physical_models import calc_CF_solar, calc_CF_wind
+from lib.potential import get_merra_raster_data
 
 
 def find_locations_quantiles(paths, param, tech):

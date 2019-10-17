@@ -1,5 +1,5 @@
-from spatial_functions import calc_region, array2raster
-from util import *
+from lib.spatial_functions import calc_region, array2raster
+from lib.util import *
 
 
 def clean_weather_data(paths, param):

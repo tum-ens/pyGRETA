@@ -109,13 +109,14 @@ In both cases, please follow these instructions to download the MERRA-2 dataset:
 4. In *Spatial Search*, enter the coordinates of the bounding box around your region of interest or leave the default values for the whole globe. 
    To avoid problems at the edge of the MERRA-2 cells, use the following set of formulas:
    
-.. math::
-  \begin{align*}
-        minLat &= \left\lfloor\dfrac{s+0.25}{0.5}\right\rfloor \cdot 0.5 - \epsilon  \\
-        maxLat &= \left\lceil\dfrac{n-0.25}{0.5}\right\rceil \cdot 0.5 + \epsilon \\
-        minLon &= \left\lfloor\dfrac{w+0.3125}{0.625}\right\rfloor \cdot 0.625 - \epsilon  \\
-        maxLon &= \left\lceil\dfrac{e-0.3125}{0.625}\right\rceil \cdot 0.625 + \epsilon 
-  \end{align*}
+   .. math::
+     \noindent
+     \begin{align*}
+           minLat &= \left\lfloor\dfrac{s+0.25}{0.5}\right\rfloor \cdot 0.5 - \epsilon  \\
+           maxLat &= \left\lceil\dfrac{n-0.25}{0.5}\right\rceil \cdot 0.5 + \epsilon \\
+           minLon &= \left\lfloor\dfrac{w+0.3125}{0.625}\right\rfloor \cdot 0.625 - \epsilon  \\
+           maxLon &= \left\lceil\dfrac{e-0.3125}{0.625}\right\rceil \cdot 0.625 + \epsilon 
+     \end{align*}
 	
    where *[s n w e]* are the southern, northern, western, and eastern bounds of
    the region of interest, which you can read from the shapefile properties in

@@ -247,8 +247,11 @@ The input_maps module is used to generate raster maps for the spatial scope defi
 
 All these maps are needed before the potential or timeseries modules can be used for a specific spatial scope.
 
-Example:
-- Example of each maps in a scare frame
+.. image:: img/landuse.png
+   :width: 49%
+
+.. image:: img/topography.png
+   :width: 49%
 
 .. _potentialMaps:
 
@@ -273,11 +276,7 @@ It also generates a .csv report containing metrics for each sub-region:
 .. image:: img/FLH_wind.png
    :width: 49%  
 
-Example:
-- FLH
-- Masked FLH
-- Weighted Masked FLH
-- Sample of report
+.. NOTE:: Missing Masked FLH and Weighted FLH, as well as, Report sample
 
 .. _timeSeries:
 

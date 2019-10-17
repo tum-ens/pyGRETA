@@ -135,7 +135,7 @@ A land use map is useful in the sense that other parameters can be associated wi
 
 For each land use type, we can assign a value for these parameters which affect
 the calculations for solar power and wind speed correction.
-The global land use raster for which :mod:`input_maps.generate_landuse` has been written cannot be downloaded anymore (broken link),
+The global land use raster for which :mod:`lib.input_maps.generate_landuse` has been written cannot be downloaded anymore (broken link),
 but a newer version is available from the `LP DAAC <https://lpdaac.usgs.gov/products/mcd12q1v006/>`_. 
 However, this new version requires additional data processing.
 The spatial resolution of the land use raster, and therefore of the other geographic intermediate rasters
@@ -201,7 +201,7 @@ need, choose 50m height, and download the plot data for the wind speed in a fold
 
 Recommended workflow
 --------------------
-The script is designed to be modular and split into four main modules: 1. input_maps, 2. potential, 3. time_series, and 4. regression. 
+The script is designed to be modular and split into four main modules: 1. :mod:`lib.input_maps`, 2. :mod:`lib.potential`, 3. :mod:`lib.time_series`, and 4. :mod:`lib.regression`. 
 
 .. WARNING:: The outputs of each module, serve as inputs to the following module. Therefore, a user will have to run the script sequentially.
 
@@ -213,9 +213,9 @@ The recommended use cases of each module will be presented in the order in which
 4. :ref:`Regression`
 5. :ref:`Strat`
 
-
-
 The use cases associated with each module with examples of their outputs are presented below.
+
+.. NOTE:: Include here a graphic with the use cases and miniatures of outputs.
 
 It is recommended to thoroughly read through the configuration file `config.py` and modify the input paths and 
 computation parameters before starting script.
@@ -286,9 +286,17 @@ Once a set timeseries for different parameters (hub-heights for Wind Onshore and
 The regression.py module allow the user to find parameter and quantiles coefficients to match a certain model FLH and Time-series.
 This is usefull for determining the ... continued here
 
+Example:
+- Graphic of regression coefficients with FLH and TS model
+
 .. _Strat:
 
 Stratified Timeseries
 ^^^^^^^^^^^^^^^^^^^^^
-The stratified timeseries function from the time-series.py module is used to ...
+Part of the time_series.py module, the generate_stratified_tiemseries function reads the regression coefficients, as well as, 
+the generated quantile's time series and combine them into user defined modes (quantiles combinations) and combo (hub-heights or orientations combinations). 
+
+Example:
+- Graphic of Modes and Combos
+
 

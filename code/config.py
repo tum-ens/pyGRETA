@@ -57,7 +57,7 @@ def general_settings():
 
     param = {}
     param["author"] = "Houssame Houmy"  # the name of the person running the script
-    param["comment"] = "Test_new_code_structure"
+    param["comment"] = "Documentation_Exp"
 
     paths = {}
     fs = os.path.sep
@@ -107,12 +107,12 @@ def scope_paths_and_parameters(paths, param):
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
 
-    paths["spatial_scope"] = PathTemp + "gadm36_GHA_0.shp"
-    paths["subregions"] = PathTemp + "gadm36_GHA_1.shp"
+    paths["spatial_scope"] = PathTemp + "gadm36_AUS_0.shp"
+    paths["subregions"] = PathTemp + "gadm36_AUS_0.shp"
 
     # Name tags for the scope and the subregions
-    param["region_name"] = "Ghana"  # Name tag of the spatial scope
-    param["subregions_name"] = "gadm36_GHA_1"  # Name tag of the subregions
+    param["region_name"] = "Australia"  # Name tag of the spatial scope
+    param["subregions_name"] = "Documentation_Exp"  # Name tag of the subregions
 
     # Year
     param["year"] = 2015
@@ -528,7 +528,7 @@ def onshore_wind_parameters(param):
     """
     windon = {}
     windon["resource"] = {"res_correction": 1, "topo_correction": 1, "topo_weight": "capacity"}  # 'none' or 'size' or 'capacity'
-    windon["technical"] = {"w_in": 4, "w_r": 13, "w_off": 25, "P_r": 3, "hub_height": 120}
+    windon["technical"] = {"w_in": 4, "w_r": 13, "w_off": 25, "P_r": 3, "hub_height": 100}
     windon["mask"] = {
         "slope": 20,
         "lu_suitability": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1]),

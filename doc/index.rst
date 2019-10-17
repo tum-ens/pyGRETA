@@ -7,7 +7,7 @@ GIS-based model for renewable energy potential and time series generation
 ---------------------------------------------------------------------------
 
 :Code developers: Kais Siala, Houssame Houmy
-:Documentation authors:	Kais Siala, Sergio Alejandro Huezo Rodriguez, Houssame Houmy		
+:Documentation authors:	Kais Siala, Houssame Houmy, Sergio Alejandro Huezo Rodriguez		
 :Maintainers: Kais Siala <kais.siala@tum.de>
 :Organization: `Chair of Renewable and Sustainable Energy Systems <http://www.ens.ei.tum.de/en/homepage/>`_, Technical University of Munich
 :Version: |version|

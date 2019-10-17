@@ -204,6 +204,7 @@ def calc_TS_solar(hours, args):
     :param hours: Hour ranks of the year (from 0 to 8759).
     :type hours: numpy array
     :param args: List of arguments:
+    
         * *param* (dict): Dictionary including multiple parameters such as the status bar limit, the name of the region, and
         others for calculating the hourly capacity factors.
         * *tech* (str): Name of the technology.
@@ -249,6 +250,7 @@ def calc_TS_wind(hours, args):
     :param hours: Hour ranks of the year (from 0 to 8759).
     :type hours: numpy array
     :param args: List of arguments:
+    
         * *param* (dict): Dictionary including multiple parameters such as the status bar limit, the name of the region, and
         others for calculating the hourly capacity factors.
         * *tech* (str): Name of the technology.

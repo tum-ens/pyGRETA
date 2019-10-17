@@ -9,7 +9,7 @@ def configuration():
     """
     This function is the main configuration function that calls all the other modules in the code.
 
-    :return: The dictionary param containing all the user preferences, and the dictionary path containing all the paths to inputs and outputs.
+    :return (paths, param): The dictionary paths containing all the paths to inputs and outputs, and the dictionary param containing all the user preferences.
     :rtype: tuple(dict, dict)
     """
     paths, param = general_settings()
@@ -48,7 +48,7 @@ def general_settings():
     This function creates and initializes the dictionaries param and paths. It also creates global variables for the root folder ``root``,
     and the system-dependent file separator ``fs``.
 
-    :return: The empty dictionary paths, and the dictionary param including some general information.
+    :return (paths, param): The empty dictionary paths, and the dictionary param including some general information.
     :rtype: tuple(dict, dict)
     """
     # These variables will be initialized here, then read in other modules without modifying them.
@@ -101,7 +101,7 @@ def scope_paths_and_parameters(paths, param):
     :param param: Dictionary including the user preferences.
     :type param: dict
 
-    :return: The updated dictionaries paths and param.
+    :return (paths, param): The updated dictionaries paths and param.
     :rtype: tuple(dict, dict)
     """
     # Paths to the shapefiles
@@ -127,7 +127,7 @@ def computation_parameters(param):
     """
     This function defines parameters related to the processing:
     
-    * *nproc* is an integer that limits the number of parallel processes (some modules in ``Master.py`` allow parallel processing).
+    * *nproc* is an integer that limits the number of parallel processes (some modules in ``potential.py`` and ``time_series.py`` allow parallel processing).
     
     * *CPU_limit* is a boolean parameter that sets the level of priority for all processes in the multiprocessesing.
       Leave ``True`` if you plan on using the computer while FLH and TS are being computed, ``False`` for fastest computation time.
@@ -135,7 +135,7 @@ def computation_parameters(param):
     :param param: Dictionary including the user preferences.
     :type param: dict
 
-    :return: The updated dictionary param.
+    :return param: The updated dictionary param.
     :rtype: dict
     """
     param["nproc"] = 36
@@ -152,7 +152,7 @@ def resolution_parameters(param):
     :param param: Dictionary including the user preferences.
     :type param: dict
 
-    :return: The updated dictionary param.
+    :return param: The updated dictionary param.
     :rtype: dict
     """
     param["res_weather"] = np.array([1 / 2, 5 / 8])
@@ -173,7 +173,7 @@ def weather_data_parameters(param):
     :param param: Dictionary including the user preferences.
     :type param: dict
 
-    :return: The updated dictionary param.
+    :return param: The updated dictionary param.
     :rtype: dict
     """
     param["MERRA_coverage"] = "World"
@@ -189,12 +189,12 @@ def file_saving_options(param):
     * *savetiff* is a boolean that determines whether tif rasters for the potentials are saved (``True``), or whether only mat files are saved (``False``).
       The latter are saved in any case.
     
-    *  *report_sampling* is an integer that sets the sample size for the sorted FLH values per region (relevant for :mod:`Master.reporting`).
+    *  *report_sampling* is an integer that sets the sample size for the sorted FLH values per region (relevant for :mod:`potential.reporting`).
     
     :param param: Dictionary including the user preferences.
     :type param: dict
 
-    :return: The updated dictionary param.
+    :return param: The updated dictionary param.
     :rtype: dict
     """
     # Mask / Weight
@@ -213,7 +213,7 @@ def time_series_parameters(param):
       and points with FLH values at a certain quantile will be later selected. The time series will be created for these points.
       The value 100 corresponds to the maximum, 50 to the median, and 0 to the minimum.
       
-    * *regression* is a dictionary of options for :mod:`Master.regression_coefficients`:
+    * *regression* is a dictionary of options for :mod:`regression.regression_coefficients`:
       
       - *solver* is the name of the solver for the regression.
       - *WindOn* is a dictionary containing a list of hub heights that will be considered in the regression, with a name tag for the list.
@@ -228,7 +228,7 @@ def time_series_parameters(param):
       
        param["modes"] = {"all": param["quantiles"]}
       
-    * *combo* is a dictionary of options for :mod:`Master.generate_stratified_timeseries`:
+    * *combo* is a dictionary of options for :mod:`time_series.generate_stratified_timeseries`:
     
       - *WindOn* is a dictionary containing the different combinations of hub heights for which stratified time series should be generated, with a name tag for each list.
       - *WindOff* is a dictionary containing the different combinations of hub heights for which stratified time series should be generated, with a name tag for each list.
@@ -240,7 +240,7 @@ def time_series_parameters(param):
     :param param: Dictionary including the user preferences.
     :type param: dict
 
-    :return: The updated dictionary param.
+    :return param: The updated dictionary param.
     :rtype: dict
     """
     # Quantiles for time series
@@ -273,16 +273,16 @@ def landuse_parameters(param):
     This function sets the land use parameters in the dictionary *landuse* inside param:
     
       * *type* is a numpy array of integers that associates a number to each land use type.
-      * *type_urban* is the number associated to urban areas (useful for :mod:`Master.generate_buffered_population`).
-      * *Ross_coeff* is a numpy array of Ross coefficients associated to each land use type (relevant for :mod:`model_functions.loss`).
-      * *albedo* is a numpy array of albedo coefficients between 0 and 1 associated to each land use type (relevant for reflected irradiation, see :mod:`model_functions.calc_CF_solar`).
-      * *hellmann* is a numpy array of Hellmann coefficients associated to each land use type (relevant for :mod:`Master.generate_wind_correction`).
-      * *height* is a numpy array of gradient heights in meter associated to each land use type (relevant for :mod:`Master.generate_wind_correction`).
+      * *type_urban* is the number associated to urban areas (useful for :mod:`input_maps.generate_buffered_population`).
+      * *Ross_coeff* is a numpy array of Ross coefficients associated to each land use type (relevant for :mod:`physical_models.loss`).
+      * *albedo* is a numpy array of albedo coefficients between 0 and 1 associated to each land use type (relevant for reflected irradiation, see :mod:`physical_models.calc_CF_solar`).
+      * *hellmann* is a numpy array of Hellmann coefficients associated to each land use type (relevant for :mod:`correction_functions.generate_wind_correction`).
+      * *height* is a numpy array of gradient heights in meter associated to each land use type (relevant for :mod:`correction_functions.generate_wind_correction`).
     
     :param param: Dictionary including the user preferences.
     :type param: dict
 
-    :return: The updated dictionary param.
+    :return param: The updated dictionary param.
     :rtype: dict
 
     Land use reclassification::
@@ -329,7 +329,7 @@ def protected_areas_parameters(param):
     :param param: Dictionary including the user preferences.
     :type param: dict
 
-    :return: The updated dictionary param.
+    :return param: The updated dictionary param.
     :rtype: dict
     """
     protected_areas = {
@@ -366,10 +366,10 @@ def pv_parameters(param):
     * *technical* is a dictionary including the parameters related to the module:
     
       * *T_r* is the rated temperature in °C.
-      * *loss_coeff* is the loss coefficient (relevant for :mod:`model_functions.loss`).
+      * *loss_coeff* is the loss coefficient (relevant for :mod:`physical_models.loss`).
       * *tracking* is either 0 for no tracking, 1 for one-axis tracking, or 2 for two-axes tracking.
       * *orientation* is the azimuth orientation of the module in degrees.
-      * The tilt angle from the horizontal is chosen optimally in the code, see :mod:`model_functions.angles`.
+      * The tilt angle from the horizontal is chosen optimally in the code, see :mod:`physical_models.angles`.
     
     * *mask* is a dictionary including the parameters related to the masking:
     
@@ -393,7 +393,7 @@ def pv_parameters(param):
     :param param: Dictionary including the user preferences.
     :type param: dict
 
-    :return: The updated dictionary param.
+    :return param: The updated dictionary param.
     :rtype: dict
     :raise Tracking Warning: If *tracking* is not set to 0 and *orientation* is given as a value other than 0 or 180 (South or North), the orientation is ignored.
 
@@ -438,8 +438,8 @@ def csp_parameters(param):
     * *technical* is a dictionary including the parameters related to the module:
     
       * *T_avg_HTF* is the average temperature in °C of the heat transfer fluid between the inlet and outlet of the solar field.
-      * *loss_coeff* is the the heat loss coefficient in W/(m²K), which does not depend on wind speed (relevant for :mod:`model_functions.calc_CF_solar`).
-      * *loss_coeff_wind* is the the heat loss coefficient in W/(m²K(m/s)^0.6), which depends on wind speed (relevant for :mod:`model_functions.calc_CF_solar`).
+      * *loss_coeff* is the the heat loss coefficient in W/(m²K), which does not depend on wind speed (relevant for :mod:`physical_models.calc_CF_solar`).
+      * *loss_coeff_wind* is the the heat loss coefficient in W/(m²K(m/s)^0.6), which depends on wind speed (relevant for :mod:`physical_models.calc_CF_solar`).
       * *Flow_coeff* is a factor smaller than 1 for the heat transfer to the HTF (Flow or heat removal factor).
       * *AbRe_ratio* is the ratio between the receiver area and the concentrator aperture.
       * *Wind_cutoff* is the maximum wind speed for effective tracking in m/s.
@@ -460,7 +460,7 @@ def csp_parameters(param):
     :param param: Dictionary including the user preferences.
     :type param: dict
 
-    :return: The updated dictionary param.
+    :return param: The updated dictionary param.
     :rtype: dict
     """
     csp = {}
@@ -494,7 +494,7 @@ def onshore_wind_parameters(param):
     
     * *resource* is a dictionary including the parameters related to the resource potential:
     
-      * *res_correction* is either 1 (perform a redistribution of wind speed when increasing the resolution) or 0 (repeat the same value from the low resolution data). It is relevant for :mod:`Master.generate_wind_correction`.
+      * *res_correction* is either 1 (perform a redistribution of wind speed when increasing the resolution) or 0 (repeat the same value from the low resolution data). It is relevant for :mod:`correction_functions.generate_wind_correction`.
       * *topo_correction* is either 1 (perform a correction of wind speed based on the altitude and the Global Wind Atlas) or 0 (no correction based on altitude).
       * *topo_weight* is only relevant if *topo_correction* = 1. It defines how to weight the correction factors of each country. There are three options: ``'none'`` (all countries have the same weight), ``'size'`` (larger countries have a higher weight), or ``'capacity'`` (countries with a higher installed capacity according to IRENA have a higher weight).
     
@@ -523,7 +523,7 @@ def onshore_wind_parameters(param):
     :param param: Dictionary including the user preferences.
     :type param: dict
 
-    :return: The updated dictionary param.
+    :return param: The updated dictionary param.
     :rtype: dict
     """
     windon = {}
@@ -551,7 +551,8 @@ def offshore_wind_paramters(param):
     
     * *resource* is a dictionary including the parameters related to the resource potential:
     
-      * *res_correction* is either 1 (perform a redistribution of wind speed when increasing the resolution) or 0 (repeat the same value from the low resolution data). It is relevant for :mod:`Master.generate_wind_correction`.
+      * *res_correction* is either 1 (perform a redistribution of wind speed when increasing the resolution) or 0 (repeat the same value from the low resolution data).
+        It is relevant for :mod:`correction_functions.generate_wind_correction`.
     
     * *technical* is a dictionary including the parameters related to the wind turbine:
     
@@ -576,7 +577,7 @@ def offshore_wind_paramters(param):
     :param param: Dictionary including the user preferences.
     :type param: dict
 
-    :return: The updated dictionary param.
+    :return param: The updated dictionary param.
     :rtype: dict
     """
     windoff = {}
@@ -607,7 +608,7 @@ def weather_input_folder(paths, param):
     :param param: Dictionary including the user preferences.
     :type param: dict
 
-    :return: The updated dictionary paths.
+    :return paths: The updated dictionary paths.
     :rtype: dict
     """
     global root
@@ -629,14 +630,14 @@ def global_maps_input_paths(paths):
       * *Pop_tiles* for the population tiles (rasters)
       * *Bathym_global* for the bathymetry raster
       * *Protected* for the shapefile of protected areas
-      * *GWA* for the country data retrieved from the Global Wind Atlas (missing the country code, which will be filled in a for-loop in :mod:data_functions.calc_gwa_correction)
+      * *GWA* for the country data retrieved from the Global Wind Atlas (missing the country code, which will be filled in a for-loop in :mod:correction_functions.calc_gwa_correction)
       * *Countries* for the shapefiles of countries
       * *EEZ_global* for the shapefile of exclusive economic zones of countries
     
     :param paths: Dictionary including the paths.
     :type paths: dict
 
-    :return: The updated dictionary paths.
+    :return paths: The updated dictionary paths.
     :rtype: dict
     """
     global root
@@ -675,7 +676,7 @@ def output_folders(paths, param):
     :param param: Dictionary including the user preferences.
     :type param: dict
 
-    :return: The updated dictionary paths.
+    :return paths: The updated dictionary paths.
     :rtype: dict
     """
     global root
@@ -731,7 +732,7 @@ def weather_output_paths(paths, param):
     :param param: Dictionary including the user preferences.
     :type param: dict
 
-    :return: The updated dictionary paths.
+    :return paths: The updated dictionary paths.
     :rtype: dict
     """
     year = str(param["year"])
@@ -766,7 +767,7 @@ def local_maps_paths(paths, param):
     :param param: Dictionary including the user preferences.
     :type param: dict
 
-    :return: The updated dictionary paths.
+    :return paths: The updated dictionary paths.
     :rtype: dict
     """
     # Local maps
@@ -806,7 +807,7 @@ def irena_paths(paths, param):
     :param param: Dictionary including the user preferences.
     :type param: dict
 
-    :return: The updated dictionary paths.
+    :return paths: The updated dictionary paths.
     :rtype: dict
     """
     global root
@@ -837,7 +838,7 @@ def regression_paths(paths, param, tech):
     :param paths: Dictionary including the paths.
     :type paths: dict
 
-    :return: The updated dictionary paths.
+    :return paths: The updated dictionary paths.
     :rtype: dict
     """
     year = str(param["year"])
@@ -860,7 +861,7 @@ def emhires_input_paths(paths, param, tech):
     :param tech: Name of the technology.
     :type tech: string
 
-    :return: The updated dictionary paths.
+    :return paths: The updated dictionary paths.
     :rtype: dict
     """
     global root
@@ -893,7 +894,7 @@ def potential_output_paths(paths, param, tech):
     :param tech: Name of the technology.
     :type tech: string
 
-    :return: The updated dictionary paths.
+    :return paths: The updated dictionary paths.
     :rtype: dict
     """
     region = param["region_name"]
@@ -939,7 +940,7 @@ def regional_analysis_output_paths(paths, param, tech):
     :param tech: Name of the technology.
     :type tech: string
 
-    :return: The updated dictionary paths.
+    :return paths: The updated dictionary paths.
     :rtype: dict
     """
     subregions = param["subregions_name"]

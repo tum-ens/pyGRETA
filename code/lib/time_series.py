@@ -354,17 +354,17 @@ def generate_stratified_timeseries(paths, param, tech):
     This function reads the coefficients obtained from the regression function as well as the generated time series for
     the combinations of hub heights / orientations and quantiles, to combine them according to user-defined
     *modes* (quantile combination) and *combos* (hub heights / orientation combinations) and saves the results (time series) 
-	in a CSV file.
+    in a CSV file.
 
     :param paths: Dictionary of dictionaries containing the paths to the regression coefficients and the time series.
     :type paths: dict
-	:param param: Dictionary of dictionaries containing the list of subregions, the modes, and the combos.
+    :param param: Dictionary of dictionaries containing the list of subregions, the modes, and the combos.
     :type param: dict
     :param tech: Technology under study.
     :type tech: str
 
     :return: The stratified time series for each region, mode, and combo are saved directly in the given path, along with the metadata in a JSON file.
-	:rtype: None
+    :rtype: None
     """
     timecheck("Start")
     modes = param["modes"]

@@ -50,13 +50,13 @@ def generate_wind_correction(paths, param):
     There are different types of correction:
 
     * Gradient correction: Adjusts for the hub height of the wind turbines, based on the Hellmann coefficients of each land use type.
-        This correction applies always.
+      This correction applies always.
     * Resolution correction: Performs a redistribution of wind speed when increasing the resolution based on land use types, while ensuring that
-        the average of each MERRA-2 cell at 50m is still the same. This correction is optional, and is activated if *res_correction* is 1.
-        If not activated, the same value from the low resolution is repeated.
+      the average of each MERRA-2 cell at 50m is still the same. This correction is optional, and is activated if *res_correction* is 1.
+      If not activated, the same value from the low resolution is repeated.
     * Topographic/Orographic correction: Takes into account the elevation of the terrain, because MERRA-2 usually underestimates
-        the wind speed in mountains. This correction is optional, uses data from the Global Wind Atlas for all countries in the scope,
-        and is activated only for onshore wind if *topo_correction* is 1.
+      the wind speed in mountains. This correction is optional, uses data from the Global Wind Atlas for all countries in the scope,
+      and is activated only for onshore wind if *topo_correction* is 1
 
     :param paths: Dictionary of dictionaries containing the paths to the land, land use, and topography rasters, and to the output files CORR_ON and CORR_OFF.
     :type paths: dict

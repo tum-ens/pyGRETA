@@ -266,10 +266,10 @@ def sumnorm_MERRA2(A, m, n, res_low, res_desired):
     :param n: Number of columns in the low resolution.
     :type n: int
     :param res_low: Numpy array with with two numbers. The first number is the resolution in the vertical dimension (in degrees of latitude),
-    the second is for the horizontal dimension (in degrees of longitude).
+        the second is for the horizontal dimension (in degrees of longitude).
     :type res_low: numpy array
     :param res_desired: Numpy array with with two numbers. The first number is the resolution in the vertical dimension (in degrees of latitude),
-    the second is for the horizontal dimension (in degrees of longitude).
+        the second is for the horizontal dimension (in degrees of longitude).
     :type res_desired: numpy array
 
     :return s: Aggregated average of *A* on the low resolution.
@@ -317,13 +317,14 @@ def limit_cpu(check):
 def timecheck(*args):
     """
     This function prints information about the progress of the script by displaying the function currently running, and optionally
-    an input message, with a corresponding timestamp. ????? mention error raised
+    an input message, with a corresponding timestamp. If more than one argument is passed to the function, it will raise an exception.
 
     :param args: Message to be displayed with the function name and the timestamp.
     :type args: string (``optional``)
 
     :return: The time stamp is printed.
-    :rtype: None
+    :rtype: None*
+    :raise: Too many arguments have been passed to the function, the maximum is only one string.
     """
     if len(args) == 0:
         print(inspect.stack()[1].function + str(datetime.datetime.now().strftime(": %H:%M:%S:%f")) + "\n")

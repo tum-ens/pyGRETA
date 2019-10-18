@@ -324,6 +324,10 @@ Regression
 Once a set timeseries for different parameters (hub-heights for Wind Onshore and Offshore, orientations for Solar PV) are generated. 
 The regression.py module allow the user to find parameter and quantiles coefficients to match a certain model FLH and Time-series.
 
+.. figure:: img/regression_graphic.png
+   :figwidth: 100%
+   :align: center
+
 Example:
 - Graphic of regression coefficients with FLH and TS model
 

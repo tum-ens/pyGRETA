@@ -298,7 +298,7 @@ It also generates a CSV report containing metrics for each subregion:
    
    FLH of solar PV after masking - Australia 
 
-.. figure:: img/FLH_wind.png
+.. figure:: img/FLH_wind_weighted.png
    :figwidth: 75%
    :align: center
    :alt: Energy output of onshore wind after weighting - Australia
@@ -306,6 +306,7 @@ It also generates a CSV report containing metrics for each subregion:
    Energy output of onshore wind after weighting - Australia
 
 Sample of potential report 
+
 .. tabularcolumns:: |l|l|l|l|l|l|l|l|l|l|l|l|l|l|
 
 +-----------+--------------------+----------+-----------+-----------+----------------+---------------+---------------+--------------------+----------------------+

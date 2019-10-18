@@ -67,7 +67,7 @@ runme.py
 .. literalinclude:: ../code/runme.py
    :language: python
    :linenos:
-   :emphasize-lines: 12-13,22-26,28-30,35-36,38-39
+   :emphasize-lines: 13,23-26,29-30,36,39
 
 
 Recommended input sources
@@ -128,8 +128,8 @@ In both cases, please follow these instructions to download the MERRA-2 dataset:
 
 If you follow these steps to download the data for the year 2015, you will obtain 730 NetCDF files, one for each day of the year and for each data product. 
 
-Land use
-^^^^^^^^
+Raster of land use
+^^^^^^^^^^^^^^^^^^
 Another important input for this model is the land use type. 
 A land use map is useful in the sense that other parameters can be associated with different landuse types, namely:
 
@@ -210,7 +210,7 @@ Recommended workflow
 --------------------
 The script is designed to be modular and split into four main modules: :mod:`lib.input_maps`, :mod:`lib.potential`, :mod:`lib.time_series`, and :mod:`lib.regression`. 
 
-.. WARNING:: The outputs of each module, serve as inputs to the following module. Therefore, a user will have to run the script sequentially.
+.. WARNING:: The outputs of each module serve as inputs to the following module. Therefore, the user will have to run the script sequentially.
 
 The recommended use cases of each module will be presented in the order in which the user will have to run them. 
 
@@ -225,26 +225,26 @@ The use cases associated with each module with examples of their outputs are pre
 .. NOTE:: Include here a graphic with the use cases and miniatures of outputs.
 
 It is recommended to thoroughly read through the configuration file :mod:`config.py` and modify the input paths and 
-computation parameters before starting script.
-Once the configuration file is set, open the runme.py file to define what use case you will be using the script for.
+computation parameters before starting the :mod:`runme.py` script.
+Once the configuration file is set, open the :mod:`runme.py` file to define what use case you will be using the script for.
 
 .. _inputMaps:
 
-Inputs Raster Maps
+Input raster maps
 ^^^^^^^^^^^^^^^^^^
-The input_maps module is used to generate raster maps for the spatial scope defined by the user. These maps include:
+The :mod:`lib.input_maps` module is used to generate data (mostly raster maps, but also arrays in MAT files) for the spatial scope defined by the user. These data sets include:
 
-* Weather Data
+* Weather data
 * Land and sea masking
-* Sub-region masking
-* Land cover
+* Subregions masking
+* Land use
 * Bathymetry
 * Topography
 * Slope
-* Population and the Population buffer
-* Area gradient
+* Population and the population buffer masking
+* Area
 
-All these maps are needed before the potential or timeseries modules can be used for a specific spatial scope.
+All these maps are needed before the potential or time series modules can be used for a specific spatial scope.
 
 .. figure:: img/landuse.png
    :figwidth: 75%
@@ -262,12 +262,12 @@ All these maps are needed before the potential or timeseries modules can be used
 
 .. _potentialMaps:
 
-Potential Maps and Reports
+Potential maps and reports
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-The Potential.py module serves to generate Potential raster maps for all four technologies supported by the script.
-This module generates a Full Load Hour (FLH) raster map, masking and masked rasters for unsuitable and protected areas, 
+The :mod:`lib.potential` module serves to generate potential raster maps for all four technologies supported by the script.
+This module generates a Full-Load Hour (FLH) raster map, masking and masked rasters for unsuitable and protected areas, 
 and a weighting and weighted raster used for energy and power potential calculations.
-It also generates a .csv report containing metrics for each sub-region:
+It also generates a CSV report containing metrics for each subregion:
 
 * Available number of pixels, before and after masking
 * Available area in in km²
@@ -302,27 +302,27 @@ It also generates a .csv report containing metrics for each sub-region:
 
 .. _timeSeries:
 
-Timeseries for Quantiles and user defined Locations
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-The time_series.py module allows to generate timeseries for quantiles as well as user defined locations based on 
+Time series for quantiles and user-defined locations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The :mod:`lib.time_series` module allows to generate time series for quantiles as well as user-defined locations based on 
 the FLH raster maps generated in the previously mentioned module.
 It is therefore important for the FLH raster maps to be generated first, in order to locate the quantiles. 
-However, generating time series for user defined locations do not require the potential maps to be generated before hand.
+However, generating time series for user-defined locations does not require the potential maps to be generated beforehand.
 
 .. image:: img/AustraliaQ50WindvsSolar.png
    :width: 100%
 
-Exampe:
+Example:
 - Locations of quantiles
-- Timeseries graph
 
 
 .. _Regression:
 
 Regression
 ^^^^^^^^^^
-Once a set timeseries for different parameters (hub-heights for Wind Onshore and Offshore, orientations for Solar PV) are generated. 
-The regression.py module allow the user to find parameter and quantiles coefficients to match a certain model FLH and Time-series.
+Once a set of time series for different settings (hub heights for wind technologies, orientations for solar PV) is generated, 
+the :mod:`lib.regression` module allows the user to find a combination of settings and quantiles in order to match a known FLH value 
+and a given (typical) time series. The output is a set of regression coefficients that should be multiplied with the time series.
 
 .. figure:: img/regression_graphic.png
    :figwidth: 100%
@@ -333,10 +333,10 @@ Example:
 
 .. _Strat:
 
-Stratified Timeseries
+Stratified time series
 ^^^^^^^^^^^^^^^^^^^^^
-Part of the time_series.py module, the generate_stratified_tiemseries function reads the regression coefficients, as well as, 
-the generated quantile's time series and combine them into user defined modes (quantiles combinations) and combo (hub-heights or orientations combinations). 
+Part of the :mod:`lib.time_series` module, the :mod:`lib.time_series.generate_stratified_tiemseries` function reads the regression coefficients and 
+the generated time series, and combines them into user-defined *modes* (combinations of quantiles) and *combos* (combinations hub height or orientations settings). 
 
 Example:
 - Graphic of Modes and Combos

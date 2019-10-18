@@ -89,6 +89,9 @@ Continue here if you want to understand in detail the model implementation.
 
 Dependencies
 ------------
+A list of the used libraries is available in the environment file:
+
+.. literalinclude:: ../env/ren_ts.yml
 
 Bibliography	
 ------------

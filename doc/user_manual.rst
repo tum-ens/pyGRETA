@@ -280,25 +280,49 @@ It also generates a CSV report containing metrics for each subregion:
 .. figure:: img/FLH_solar.png
    :figwidth: 75%
    :align: center
-   :alt: FLH Solar PV Raster Map - Australia
+   :alt: FLH of solar PV - Australia
    
-   FLH Solar PV Raster Map - Australia 
+   FLH of solar PV - Australia 
 
 .. figure:: img/FLH_wind.png
    :figwidth: 75%
    :align: center
-   :alt: FLH Wind Onshore Raster Map - Australia
+   :alt: FLH of onshore wind - Australia
    
-   FLH Wind Onshore Raster Map - Australia
+   FLH of onshore wind - Australia
 
-.. NOTE:: Missing Masked FLH and Weighted FLH, as well as, Report sample
+.. figure:: img/FLH_solar_masked.png
+   :figwidth: 75%
+   :align: center
+   :alt: FLH of solar PV after masking - Australia
+   
+   FLH of solar PV after masking - Australia 
 
-.. csv-table:: Potential Report Sample 
-   :widths: 15 30 20 20 20 30 30 30 40 40
-   :header: "Region", "Available Area (km2)", "FLH Mean", "FLH Max", "FLH Min", "FLH Mean Masked", "FLH Max Masked", "FLH Min Masked", "Power Potential (GW)", "Energy Potential (TWh)"
-   :file: img/sample report.csv
+.. figure:: img/FLH_wind.png
+   :figwidth: 75%
+   :align: center
+   :alt: Energy output of onshore wind after weighting - Australia
+   
+   Energy output of onshore wind after weighting - Australia
 
-.. WARNING:: Tables might be hard to display in latex, consider adding htmlonly direction
+Sample of potential report 
+.. tabularcolumns:: |l|l|l|l|l|l|l|l|l|l|l|l|l|l|
+
++-----------+--------------------+----------+-----------+-----------+----------------+---------------+---------------+--------------------+----------------------+
+|Region     |Available area (km²)|FLH mean  |FLH max    |FLH min    |Masked FLH mean |Masked FLH max |Masked FLH min |Power potential (GW)|Energy potential (TWh)|
++-----------+--------------------+----------+-----------+-----------+----------------+---------------+---------------+--------------------+----------------------+
+|Region A	|4315,7	             |1638,4	|1686,3	    |1578	    |1644,3	         |1686,3	     |1589,7	     |6,5	              |10,8                  |
++-----------+--------------------+----------+-----------+-----------+----------------+---------------+---------------+--------------------+----------------------+
+|Region B	|2128,3	             |1682,9	|1699,7	    |1601,6	    |1684,2	         |1695	         |1613,7	     |1,4	              |2,4                   |
++-----------+--------------------+----------+-----------+-----------+----------------+---------------+---------------+--------------------+----------------------+
+|Region C	|561,3	             |1849,7	|1853,4	    |1833,8	    |1849,6	         |1853,3	     |1840,8	     |0,9	              |1,7                   |
++-----------+--------------------+----------+-----------+-----------+----------------+---------------+---------------+--------------------+----------------------+
+|Region D	|100953,1            |2017,6	|2090,5	    |1986,8	    |2018	         |2086,1	     |1986,8	     |183,7	              |369,8                 |
++-----------+--------------------+----------+-----------+-----------+----------------+---------------+---------------+--------------------+----------------------+
+|Region E	|10,2	             |1856,8	|1857,1	    |1856,5	    |1856,8	         |1857,1	     |1856,5	     |0		              |0                     |
++-----------+--------------------+----------+-----------+-----------+----------------+---------------+---------------+--------------------+----------------------+
+|Region F	|2829,8	             |1729,5	|1772,2	    |1659,1	    |1731,4	         |1772,2	     |1659,1	     |4,8	              |8,3                   |
++-----------+--------------------+----------+-----------+-----------+----------------+---------------+---------------+--------------------+----------------------+
 
 .. _timeSeries:
 

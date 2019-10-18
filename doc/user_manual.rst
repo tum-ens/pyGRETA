@@ -247,14 +247,14 @@ The :mod:`lib.input_maps` module is used to generate data (mostly raster maps, b
 All these maps are needed before the potential or time series modules can be used for a specific spatial scope.
 
 .. figure:: img/landuse.png
-   :figwidth: 75%
+   :width: 75%
    :align: center
    :alt: Land Use Raster Map - Australia
    
    Land Use Raster Map - Australia
 
 .. figure:: img/topography.png
-   :figwidth: 70%
+   :width: 70%
    :align: center
    :alt: Topography Raster Map - Australia
    
@@ -292,14 +292,14 @@ It also generates a CSV report containing metrics for each subregion:
    FLH of onshore wind - Australia
 
 .. figure:: img/FLH_solar_masked.png
-   :figwidth: 75%
+   :width: 75%
    :align: center
    :alt: FLH of solar PV after masking - Australia
    
    FLH of solar PV after masking - Australia 
 
 .. figure:: img/FLH_wind_weighted.png
-   :figwidth: 75%
+   :width: 75%
    :align: center
    :alt: Energy output of onshore wind after weighting - Australia
    
@@ -307,7 +307,7 @@ It also generates a CSV report containing metrics for each subregion:
 
 Sample of potential report 
 
-.. tabularcolumns:: |l|l|l|l|l|l|l|l|l|l|l|l|l|l|
+.. tabularcolumns:: |l|l|l|l|l|l|l|l|l|l|
 
 +-----------+--------------------+----------+-----------+-----------+----------------+---------------+---------------+--------------------+----------------------+
 |Region     |Available area (km²)|FLH mean  |FLH max    |FLH min    |Masked FLH mean |Masked FLH max |Masked FLH min |Power potential (GW)|Energy potential (TWh)|
@@ -350,7 +350,7 @@ the :mod:`lib.regression` module allows the user to find a combination of settin
 and a given (typical) time series. The output is a set of regression coefficients that should be multiplied with the time series.
 
 .. figure:: img/regression_graphic.png
-   :figwidth: 100%
+   :width: 90%
    :align: center
 
 Example:

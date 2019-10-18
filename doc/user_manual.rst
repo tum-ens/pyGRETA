@@ -278,14 +278,14 @@ It also generates a CSV report containing metrics for each subregion:
 * Sorted sample of FLH values for each region
    
 .. figure:: img/FLH_solar.png
-   :figwidth: 75%
+   :width: 75%
    :align: center
    :alt: FLH of solar PV - Australia
    
    FLH of solar PV - Australia 
 
 .. figure:: img/FLH_wind.png
-   :figwidth: 75%
+   :width: 75%
    :align: center
    :alt: FLH of onshore wind - Australia
    
@@ -311,7 +311,7 @@ Sample of potential report
 
 +-----------+--------------------+----------+-----------+-----------+----------------+---------------+---------------+--------------------+----------------------+
 |Region     |Available area (km²)|FLH mean  |FLH max    |FLH min    |Masked FLH mean |Masked FLH max |Masked FLH min |Power potential (GW)|Energy potential (TWh)|
-+-----------+--------------------+----------+-----------+-----------+----------------+---------------+---------------+--------------------+----------------------+
++===========+====================+==========+===========+===========+================+===============+===============+====================+======================+
 |Region A	|4315,7	             |1638,4	|1686,3	    |1578	    |1644,3	         |1686,3	     |1589,7	     |6,5	              |10,8                  |
 +-----------+--------------------+----------+-----------+-----------+----------------+---------------+---------------+--------------------+----------------------+
 |Region B	|2128,3	             |1682,9	|1699,7	    |1601,6	    |1684,2	         |1695	         |1613,7	     |1,4	              |2,4                   |

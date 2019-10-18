@@ -57,7 +57,7 @@ def general_settings():
 
     param = {}
     param["author"] = "Houssame Houmy"  # the name of the person running the script
-    param["comment"] = "Test_new_code_structure"
+    param["comment"] = "Documentation_Exp"
 
     paths = {}
     fs = os.path.sep
@@ -107,12 +107,12 @@ def scope_paths_and_parameters(paths, param):
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
 
-    paths["spatial_scope"] = PathTemp + "gadm36_GHA_0.shp"
-    paths["subregions"] = PathTemp + "gadm36_GHA_1.shp"
+    paths["spatial_scope"] = PathTemp + "gadm36_AUS_0.shp"
+    paths["subregions"] = PathTemp + "gadm36_AUS_0.shp"
 
     # Name tags for the scope and the subregions
-    param["region_name"] = "Ghana"  # Name tag of the spatial scope
-    param["subregions_name"] = "gadm36_GHA_1"  # Name tag of the subregions
+    param["region_name"] = "Australia"  # Name tag of the spatial scope
+    param["subregions_name"] = "Documentation_Exp"  # Name tag of the subregions
 
     # Year
     param["year"] = 2015
@@ -368,7 +368,7 @@ def pv_parameters(param):
       * *T_r* is the rated temperature in °C.
       * *loss_coeff* is the loss coefficient (relevant for :mod:`physical_models.loss`).
       * *tracking* is either 0 for no tracking, 1 for one-axis tracking, or 2 for two-axes tracking.
-      * *orientation* is the azimuth orientation of the module in degrees.
+      * *orientation* is the azimuth orientation of the module in degrees relative to the equator.
       * The tilt angle from the horizontal is chosen optimally in the code, see :mod:`physical_models.angles`.
     
     * *mask* is a dictionary including the parameters related to the masking:
@@ -404,7 +404,7 @@ def pv_parameters(param):
         "T_r": 25,  # °C
         "loss_coeff": 0.37,
         "tracking": 0,  # 0 for no tracking, 1 for one-axis tracking, 2 for two-axes tracking
-        "orientation": 180,  # | 0: South | 90: West | 180: North | -90: East |
+        "orientation": 180,  # | 0: Towards equator | 90: West | 180: Away from equator | -90: East |
     }
     pv["mask"] = {
         "slope": 20,
@@ -528,7 +528,7 @@ def onshore_wind_parameters(param):
     """
     windon = {}
     windon["resource"] = {"res_correction": 1, "topo_correction": 1, "topo_weight": "capacity"}  # 'none' or 'size' or 'capacity'
-    windon["technical"] = {"w_in": 4, "w_r": 13, "w_off": 25, "P_r": 3, "hub_height": 120}
+    windon["technical"] = {"w_in": 4, "w_r": 13, "w_off": 25, "P_r": 3, "hub_height": 100}
     windon["mask"] = {
         "slope": 20,
         "lu_suitability": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1]),

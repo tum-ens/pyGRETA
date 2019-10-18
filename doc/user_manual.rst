@@ -110,7 +110,6 @@ In both cases, please follow these instructions to download the MERRA-2 dataset:
    To avoid problems at the edge of the MERRA-2 cells, use the following set of formulas:
    
    .. math::
-     \noindent
      \begin{align*}
            minLat &= \left\lfloor\dfrac{s+0.25}{0.5}\right\rfloor \cdot 0.5 - \epsilon  \\
            maxLat &= \left\lceil\dfrac{n-0.25}{0.5}\right\rceil \cdot 0.5 + \epsilon \\
@@ -145,7 +144,7 @@ A land use map is useful in the sense that other parameters can be associated wi
 
 For each land use type, we can assign a value for these parameters which affect
 the calculations for solar power and wind speed correction.
-The global land use raster for which :mod:`input_maps.generate_landuse` has been written cannot be downloaded anymore (broken link),
+The global land use raster for which :mod:`lib.input_maps.generate_landuse` has been written cannot be downloaded anymore (broken link),
 but a newer version is available from the `USGS <https://lpdaac.usgs.gov/products/mcd12q1v006/>`_ website. 
 However, this new version requires additional data processing.
 The spatial resolution of the land use raster, and therefore of the other geographic intermediate rasters
@@ -247,8 +246,19 @@ The :mod:`lib.input_maps` module is used to generate data (mostly raster maps, b
 
 All these maps are needed before the potential or time series modules can be used for a specific spatial scope.
 
-Example:
-- Example of each map
+.. figure:: img/landuse.png
+   :figwidth: 75%
+   :align: center
+   :alt: Land Use Raster Map - Australia
+   
+   Land Use Raster Map - Australia
+
+.. figure:: img/topography.png
+   :figwidth: 70%
+   :align: center
+   :alt: Topography Raster Map - Australia
+   
+   Topography Raster Map - Australia
 
 .. _potentialMaps:
 
@@ -266,12 +276,29 @@ It also generates a CSV report containing metrics for each subregion:
 * Power Potential in GW, before and after weighting
 * Energy Potential in TWh in total, after weighting, and after masking and weighting
 * Sorted sample of FLH values for each region
+   
+.. figure:: img/FLH_solar.png
+   :figwidth: 75%
+   :align: center
+   :alt: FLH Solar PV Raster Map - Australia
+   
+   FLH Solar PV Raster Map - Australia 
 
-Example:
-- FLH
-- Masked FLH
-- Weighted Masked FLH
-- Sample of report
+.. figure:: img/FLH_wind.png
+   :figwidth: 75%
+   :align: center
+   :alt: FLH Wind Onshore Raster Map - Australia
+   
+   FLH Wind Onshore Raster Map - Australia
+
+.. NOTE:: Missing Masked FLH and Weighted FLH, as well as, Report sample
+
+.. csv-table:: Potential Report Sample 
+   :widths: 15 30 20 20 20 30 30 30 40 40
+   :header: "Region", "Available Area (km2)", "FLH Mean", "FLH Max", "FLH Min", "FLH Mean Masked", "FLH Max Masked", "FLH Min Masked", "Power Potential (GW)", "Energy Potential (TWh)"
+   :file: img/sample report.csv
+
+.. WARNING:: Tables might be hard to display in latex, consider adding htmlonly direction
 
 .. _timeSeries:
 
@@ -282,9 +309,12 @@ the FLH raster maps generated in the previously mentioned module.
 It is therefore important for the FLH raster maps to be generated first, in order to locate the quantiles. 
 However, generating time series for user-defined locations does not require the potential maps to be generated beforehand.
 
+.. image:: img/AustraliaQ50WindvsSolar.png
+   :width: 100%
+
 Example:
 - Locations of quantiles
-- Timeseries graph
+
 
 .. _Regression:
 
@@ -293,6 +323,10 @@ Regression
 Once a set of time series for different settings (hub heights for wind technologies, orientations for solar PV) is generated, 
 the :mod:`lib.regression` module allows the user to find a combination of settings and quantiles in order to match a known FLH value 
 and a given (typical) time series. The output is a set of regression coefficients that should be multiplied with the time series.
+
+.. figure:: img/regression_graphic.png
+   :figwidth: 100%
+   :align: center
 
 Example:
 - Graphic of regression coefficients with FLH and TS model

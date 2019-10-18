@@ -233,7 +233,7 @@ Once the configuration file is set, open the :mod:`runme.py` file to define what
 
 Input raster maps
 ^^^^^^^^^^^^^^^^^^
-The :mod:`input_maps` module is used to generate data (mostly raster maps, but also arrays in MAT files) for the spatial scope defined by the user. These data sets include:
+The :mod:`lib.input_maps` module is used to generate data (mostly raster maps, but also arrays in MAT files) for the spatial scope defined by the user. These data sets include:
 
 * Weather data
 * Land and sea masking
@@ -245,7 +245,7 @@ The :mod:`input_maps` module is used to generate data (mostly raster maps, but a
 * Population and the population buffer masking
 * Area
 
-All these maps are needed before the potential or timeseries modules can be used for a specific spatial scope.
+All these maps are needed before the potential or time series modules can be used for a specific spatial scope.
 
 Example:
 - Example of each map
@@ -254,7 +254,7 @@ Example:
 
 Potential maps and reports
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-The :mod:`potential` module serves to generate potential raster maps for all four technologies supported by the script.
+The :mod:`lib.potential` module serves to generate potential raster maps for all four technologies supported by the script.
 This module generates a Full-Load Hour (FLH) raster map, masking and masked rasters for unsuitable and protected areas, 
 and a weighting and weighted raster used for energy and power potential calculations.
 It also generates a CSV report containing metrics for each subregion:
@@ -275,14 +275,14 @@ Example:
 
 .. _timeSeries:
 
-Timeseries for quantiles and user-defined locations
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-The :mod:`time_series` module allows to generate time series for quantiles as well as user-defined locations based on 
+Time series for quantiles and user-defined locations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The :mod:`lib.time_series` module allows to generate time series for quantiles as well as user-defined locations based on 
 the FLH raster maps generated in the previously mentioned module.
 It is therefore important for the FLH raster maps to be generated first, in order to locate the quantiles. 
 However, generating time series for user-defined locations does not require the potential maps to be generated beforehand.
 
-Exampe:
+Example:
 - Locations of quantiles
 - Timeseries graph
 
@@ -291,7 +291,7 @@ Exampe:
 Regression
 ^^^^^^^^^^
 Once a set of time series for different settings (hub heights for wind technologies, orientations for solar PV) is generated, 
-the :mod:`regression` module allows the user to find a combination of settings and quantiles in order to match a known FLH value 
+the :mod:`lib.regression` module allows the user to find a combination of settings and quantiles in order to match a known FLH value 
 and a given (typical) time series. The output is a set of regression coefficients that should be multiplied with the time series.
 
 Example:
@@ -301,7 +301,7 @@ Example:
 
 Stratified time series
 ^^^^^^^^^^^^^^^^^^^^^
-Part of the :mod:`time_series` module, the :mod:`time_series.generate_stratified_tiemseries` function reads the regression coefficients and 
+Part of the :mod:`lib.time_series` module, the :mod:`lib.time_series.generate_stratified_tiemseries` function reads the regression coefficients and 
 the generated time series, and combines them into user-defined *modes* (combinations of quantiles) and *combos* (combinations hub height or orientations settings). 
 
 Example:

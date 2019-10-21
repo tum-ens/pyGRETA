@@ -19,15 +19,15 @@ if __name__ == "__main__":
     for tech in param["technology"]:
         print("Tech: " + tech)
 
-        # # Generate Potential Maps and Reports
-        # calculate_FLH(paths, param, tech)
-        # masking(paths, param, tech)
-        # weighting(paths, param, tech)
-        # reporting(paths, param, tech)
+        # Generate Potential Maps and Reports
+        calculate_FLH(paths, param, tech)
+        masking(paths, param, tech)
+        weighting(paths, param, tech)
+        reporting(paths, param, tech)
 
         # Generate Timeseries
-        # find_locations_quantiles(paths, param, tech)
-        # generate_time_series(paths, param, tech)
+        find_locations_quantiles(paths, param, tech)
+        generate_time_series(paths, param, tech)
 
     for tech in param["technology"]:
         print("Tech: " + tech)

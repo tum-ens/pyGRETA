@@ -63,9 +63,9 @@ def general_settings():
     fs = os.path.sep
     current_folder = os.path.dirname(os.path.abspath(__file__))
     # For personal Computer:
-    # root = str(Path(current_folder).parent) + fs + "Database" + fs
+    root = str(Path(current_folder).parent) + fs + "Database" + fs
     # For Server Computer:
-    root = str(Path(current_folder).parent) + "Database" + fs
+    # root = str(Path(current_folder).parent) + "Database" + fs
 
     return paths, param
 
@@ -107,12 +107,12 @@ def scope_paths_and_parameters(paths, param):
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
 
-    paths["spatial_scope"] = PathTemp + "gadm36_GHA_0.shp"
-    paths["subregions"] = PathTemp + "gadm36_GHA_0.shp"
+    paths["spatial_scope"] = PathTemp + "gadm36_ECU_0.shp"
+    paths["subregions"] = PathTemp + "gadm36_ECU_1.shp"
 
     # Name tags for the scope and the subregions
-    param["region_name"] = "Ghana"  # Name tag of the spatial scope
-    param["subregions_name"] = "gadm36_GHA_0"  # Name tag of the subregions
+    param["region_name"] = "Ecuador"  # Name tag of the spatial scope
+    param["subregions_name"] = "gadm36_ECU_0"  # Name tag of the subregions
 
     # Year
     param["year"] = 2015
@@ -138,7 +138,7 @@ def computation_parameters(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 50
+    param["nproc"] = 6
     param["CPU_limit"] = True
     return param
 

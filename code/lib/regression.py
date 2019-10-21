@@ -144,21 +144,23 @@ def clean_TS_regression(paths, param, tech):
 
     # Create TS_regression dataframe
     TS_regression = pd.DataFrame(index=range(1, 8761), columns=list_regions)
+    if os.path.isfile(paths[tech]["EMHIRES"]):
+        # Load EMHIRES data for desired year
+        if tech in ["PV", "CSP"]:
+            date_index = pd.date_range(start="1/1/1986", end="1/1/2016", freq="H", closed="left")
+            EMHIRES = pd.read_csv(paths[tech]["EMHIRES"], " ")
+            EMHIRES = EMHIRES.set_index(date_index)
+            EMHIRES = EMHIRES.loc["1/1/" + str(param["year"]) : "1/1/" + str(param["year"] + 1)]
+        else:
+            EMHIRES = pd.read_csv(paths[tech]["EMHIRES"], "\t")
+            EMHIRES = EMHIRES[EMHIRES["Year"] == param["year"]].reset_index()
+            EMHIRES = EMHIRES.drop(["index", "Time step", "Date", "Year", "Month", "Day", "Hour"], axis=1)
 
-    # Load EMHIRES data for desired year
-    if tech in ["PV", "CSP"]:
-        date_index = pd.date_range(start="1/1/1986", end="1/1/2016", freq="H", closed="left")
-        EMHIRES = pd.read_csv(paths[tech]["EMHIRES"], " ")
-        EMHIRES = EMHIRES.set_index(date_index)
-        EMHIRES = EMHIRES.loc["1/1/" + str(param["year"]) : "1/1/" + str(param["year"] + 1)]
+        # Find intersection between EMHIRES and list_regions
+        intersect_regions = sorted(list((set(list_regions).intersection(set(EMHIRES.columns)))))
     else:
-        EMHIRES = pd.read_csv(paths[tech]["EMHIRES"], "\t")
-        EMHIRES = EMHIRES[EMHIRES["Year"] == param["year"]].reset_index()
-        EMHIRES = EMHIRES.drop(["index", "Time step", "Date", "Year", "Month", "Day", "Hour"], axis=1)
-
-    # Find intersection between EMHIRES and list_regions
-    intersect_regions = sorted(list((set(list_regions).intersection(set(EMHIRES.columns)))))
-
+        intersect_regions = []
+        warn("EMHIRES database unavailable", UserWarning)
     # Load setting combinations
     settings = combinations_for_regression(paths, param, tech)
     if not settings[0]:

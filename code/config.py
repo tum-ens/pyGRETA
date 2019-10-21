@@ -57,15 +57,15 @@ def general_settings():
 
     param = {}
     param["author"] = "Kais Siala"  # the name of the person running the script
-    param["comment"] = "Ghana_Workshop_example"
+    param["comment"] = "Workshop_example"
 
     paths = {}
     fs = os.path.sep
     current_folder = os.path.dirname(os.path.abspath(__file__))
     # For personal Computer:
-    root = str(Path(current_folder).parent) + fs + "Database" + fs
+    # root = str(Path(current_folder).parent) + fs + "Database" + fs
     # For Server Computer:
-    # root = str(Path(current_folder).parent) + "Database" + fs
+    root = str(Path(current_folder).parent) + "Database" + fs
 
     return paths, param
 
@@ -249,7 +249,7 @@ def time_series_parameters(param):
     # Regression
     param["regression"] = {
         "solver": "gurobi",  # string
-        "WindOn": {"2015": []},  # dictionary of hub height combinations
+        "WindOn": {"all": []},  # dictionary of hub height combinations
         "WindOff": {"80m": []},  # dictionary of hub height combinations
         "PV": {"all": []},  # list of orientation combinations
         "CSP": {"all": []},
@@ -868,11 +868,11 @@ def emhires_input_paths(paths, param, tech):
     global fs
 
     if tech == "WindOn":
-        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + fs + "TS.CF.COUNTRY.30yr.date.txt"
+        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES" + fs + "TS.CF.COUNTRY.30yr.date.txt"
     elif tech == "WindOff":
-        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + fs + "TS.CF.OFFSHORE.30yr.date.txt"
+        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES" + fs + "TS.CF.OFFSHORE.30yr.date.txt"
     elif tech == "PV":
-        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + fs + "EMHIRESPV_TSh_CF_Country_19862015.txt"
+        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES" + fs + "EMHIRESPV_TSh_CF_Country_19862015.txt"
 
     return paths
 

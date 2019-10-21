@@ -352,13 +352,12 @@ the FLH raster maps generated in the previously mentioned module.
 It is therefore important for the FLH raster maps to be generated first, in order to locate the quantiles. 
 However, generating time series for user-defined locations does not require the potential maps to be generated beforehand.
 
-.. image:: img/AustraliaQ50WindvsSolar.png
+.. figure:: img/AustraliaQ50WindvsSolar.png
    :width: 100%
-
-Example:
-- Locations of quantiles
-
-
+   :align: center
+   
+   Wind Onshore and Solar PV capacity factor time series for quantile 50 - Australia
+   
 .. _Regression:
 
 Regression
@@ -370,9 +369,9 @@ and a given (typical) time series. The output is a set of regression coefficient
 .. figure:: img/regression_graphic.png
    :width: 90%
    :align: center
+   
+   Regression Coefficients - Process example Region A
 
-Example:
-- Graphic of regression coefficients with FLH and TS model
 
 .. _Strat:
 

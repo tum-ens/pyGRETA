@@ -280,6 +280,7 @@ def regression_coefficients(paths, param, tech):
             # Skip regions not present in the generated TS
             if region_data is None:
                 nodata = nodata + reg + ", "
+                settings_sorted = settings
                 continue
 
             settings_sorted = region_data[None]["s"][None].tolist()

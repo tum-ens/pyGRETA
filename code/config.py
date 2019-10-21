@@ -57,7 +57,7 @@ def general_settings():
 
     param = {}
     param["author"] = "Houssame Houmy"  # the name of the person running the script
-    param["comment"] = "Documentation_Exp"
+    param["comment"] = "Ghana TS model gen"
 
     paths = {}
     fs = os.path.sep
@@ -107,12 +107,12 @@ def scope_paths_and_parameters(paths, param):
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
 
-    paths["spatial_scope"] = PathTemp + "gadm36_AUS_0.shp"
-    paths["subregions"] = PathTemp + "gadm36_AUS_0.shp"
+    paths["spatial_scope"] = PathTemp + "gadm36_GHA_0.shp"
+    paths["subregions"] = PathTemp + "gadm36_GHA_0.shp"
 
     # Name tags for the scope and the subregions
-    param["region_name"] = "Australia"  # Name tag of the spatial scope
-    param["subregions_name"] = "Documentation_Exp"  # Name tag of the subregions
+    param["region_name"] = "Ghana"  # Name tag of the spatial scope
+    param["subregions_name"] = "gadm36_GHA_0"  # Name tag of the subregions
 
     # Year
     param["year"] = 2015
@@ -249,9 +249,9 @@ def time_series_parameters(param):
     # Regression
     param["regression"] = {
         "solver": "gurobi",  # string
-        "WindOn": {"2015": [60, 80, 100]},  # dictionary of hub height combinations
-        "WindOff": {"80m": [80]},  # dictionary of hub height combinations
-        "PV": {"all": [0, 90, -90, 180]},  # list of orientation combinations
+        "WindOn": {"all": []},  # dictionary of hub height combinations
+        "WindOff": {"80m": []},  # dictionary of hub height combinations
+        "PV": {"all": []},  # list of orientation combinations
         "CSP": {"all": []},
     }
 
@@ -868,11 +868,11 @@ def emhires_input_paths(paths, param, tech):
     global fs
 
     if tech == "WindOn":
-        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + fs + "TS.CF.COUNTRY.30yr.date.txt"
+        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES" + fs + "TS.CF.COUNTRY.30yr.date.txt"
     elif tech == "WindOff":
-        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + fs + "TS.CF.OFFSHORE.30yr.date.txt"
+        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES" + fs + "TS.CF.OFFSHORE.30yr.date.txt"
     elif tech == "PV":
-        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES " + fs + "EMHIRESPV_TSh_CF_Country_19862015.txt"
+        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES" + fs + "EMHIRESPV_TSh_CF_Country_19862015.txt"
 
     return paths
 

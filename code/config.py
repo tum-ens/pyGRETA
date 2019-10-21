@@ -56,16 +56,16 @@ def general_settings():
     global root
 
     param = {}
-    param["author"] = "Houssame Houmy"  # the name of the person running the script
-    param["comment"] = "Documentation_Exp"
+    param["author"] = "Kais Siala"  # the name of the person running the script
+    param["comment"] = "Ghana_Workshop_example"
 
     paths = {}
     fs = os.path.sep
     current_folder = os.path.dirname(os.path.abspath(__file__))
     # For personal Computer:
-    # root = str(Path(current_folder).parent.parent.parent) + fs + "Database_KS" + fs
+    root = str(Path(current_folder).parent) + fs + "Database" + fs
     # For Server Computer:
-    root = str(Path(current_folder).parent.parent.parent) + "Database_KS" + fs
+    # root = str(Path(current_folder).parent) + "Database" + fs
 
     return paths, param
 
@@ -107,18 +107,18 @@ def scope_paths_and_parameters(paths, param):
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
 
-    paths["spatial_scope"] = PathTemp + "gadm36_AUS_0.shp"
-    paths["subregions"] = PathTemp + "gadm36_AUS_0.shp"
+    paths["spatial_scope"] = PathTemp + "gadm36_GHA_0.shp"
+    paths["subregions"] = PathTemp + "gadm36_GHA_0.shp"
 
     # Name tags for the scope and the subregions
-    param["region_name"] = "Australia"  # Name tag of the spatial scope
-    param["subregions_name"] = "Documentation_Exp"  # Name tag of the subregions
+    param["region_name"] = "Ghana"  # Name tag of the spatial scope
+    param["subregions_name"] = "gadm36_GHA_0"  # Name tag of the subregions
 
     # Year
     param["year"] = 2015
 
     # Technologies
-    param["technology"] = ["WindOn"]  # ["PV", "CSP", "WindOn", "WindOff"]
+    param["technology"] = ["WindOn", "PV"]  # ["PV", "CSP", "WindOn", "WindOff"]
 
     return paths, param
 
@@ -138,7 +138,7 @@ def computation_parameters(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 36
+    param["nproc"] = 50
     param["CPU_limit"] = True
     return param
 
@@ -249,9 +249,9 @@ def time_series_parameters(param):
     # Regression
     param["regression"] = {
         "solver": "gurobi",  # string
-        "WindOn": {"2015": [60, 80, 100]},  # dictionary of hub height combinations
-        "WindOff": {"80m": [80]},  # dictionary of hub height combinations
-        "PV": {"all": [0, 90, -90, 180]},  # list of orientation combinations
+        "WindOn": {"2015": []},  # dictionary of hub height combinations
+        "WindOff": {"80m": []},  # dictionary of hub height combinations
+        "PV": {"all": []},  # list of orientation combinations
         "CSP": {"all": []},
     }
 
@@ -404,7 +404,7 @@ def pv_parameters(param):
         "T_r": 25,  # °C
         "loss_coeff": 0.37,
         "tracking": 0,  # 0 for no tracking, 1 for one-axis tracking, 2 for two-axes tracking
-        "orientation": 180,  # | 0: Towards equator | 90: West | 180: Away from equator | -90: East |
+        "orientation": 0,  # | 0: Towards equator | 90: West | 180: Away from equator | -90: East |
     }
     pv["mask"] = {
         "slope": 20,
@@ -528,7 +528,7 @@ def onshore_wind_parameters(param):
     """
     windon = {}
     windon["resource"] = {"res_correction": 1, "topo_correction": 1, "topo_weight": "capacity"}  # 'none' or 'size' or 'capacity'
-    windon["technical"] = {"w_in": 4, "w_r": 13, "w_off": 25, "P_r": 3, "hub_height": 100}
+    windon["technical"] = {"w_in": 4, "w_r": 13, "w_off": 25, "P_r": 3, "hub_height": 80}
     windon["mask"] = {
         "slope": 20,
         "lu_suitability": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1]),

@@ -160,7 +160,7 @@ def clean_TS_regression(paths, param, tech):
         intersect_regions = sorted(list((set(list_regions).intersection(set(EMHIRES.columns)))))
     else:
         intersect_regions = []
-        warn("EMHIRES database unavailable", UserWarning)
+        warn("WARNING: EMHIRES database unavailable for technology " + tech, UserWarning)
     # Load setting combinations
     settings = combinations_for_regression(paths, param, tech)
     if not settings[0]:

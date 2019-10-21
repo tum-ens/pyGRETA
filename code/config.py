@@ -63,9 +63,9 @@ def general_settings():
     fs = os.path.sep
     current_folder = os.path.dirname(os.path.abspath(__file__))
     # For personal Computer:
-    # root = str(Path(current_folder).parent) + fs + "Database" + fs
+    root = str(Path(current_folder).parent) + fs + "Database" + fs
     # For Server Computer:
-    root = str(Path(current_folder).parent) + "Database" + fs
+    # root = str(Path(current_folder).parent) + "Database" + fs
 
     return paths, param
 
@@ -138,7 +138,7 @@ def computation_parameters(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 50
+    param["nproc"] = 6
     param["CPU_limit"] = True
     return param
 

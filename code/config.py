@@ -63,7 +63,7 @@ def general_settings():
     fs = os.path.sep
     current_folder = os.path.dirname(os.path.abspath(__file__))
     # For personal Computer:
-    root = str(Path(current_folder).parent) + fs + "Database" + fs
+    root = str(Path(current_folder).parent.parent.parent) + fs + "Database_KS" + fs
     # For Server Computer:
     # root = str(Path(current_folder).parent) + "Database" + fs
 
@@ -112,7 +112,7 @@ def scope_paths_and_parameters(paths, param):
 
     # Name tags for the scope and the subregions
     param["region_name"] = "Ecuador"  # Name tag of the spatial scope
-    param["subregions_name"] = "gadm36_ECU_0"  # Name tag of the subregions
+    param["subregions_name"] = "Ecuador_provinces"  # Name tag of the subregions
 
     # Year
     param["year"] = 2015

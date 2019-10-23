@@ -66,13 +66,12 @@ def calculate_FLH(paths, param, tech):
             calc_FLH_wind, product(list_hours, [[param, tech, rasterData, merraData]])
         )
     # Collecting results
-    FLH = np.zeros((m_high, n_high))
+    FLH = np.full((m_high, n_high), np.nan)
     if nproc > 1:
         for p in range(len(results)):
             FLH[param["Ind_nz"]] = FLH[param["Ind_nz"]] + results[p]
     else:
         FLH[param["Ind_nz"]] = results
-    FLH[FLH == 0] = np.nan
 
     hdf5storage.writes({"FLH": FLH}, paths[tech]["FLH"], store_python_metadata=True, matlab_compatible=True)
     create_json(

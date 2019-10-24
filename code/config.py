@@ -63,9 +63,9 @@ def general_settings():
     fs = os.path.sep
     current_folder = os.path.dirname(os.path.abspath(__file__))
     # For personal Computer:
-    root = str(Path(current_folder).parent.parent.parent) + fs + "Database_KS" + fs
+    root = str(Path(current_folder).parent) + fs + "Database_example" + fs
     # For Server Computer:
-    # root = str(Path(current_folder).parent) + "Database" + fs
+    # root = str(Path(current_folder).parent) + "Database_example" + fs
 
     return paths, param
 

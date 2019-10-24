@@ -67,6 +67,7 @@ def calculate_FLH(paths, param, tech):
         )
     # Collecting results
     FLH = np.full((m_high, n_high), np.nan)
+    FLH[param["Ind_nz"]] = 0
     if nproc > 1:
         for p in range(len(results)):
             FLH[param["Ind_nz"]] = FLH[param["Ind_nz"]] + results[p]

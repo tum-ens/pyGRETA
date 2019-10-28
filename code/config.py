@@ -113,6 +113,7 @@ def scope_paths_and_parameters(paths, param):
 
     # Name tags for the scope and the subregions
     param["region_name"] = "Ghana"  # Name tag of the spatial scope
+    param["subregions_name"] = "Ghana_Country"  # Name tag of the subregions
 
     # Year
     param["year"] = 2015

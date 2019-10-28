@@ -1,6 +1,4 @@
-import gdal
-import osr
-from osgeo import ogr
+from osgeo import ogr, osr, gdal
 from numpy.matlib import repmat, reshape, sin, arcsin, cos, arccos, tan, arctan
 import os
 from os import getcwd, chdir

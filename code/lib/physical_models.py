@@ -450,7 +450,7 @@ def calc_CF_wind(hour, reg_ind, turbine, m, n, merraData, rasterData):
 
     # Load MERRA data, increase its resolution, and fit it to the extent
     w50m_h = resizem(merraData["W50M"][:, :, hour], m, n)
-    w50m_h = w50m_h[reg_ind]
+    w50m_h = w50m_h[tuple(reg_ind)]
 
     # Calculate the wind speed a the desired height
     w_new_h = w50m_h * rasterData["A_cf"]

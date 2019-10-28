@@ -73,18 +73,6 @@ def find_locations_quantiles(paths, param, tech):
     param[tech]["Crd_points"] = crd_exact_points(reg_ind, Crd_all, res_desired)
     param[tech]["Crd_points"] = (param[tech]["Crd_points"][0], param[tech]["Crd_points"][1], list_names, list_quantiles)
 
-    # Used to get TS for desired coordinates
-    # points = hdf5storage.read("Crd_points", "crd_points_masked.mat")
-    # lat = points[0][0]
-    # lon = points[0][1]
-    # crd = (lon[0], lat[0])
-    # ind = ind_exact_points(crd, Crd_all, res_desired)
-    # list_names = ['AU'] * len(ind[0])
-    # points = range(1, len(ind[0])+1)
-    # list_points = ["p" + str(po) for po in points]
-    # param[tech]["Ind_points"] = ind
-    # param[tech]["Crd_points"] = (crd[0], crd[1], list_names, list_points)
-
     # Format point locations
     points = [(param[tech]["Crd_points"][1][i], param[tech]["Crd_points"][0][i]) for i in range(0, len(param[tech]["Crd_points"][0]))]
 
@@ -116,13 +104,13 @@ def find_locations_quantiles(paths, param, tech):
 
 def generate_time_series(paths, param, tech):
     """
-    This function generates yearly capacity factor time-series for the technology of choice at specified locations:
-    either user-defined locations or quantile locations generated in find_locations_quantiles.
+    This function generates yearly capacity factor time-series for the technology of choice at quantile locations
+    generated in find_locations_quantiles.
     The timeseries are saved in CSV files.
 
     :param paths: Dictionary of dictionaries containing paths to coordinate and indices of the quantile locations.
     :type paths: dict
-    :param param: Dictionary of dictionaries containing processing parameters, and user-defined locations.
+    :param param: Dictionary of dictionaries containing processing parameters.
     :type param: dict
     :param tech: Technology under study.
     :type tech: str
@@ -194,6 +182,107 @@ def generate_time_series(paths, param, tech):
         [tech, "spatial_scope", "subregions"],
     )
     print("files saved: " + paths[tech]["TS"])
+    timecheck("End")
+
+
+def generate_user_locations_time_series(paths, param, tech):
+    """
+    This function generates yearly capacity factor time-series for the technology of choice at user defined locations.
+    The timeseries are saved in CSV files.
+
+    :param paths: Dictionary of dictionaries containing paths output desired locations.
+    :type paths: dict
+    :param param: Dictionary of dictionaries containing processing parameters, and user-defined locations.
+    :type param: dict
+    :param tech: Technology under study.
+    :type tech: str
+
+    :return: The CSV file with the time series for all subregions and quantiles is saved directly in the given path,
+             along with the corresponding metadata in a JSON file.
+    :rtype: None
+    :raise:
+    """
+    timecheck("Start")
+    nproc = param["nproc"]
+    CPU_limit = np.full((1, nproc), param["CPU_limit"])
+    res_desired = param["res_desired"]
+    Crd_all = param["Crd_all"]
+
+    # Read user defined locations dictionary
+    points_df = pd.DataFrame.from_dict(param["useloc"], orient="index", columns=["lat", "lon"])
+
+    # Filter points outside spatial scope
+    lat_max, lon_max, lat_min, lon_min = param["spatial_scope"][0]
+    # Points outside the scope bound
+    out_scope_df = points_df.loc[
+        (lat_min > points_df["lat"]) | (lat_max < points_df["lat"]) | (lon_min > points_df["lon"]) | (lon_max < points_df["lon"])
+    ].copy()
+    if not out_scope_df.empty:
+        out_points = list(out_scope_df.index)
+        print("WARNING: The following points are located outside of the spatial scope " + str(param["spatial_scope"][0]) + ": \n" + str(out_scope_df))
+        warn("Points located outside spatial scope", UserWarning)
+    # Points inside the scope bounds
+    points_df = points_df.loc[
+        (lat_min <= points_df["lat"]) & (lat_max >= points_df["lat"]) & (lon_min <= points_df["lon"]) & (lon_max >= points_df["lon"])
+    ].copy()
+    if not points_df.empty:
+        # Prepare input for calc_TS functions
+        crd = (points_df["lat"].to_numpy(), points_df["lon"].to_numpy())
+        ind = ind_exact_points(crd, Crd_all, res_desired)
+        list_names = ["UD"] * len(crd[0])
+        list_points = list(points_df.index)
+        param[tech]["Ind_points"] = ind
+        param[tech]["Crd_points"] = (crd[0], crd[1], list_names, list_points)
+
+        # Obtain weather and correction matrices
+        param["Ind_nz"] = param[tech]["Ind_points"]
+        merraData, rasterData = get_merra_raster_data(paths, param, tech)
+
+        if tech in ["PV", "CSP"]:
+            # Set up day_filter
+            res_weather = param["res_weather"]
+            Ind = ind_merra(Crd_all, Crd_all, res_weather)[0]
+            day_filter = np.nonzero(merraData["CLEARNESS"][Ind[2] - 1 : Ind[0], Ind[3] - 1 : Ind[1], :].sum(axis=(0, 1)))
+
+            list_hours = np.arange(0, 8760)
+            if nproc == 1:
+                param["status_bar_limit"] = list_hours[-1]
+                results = calc_TS_solar(list_hours[day_filter], [param, tech, rasterData, merraData])
+            else:
+                list_hours = np.array_split(list_hours[day_filter], nproc)
+                param["status_bar_limit"] = list_hours[0][-1]
+                results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(
+                    calc_TS_solar, product(list_hours, [[param, tech, rasterData, merraData]])
+                )
+
+        elif tech in ["WindOn", "WindOff"]:
+
+            list_hours = np.array_split(np.arange(0, 8760), nproc)
+            param["status_bar_limit"] = list_hours[0][-1]
+            results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(
+                calc_TS_wind, product(list_hours, [[param, tech, rasterData, merraData]])
+            )
+        print("\n")
+
+        # Collecting results
+        TS = np.zeros((len(param[tech]["Ind_points"][0]), 8760))
+        if nproc > 1:
+            for p in range(len(results)):
+                TS = TS + results[p]
+        else:
+            TS = results
+
+        # Restructuring results
+        results = pd.DataFrame(TS.transpose(), columns=list_points).rename_axis("Points", axis="columns")
+        results.to_csv(paths[tech]["TS_discrete"], sep=";", decimal=",")
+        create_json(
+            paths[tech]["TS_discrete"],
+            param,
+            ["author", "comment", tech, "useloc", "region_name", "subregions_name", "year", "Crd_all"],
+            paths,
+            [tech, "spatial_scope", "subregions"],
+        )
+        print("files saved: " + paths[tech]["TS_discrete"])
     timecheck("End")
 
 

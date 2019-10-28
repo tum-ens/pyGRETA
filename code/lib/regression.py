@@ -204,7 +204,7 @@ def clean_TS_regression(paths, param, tech):
         paths[tech]["TS_regression"], param, ["author", "comment", tech, "region_name", "subregions_name", "year"], paths, ["FLH_regression", tech]
     )
     if nanval != "":
-        warn("Missing FLH for regions: " + nanval.rstrip(", ") + "\nTime series have not been scalled for these regions")
+        warn("Missing FLH for regions: " + nanval.rstrip(", ") + "\nTime series have not been scaled for these regions")
     print("files saved: " + paths[tech]["TS_regression"])
 
 

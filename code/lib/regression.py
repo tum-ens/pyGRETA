@@ -249,6 +249,9 @@ def regression_coefficients(paths, param, tech):
     except UserWarning:
         timecheck("End")
         return
+    if combinations is None:
+        timecheck("End")
+        return
 
     # Display the combinations of settings to be used
     if tech in ["WindOn", "WindOff"]:
@@ -606,8 +609,10 @@ def check_regression_model(paths, tech):
 
         if len(reg_nan_null) != 0:
             print("Missing data:" + ",".join(reg_nan_null))
-            ans = input("Some regions are missing FLH data for the technology of choice. Continue ? [y]/n")
+            ans = input("Some regions are missing FLH data for the technology of choice. Continue ? [y]/n ")
             if ans in ["", "y", "[y]"]:
+                # Load IRENA data and regions
+                FLH = pd.read_csv(paths["FLH_regression"], sep=";", decimal=",", index_col=0)
                 break
         else:
             break

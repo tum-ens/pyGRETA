@@ -20,21 +20,21 @@ if __name__ == "__main__":
         print("Tech: " + tech)
 
         # Generate Potential Maps and Reports
-        calculate_FLH(paths, param, tech)
-        masking(paths, param, tech)
-        weighting(paths, param, tech)
-        reporting(paths, param, tech)
+        # calculate_FLH(paths, param, tech)
+        # masking(paths, param, tech)
+        # weighting(paths, param, tech)
+        # reporting(paths, param, tech)
 
         # Generate Timeseries
-        find_locations_quantiles(paths, param, tech)
-        generate_time_series(paths, param, tech)
+        # find_locations_quantiles(paths, param, tech)
+        # generate_time_series(paths, param, tech)
         # generate_user_locations_time_series(paths, param, tech)
 
     for tech in param["technology"]:
         print("Tech: " + tech)
 
         # Generate regression coefficients for FLH and TS model matching
-        regression_coefficients(paths, param, tech)
+        # regression_coefficients(paths, param, tech)
 
         # Generate Stratified timeseries
         generate_stratified_timeseries(paths, param, tech)

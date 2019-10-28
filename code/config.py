@@ -113,7 +113,7 @@ def scope_paths_and_parameters(paths, param):
 
     # Name tags for the scope and the subregions
     param["region_name"] = "Ghana"  # Name tag of the spatial scope
-    param["subregions_name"] = "Ghana_Country"  # Name tag of the subregions
+    param["subregions_name"] = "Ghana_country_doc_example"  # Name tag of the subregions
 
     # Year
     param["year"] = 2015
@@ -139,7 +139,7 @@ def computation_parameters(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 6
+    param["nproc"] = 60
     param["CPU_limit"] = True
     return param
 
@@ -532,7 +532,7 @@ def onshore_wind_parameters(param):
     """
     windon = {}
     windon["resource"] = {"res_correction": 1, "topo_correction": 1, "topo_weight": "capacity"}  # 'none' or 'size' or 'capacity'
-    windon["technical"] = {"w_in": 4, "w_r": 13, "w_off": 25, "P_r": 3, "hub_height": 100}
+    windon["technical"] = {"w_in": 4, "w_r": 13, "w_off": 25, "P_r": 3, "hub_height": 80}
     windon["mask"] = {
         "slope": 20,
         "lu_suitability": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1]),

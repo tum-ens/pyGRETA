@@ -417,7 +417,7 @@ def combinations_for_stratified_timeseries(paths, param, tech):
         aft_setting = "_" + year + ".csv"
         list_settings = filename.replace(bef_setting, "").replace(aft_setting, "").split("_")
         settings_existing = settings_existing + [sorted([int(x) for x in list_settings])]
-    settings_sorted = sorted(settings_existing)
+    settings_sorted = set(sorted(map(tuple, settings_existing)))
     print("\nFor technology " + tech + ", regression coefficients for the following combinations have been detected: ", settings_existing)
 
     # Get required settings
@@ -425,19 +425,19 @@ def combinations_for_stratified_timeseries(paths, param, tech):
     combinations_sorted = []
     for combi in combinations:
         if combi == []:
-            combi = list(set([item for sublist in combinations for item in sublist]))
-        combinations_sorted = combinations_sorted + [sorted(combi)]
-    combinations = sorted(combinations_sorted)
+            combi = sorted(set([item for sublist in settings_sorted for item in sublist]))
+        combinations_sorted = combinations_sorted + [tuple(combi)]
+    combinations = set(sorted(combinations_sorted))
 
     # Case 2: some files are missing
-    if combinations != settings_sorted:
+    if not combinations.issubset(settings_sorted):
         print("\nFor technology " + tech + ", regression coefficients for the following combinations are required: ", combinations)
         warn(
             "Not all regression coefficients are available! Generate the missing regression coefficients first, then create stratified time series.",
             UserWarning,
         )
         return
-    return settings_existing, inputfiles
+    return list(combinations), inputfiles
 
 
 def generate_stratified_timeseries(paths, param, tech):
@@ -476,7 +476,7 @@ def generate_stratified_timeseries(paths, param, tech):
 
     for tag, combo in param["combo"][tech].items():
         if combo == []:
-            combo = list(set([item for sublist in param["combo"][tech].values() for item in sublist]))
+            combo = sorted(set([item for sublist in settings_existing for item in sublist]))
         ind = settings_existing.index(sorted(combo))
         coef = pd.read_csv(inputfiles[ind], sep=";", decimal=",", index_col=[0])
 

@@ -10,7 +10,7 @@ if __name__ == "__main__":
     paths, param = initialization()
 
     # Generate Input raster maps (Already generated for you)
-    generate_input_maps(paths, param)
+    # generate_input_maps(paths, param)
 
     # Wind speed correction
     if "WindOn" in param["technology"] or "WindOff" in param["technology"]:
@@ -28,7 +28,7 @@ if __name__ == "__main__":
         # Generate Timeseries
         find_locations_quantiles(paths, param, tech)
         generate_time_series(paths, param, tech)
-        generate_user_locations_time_series(paths, param, tech)
+        # generate_user_locations_time_series(paths, param, tech)
 
     for tech in param["technology"]:
         print("Tech: " + tech)

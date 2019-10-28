@@ -57,7 +57,7 @@ def general_settings():
     global root
 
     param = {}
-    param["author"] = "Kais Siala"  # the name of the person running the script
+    param["author"] = "Houssame Houmy"  # the name of the person running the script
     param["comment"] = "Workshop_example"
 
     paths = {}
@@ -108,18 +108,17 @@ def scope_paths_and_parameters(paths, param):
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
 
-    paths["spatial_scope"] = PathTemp + "gadm36_ECU_0.shp"
-    paths["subregions"] = PathTemp + "gadm36_ECU_0.shp"
+    paths["spatial_scope"] = PathTemp + "gadm36_GHA_0.shp"
+    paths["subregions"] = PathTemp + "gadm36_GHA_0.shp"
 
     # Name tags for the scope and the subregions
-    param["region_name"] = "Ecuador"  # Name tag of the spatial scope
-    param["subregions_name"] = "Ecuador_Country"  # Name tag of the subregions
+    param["region_name"] = "Ghana"  # Name tag of the spatial scope
 
     # Year
     param["year"] = 2015
 
     # Technologies
-    param["technology"] = ["WindOn", "PV"]  # ["PV", "CSP", "WindOn", "WindOff"]
+    param["technology"] = ["WindOn"]  # ["PV", "CSP", "WindOn", "WindOff"]
 
     return paths, param
 
@@ -139,7 +138,7 @@ def computation_parameters(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 50
+    param["nproc"] = 6
     param["CPU_limit"] = True
     return param
 
@@ -245,7 +244,7 @@ def time_series_parameters(param):
     :rtype: dict
     """
     # Quantiles for time series
-    param["quantiles"] = [100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0]
+    param["quantiles"] = [90, 70, 60, 40]
 
     # User defined locations
     param["useloc"] = {"Point1": (0, -80), "Point2": (1, 1)}  # {"point name": (latitude, longitude),...}
@@ -253,17 +252,17 @@ def time_series_parameters(param):
     # Regression
     param["regression"] = {
         "solver": "gurobi",  # string
-        "WindOn": {"all": []},  # dictionary of hub height combinations
+        "WindOn": {"all": [],},  # dictionary of hub height combinations
         "WindOff": {"80m": []},  # dictionary of hub height combinations
         "PV": {"all": []},  # list of orientation combinations
         "CSP": {"all": []},
     }
 
     # Stratified time series
-    param["modes"] = {"high": [100, 90, 80], "mid": [70, 60, 50, 40, 30], "low": [20, 10, 0], "all": param["quantiles"]}
+    param["modes"] = {"high": [90, 70], "mid": [50, 40], "low": [], "all": param["quantiles"]}
     param["combo"] = {
         # dictionary of hub height and orientation combinations
-        "WindOn": {"2015": [60, 80, 100], "2030": [80, 100, 120], "2050": [100, 120, 140]},
+        "WindOn": {"all": [],},
         "WindOff": {"80m": [80], "100m": [100], "120m": [120]},
         "PV": {"Solar": [0, 180, -90, 90]},
         "CSP": {"all": []},
@@ -532,7 +531,7 @@ def onshore_wind_parameters(param):
     """
     windon = {}
     windon["resource"] = {"res_correction": 1, "topo_correction": 1, "topo_weight": "capacity"}  # 'none' or 'size' or 'capacity'
-    windon["technical"] = {"w_in": 4, "w_r": 13, "w_off": 25, "P_r": 3, "hub_height": 80}
+    windon["technical"] = {"w_in": 4, "w_r": 13, "w_off": 25, "P_r": 3, "hub_height": 100}
     windon["mask"] = {
         "slope": 20,
         "lu_suitability": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1]),

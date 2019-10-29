@@ -417,7 +417,7 @@ def combinations_for_stratified_timeseries(paths, param, tech):
     settings_existing = []
     for filename in inputfiles:
         list_settings = filename.replace(bef_setting, "").replace(aft_setting, "").split("_")
-        settings_existing = settings_existing + [sorted([int(x) for x in list_settings])]
+        settings_existing = settings_existing + [sorted([int(x) for x in list_settings], reverse=True)]
     settings_sorted = set(sorted(map(tuple, settings_existing)))
     print("\nFor technology " + tech + ", regression coefficients for the following combinations have been detected: ", settings_existing)
 
@@ -426,8 +426,8 @@ def combinations_for_stratified_timeseries(paths, param, tech):
     combinations_sorted = []
     for combi in combinations:
         if combi == []:
-            combi = sorted(set([item for sublist in settings_sorted for item in sublist]))
-        combinations_sorted = combinations_sorted + [tuple(combi)]
+            combi = sorted(set([item for sublist in settings_sorted for item in sublist]), reverse=True)
+        combinations_sorted = combinations_sorted + [tuple(sorted(combi, reverse=True))]
     combinations = set(sorted(combinations_sorted))
 
     # Case 2: some files are missing
@@ -484,7 +484,7 @@ def generate_stratified_timeseries(paths, param, tech):
     for tag, combo in param["combo"][tech].items():
         if combo == []:
             combo = sorted(set([item for sublist in combinations for item in sublist]))
-        ind = combinations.index(sorted(combo))
+        ind = combinations.index(tuple(sorted(combo, reverse=True)))
         coef = pd.read_csv(inputfiles[ind], sep=";", decimal=",", index_col=[0])
 
         # Extract names of regions
@@ -495,10 +495,17 @@ def generate_stratified_timeseries(paths, param, tech):
         for setting in combo:
             setting_path = paths["regional_analysis"] + subregions + "_" + tech + "_" + str(setting) + "_TS_" + year + ".csv"
             TS_files[setting] = pd.read_csv(setting_path, sep=";", decimal=",", header=[0, 1], index_col=[0])
+        quantiles_existing = list(map(int, [s.strip("q") for s in list(TS_files[list(TS_files.keys())[0]].columns.levels[1])]))
 
         # Loop over modes and regions
         TS_df = pd.DataFrame(index=range(8760), dtype="float16")
         for mode_tag, quantiles in modes.items():
+            # Check if quantiles are available
+            if not set(quantiles).issubset(set(quantiles_existing)):
+                warn("\nSet quantiles " + str(quantiles) + " do not match available quantiles from input files: " + str(quantiles_existing))
+                timecheck("Error")
+                return
+
             for reg in regions:
                 col_name = reg + "_" + tech + "_" + tag + "_" + mode_tag
                 TS_df[col_name] = np.zeros((8760, 1))

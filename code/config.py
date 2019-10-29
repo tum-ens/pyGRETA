@@ -245,7 +245,7 @@ def time_series_parameters(param):
     :rtype: dict
     """
     # Quantiles for time series
-    param["quantiles"] = [90, 70, 60, 40]
+    param["quantiles"] = [100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0]
 
     # User defined locations
     param["useloc"] = {"Point1": (0, -80), "Point2": (1, 1)}  # {"point name": (latitude, longitude),...}

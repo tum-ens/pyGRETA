@@ -200,15 +200,21 @@ def generate_user_locations_time_series(paths, param, tech):
     :return: The CSV file with the time series for all subregions and quantiles is saved directly in the given path,
              along with the corresponding metadata in a JSON file.
     :rtype: None
-    :raise:
+    :raise Point locations not found: Is raised when the dictionary containing the points names and locations is empty.
+    :raise Points outside spatial scope: Some points are not located inside of the spatial scope, therefore no input maps are available for the calculations
     """
     timecheck("Start")
+
     nproc = param["nproc"]
     CPU_limit = np.full((1, nproc), param["CPU_limit"])
     res_desired = param["res_desired"]
     Crd_all = param["Crd_all"]
 
     # Read user defined locations dictionary
+    if not param["useloc"]:
+        warn("Point locations not found: Please fill in the name and locations of the points in config.py prior to executing this function", UserWarning)
+        timecheck("End")
+        return
     points_df = pd.DataFrame.from_dict(param["useloc"], orient="index", columns=["lat", "lon"])
 
     # Filter points outside spatial scope
@@ -503,7 +509,7 @@ def generate_stratified_timeseries(paths, param, tech):
             # Check if quantiles are available
             if not set(quantiles).issubset(set(quantiles_existing)):
                 warn("\nSet quantiles " + str(quantiles) + " do not match available quantiles from input files: " + str(quantiles_existing))
-                timecheck("Error")
+                timecheck("End")
                 return
 
             for reg in regions:

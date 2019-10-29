@@ -73,18 +73,6 @@ def find_locations_quantiles(paths, param, tech):
     param[tech]["Crd_points"] = crd_exact_points(reg_ind, Crd_all, res_desired)
     param[tech]["Crd_points"] = (param[tech]["Crd_points"][0], param[tech]["Crd_points"][1], list_names, list_quantiles)
 
-    # Used to get TS for desired coordinates
-    # points = hdf5storage.read("Crd_points", "crd_points_masked.mat")
-    # lat = points[0][0]
-    # lon = points[0][1]
-    # crd = (lon[0], lat[0])
-    # ind = ind_exact_points(crd, Crd_all, res_desired)
-    # list_names = ['AU'] * len(ind[0])
-    # points = range(1, len(ind[0])+1)
-    # list_points = ["p" + str(po) for po in points]
-    # param[tech]["Ind_points"] = ind
-    # param[tech]["Crd_points"] = (crd[0], crd[1], list_names, list_points)
-
     # Format point locations
     points = [(param[tech]["Crd_points"][1][i], param[tech]["Crd_points"][0][i]) for i in range(0, len(param[tech]["Crd_points"][0]))]
 
@@ -116,13 +104,13 @@ def find_locations_quantiles(paths, param, tech):
 
 def generate_time_series(paths, param, tech):
     """
-    This function generates yearly capacity factor time-series for the technology of choice at specified locations:
-    either user-defined locations or quantile locations generated in find_locations_quantiles.
+    This function generates yearly capacity factor time-series for the technology of choice at quantile locations
+    generated in find_locations_quantiles.
     The timeseries are saved in CSV files.
 
     :param paths: Dictionary of dictionaries containing paths to coordinate and indices of the quantile locations.
     :type paths: dict
-    :param param: Dictionary of dictionaries containing processing parameters, and user-defined locations.
+    :param param: Dictionary of dictionaries containing processing parameters.
     :type param: dict
     :param tech: Technology under study.
     :type tech: str
@@ -194,6 +182,113 @@ def generate_time_series(paths, param, tech):
         [tech, "spatial_scope", "subregions"],
     )
     print("files saved: " + paths[tech]["TS"])
+    timecheck("End")
+
+
+def generate_user_locations_time_series(paths, param, tech):
+    """
+    This function generates yearly capacity factor time-series for the technology of choice at user defined locations.
+    The timeseries are saved in CSV files.
+
+    :param paths: Dictionary of dictionaries containing paths output desired locations.
+    :type paths: dict
+    :param param: Dictionary of dictionaries containing processing parameters, and user-defined locations.
+    :type param: dict
+    :param tech: Technology under study.
+    :type tech: str
+
+    :return: The CSV file with the time series for all subregions and quantiles is saved directly in the given path,
+             along with the corresponding metadata in a JSON file.
+    :rtype: None
+    :raise Point locations not found: Is raised when the dictionary containing the points names and locations is empty.
+    :raise Points outside spatial scope: Some points are not located inside of the spatial scope, therefore no input maps are available for the calculations
+    """
+    timecheck("Start")
+
+    nproc = param["nproc"]
+    CPU_limit = np.full((1, nproc), param["CPU_limit"])
+    res_desired = param["res_desired"]
+    Crd_all = param["Crd_all"]
+
+    # Read user defined locations dictionary
+    if not param["useloc"]:
+        warn("Point locations not found: Please fill in the name and locations of the points in config.py prior to executing this function", UserWarning)
+        timecheck("End")
+        return
+    points_df = pd.DataFrame.from_dict(param["useloc"], orient="index", columns=["lat", "lon"])
+
+    # Filter points outside spatial scope
+    lat_max, lon_max, lat_min, lon_min = param["spatial_scope"][0]
+    # Points outside the scope bound
+    out_scope_df = points_df.loc[
+        (lat_min > points_df["lat"]) | (lat_max < points_df["lat"]) | (lon_min > points_df["lon"]) | (lon_max < points_df["lon"])
+    ].copy()
+    if not out_scope_df.empty:
+        out_points = list(out_scope_df.index)
+        print("WARNING: The following points are located outside of the spatial scope " + str(param["spatial_scope"][0]) + ": \n" + str(out_scope_df))
+        warn("Points located outside spatial scope", UserWarning)
+    # Points inside the scope bounds
+    points_df = points_df.loc[
+        (lat_min <= points_df["lat"]) & (lat_max >= points_df["lat"]) & (lon_min <= points_df["lon"]) & (lon_max >= points_df["lon"])
+    ].copy()
+    if not points_df.empty:
+        # Prepare input for calc_TS functions
+        crd = (points_df["lat"].to_numpy(), points_df["lon"].to_numpy())
+        ind = ind_exact_points(crd, Crd_all, res_desired)
+        list_names = ["UD"] * len(crd[0])
+        list_points = list(points_df.index)
+        param[tech]["Ind_points"] = ind
+        param[tech]["Crd_points"] = (crd[0], crd[1], list_names, list_points)
+
+        # Obtain weather and correction matrices
+        param["Ind_nz"] = param[tech]["Ind_points"]
+        merraData, rasterData = get_merra_raster_data(paths, param, tech)
+
+        if tech in ["PV", "CSP"]:
+            # Set up day_filter
+            res_weather = param["res_weather"]
+            Ind = ind_merra(Crd_all, Crd_all, res_weather)[0]
+            day_filter = np.nonzero(merraData["CLEARNESS"][Ind[2] - 1 : Ind[0], Ind[3] - 1 : Ind[1], :].sum(axis=(0, 1)))
+
+            list_hours = np.arange(0, 8760)
+            if nproc == 1:
+                param["status_bar_limit"] = list_hours[-1]
+                results = calc_TS_solar(list_hours[day_filter], [param, tech, rasterData, merraData])
+            else:
+                list_hours = np.array_split(list_hours[day_filter], nproc)
+                param["status_bar_limit"] = list_hours[0][-1]
+                results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(
+                    calc_TS_solar, product(list_hours, [[param, tech, rasterData, merraData]])
+                )
+
+        elif tech in ["WindOn", "WindOff"]:
+
+            list_hours = np.array_split(np.arange(0, 8760), nproc)
+            param["status_bar_limit"] = list_hours[0][-1]
+            results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(
+                calc_TS_wind, product(list_hours, [[param, tech, rasterData, merraData]])
+            )
+        print("\n")
+
+        # Collecting results
+        TS = np.zeros((len(param[tech]["Ind_points"][0]), 8760))
+        if nproc > 1:
+            for p in range(len(results)):
+                TS = TS + results[p]
+        else:
+            TS = results
+
+        # Restructuring results
+        results = pd.DataFrame(TS.transpose(), columns=list_points).rename_axis("Points", axis="columns")
+        results.to_csv(paths[tech]["TS_discrete"], sep=";", decimal=",")
+        create_json(
+            paths[tech]["TS_discrete"],
+            param,
+            ["author", "comment", tech, "useloc", "region_name", "subregions_name", "year", "Crd_all"],
+            paths,
+            [tech, "spatial_scope", "subregions"],
+        )
+        print("files saved: " + paths[tech]["TS_discrete"])
     timecheck("End")
 
 
@@ -304,7 +399,7 @@ def combinations_for_stratified_timeseries(paths, param, tech):
     :param tech: Technology under study.
     :type tech: str
 
-    :return settings_existing: List of existing settings to be used in stratified time series.
+    :return combinations: List of combinations of settings to be used in stratified time series.
     :return inputfiles: List of regression outputs to be used in generating the stratified time series.
     :rtype: tuple (list, list)
     :raise No coefficients: If regression coefficients are not available, a warning is raised.
@@ -312,6 +407,9 @@ def combinations_for_stratified_timeseries(paths, param, tech):
     """
     subregions = param["subregions_name"]
     year = str(param["year"])
+
+    bef_setting = paths["regression_out"] + subregions + "_" + tech + "_reg_coefficients_"
+    aft_setting = "_" + year + ".csv"
 
     # Reads the files present in input folder
     inputfiles = glob(paths["regression_out"] + subregions + "_" + tech + "_reg_coefficients*" + year + ".csv")
@@ -324,11 +422,9 @@ def combinations_for_stratified_timeseries(paths, param, tech):
     # Get existing settings
     settings_existing = []
     for filename in inputfiles:
-        bef_setting = paths["regression_out"] + subregions + "_" + tech + "_reg_coefficients_"
-        aft_setting = "_" + year + ".csv"
         list_settings = filename.replace(bef_setting, "").replace(aft_setting, "").split("_")
-        settings_existing = settings_existing + [sorted([int(x) for x in list_settings])]
-    settings_sorted = sorted(settings_existing)
+        settings_existing = settings_existing + [sorted([int(x) for x in list_settings], reverse=True)]
+    settings_sorted = set(sorted(map(tuple, settings_existing)))
     print("\nFor technology " + tech + ", regression coefficients for the following combinations have been detected: ", settings_existing)
 
     # Get required settings
@@ -336,19 +432,25 @@ def combinations_for_stratified_timeseries(paths, param, tech):
     combinations_sorted = []
     for combi in combinations:
         if combi == []:
-            combi = list(set([item for sublist in combinations for item in sublist]))
-        combinations_sorted = combinations_sorted + [sorted(combi)]
-    combinations = sorted(combinations_sorted)
+            combi = sorted(set([item for sublist in settings_sorted for item in sublist]), reverse=True)
+        combinations_sorted = combinations_sorted + [tuple(sorted(combi, reverse=True))]
+    combinations = set(sorted(combinations_sorted))
 
     # Case 2: some files are missing
-    if combinations != settings_sorted:
+    if not combinations.issubset(settings_sorted):
         print("\nFor technology " + tech + ", regression coefficients for the following combinations are required: ", combinations)
         warn(
             "Not all regression coefficients are available! Generate the missing regression coefficients first, then create stratified time series.",
             UserWarning,
         )
         return
-    return settings_existing, inputfiles
+
+    # Create inputfiles list matching combinations
+    combifiles = []
+    for combi in combinations:
+        combifiles = combifiles + [bef_setting + "_".join(map(str, list(combi))) + aft_setting]
+
+    return list(combinations), combifiles
 
 
 def generate_stratified_timeseries(paths, param, tech):
@@ -374,21 +476,21 @@ def generate_stratified_timeseries(paths, param, tech):
     year = str(param["year"])
 
     try:
-        settings_existing, inputfiles = combinations_for_stratified_timeseries(paths, param, tech)
+        combinations, inputfiles = combinations_for_stratified_timeseries(paths, param, tech)
     except UserWarning:
         timecheck("End")
         return
 
     # Display the combinations of settings to be used
     if tech in ["WindOn", "WindOff"]:
-        print("Combinations of hub heights to be used for the stratified time series: ", settings_existing)
+        print("Combinations of hub heights to be used for the stratified time series: ", combinations)
     elif tech in ["PV"]:
-        print("Orientations to be used for the stratified time series: ", settings_existing)
+        print("Orientations to be used for the stratified time series: ", combinations)
 
     for tag, combo in param["combo"][tech].items():
         if combo == []:
-            combo = list(set([item for sublist in param["combo"][tech].values() for item in sublist]))
-        ind = settings_existing.index(sorted(combo))
+            combo = sorted(set([item for sublist in combinations for item in sublist]))
+        ind = combinations.index(tuple(sorted(combo, reverse=True)))
         coef = pd.read_csv(inputfiles[ind], sep=";", decimal=",", index_col=[0])
 
         # Extract names of regions
@@ -399,10 +501,17 @@ def generate_stratified_timeseries(paths, param, tech):
         for setting in combo:
             setting_path = paths["regional_analysis"] + subregions + "_" + tech + "_" + str(setting) + "_TS_" + year + ".csv"
             TS_files[setting] = pd.read_csv(setting_path, sep=";", decimal=",", header=[0, 1], index_col=[0])
+        quantiles_existing = list(map(int, [s.strip("q") for s in list(TS_files[list(TS_files.keys())[0]].columns.levels[1])]))
 
         # Loop over modes and regions
         TS_df = pd.DataFrame(index=range(8760), dtype="float16")
         for mode_tag, quantiles in modes.items():
+            # Check if quantiles are available
+            if not set(quantiles).issubset(set(quantiles_existing)):
+                warn("\nSet quantiles " + str(quantiles) + " do not match available quantiles from input files: " + str(quantiles_existing))
+                timecheck("End")
+                return
+
             for reg in regions:
                 col_name = reg + "_" + tech + "_" + tag + "_" + mode_tag
                 TS_df[col_name] = np.zeros((8760, 1))

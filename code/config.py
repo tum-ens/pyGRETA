@@ -40,6 +40,7 @@ def configuration():
         paths = emhires_input_paths(paths, param, tech)
         paths = potential_output_paths(paths, param, tech)
         paths = regional_analysis_output_paths(paths, param, tech)
+        paths = discrete_output_paths(paths, param, tech)
     return paths, param
 
 
@@ -63,9 +64,9 @@ def general_settings():
     fs = os.path.sep
     current_folder = os.path.dirname(os.path.abspath(__file__))
     # For personal Computer:
-    root = str(Path(current_folder).parent.parent.parent) + fs + "Database_KS" + fs
+    # root = str(Path(current_folder).parent.parent.parent) + fs + "Database_KS" + fs
     # For Server Computer:
-    # root = str(Path(current_folder).parent.parent.parent) + "Database_KS" + fs
+    root = str(Path(current_folder).parent.parent.parent) + "Database_KS" + fs
 
     return paths, param
 
@@ -112,7 +113,7 @@ def scope_paths_and_parameters(paths, param):
 
     # Name tags for the scope and the subregions
     param["region_name"] = "Ghana"  # Name tag of the spatial scope
-    param["subregions_name"] = "gadm36_GHA_0"  # Name tag of the subregions
+    param["subregions_name"] = "Ghana_country"  # Name tag of the subregions
 
     # Year
     param["year"] = 2015
@@ -246,17 +247,20 @@ def time_series_parameters(param):
     # Quantiles for time series
     param["quantiles"] = [100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0]
 
+    # User defined locations
+    param["useloc"] = {"Point1": (0, -80), "Point2": (1, 1)}  # {"point name": (latitude, longitude),...}
+
     # Regression
     param["regression"] = {
         "solver": "gurobi",  # string
-        "WindOn": {"all": []},  # dictionary of hub height combinations
+        "WindOn": {"all": [],},  # dictionary of hub height combinations
         "WindOff": {"80m": []},  # dictionary of hub height combinations
         "PV": {"all": []},  # list of orientation combinations
         "CSP": {"all": []},
     }
 
     # Stratified time series
-    param["modes"] = {"high": [100, 90, 80], "mid": [70, 60, 50, 40, 30], "low": [20, 10, 0], "all": param["quantiles"]}
+    param["modes"] = {"high": [90, 70], "mid": [60, 40], "low": [], "all": param["quantiles"]}
     param["combo"] = {
         # dictionary of hub height and orientation combinations
         "WindOn": {"2015": [60, 80, 100], "2030": [80, 100, 120], "2050": [100, 120, 140]},
@@ -708,6 +712,11 @@ def output_folders(paths, param):
     if not os.path.isdir(paths["regional_analysis"]):
         os.makedirs(paths["regional_analysis"])
 
+    # Output folder for discrete analysis
+    paths["discrete_analysis"] = paths["region"] + "Renewable energy" + fs + "Discrete analysis" + fs
+    if not os.path.isdir(paths["discrete_analysis"]):
+        os.makedirs(paths["discrete_analysis"])
+
     # Regression parameters
     paths["regression_in"] = paths["regional_analysis"] + "Regression outputs" + fs + "Parameters" + fs
     if not os.path.isdir(paths["regression_in"]):
@@ -966,5 +975,28 @@ def regional_analysis_output_paths(paths, param, tech):
 
     paths[tech]["Regression_coefficients"] = paths["regression_out"] + subregions + "_" + tech + "_reg_coefficients_"
     paths[tech]["Regression_TS"] = paths["regression_out"] + subregions + "_" + tech + "_reg_TimeSeries_"
+
+    return paths
+
+
+def discrete_output_paths(paths, param, tech):
+
+    region = param["region_name"]
+    year = str(param["year"])
+
+    if tech in ["WindOn", "WindOff"]:
+        hubheight = str(param[tech]["technical"]["hub_height"])
+        PathTemp = paths["discrete_analysis"] + region + "_" + tech + "_" + hubheight
+    elif tech in ["PV"]:
+        if "orientation" in param["PV"]["technical"].keys():
+            orientation = str(param[tech]["technical"]["orientation"])
+        else:
+            orientation = "0"
+        PathTemp = paths["discrete_analysis"] + region + "_" + tech + "_" + orientation
+    elif tech in ["CSP"]:
+        orientation = "0"
+        PathTemp = paths["discrete_analysis"] + region + "_" + tech + "_" + orientation
+
+    paths[tech]["TS_discrete"] = PathTemp + "_TS_" + year + ".csv"
 
     return paths

@@ -144,7 +144,7 @@ def get_merra_raster_data(paths, param, tech):
         with rasterio.open(paths_corr) as src:
             w = src.read(1)
         rasterData["A_cf"] = np.flipud(w).astype("float16")
-        rasterData["A_cf"] = rasterData["A_cf"][reg_ind]
+        rasterData["A_cf"] = rasterData["A_cf"][tuple(reg_ind)]
         del w
     return merraData, rasterData
 

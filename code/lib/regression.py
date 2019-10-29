@@ -124,7 +124,7 @@ def clean_TS_regression(paths, param, tech):
     """
     This function creates a CSV file containing the model time series used for regression. If the region is present in
     the EMHIRES text files then the TS is extracted directly from it. If the region is not present in the EMHIRES text
-    files, the highest FLH generated TS is used instead and is scaled to match IRENA FLH.
+    files, the highest FLH generated TS is used instead and is scaled to match IRENA FLH if the IRENA FLH are available.
 
     :param paths: Dictionary containing paths to EMHIRES text files.
     :type paths: dict
@@ -133,6 +133,8 @@ def clean_TS_regression(paths, param, tech):
 
     :return: The time series used for the regression are saved directly in the given path, along with the corresponding metadata in a JSON file. 
     :rtype: None
+    :raise Missing FLH: FLH values are missing for at least one region. No scaling is applied to the time series for those regions.
+    :raise Missing EMHIRES: EMHIRES database is missing, generated timeseries will be used as model for all regions.
     """
 
     # load IRENA FLH data
@@ -167,13 +169,17 @@ def clean_TS_regression(paths, param, tech):
         settings = settings[1]
     else:
         settings = settings[0]
-
+    nanval = ""
     for region in list_regions:
         IRENA_FLH = irena.loc[region, tech]
         # Region is present in both EMHIRES and IRENA
         if region in intersect_regions:
             # Scale EMHIRES TS to IRENA
-            TS_regression[region] = (EMHIRES[region] * (IRENA_FLH / sum(EMHIRES[region]))).values
+            if not np.isnan(IRENA_FLH):
+                TS_regression[region] = (EMHIRES[region] * (IRENA_FLH / sum(EMHIRES[region]))).values
+            else:
+                TS_regression = EMHIRES[region].values
+                nanval = nanval + region + ", "
         # Region is not present in EMHIRES, use scaled generated TS instead
         else:
             # Load generated TS and scale it with IRENA FLH
@@ -186,13 +192,19 @@ def clean_TS_regression(paths, param, tech):
             )
             GenTS["TS_Max"] = GenTS[str(settings_sorted[0])]["q" + str(np.max(param["quantiles"]))]
             # Scale max TS to IRENA
-            TS_regression[region] = (GenTS["TS_Max"] * (IRENA_FLH / GenTS["TS_Max"].sum())).values
+            if not np.isnan(IRENA_FLH):
+                TS_regression[region] = (GenTS["TS_Max"] * (IRENA_FLH / GenTS["TS_Max"].sum())).values
+            else:
+                TS_regression[region] = GenTS["TS_Max"].values
+                nanval = nanval + region + ", "
 
     # Save TS_regression as CSV
     TS_regression.to_csv(paths[tech]["TS_regression"], sep=";", decimal=",", index=True)
     create_json(
         paths[tech]["TS_regression"], param, ["author", "comment", tech, "region_name", "subregions_name", "year"], paths, ["FLH_regression", tech]
     )
+    if nanval != "":
+        warn("Missing FLH for regions: " + nanval.rstrip(", ") + "\nTime series have not been scaled for these regions")
     print("files saved: " + paths[tech]["TS_regression"])
 
 
@@ -235,6 +247,9 @@ def regression_coefficients(paths, param, tech):
         combinations = combinations_for_regression(paths, param, tech)
         param["combinations"] = combinations
     except UserWarning:
+        timecheck("End")
+        return
+    if combinations is None:
         timecheck("End")
         return
 
@@ -344,6 +359,8 @@ def regression_coefficients(paths, param, tech):
         if nodata != "":
             print("\nNo data was available for the following regions: " + nodata.rstrip(", "))
 
+        if summary is None:
+            return
         st = ""
         for setting in settings_sorted:
             st = st + str(setting) + "_"
@@ -592,8 +609,10 @@ def check_regression_model(paths, tech):
 
         if len(reg_nan_null) != 0:
             print("Missing data:" + ",".join(reg_nan_null))
-            ans = input("Some regions are missing FLH data for the technology of choice. Continue ? [y]/n")
+            ans = input("Some regions are missing FLH data for the technology of choice. Continue ? [y]/n ")
             if ans in ["", "y", "[y]"]:
+                # Load IRENA data and regions
+                FLH = pd.read_csv(paths["FLH_regression"], sep=";", decimal=",", index_col=0)
                 break
         else:
             break

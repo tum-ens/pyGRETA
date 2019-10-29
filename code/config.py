@@ -57,7 +57,7 @@ def general_settings():
     global root
 
     param = {}
-    param["author"] = "Houssame Houmy"  # the name of the person running the script
+    param["author"] = "Kais Siala"  # the name of the person running the script
     param["comment"] = "Workshop_example"
 
     paths = {}
@@ -113,13 +113,13 @@ def scope_paths_and_parameters(paths, param):
 
     # Name tags for the scope and the subregions
     param["region_name"] = "Ghana"  # Name tag of the spatial scope
-    param["subregions_name"] = "Ghana_country_doc_example"  # Name tag of the subregions
+    param["subregions_name"] = "Ghana_country"  # Name tag of the subregions
 
     # Year
     param["year"] = 2015
 
     # Technologies
-    param["technology"] = ["WindOn"]  # ["PV", "CSP", "WindOn", "WindOff"]
+    param["technology"] = ["WindOn", "PV"]  # ["PV", "CSP", "WindOn", "WindOff"]
 
     return paths, param
 
@@ -139,7 +139,7 @@ def computation_parameters(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 60
+    param["nproc"] = 50
     param["CPU_limit"] = True
     return param
 
@@ -260,10 +260,10 @@ def time_series_parameters(param):
     }
 
     # Stratified time series
-    param["modes"] = {"high": [90, 70], "mid": [50, 40], "low": [], "all": param["quantiles"]}
+    param["modes"] = {"high": [90, 70], "mid": [60, 40], "low": [], "all": param["quantiles"]}
     param["combo"] = {
         # dictionary of hub height and orientation combinations
-        "WindOn": {"all": [],},
+        "WindOn": {"100m": [100], "all":[],},
         "WindOff": {"80m": [80], "100m": [100], "120m": [120]},
         "PV": {"Solar": [0, 180, -90, 90]},
         "CSP": {"all": []},

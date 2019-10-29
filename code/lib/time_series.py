@@ -393,7 +393,7 @@ def combinations_for_stratified_timeseries(paths, param, tech):
     :param tech: Technology under study.
     :type tech: str
 
-    :return settings_existing: List of existing settings to be used in stratified time series.
+    :return combinations: List of combinations of settings to be used in stratified time series.
     :return inputfiles: List of regression outputs to be used in generating the stratified time series.
     :rtype: tuple (list, list)
     :raise No coefficients: If regression coefficients are not available, a warning is raised.
@@ -401,6 +401,9 @@ def combinations_for_stratified_timeseries(paths, param, tech):
     """
     subregions = param["subregions_name"]
     year = str(param["year"])
+
+    bef_setting = paths["regression_out"] + subregions + "_" + tech + "_reg_coefficients_"
+    aft_setting = "_" + year + ".csv"
 
     # Reads the files present in input folder
     inputfiles = glob(paths["regression_out"] + subregions + "_" + tech + "_reg_coefficients*" + year + ".csv")
@@ -413,8 +416,6 @@ def combinations_for_stratified_timeseries(paths, param, tech):
     # Get existing settings
     settings_existing = []
     for filename in inputfiles:
-        bef_setting = paths["regression_out"] + subregions + "_" + tech + "_reg_coefficients_"
-        aft_setting = "_" + year + ".csv"
         list_settings = filename.replace(bef_setting, "").replace(aft_setting, "").split("_")
         settings_existing = settings_existing + [sorted([int(x) for x in list_settings])]
     settings_sorted = set(sorted(map(tuple, settings_existing)))
@@ -437,7 +438,13 @@ def combinations_for_stratified_timeseries(paths, param, tech):
             UserWarning,
         )
         return
-    return list(combinations), inputfiles
+
+    # Create inputfiles list matching combinations
+    combifiles = []
+    for combi in combinations:
+        combifiles = combifiles + [bef_setting + "_".join(map(str, list(combi))) + aft_setting]
+
+    return list(combinations), combifiles
 
 
 def generate_stratified_timeseries(paths, param, tech):
@@ -463,21 +470,21 @@ def generate_stratified_timeseries(paths, param, tech):
     year = str(param["year"])
 
     try:
-        settings_existing, inputfiles = combinations_for_stratified_timeseries(paths, param, tech)
+        combinations, inputfiles = combinations_for_stratified_timeseries(paths, param, tech)
     except UserWarning:
         timecheck("End")
         return
 
     # Display the combinations of settings to be used
     if tech in ["WindOn", "WindOff"]:
-        print("Combinations of hub heights to be used for the stratified time series: ", settings_existing)
+        print("Combinations of hub heights to be used for the stratified time series: ", combinations)
     elif tech in ["PV"]:
-        print("Orientations to be used for the stratified time series: ", settings_existing)
+        print("Orientations to be used for the stratified time series: ", combinations)
 
     for tag, combo in param["combo"][tech].items():
         if combo == []:
-            combo = sorted(set([item for sublist in settings_existing for item in sublist]))
-        ind = settings_existing.index(sorted(combo))
+            combo = sorted(set([item for sublist in combinations for item in sublist]))
+        ind = combinations.index(sorted(combo))
         coef = pd.read_csv(inputfiles[ind], sep=";", decimal=",", index_col=[0])
 
         # Extract names of regions

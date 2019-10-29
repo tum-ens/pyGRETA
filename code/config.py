@@ -263,7 +263,7 @@ def time_series_parameters(param):
     param["modes"] = {"high": [90, 70], "mid": [60, 40], "low": [], "all": param["quantiles"]}
     param["combo"] = {
         # dictionary of hub height and orientation combinations
-        "WindOn": {"100m": [100], "all":[],},
+        "WindOn": {"2015": [60, 80, 100], "2030": [80, 100, 120], "2050": [100, 120, 140]},
         "WindOff": {"80m": [80], "100m": [100], "120m": [120]},
         "PV": {"Solar": [0, 180, -90, 90]},
         "CSP": {"all": []},

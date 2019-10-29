@@ -23,32 +23,32 @@ In the folder ``code``, you will find multiple files:
 
 .. tabularcolumns:: |p{3.7cm}|p{9cm}|
 
-+-------------------------+---------------------------------------------------------------------------+
-| File                    | Description                                                               |
-+=========================+===========================================================================+
-| config.py               | used for configuration, see below.                                        |
-+-------------------------+---------------------------------------------------------------------------+
-| runme.py                | main file, which will be run later using ``python runme.py``.             |
-+-------------------------+---------------------------------------------------------------------------+
-| initialization.py       | used for initialization.                                                  |
-+-------------------------+---------------------------------------------------------------------------+
-| input_maps.py           | used to generate input maps for the scope.                                |
-+-------------------------+---------------------------------------------------------------------------+
-| potential.py            | contains functions related to the potential estimation.                   |
-+-------------------------+---------------------------------------------------------------------------+
-| time_series.py          | contains functions related to the generation of time series.              |
-+-------------------------+---------------------------------------------------------------------------+
-| regression.py           | contains functions related to the regression.                             |
-+-------------------------+---------------------------------------------------------------------------+
-| spatial_functions.py    | contains helping functions related to maps, coordinates and indices.      |
-+-------------------------+---------------------------------------------------------------------------+
-| physical_models.py      | contains helping functions for the physical/technological modeling.       |
-+-------------------------+---------------------------------------------------------------------------+
-| correction_functions.py | contains helping functions for data correction/cleaning.                  |
-+-------------------------+---------------------------------------------------------------------------+
-| util.py                 | contains minor helping functions and the necessary python libraries to be |
-|                         | imported.                                                                 |
-+-------------------------+---------------------------------------------------------------------------+
++-----------------------------+---------------------------------------------------------------------------+
+| File                        | Description                                                               |
++=============================+===========================================================================+
+| config.py                   | used for configuration, see below.                                        |
++-----------------------------+---------------------------------------------------------------------------+
+| runme.py                    | main file, which will be run later using ``python runme.py``.             |
++-----------------------------+---------------------------------------------------------------------------+
+| lib\initialization.py       | used for initialization.                                                  |
++-----------------------------+---------------------------------------------------------------------------+
+| lib\input_maps.py           | used to generate input maps for the scope.                                |
++-----------------------------+---------------------------------------------------------------------------+
+| lib\potential.py            | contains functions related to the potential estimation.                   |
++-----------------------------+---------------------------------------------------------------------------+
+| lib\time_series.py          | contains functions related to the generation of time series.              |
++-----------------------------+---------------------------------------------------------------------------+
+| lib\regression.py           | contains functions related to the regression.                             |
++-----------------------------+---------------------------------------------------------------------------+
+| lib\spatial_functions.py    | contains helping functions related to maps, coordinates and indices.      |
++-----------------------------+---------------------------------------------------------------------------+
+| lib\physical_models.py      | contains helping functions for the physical/technological modeling.       |
++-----------------------------+---------------------------------------------------------------------------+
+| lib\correction_functions.py | contains helping functions for data correction/cleaning.                  |
++-----------------------------+---------------------------------------------------------------------------+
+| lib\util.py                 | contains minor helping functions and the necessary python libraries to be |
+|                         	  | imported.                                                                 |
++-----------------------------+---------------------------------------------------------------------------+
 
 config.py                                                                                           
 ---------
@@ -221,8 +221,6 @@ The recommended use cases of each module will be presented in the order in which
 5. :ref:`Strat`
 
 The use cases associated with each module with examples of their outputs are presented below.
-
-.. NOTE:: Include here a graphic with the use cases and miniatures of outputs.
 
 It is recommended to thoroughly read through the configuration file :mod:`config.py` and modify the input paths and 
 computation parameters before starting the :mod:`runme.py` script.

@@ -380,6 +380,13 @@ Stratified time series
 Part of the :mod:`lib.time_series` module, the :mod:`lib.time_series.generate_stratified_tiemseries` function reads the regression coefficients and 
 the generated time series, and combines them into user-defined *modes* (combinations of quantiles) and *combos* (combinations hub height or orientations settings). 
 
+.. figure:: img/Stratified_TS_diagram.png
+   :width: 90%
+   :align: center
+   
+   Stratified Time Series - Process example Region A
+
+
 Example:
 - Graphic of Modes and Combos
 

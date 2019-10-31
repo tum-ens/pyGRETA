@@ -115,7 +115,7 @@ def clean_FLH_regression(paths, param):
         "The following countries/regions are not present in the IRENA Database: "
         + ",".join(missing)
         + ".\nTheir corresponding FLH have been left blank.",
-        UserWarning,
+        UserWarning
     )
     return missing
 
@@ -276,15 +276,14 @@ def regression_coefficients(paths, param, tech):
     list_regions = param["regions_sub"]["NAME_SHORT"].values.tolist()
     list_regions = sorted(list(set(list_regions).intersection(set(FLH.index))))
 
-    # Summary variables
-    summary = None
-    nodata = ""
-    no_sol_high = ""
-    no_sol_low = ""
-    solution = ""
-
     # loop over all combinations and regions
     for settings in combinations:
+        # Summary variables
+        summary = None
+        nodata = ""
+        no_sol_high = ""
+        no_sol_low = ""
+        solution = ""
         status = 0
         print("Regions under study : ", list_regions)
         for reg in list_regions:

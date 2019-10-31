@@ -335,7 +335,7 @@ Flow Losses
 Flow loss coefficient or heat removal factor :math:`F_r` is the ratio between the actual heat transfer to the maximum heat transfer possible between 
 the receiver and the heat transfer fluid (HTF). These losses result from the difference between the temperature of the receiver and 
 the temperature of the HTF and are dependent on the heat capacity and the flow rate of the HTF. 
-A typical value for parabolic toughts is of 95%. 
+A typical value for parabolic toughts is 95%. 
 
 CSP Capacity Factor Calculation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -359,8 +359,8 @@ as if both variables were vectors, so the absolute velocity is:
 	W_{50M} = \sqrt{V50M^2+U50M^2}
 
 However, the wind velocities extracted from MERRA-2 are given for a height
-of 50 meters, which does not correspond to the hub height of the wind turbines.
-Therefore, They must be extrapolated.
+of 50 meters, which does not correspond to the hub height of the wind turbines;
+therefore, they must be extrapolated.
 
 Wind Shear
 ----------
@@ -386,7 +386,7 @@ expression :cite:`Masters.2004`:
 .. math::
 	P=\frac{1}{2}\rho A v^3 C_p
 
-where :math:`\rho` is the density of the air, v is the speed of the wind and :math:`C_p` is the power
+where :math:`\rho` is the density of the air, :math:`v` is the speed of the wind and :math:`C_p` is the power
 cofficient. As it is shown in the previous equation, the energy in the wind varies
 proportionally to the cube of the wind's speed. Therefore, the power output of
 wind turbines is normally described with cubic power curves. However, there
@@ -409,7 +409,8 @@ increases of wind speed.
 Cut-out wind speed
 ^^^^^^^^^^^^^^^^^^
 The wind turbines are programmed to stop at wind
-velocities around 25 m/s to avoid damage to the turbine or the surroundings,
+velocities above their rated maximum wind speed(usually around 25 m/s) 
+to avoid damage to the turbine and its surroundings,
 so there is no power generation after this velocity.
 
 Wind Onshore and Offshore Capacity factor
@@ -430,5 +431,5 @@ where :math:`W_{in}`Win is the cut-in wind speed, :math:`W_{out}` is the cut-out
 is the rated wind speed. The area is not included in the previous equations as
 it does not change in both generation states (actual and theoretical maximum
 power). While the density could vary for both states, the overall impact of a
-change in density is negligible compared to the wind speed and therefore it is
+change in density is negligible compared to the wind speed and therefore is
 not included in the calculation.

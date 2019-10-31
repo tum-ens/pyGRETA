@@ -31,23 +31,23 @@ In the folder ``code``, you will find multiple files:
 +---------------------------------------+----------------------------------------------------------------------------------+
 | runme.py                              | main file, which will be run later using ``python runme.py``.                    |
 +---------------------------------------+----------------------------------------------------------------------------------+
-| lib\initialization.py                 | used for initialization.                                                         |
+| lib\\initialization.py                 | used for initialization.                                                        |
 +---------------------------------------+----------------------------------------------------------------------------------+
-| lib\input_maps.py                     | used to generate input maps for the scope.                                       |
+| lib\\input_maps.py                     | used to generate input maps for the scope.                                      |
 +---------------------------------------+----------------------------------------------------------------------------------+
-| lib\potential.py                      | contains functions related to the potential estimation.                          |
+| lib\\potential.py                      | contains functions related to the potential estimation.                         |
 +---------------------------------------+----------------------------------------------------------------------------------+
-| lib\time_series.py                    | contains functions related to the generation of time series.                     |
+| lib\\time_series.py                    | contains functions related to the generation of time series.                    |
 +---------------------------------------+----------------------------------------------------------------------------------+
-| lib\regression.py                     |  contains functions related to the regression.                                   |
+| lib\\regression.py                     |  contains functions related to the regression.                                  |
 +---------------------------------------+----------------------------------------------------------------------------------+
-| lib\spatial_functions.py              | contains helping functions related to maps, coordinates and indices.             |
+| lib\\spatial_functions.py              | contains helping functions related to maps, coordinates and indices.            |
 +---------------------------------------+----------------------------------------------------------------------------------+
-| lib\physical_models.py                | contains helping functions for the physical/technological modeling.              |
+| lib\\physical_models.py                | contains helping functions for the physical/technological modeling.             |
 +---------------------------------------+----------------------------------------------------------------------------------+
-| lib\correction_functions.py           | contains helping functions for data correction/cleaning.                         |
+| lib\\correction_functions.py           | contains helping functions for data correction/cleaning.                        |
 +---------------------------------------+----------------------------------------------------------------------------------+
-| lib\util.py                           | contains minor helping functions and the necessary python libraries to imported. |
+| lib\\util.py                           | contains minor helping functions and the necessary python libraries to imported.|
 +---------------------------------------+----------------------------------------------------------------------------------+
 
 config.py                                                                                           
@@ -192,7 +192,7 @@ A high resolution raster (30 arcsec) of population density can be downloaded fro
 
 Shapefile of protected areas
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Any database for prtoected areas can be used with this tool, in particular the World Database on Protected Areas 
+Any database for protected areas can be used with this tool, in particular the World Database on Protected Areas 
 published by the International Union for Conservation of Nature `(IUCN) <https://www.protectedplanet.net/>`_.
 The shapefile has many attributes, but only one is used in the tool: "IUCN_CAT". If another database is used, an 
 equivalent attribute with the different categories of the protection has to be used and :mod:`config.py` has to be updated accordingly.
@@ -222,9 +222,9 @@ The recommended use cases of each module will be presented in the order in which
 
 The use cases associated with each module with examples of their outputs are presented below.
 
-It is recommended to thoroughly read through the configuration file :mod:`config.py` and modify the input paths and 
-computation parameters before starting the :mod:`runme.py` script.
-Once the configuration file is set, open the :mod:`runme.py` file to define what use case you will be using the script for.
+It is recommended to thoroughly read through the configuration file `config.py` and modify the input paths and 
+computation parameters before starting the `runme.py` script.
+Once the configuration file is set, open the `runme.py` file to define what use case you will be using the script for.
 
 .. _inputMaps:
 

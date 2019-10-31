@@ -626,13 +626,11 @@ def reporting(paths, param, tech):
             "Energy_Potential_Weighted_Masked_TWh",
         ],
     )
-    status = 0
     # Loop over each region
+    # Display Progress
+    status = 0
+    display_progress("Reporting ", (nRegions, status))
     for reg in range(0, nRegions):
-        # Display Progress
-        status += 1
-        display_progress("Reporting ", (nRegions, status))
-
         # Get name of region
         regions.loc[reg, "Region"] = regions_shp.loc[reg]["NAME_SHORT"] + "_" + location
 
@@ -729,6 +727,9 @@ def reporting(paths, param, tech):
         sort["FLH_M_W"] = sorted_sampled_FLH_masked_weighted
 
         sorted_FLH_list[regions.loc[reg, "Region"]] = sort
+        # Display Progress
+        status += 1
+        display_progress("Reporting ", (nRegions, status))
 
     # Export the dataframe as CSV
     regions.to_csv(paths[tech]["Region_Stats"], sep=";", decimal=",", index=True)

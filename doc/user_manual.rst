@@ -21,34 +21,34 @@ Then activate the environment::
 
 In the folder ``code``, you will find multiple files:
 
-.. tabularcolumns:: |p{3.7cm}|p{9cm}|
+.. tabularcolumns::
+	|p{3.7cm}|p{9cm}|
 
-+-------------------------+---------------------------------------------------------------------------+
-| File                    | Description                                                               |
-+=========================+===========================================================================+
-| config.py               | used for configuration, see below.                                        |
-+-------------------------+---------------------------------------------------------------------------+
-| runme.py                | main file, which will be run later using ``python runme.py``.             |
-+-------------------------+---------------------------------------------------------------------------+
-| initialization.py       | used for initialization.                                                  |
-+-------------------------+---------------------------------------------------------------------------+
-| input_maps.py           | used to generate input maps for the scope.                                |
-+-------------------------+---------------------------------------------------------------------------+
-| potential.py            | contains functions related to the potential estimation.                   |
-+-------------------------+---------------------------------------------------------------------------+
-| time_series.py          | contains functions related to the generation of time series.              |
-+-------------------------+---------------------------------------------------------------------------+
-| regression.py           | contains functions related to the regression.                             |
-+-------------------------+---------------------------------------------------------------------------+
-| spatial_functions.py    | contains helping functions related to maps, coordinates and indices.      |
-+-------------------------+---------------------------------------------------------------------------+
-| physical_models.py      | contains helping functions for the physical/technological modeling.       |
-+-------------------------+---------------------------------------------------------------------------+
-| correction_functions.py | contains helping functions for data correction/cleaning.                  |
-+-------------------------+---------------------------------------------------------------------------+
-| util.py                 | contains minor helping functions and the necessary python libraries to be |
-|                         | imported.                                                                 |
-+-------------------------+---------------------------------------------------------------------------+
++---------------------------------------+----------------------------------------------------------------------------------+
+| File                                  | Description                                                                      |
++=======================================+==================================================================================+
+|  config.py                            | used for configuration, see below.                                               |
++---------------------------------------+----------------------------------------------------------------------------------+
+| runme.py                              | main file, which will be run later using ``python runme.py``.                    |
++---------------------------------------+----------------------------------------------------------------------------------+
+| lib\initialization.py                 | used for initialization.                                                         |
++---------------------------------------+----------------------------------------------------------------------------------+
+| lib\input_maps.py                     | used to generate input maps for the scope.                                       |
++---------------------------------------+----------------------------------------------------------------------------------+
+| lib\potential.py                      | contains functions related to the potential estimation.                          |
++---------------------------------------+----------------------------------------------------------------------------------+
+| lib\time_series.py                    | contains functions related to the generation of time series.                     |
++---------------------------------------+----------------------------------------------------------------------------------+
+| lib\regression.py                     |  contains functions related to the regression.                                   |
++---------------------------------------+----------------------------------------------------------------------------------+
+| lib\spatial_functions.py              | contains helping functions related to maps, coordinates and indices.             |
++---------------------------------------+----------------------------------------------------------------------------------+
+| lib\physical_models.py                | contains helping functions for the physical/technological modeling.              |
++---------------------------------------+----------------------------------------------------------------------------------+
+| lib\correction_functions.py           | contains helping functions for data correction/cleaning.                         |
++---------------------------------------+----------------------------------------------------------------------------------+
+| lib\util.py                           | contains minor helping functions and the necessary python libraries to imported. |
++---------------------------------------+----------------------------------------------------------------------------------+
 
 config.py                                                                                           
 ---------
@@ -67,7 +67,7 @@ runme.py
 .. literalinclude:: ../code/runme.py
    :language: python
    :linenos:
-   :emphasize-lines: 13,23-26,29-30,36,39
+   :emphasize-lines: 13,23-26,29-31,37,40
 
 
 Recommended input sources
@@ -222,8 +222,6 @@ The recommended use cases of each module will be presented in the order in which
 
 The use cases associated with each module with examples of their outputs are presented below.
 
-.. NOTE:: Include here a graphic with the use cases and miniatures of outputs.
-
 It is recommended to thoroughly read through the configuration file :mod:`config.py` and modify the input paths and 
 computation parameters before starting the :mod:`runme.py` script.
 Once the configuration file is set, open the :mod:`runme.py` file to define what use case you will be using the script for.
@@ -307,40 +305,42 @@ It also generates a CSV report containing metrics for each subregion:
 
 Sample of potential report:
 
-.. tabularcolumns:: |l|l|
+.. tabularcolumns:: 
+	|l|l|
 
 +-----------+-----------------------+
-| Region	| Available area (km²)	|
+| Region    | Available area (km²)  |
 +===========+=======================+
-| Region A	| 4315.7				|
+| Region A  | 4315.7                |
 +-----------+-----------------------+
-| Region B	| 2128.3				|
+| Region B  | 2128.3                |
 +-----------+-----------------------+
-| Region C	| 561.3					|
+| Region C  | 561.3                 |
 +-----------+-----------------------+
-| Region D	| 100953.1				|
+| Region D  | 100953.1              |
 +-----------+-----------------------+
-| Region E	| 10.2					|
+| Region E  | 10.2                  |
 +-----------+-----------------------+
-| Region F	| 2829.8				|
+| Region F  | 2829.8                |
 +-----------+-----------------------+
 
-.. tabularcolumns:: |l|l|l|l|l|l|l|l|
+.. tabularcolumns:: 
+	|l|l|l|l|l|l|l|l|
 
 +-----------+-----------+-----------+-------------------+-------------------+-------------------+-----------------------+---------------------------+
-| FLH mean	| FLH max	| FLH min	| Masked FLH mean	| Masked FLH max	| Masked FLH min	| Power potential (GW)	| Energy potential (TWh)	|
+| FLH mean  | FLH max   | FLH min   | Masked FLH mean   | Masked FLH max    | Masked FLH min    | Power potential (GW)  | Energy potential (TWh)    |
 +===========+===========+===========+===================+===================+===================+=======================+===========================+
-| 1638.4	| 1686.3	| 1578.0	| 1644.3			| 1686.3			| 1589.7			| 6.5					| 10.8						|
+| 1638.4    | 1686.3    | 1578.0    | 1644.3            | 1686.3            | 1589.7            | 6.5                   | 10.8                      |
 +-----------+-----------+-----------+-------------------+-------------------+-------------------+-----------------------+---------------------------+
-| 1682.9	| 1699.7	| 1601.6	| 1684.2			| 1695.0			| 1613.7			| 1.4					| 2.4						|
+| 1682.9    | 1699.7    | 1601.6    | 1684.2            | 1695.0            | 1613.7            | 1.4                   | 2.4                       |
 +-----------+-----------+-----------+-------------------+-------------------+-------------------+-----------------------+---------------------------+
-| 1849.7	| 1853.4	| 1833.8	| 1849.6			| 1853.3			| 1840.8			| 0.9					| 1.7						|
+| 1849.7    | 1853.4    | 1833.8    | 1849.6            | 1853.3            | 1840.8            | 0.9                   | 1.7                       |
 +-----------+-----------+-----------+-------------------+-------------------+-------------------+-----------------------+---------------------------+
-| 2017.6	| 2090.5	| 1986.8	| 2018.0			| 2086.1			| 1986.8			| 183.7					| 369.8						|
+| 2017.6    | 2090.5    | 1986.8    | 2018.0            | 2086.1            | 1986.8            | 183.7                 | 369.8	                    |
 +-----------+-----------+-----------+-------------------+-------------------+-------------------+-----------------------+---------------------------+
-| 1856.8	| 1857.1	| 1856.5	| 1856.8			| 1857.1			| 1856.5			| 0.0					| 0.0						|
+| 1856.8    | 1857.1    | 1856.5    | 1856.8            | 1857.1            | 1856.5            | 0.0                   | 0.0                       |
 +-----------+-----------+-----------+-------------------+-------------------+-------------------+-----------------------+---------------------------+
-| 1729.5	| 1772.2	| 1659.1	| 1731.4			| 1772.2			| 1659.1			| 4.8					| 8.3						|
+| 1729.5    | 1772.2    | 1659.1    | 1731.4            | 1772.2            | 1659.1            | 4.8                   | 8.3                       |
 +-----------+-----------+-----------+-------------------+-------------------+-------------------+-----------------------+---------------------------+
 
 .. _timeSeries:
@@ -376,9 +376,16 @@ and a given (typical) time series. The output is a set of regression coefficient
 .. _Strat:
 
 Stratified time series
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^
 Part of the :mod:`lib.time_series` module, the :mod:`lib.time_series.generate_stratified_tiemseries` function reads the regression coefficients and 
 the generated time series, and combines them into user-defined *modes* (combinations of quantiles) and *combos* (combinations hub height or orientations settings). 
+
+.. figure:: img/Stratified_TS_diagram.png
+   :width: 90%
+   :align: center
+   
+   Stratified Time Series - Process example Region A
+
 
 Example:
 - Graphic of Modes and Combos

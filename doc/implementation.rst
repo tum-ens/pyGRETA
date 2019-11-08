@@ -5,7 +5,7 @@ You can run the code by typing::
 
 	$ python runme.py
 	
-``runme.py`` calls the main functions of the code, which are explained in the following sections.
+The script ``runme.py`` calls the main functions of the code, which are explained in the following sections.
 
 .. toctree::
    :maxdepth: 3

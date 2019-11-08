@@ -210,7 +210,7 @@ def calc_gwa_correction(paths, param):
         topo_reg = TOPO[Ind_reg]
 
         # Get the sampled frequencies from the GWA
-        w50m_gwa = pd.read_csv(paths["GWA"][:-14] + reg_name + paths["GWA"][-14:], usecols=["gwa_ws"]).to_numpy()[:, 0]
+        w50m_gwa = pd.read_csv(paths["GWA"][:-14] + reg_name + paths["GWA"][-14:], usecols=[0]).to_numpy()[:, 0]
 
         i = 0
         for combi in combi_list:

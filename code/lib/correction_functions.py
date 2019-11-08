@@ -179,7 +179,7 @@ def calc_gwa_correction(paths, param):
 
     # Clean IRENA data and filter them for desired scope
     if not os.path.isfile(paths["IRENA_summary"]):
-        clean_IRENA_summary(param, paths)
+        clean_IRENA_summary(paths, param)
 
     # Get the installed capacities
     inst_cap = pd.read_csv(paths["IRENA_summary"], sep=";", decimal=",", index_col=0, usecols=[0, 1, 2])
@@ -318,5 +318,5 @@ def clean_IRENA_summary(paths, param):
     )
     IRENA = IRENA.astype(float)
     IRENA.to_csv(paths["IRENA_summary"], sep=";", decimal=",", index=True)
-    create_json(paths["IRENA_summary"], param, ["author", "comment", "region_name", "year"], paths, ["regions_land", "IRENA", "IRENA_dict"])
+    create_json(paths["IRENA_summary"], param, ["author", "comment", "region_name", "year"], paths, ["Countries", "IRENA", "IRENA_dict"])
     print("files saved: " + paths["IRENA_summary"])

@@ -1,4 +1,3 @@
-
 from osgeo import ogr, gdal, osr
 from numpy.matlib import repmat, reshape, sin, arcsin, cos, arccos, tan, arctan
 import os

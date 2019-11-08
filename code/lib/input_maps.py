@@ -185,10 +185,10 @@ def generate_landsea(paths, param):
         )
     # Saving file
     array2raster(paths["LAND"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_land)
+    print("\nfiles saved: " + paths["LAND"])
     create_json(
         paths["LAND"], param, ["region_name", "m_high", "n_high", "Crd_all", "res_desired", "GeoRef", "nRegions_land"], paths, ["Countries", "LAND"]
     )
-    print("\nfiles saved: " + paths["LAND"])
     timecheck("Finish Land")
 
     timecheck("Start Sea")
@@ -220,10 +220,10 @@ def generate_landsea(paths, param):
     A_sea[A_land > 0] = 0
     # Saving file
     array2raster(paths["EEZ"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_sea)
+    print("\nfiles saved: " + paths["EEZ"])
     create_json(
         paths["EEZ"], param, ["region_name", "m_high", "n_high", "Crd_all", "res_desired", "GeoRef", "nRegions_sea"], paths, ["EEZ_global", "EEZ"]
     )
-    print("\nfiles saved: " + paths["EEZ"])
     timecheck("Finish Sea")
 
 
@@ -277,10 +277,10 @@ def generate_subregions(paths, param):
 
     # Saving file
     array2raster(paths["SUB"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_sub)
+    print("\nfiles saved: " + paths["SUB"])
     create_json(
         paths["SUB"], param, ["subregions_name", "m_high", "n_high", "Crd_all", "res_desired", "GeoRef", "nRegions_sea"], paths, ["subregions", "SUB"]
     )
-    print("\nfiles saved: " + paths["SUB"])
     timecheck("Finish Subregions")
 
     timecheck("End")
@@ -309,8 +309,8 @@ def generate_landuse(paths, param):
         w = src.read(1, window=windows.Window.from_slices(slice(Ind[0] - 1, Ind[2]), slice(Ind[3] - 1, Ind[1])))
     w = np.flipud(w)
     array2raster(paths["LU"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], w)
-    create_json(paths["LU"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["LU_global", "LU"])
     print("files saved: " + paths["LU"])
+    create_json(paths["LU"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["LU_global", "LU"])
     timecheck("End")
 
 
@@ -402,8 +402,8 @@ def generate_topography(paths, param):
 
     A_TOPO = np.flipud(Topo[Ind[0] - 1 : Ind[2], Ind[3] - 1 : Ind[1]])
     array2raster(paths["TOPO"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_TOPO)
-    create_json(paths["TOPO"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["Topo_tiles", "TOPO"])
     print("\nfiles saved: " + paths["TOPO"])
+    create_json(paths["TOPO"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["Topo_tiles", "TOPO"])
     timecheck("End")
 
 
@@ -462,8 +462,8 @@ def generate_slope(paths, param):
 
     A_SLP = np.flipud(slope_pc)
     array2raster(paths["SLOPE"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_SLP)
-    create_json(paths["SLOPE"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["TOPO", "SLOPE"])
     print("files saved: " + paths["SLOPE"])
+    create_json(paths["SLOPE"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["TOPO", "SLOPE"])
     timecheck("End")
 
 
@@ -492,8 +492,8 @@ def generate_population(paths, param):
     A_POP = resizem(A_POP, 180 * 240, 360 * 240) / 4  # density is divided by 4
     A_POP = np.flipud(A_POP[Ind[0] - 1 : Ind[2], Ind[3] - 1 : Ind[1]])
     array2raster(paths["POP"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_POP)
-    create_json(paths["POP"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["Pop_global", "POP"])
     print("\nfiles saved: " + paths["POP"])
+    create_json(paths["POP"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["Pop_global", "POP"])
     timecheck("End")
 
 
@@ -609,8 +609,8 @@ def generate_buffered_population(paths, param):
     A_notPopulated = (~A_lu_buffered).astype(int)
 
     array2raster(paths["BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notPopulated)
-    create_json(paths["BUFFER"], param, ["region_name", "landuse", "WindOn", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "BUFFER"])
     print("files saved: " + paths["BUFFER"])
+    create_json(paths["BUFFER"], param, ["region_name", "landuse", "WindOn", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "BUFFER"])
     timecheck("End")
 
 
@@ -666,7 +666,8 @@ def generate_area(paths, param):
 
     # Save to HDF File
     hdf5storage.writes({"A_area": A_area}, paths["AREA"], store_python_metadata=True, matlab_compatible=True)
-    create_json(paths["AREA"], param, ["Crd_all", "res_desired", "n_high"], paths, [])
     print("files saved: " + paths["AREA"])
+    create_json(paths["AREA"], param, ["Crd_all", "res_desired", "n_high"], paths, [])
+    
 
     timecheck("End")

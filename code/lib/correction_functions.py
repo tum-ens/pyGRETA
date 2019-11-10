@@ -326,5 +326,5 @@ def clean_IRENA_summary(paths, param):
     )
     IRENA = IRENA.astype(float)
     IRENA.to_csv(paths["IRENA_summary"], sep=";", decimal=",", index=True)
-    create_json(paths["IRENA_summary"], param, ["author", "comment", "region_name", "year"], paths, ["IRENA", "IRENA_dict"])
+    create_json(paths["IRENA_summary"], param, ["author", "comment", "region_name", "year"], paths, ["Countries", "IRENA", "IRENA_dict"])
     print("files saved: " + paths["IRENA_summary"])

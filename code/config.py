@@ -844,7 +844,7 @@ def regression_paths(paths, param, tech):
     This function defines the paths for the regression parameters:
     
       * *FLH_regression* is a csv file containing FLH statistics for the subregions and the four technologies for a specific *year*, based on the previously created *IRENA_summary*.
-      * *TS_regression* is a csv file containing time series to match for the subregions and the four technologies. ?????
+      * *TS_regression* is a csv file containing time series to be match for each subregion and technology, based on EMHIRES time series if available.
     
     :param paths: Dictionary including the paths.
     :type paths: dict

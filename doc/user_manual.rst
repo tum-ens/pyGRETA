@@ -31,23 +31,23 @@ In the folder ``code``, you will find multiple files:
 +---------------------------------------+----------------------------------------------------------------------------------+
 | runme.py                              | main file, which will be run later using ``python runme.py``.                    |
 +---------------------------------------+----------------------------------------------------------------------------------+
-| lib\\initialization.py                 | used for initialization.                                                        |
+| lib\\initialization.py                | used for initialization.                                                         |
 +---------------------------------------+----------------------------------------------------------------------------------+
-| lib\\input_maps.py                     | used to generate input maps for the scope.                                      |
+| lib\\input_maps.py                    | used to generate input maps for the scope.                                       |
 +---------------------------------------+----------------------------------------------------------------------------------+
-| lib\\potential.py                      | contains functions related to the potential estimation.                         |
+| lib\\potential.py                     | contains functions related to the potential estimation.                          |
 +---------------------------------------+----------------------------------------------------------------------------------+
-| lib\\time_series.py                    | contains functions related to the generation of time series.                    |
+| lib\\time_series.py                   | contains functions related to the generation of time series.                     |
 +---------------------------------------+----------------------------------------------------------------------------------+
-| lib\\regression.py                     |  contains functions related to the regression.                                  |
+| lib\\regression.py                    |  contains functions related to the regression.                                   |
 +---------------------------------------+----------------------------------------------------------------------------------+
-| lib\\spatial_functions.py              | contains helping functions related to maps, coordinates and indices.            |
+| lib\\spatial_functions.py             | contains helping functions related to maps, coordinates and indices.             |
 +---------------------------------------+----------------------------------------------------------------------------------+
-| lib\\physical_models.py                | contains helping functions for the physical/technological modeling.             |
+| lib\\physical_models.py               | contains helping functions for the physical/technological modeling.              |
 +---------------------------------------+----------------------------------------------------------------------------------+
-| lib\\correction_functions.py           | contains helping functions for data correction/cleaning.                        |
+| lib\\correction_functions.py          | contains helping functions for data correction/cleaning.                         |
 +---------------------------------------+----------------------------------------------------------------------------------+
-| lib\\util.py                           | contains minor helping functions and the necessary python libraries to imported.|
+| lib\\util.py                          | contains minor helping functions and the necessary python libraries to imported. |
 +---------------------------------------+----------------------------------------------------------------------------------+
 
 config.py                                                                                           

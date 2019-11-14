@@ -631,7 +631,7 @@ def global_maps_input_paths(paths):
     
       * *LU_global* for the land use raster
       * *Topo_tiles* for the topography tiles (rasters)
-      * *Pop_tiles* for the population tiles (rasters)
+      * *Pop_global* for the global population raster
       * *Bathym_global* for the bathymetry raster
       * *Protected* for the shapefile of protected areas
       * *GWA* for the country data retrieved from the Global Wind Atlas (missing the country code, which will be filled in a for-loop in :mod:correction_functions.calc_gwa_correction)

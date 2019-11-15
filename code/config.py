@@ -829,7 +829,13 @@ def irena_paths(paths, param):
         root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA" + fs + "IRENA_RE_electricity_statistics_allcountries_alltech_" + year + ".csv"
     )
 
-    paths["IRENA_dict"] = root + "00 Assumptions" + fs + "dict_countries.csv"
+    current_folder = os.path.dirname(os.path.abspath(__file__))
+    PathTemp = str(Path(current_folder).parent)
+    if PathTemp[-1] != fs:
+        PathTemp = PathTemp + fs
+    PathTemp = PathTemp + "assumptions"
+    
+    paths["IRENA_dict"] = PathTemp + fs + "dict_countries.csv"
 
     # IRENA output
     paths["IRENA_summary"] = paths["region"] + "Renewable energy" + fs + "IRENA_summary_" + year + ".csv"

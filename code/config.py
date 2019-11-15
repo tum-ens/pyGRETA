@@ -633,7 +633,7 @@ def global_maps_input_paths(paths):
     
       * *LU_global* for the land use raster
       * *Topo_tiles* for the topography tiles (rasters)
-      * *Pop_tiles* for the population tiles (rasters)
+      * *Pop_global* for the global population raster
       * *Bathym_global* for the bathymetry raster
       * *Protected* for the shapefile of protected areas
       * *GWA* for the country data retrieved from the Global Wind Atlas (missing the country code, which will be filled in a for-loop in :mod:correction_functions.calc_gwa_correction)
@@ -831,7 +831,13 @@ def irena_paths(paths, param):
         root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA" + fs + "IRENA_RE_electricity_statistics_allcountries_alltech_" + year + ".csv"
     )
 
-    paths["IRENA_dict"] = root + "00 Assumptions" + fs + "dict_countries.csv"
+    current_folder = os.path.dirname(os.path.abspath(__file__))
+    PathTemp = str(Path(current_folder).parent)
+    if PathTemp[-1] != fs:
+        PathTemp = PathTemp + fs
+    PathTemp = PathTemp + "assumptions"
+    
+    paths["IRENA_dict"] = PathTemp + fs + "dict_countries.csv"
 
     # IRENA output
     paths["IRENA_summary"] = paths["region"] + "Renewable energy" + fs + "IRENA_summary_" + year + ".csv"

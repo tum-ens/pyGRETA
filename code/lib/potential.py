@@ -520,10 +520,10 @@ def weighting(paths, param, tech):
     # Save GEOTIFF files
     if param["savetiff"]:
         array2raster(changeExt2tif(paths[tech]["weight"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_weight)
-        print("files saved:" + changeExt2tif(paths[tech]["weight"]))
+        print("files saved: " + changeExt2tif(paths[tech]["weight"]))
 
         array2raster(changeExt2tif(paths[tech]["FLH_weight"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], FLH_weight)
-        print("files saved:" + changeExt2tif(paths[tech]["FLH_weight"]))
+        print("files saved: " + changeExt2tif(paths[tech]["FLH_weight"]))
     timecheck("End")
 
 

@@ -55,7 +55,7 @@ def crd_exact_points(Ind_points, Crd_all, res):
     :return Crd_points: Coordinates of the points in the vertical and horizontal dimensions.
     :rtype: list of arrays
     """
-    Crd_points = [Ind_points[0] * res[0] + Crd_all[2], Ind_points[1] * res[1] + Crd_all[3]]
+    Crd_points = [Ind_points[0] * res[0] + Crd_all[2] + res[0] / 2, Ind_points[1] * res[1] + Crd_all[3] + res[1] / 2]
     return Crd_points
 
 

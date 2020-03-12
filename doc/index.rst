@@ -1,10 +1,10 @@
-=====================
-renewable-timeseries
-=====================
+=======
+pyGRETA
+=======
 
----------------------------------------------------------------------------
-GIS-based model for renewable energy potential and time series generation
----------------------------------------------------------------------------
+--------------------------------------------------
+python Generator of REnewable Time series and mAps 
+--------------------------------------------------
 
 :Code developers: Kais Siala, Houssame Houmy
 :Documentation authors:	Kais Siala, Houssame Houmy, Sergio Alejandro Huezo Rodriguez		
@@ -55,7 +55,7 @@ Contents
 User manual
 ^^^^^^^^^^^^^
 
-These documents give a general overview and help you getting started from the installation to you first running model.
+These documents give a general overview and help you get started from the installation to your first running model.
 
 .. the following section contains the links to the other parts of the documentation, the 'maxdepth' component define how many sub sections should be displayed
 
@@ -68,8 +68,7 @@ These documents give a general overview and help you getting started from the in
 Mathematical documentation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Continue here if you want to understand the theoretical conception of the model,
-the logic behind the equations, and the structure of the features.
+Continue here if you want to understand the concept of the model.
 
 .. toctree::
    :maxdepth: 2

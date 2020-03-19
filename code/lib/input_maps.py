@@ -2,7 +2,7 @@ from lib.correction_functions import clean_weather_data
 from lib.spatial_functions import *
 
 
-def generate_input_maps(paths, param):
+def generate_maps_for_scope(paths, param):
     """
     This function calls the individual functions that generate the maps for the geographic scope.
     

@@ -1,16 +1,16 @@
 from lib.correction_functions import generate_wind_correction
 from lib.initialization import initialization
-from lib.input_maps import *
-from lib.potential import calculate_FLH, masking, weighting, reporting
-from lib.regression import regression_coefficients
-from lib.time_series import find_locations_quantiles, generate_time_series, generate_stratified_timeseries, generate_user_locations_time_series
+from lib.input_maps import generate_maps_for_scope
+from lib.potential import calculate_full_load_hours, mask_potential_maps, weight_potential_maps, report_potentials
+from lib.regression import get_regression_coefficients
+from lib.time_series import find_representative_locations, generate_time_series_for_representative_locations, generate_time_series_for_regions, generate_time_series_for_specific_locations
 
 if __name__ == "__main__":
 
     paths, param = initialization()
 
-    # Generate Input raster maps (Already generated for you)
-    generate_input_maps(paths, param)
+    # Generate input raster maps
+    generate_maps_for_scope(paths, param)
 
     # Wind speed correction
     # if "WindOn" in param["technology"] or "WindOff" in param["technology"]:
@@ -19,22 +19,22 @@ if __name__ == "__main__":
     for tech in param["technology"]:
         print("Tech: " + tech)
 
-        # Generate Potential Maps and Reports
-        calculate_FLH(paths, param, tech)
-        masking(paths, param, tech)
-        weighting(paths, param, tech)
-        reporting(paths, param, tech)
+        # Generate potential maps and reports
+        calculate_full_load_hours(paths, param, tech)
+        mask_potential_maps(paths, param, tech)
+        weight_potential_maps(paths, param, tech)
+        report_potentials(paths, param, tech)
 
-        # Generate Timeseries
-        find_locations_quantiles(paths, param, tech)
-        generate_time_series(paths, param, tech)
-        generate_user_locations_time_series(paths, param, tech)
+        # Generate time series
+        find_representative_locations(paths, param, tech)
+        generate_time_series_for_representative_locations(paths, param, tech)
+        generate_time_series_for_specific_locations(paths, param, tech)
 
     for tech in param["technology"]:
         print("Tech: " + tech)
 
         # Generate regression coefficients for FLH and TS model matching
-        # regression_coefficients(paths, param, tech)
+        # get_regression_coefficients(paths, param, tech)
 
-        # Generate Stratified timeseries
-        generate_stratified_timeseries(paths, param, tech)
+        # Generate times series for combinations of technologies and locations
+        # generate_time_series_for_regions(paths, param, tech)

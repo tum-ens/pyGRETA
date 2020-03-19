@@ -3,7 +3,7 @@ from lib.physical_models import calc_CF_solar, calc_CF_wind
 from lib.potential import get_merra_raster_data
 
 
-def find_locations_quantiles(paths, param, tech):
+def find_representative_locations(paths, param, tech):
     """
     This function reads the masked FLH raster and finds the coordinates and indices of the pixels for the user-defined quantiles for each region.
     It creates a shapefile containing the position of those points for each region, and two MAT files with their
@@ -76,7 +76,7 @@ def find_locations_quantiles(paths, param, tech):
     # Format point locations
     points = [(param[tech]["Crd_points"][1][i], param[tech]["Crd_points"][0][i]) for i in range(0, len(param[tech]["Crd_points"][0]))]
 
-    # Create Shapefile
+    # Create shapefile
     schema = {"geometry": "Point", "properties": {"NAME_SHORT": "str", "quantile": "str"}}
     with fiona.open(paths[tech]["Locations"], "w", "ESRI Shapefile", schema) as c:
         c.writerecords(
@@ -102,7 +102,7 @@ def find_locations_quantiles(paths, param, tech):
     timecheck("End")
 
 
-def generate_time_series(paths, param, tech):
+def generate_time_series_for_representative_locations(paths, param, tech):
     """
     This function generates yearly capacity factor time-series for the technology of choice at quantile locations
     generated in find_locations_quantiles.
@@ -185,7 +185,7 @@ def generate_time_series(paths, param, tech):
     timecheck("End")
 
 
-def generate_user_locations_time_series(paths, param, tech):
+def generate_time_series_for_specific_locations(paths, param, tech):
     """
     This function generates yearly capacity factor time-series for the technology of choice at user defined locations.
     The timeseries are saved in CSV files.
@@ -386,7 +386,7 @@ def calc_TS_wind(hours, args):
     return TS
 
 
-def combinations_for_stratified_timeseries(paths, param, tech):
+def combinations_for_time_series(paths, param, tech):
     """
     This function reads the list of generated regression coefficients for different hub heights and orientations,
     compares it to the user-defined modes and combos and returns a list of lists containing all the available
@@ -453,7 +453,7 @@ def combinations_for_stratified_timeseries(paths, param, tech):
     return list(combinations), combifiles
 
 
-def generate_stratified_timeseries(paths, param, tech):
+def generate_time_series_for_regions(paths, param, tech):
     """
     This function reads the coefficients obtained from the regression function as well as the generated time series for
     the combinations of hub heights / orientations and quantiles, to combine them according to user-defined
@@ -476,7 +476,7 @@ def generate_stratified_timeseries(paths, param, tech):
     year = str(param["year"])
 
     try:
-        combinations, inputfiles = combinations_for_stratified_timeseries(paths, param, tech)
+        combinations, inputfiles = combinations_for_time_series(paths, param, tech)
     except UserWarning:
         timecheck("End")
         return

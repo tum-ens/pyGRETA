@@ -208,7 +208,7 @@ def clean_TS_regression(paths, param, tech):
     print("files saved: " + paths[tech]["TS_regression"])
 
 
-def regression_coefficients(paths, param, tech):
+def get_regression_coefficients(paths, param, tech):
     """
     This function solves the following optimization problem: A combination of quantiles, hub heights or orientations is to be found, so that
     the error to a given historical time series (e.g. from EMHIRES for European countries) is minimized, while

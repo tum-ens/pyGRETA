@@ -1,0 +1,42 @@
+{
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": false,
+  "contributors": [
+    {
+      "login": "kais-siala",
+      "name": "kais-siala",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/21306297?v=4",
+      "profile": "https://github.com/kais-siala",
+      "contributions": [
+        "question",
+        "bug",
+        "code",
+        "doc",
+        "ideas",
+        "maintenance",
+        "review",
+        "test",
+        "talk"
+      ]
+    },
+    {
+      "login": "HoussameH",
+      "name": "HoussameH",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/48953960?v=4",
+      "profile": "https://github.com/HoussameH",
+      "contributions": [
+        "question",
+        "code",
+        "doc"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "projectName": "renewable-timeseries",
+  "projectOwner": "tum-ens",
+  "repoType": "github",
+  "repoHost": "https://github.com"
+}

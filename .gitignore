@@ -1,12 +1,6 @@
 *~
-__pycache__/*
-*.xml
-*.iml
-*.tif
-*.nc
-*.shp
-*.shx
-*.dbf
-*.prj
-*.qpj
-*.mat
+code/__pycache__/*
+code/lib/__pycache__/*
+.idea
+code/.idea
+Database*

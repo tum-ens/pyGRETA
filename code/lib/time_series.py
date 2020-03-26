@@ -212,7 +212,10 @@ def generate_user_locations_time_series(paths, param, tech):
 
     # Read user defined locations dictionary
     if not param["useloc"]:
-        warn("Point locations not found: Please fill in the name and locations of the points in config.py prior to executing this function", UserWarning)
+        warn(
+            "Point locations not found: Please fill in the name and locations of the points in config.py prior to executing this function",
+            UserWarning,
+        )
         timecheck("End")
         return
     points_df = pd.DataFrame.from_dict(param["useloc"], orient="index", columns=["lat", "lon"])

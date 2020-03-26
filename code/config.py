@@ -58,11 +58,11 @@ def general_settings():
 
     param = {}
     param["author"] = "Kais Siala"  # the name of the person running the script
-    param["comment"] = "Workshop_example"
+    param["comment"] = "4NEMO"
 
     paths = {}
     fs = os.path.sep
-    current_folder = os.path.dirname(os.path.abspath(__file__))  
+    current_folder = os.path.dirname(os.path.abspath(__file__))
     root = str(Path(current_folder).parent.parent.parent)
     # For use at TUM ENS
     if root[-1] != fs:
@@ -110,18 +110,18 @@ def scope_paths_and_parameters(paths, param):
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
 
-    paths["spatial_scope"] = PathTemp + "gadm36_GHA_0.shp"
-    paths["subregions"] = PathTemp + "gadm36_GHA_0.shp"
+    paths["spatial_scope"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
+    paths["subregions"] = PathTemp + "Europe_NUTS0_wo_Balkans_with_EEZ.shp"
 
     # Name tags for the scope and the subregions
-    param["region_name"] = "Ghana"  # Name tag of the spatial scope
-    param["subregions_name"] = "Ghana_country"  # Name tag of the subregions
+    param["region_name"] = "Europe"  # Name tag of the spatial scope
+    param["subregions_name"] = "Europe_wo_Balkans_NUTS0"  # Name tag of the subregions
 
     # Year
     param["year"] = 2015
 
     # Technologies
-    param["technology"] = ["WindOn", "PV"]  # ["PV", "CSP", "WindOn", "WindOff"]
+    param["technology"] = ["WindOn", "PV", "WindOff"]  # ["PV", "CSP", "WindOn", "WindOff"]
 
     return paths, param
 
@@ -255,17 +255,17 @@ def time_series_parameters(param):
     # Regression
     param["regression"] = {
         "solver": "gurobi",  # string
-        "WindOn": {"all": [],},  # dictionary of hub height combinations
+        "WindOn": {"all": []},  # dictionary of hub height combinations
         "WindOff": {"80m": []},  # dictionary of hub height combinations
         "PV": {"all": []},  # list of orientation combinations
         "CSP": {"all": []},
     }
 
     # Stratified time series
-    param["modes"] = {"high": [90, 70], "mid": [60, 40], "low": [], "all": param["quantiles"]}
+    param["modes"] = {"high": [100, 90, 80], "mid": [70, 60, 50, 40], "low": [30, 20, 10, 0], "all": param["quantiles"]}
     param["combo"] = {
         # dictionary of hub height and orientation combinations
-        "WindOn": {"2015": [60, 80, 100], "2030": [80, 100, 120], "2050": [100, 120, 140]},
+        "WindOn": {"100m": [80, 100, 120], "120m": [100, 120, 140]},
         "WindOff": {"80m": [80], "100m": [100], "120m": [120]},
         "PV": {"Solar": [0, 180, -90, 90]},
         "CSP": {"all": []},
@@ -836,7 +836,7 @@ def irena_paths(paths, param):
     if PathTemp[-1] != fs:
         PathTemp = PathTemp + fs
     PathTemp = PathTemp + "assumptions"
-    
+
     paths["IRENA_dict"] = PathTemp + fs + "dict_countries.csv"
 
     # IRENA output

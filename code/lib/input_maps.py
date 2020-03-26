@@ -668,6 +668,5 @@ def generate_area(paths, param):
     hdf5storage.writes({"A_area": A_area}, paths["AREA"], store_python_metadata=True, matlab_compatible=True)
     print("files saved: " + paths["AREA"])
     create_json(paths["AREA"], param, ["Crd_all", "res_desired", "n_high"], paths, [])
-    
 
     timecheck("End")

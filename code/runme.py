@@ -3,7 +3,12 @@ from lib.initialization import initialization
 from lib.input_maps import generate_maps_for_scope
 from lib.potential import calculate_full_load_hours, mask_potential_maps, weight_potential_maps, report_potentials
 from lib.regression import get_regression_coefficients
-from lib.time_series import find_representative_locations, generate_time_series_for_representative_locations, generate_time_series_for_regions, generate_time_series_for_specific_locations
+from lib.time_series import (
+    find_representative_locations,
+    generate_time_series_for_representative_locations,
+    generate_time_series_for_regions,
+    generate_time_series_for_specific_locations,
+)
 
 if __name__ == "__main__":
 

@@ -212,11 +212,9 @@ def calc_gwa_correction(paths, param):
         # Get the sampled frequencies from the GWA
         try:
             try:
-                w50m_gwa = pd.read_csv(paths["GWA"][:-14] + reg_name + paths["GWA"][-14:],
-                                       usecols=["gwa_ws"]).to_numpy()[:, 0]
+                w50m_gwa = pd.read_csv(paths["GWA"][:-14] + reg_name + paths["GWA"][-14:], usecols=["gwa_ws"]).to_numpy()[:, 0]
             except:
-                w50m_gwa = pd.read_csv(paths["GWA"][:-14] + reg_name + paths["GWA"][-14:], usecols=["val"]).to_numpy()[
-                           :, 0]
+                w50m_gwa = pd.read_csv(paths["GWA"][:-14] + reg_name + paths["GWA"][-14:], usecols=["val"]).to_numpy()[:, 0]
         except:
             w50m_gwa = pd.read_csv(paths["GWA"][:-14] + reg_name + paths["GWA"][-14:], usecols=[0]).to_numpy()[:, 0]
 

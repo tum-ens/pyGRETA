@@ -2,7 +2,7 @@ from lib.physical_models import calc_CF_solar, calc_CF_wind
 from lib.spatial_functions import *
 
 
-def calculate_FLH(paths, param, tech):
+def calculate_full_load_hours(paths, param, tech):
     """
     This function calculates the yearly FLH for a technology for all valid pixels in a spatial scope. Valid pixels are land pixels
     for WindOn, PV and CSP, and sea pixels for WindOff. The FLH values are calculated by summing up hourly capacity factors.
@@ -243,7 +243,7 @@ def calc_FLH_wind(hours, args):
     return FLH
 
 
-def masking(paths, param, tech):
+def mask_potential_maps(paths, param, tech):
     """
     This function first reads the rasters for land use, slope, bathymetry, and protected areas for the scope. Based on user-defined assumptions on
     their suitabilities, it generates a masking raster to exclude the unsuitable pixels. Both the mask itself
@@ -445,7 +445,7 @@ def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
     return A_GCR
 
 
-def weighting(paths, param, tech):
+def weight_potential_maps(paths, param, tech):
     """
     This function weights the power potential by including assumptions on the power density and the available area.
     Therefore, it reads the rasters for land use and protected areas for the scope. Based on user-defined assumptions on
@@ -552,7 +552,7 @@ def sampled_sorting(Raster, sampling):
     return s
 
 
-def reporting(paths, param, tech):
+def report_potentials(paths, param, tech):
     """
     This function reads the FLH files and the subregion shapefile, and creates a CSV file containing various statistics:
 

@@ -2,7 +2,7 @@ from lib.correction_functions import clean_weather_data
 from lib.spatial_functions import *
 
 
-def generate_input_maps(paths, param):
+def generate_maps_for_scope(paths, param):
     """
     This function calls the individual functions that generate the maps for the geographic scope.
     
@@ -668,6 +668,5 @@ def generate_area(paths, param):
     hdf5storage.writes({"A_area": A_area}, paths["AREA"], store_python_metadata=True, matlab_compatible=True)
     print("files saved: " + paths["AREA"])
     create_json(paths["AREA"], param, ["Crd_all", "res_desired", "n_high"], paths, [])
-    
 
     timecheck("End")

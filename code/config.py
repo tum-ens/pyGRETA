@@ -62,7 +62,7 @@ def general_settings():
 
     paths = {}
     fs = os.path.sep
-    current_folder = os.path.dirname(os.path.abspath(__file__))  
+    current_folder = os.path.dirname(os.path.abspath(__file__))
     root = str(Path(current_folder).parent.parent.parent)
     # For use at TUM ENS
     if root[-1] != fs:
@@ -255,7 +255,7 @@ def time_series_parameters(param):
     # Regression
     param["regression"] = {
         "solver": "gurobi",  # string
-        "WindOn": {"all": [],},  # dictionary of hub height combinations
+        "WindOn": {"all": []},  # dictionary of hub height combinations
         "WindOff": {"80m": []},  # dictionary of hub height combinations
         "PV": {"all": []},  # list of orientation combinations
         "CSP": {"all": []},
@@ -836,7 +836,7 @@ def irena_paths(paths, param):
     if PathTemp[-1] != fs:
         PathTemp = PathTemp + fs
     PathTemp = PathTemp + "assumptions"
-    
+
     paths["IRENA_dict"] = PathTemp + fs + "dict_countries.csv"
 
     # IRENA output

@@ -8,11 +8,11 @@ Installation
 
 First, clone the git repository in a directory of your choice using a Command Prompt window::
 
-	$ ~\directory-of-my-choice> git clone https://github.com/tum-ens/renewable-timeseries.git
+	$ ~\directory-of-my-choice> git clone https://github.com/tum-ens/pyGRETA.git
 
 We recommend using conda and installing the environment from the file ``ren_ts.yml`` that you can find in the repository. In the Command Prompt window, type::
 
-	$ cd renewable-timeseries\env\
+	$ cd pyGRETA\env\
 	$ conda env create -f ren_ts.yml
 
 Then activate the environment::
@@ -39,7 +39,7 @@ In the folder ``code``, you will find multiple files:
 +---------------------------------------+----------------------------------------------------------------------------------+
 | lib\\time_series.py                   | contains functions related to the generation of time series.                     |
 +---------------------------------------+----------------------------------------------------------------------------------+
-| lib\\regression.py                    |  contains functions related to the regression.                                   |
+| lib\\regression.py                    | contains functions related to the regression.                                    |
 +---------------------------------------+----------------------------------------------------------------------------------+
 | lib\\spatial_functions.py             | contains helping functions related to maps, coordinates and indices.             |
 +---------------------------------------+----------------------------------------------------------------------------------+
@@ -67,7 +67,7 @@ runme.py
 .. literalinclude:: ../code/runme.py
    :language: python
    :linenos:
-   :emphasize-lines: 13,23-26,29-31,37,40
+   :emphasize-lines: 18,28-31,34-36,42,45
 
 
 Recommended input sources
@@ -377,7 +377,7 @@ and a given (typical) time series. The output is a set of regression coefficient
 
 Stratified time series
 ^^^^^^^^^^^^^^^^^^^^^^
-Part of the :mod:`lib.time_series` module, the :mod:`lib.time_series.generate_stratified_tiemseries` function reads the regression coefficients and 
+Part of the :mod:`lib.time_series` module, the :mod:`lib.time_series.generate_time_series_for_regions` function reads the regression coefficients and 
 the generated time series, and combines them into user-defined *modes* (combinations of quantiles) and *combos* (combinations hub height or orientations settings). 
 
 .. figure:: img/Stratified_TS_diagram.png

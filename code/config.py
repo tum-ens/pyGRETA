@@ -121,7 +121,7 @@ def scope_paths_and_parameters(paths, param):
     param["year"] = 2015
 
     # Technologies
-    param["technology"] = ["WindOn", "PV"]  # ["PV", "CSP", "WindOn", "WindOff"]
+    param["technology"] = ["PV"]  # ["PV", "CSP", "WindOn", "WindOff"]
 
     return paths, param
 

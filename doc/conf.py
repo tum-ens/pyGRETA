@@ -12,20 +12,21 @@
 #
 import os
 import sys
-sys.path.append(os.path.abspath('../code/'))
+
+sys.path.append(os.path.abspath("../code/"))
 import sphinx_rtd_theme
 import sphinxcontrib.bibtex
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'pyGRETA'
-copyright = 'ENS 2019'
-author = 'Kais Siala, Houssame Houmy'
+project = "pyGRETA"
+copyright = "ENS 2019"
+author = "Kais Siala, Houssame Houmy"
 
 
 # The full version, including alpha/beta/rc tags
-release = '1.0'
+release = "1.0"
 version = release
 
 # -- General configuration ---------------------------------------------------
@@ -33,21 +34,18 @@ version = release
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc',
-              "sphinx_rtd_theme",
-              'sphinxcontrib.bibtex'
-              ]
-              
-master_doc = 'index'
+extensions = ["sphinx.ext.autodoc", "sphinx_rtd_theme", "sphinxcontrib.bibtex"]
+
+master_doc = "index"
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -57,21 +55,21 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 html_theme = "sphinx_rtd_theme"
 
 html_theme_options = {
-    'canonical_url': '',
+    "canonical_url": "",
     # 'analytics_id': 'UA-XXXXXXX-1',  #  Provided by Google in your dashboard
-    'logo_only': False,
-    'display_version': True,
-    'prev_next_buttons_location': 'both',
-    'style_external_links': False,
+    "logo_only": False,
+    "display_version": True,
+    "prev_next_buttons_location": "both",
+    "style_external_links": False,
     # Toc options
-    'collapse_navigation': False,
-    'sticky_navigation': True,
-    'navigation_depth': 4,
-    'includehidden': True,
-    'titles_only': False
+    "collapse_navigation": False,
+    "sticky_navigation": True,
+    "navigation_depth": 4,
+    "includehidden": True,
+    "titles_only": False,
 }
 
-# -- Options for LatexPDF output ---------------------------------------------- 
+# -- Options for LatexPDF output ----------------------------------------------
 
 # 'startdocname': '',  # (path) Start file for the documentation to be included in PDF, can be left empty to use default index.rst
 # 'targetname': project,  # (str) Output name of the Latex file generated
@@ -82,19 +80,23 @@ html_theme_options = {
 
 # latex_documents = [(master_doc, project+'.tex', project, 'Kais Siala, Houssame Houmy and Sergio Alejandro Huezo Rodriguez', 'manual', True)]
 # Kais Siala \\ Houssame Houmy \\ Sergio Alejandro Huezo Rodriguez \vspace{1cm} \\ Version 1.0.0
-latex_documents = [(master_doc, # startdocname
-					project+'.tex', # targetname
-					project, # title
-					r''' Kais Siala \\ Houssame Houmy \\ Sergio Alejandro Huezo Rodriguez \vspace{1cm} \\ Version 1.0''', # author
-					'manual', # documentclass
-					True)] # toctree_only
+latex_documents = [
+    (
+        master_doc,  # startdocname
+        project + ".tex",  # targetname
+        project,  # title
+        r""" Kais Siala \\ Houssame Houmy \\ Sergio Alejandro Huezo Rodriguez \vspace{1cm} \\ Version 1.0""",  # author
+        "manual",  # documentclass
+        True,
+    )
+]  # toctree_only
 
-# Remove redundant white pages 
+# Remove redundant white pages
 latex_elements = {
-    'classoptions': 'twoside',
-    'papersize': 'a4paper',
-    'pointsize': '11pt',
-    'passoptionstopackages': r'''
+    "classoptions": "twoside",
+    "papersize": "a4paper",
+    "pointsize": "11pt",
+    "passoptionstopackages": r"""
         \usepackage{charter}
         \usepackage[T1]{fontenc}
         \usepackage{tabulary}
@@ -117,13 +119,13 @@ latex_elements = {
             {\def\chaptermark##1{\markboth{\@chapapp\space\thechapter\space\@chappos\space ##1}{}}}
         }
         \makeatother
-    ''',
-    'fncychap': '',
-	'maketitle': '\\maketitle',
+    """,
+    "fncychap": "",
+    "maketitle": "\\maketitle",
 }
 
-latex_toplevel_sectioning = 'chapter'
-# This value determines the topmost sectioning unit. It should be chosen from 'part', 'chapter' or 'section'. 
+latex_toplevel_sectioning = "chapter"
+# This value determines the topmost sectioning unit. It should be chosen from 'part', 'chapter' or 'section'.
 # The default is None; the topmost sectioning unit is switched by documentclass: section is used if documentclass will be howto, otherwise chapter will be used.
 # Note that if LaTeX uses \part command, then the numbering of sectioning units one level deep gets off-sync with HTML numbering, because LaTeX numbers continuously \chapter
 
@@ -134,8 +136,33 @@ latex_toplevel_sectioning = 'chapter'
 html_static_path = []
 
 # Modules to be ignored
-autodoc_mock_imports = ["gdal", "osr", "osgeo", "numpy", "os", "glob", "psutil", "datetime",
-                        "inspect", "sys", "math", "rasterio", "pandas", "scipy", "geopandas",
-                        "shapely", "fiona", "hdf5storage", "multiprocessing", "itertools",
-                        "h5netcdf", "cProfile", "pstats", "shutil", "pyomo", "pdb", "logging",
-                        "networkx"]
+autodoc_mock_imports = [
+    "gdal",
+    "osr",
+    "osgeo",
+    "numpy",
+    "os",
+    "glob",
+    "psutil",
+    "datetime",
+    "inspect",
+    "sys",
+    "math",
+    "rasterio",
+    "pandas",
+    "scipy",
+    "geopandas",
+    "shapely",
+    "fiona",
+    "hdf5storage",
+    "multiprocessing",
+    "itertools",
+    "h5netcdf",
+    "cProfile",
+    "pstats",
+    "shutil",
+    "pyomo",
+    "pdb",
+    "logging",
+    "networkx",
+]

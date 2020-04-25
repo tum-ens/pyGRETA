@@ -85,7 +85,7 @@ html_theme_options = {
 latex_documents = [(master_doc, # startdocname
 					project+'.tex', # targetname
 					project, # title
-					r''' Kais Siala \\ Houssame Houmy \\ Sergio Alejandro Huezo Rodriguez \vspace{1cm} \\ Version 1.0.0''', # author
+					r''' Kais Siala \\ Houssame Houmy \\ Sergio Alejandro Huezo Rodriguez \vspace{1cm} \\ Version 1.0''', # author
 					'manual', # documentclass
 					True)] # toctree_only
 
@@ -94,7 +94,7 @@ latex_elements = {
     'classoptions': 'twoside',
     'papersize': 'a4paper',
     'pointsize': '11pt',
-    'extrapackages': r'''
+    'passoptionstopackages': r'''
         \usepackage{charter}
         \usepackage[T1]{fontenc}
         \usepackage{tabulary}
@@ -103,6 +103,20 @@ latex_elements = {
         \usepackage{capt-of}
         \usepackage{needspace}
         \usepackage{inconsolata}
+        \makeatletter
+        \fancypagestyle{normal}{
+        \fancyhf{}
+        \fancyfoot[LE,RO]{{\py@HeaderFamily\thepage}}
+        \fancyfoot[LO]{{\py@HeaderFamily\nouppercase{\rightmark}}}
+        \fancyfoot[RE]{{\py@HeaderFamily\nouppercase{\leftmark}}}
+        \fancyhead[LE,RO]{{\py@HeaderFamily \@title, \py@release}}
+        \renewcommand{\headrulewidth}{0.4pt}
+        \renewcommand{\footrulewidth}{0.4pt}
+        % define chaptermark with \@chappos when \@chappos is available for Japanese
+        \spx@ifundefined{@chappos}{}
+            {\def\chaptermark##1{\markboth{\@chapapp\space\thechapter\space\@chappos\space ##1}{}}}
+        }
+        \makeatother
     ''',
     'fncychap': '',
 	'maketitle': '\\maketitle',

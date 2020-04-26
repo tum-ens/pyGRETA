@@ -26,7 +26,7 @@ author = "Kais Siala, Houssame Houmy"
 
 
 # The full version, including alpha/beta/rc tags
-release = "1.0"
+release = "1.0.1"
 version = release
 
 # -- General configuration ---------------------------------------------------
@@ -85,7 +85,7 @@ latex_documents = [
         master_doc,  # startdocname
         project + ".tex",  # targetname
         project,  # title
-        r""" Kais Siala \\ Houssame Houmy \\ Sergio Alejandro Huezo Rodriguez \vspace{1cm} \\ Version 1.0""",  # author
+        r""" Kais Siala \\ Houssame Houmy \\ Sergio Alejandro Huezo Rodriguez \vspace{1cm} \\ Version 1.0.1""",  # author
         "manual",  # documentclass
         True,
     )

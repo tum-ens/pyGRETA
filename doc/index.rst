@@ -45,6 +45,13 @@ You do not need to use the code (*but you can*) if:
 
 Changes
 --------
+version 1.0.1
+^^^^^^^^^^^^^^
+
+* Fixed the syntax of the code in the PV module tracking (lib.physical_models).
+* Edited the formatting of the PDF documentation.
+* Edited the list of references.
+
 version 1.0.0
 ^^^^^^^^^^^^^^
 This is the initial version.

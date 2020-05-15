@@ -105,6 +105,7 @@ def generate_weather_files(paths, param):
             # Create the overall wind speed
             W50M = abs(U50M + (1j * V50M))
             # Calculate the clearness index
+            CLEARNESS = np.zeros(SWGDN.shape)
             CLEARNESS = np.divide(SWGDN, SWTDN, where=SWTDN != 0)
 
             sys.stdout.write("\n")

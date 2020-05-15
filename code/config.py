@@ -192,7 +192,7 @@ def file_saving_options(param):
     * *savetiff* is a boolean that determines whether tif rasters for the potentials are saved (``True``), or whether only mat files are saved (``False``).
       The latter are saved in any case.
     
-    *  *report_sampling* is an integer that sets the sample size for the sorted FLH values per region (relevant for :mod:`potential.reporting`).
+    * *report_sampling* is an integer that sets the sample size for the sorted FLH values per region (relevant for :mod:`potential.report_potentials`).
     
     :param param: Dictionary including the user preferences.
     :type param: dict

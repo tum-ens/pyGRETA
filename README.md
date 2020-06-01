@@ -1,5 +1,6 @@
 # pyGRETA
 [![Documentation Status](https://readthedocs.org/projects/pygreta/badge/?version=latest)](http://pyGRETA.readthedocs.io/en/latest/?badge=latest)
+[![DOI](https://zenodo.org/badge/174577484.svg)](https://zenodo.org/badge/latestdoi/174577484)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors)
@@ -59,3 +60,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
 This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
+
+## Please cite as:
+
+Kais Siala, & Houssame Houmy. (2020, June 1). tum-ens/pyGRETA: python Generator of REnewable Time series and mAps (Version v1.0.1). Zenodo. http://doi.org/10.5281/zenodo.3872068

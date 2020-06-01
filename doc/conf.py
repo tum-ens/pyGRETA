@@ -114,9 +114,6 @@ latex_elements = {
         \fancyhead[LE,RO]{{\py@HeaderFamily \@title, \py@release}}
         \renewcommand{\headrulewidth}{0.4pt}
         \renewcommand{\footrulewidth}{0.4pt}
-        % define chaptermark with \@chappos when \@chappos is available for Japanese
-        \spx@ifundefined{@chappos}{}
-            {\def\chaptermark##1{\markboth{\@chapapp\space\thechapter\space\@chappos\space ##1}{}}}
         }
         \makeatother
     """,

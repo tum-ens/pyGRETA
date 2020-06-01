@@ -45,7 +45,7 @@ User preferences
 
 .. automodule:: config
    :noindex:
-   :members: weather_data_parameters, file_saving_options, time_series_parameters, landuse_parameters, protected_areas_parameters, pv_parameters, csp_parameters, onshore_wind_parameters, offshore_wind_paramters
+   :members: weather_data_parameters, file_saving_options, time_series_parameters, landuse_parameters, protected_areas_parameters, pv_parameters, csp_parameters, onshore_wind_parameters, offshore_wind_parameters
 
 
 Paths

@@ -25,7 +25,7 @@ def configuration():
     param = pv_parameters(param)
     param = csp_parameters(param)
     param = onshore_wind_parameters(param)
-    param = offshore_wind_paramters(param)
+    param = offshore_wind_parameters(param)
 
     paths = weather_input_folder(paths, param)
     paths = global_maps_input_paths(paths)
@@ -551,7 +551,7 @@ def onshore_wind_parameters(param):
     return param
 
 
-def offshore_wind_paramters(param):
+def offshore_wind_parameters(param):
     """
     This function sets the parameters for offshore wind in the dictionary *windoff* inside param:
     
@@ -670,7 +670,7 @@ def output_folders(paths, param):
       * *region* is the main output folder.
       * *weather_data* is the output folder for the weather data of the spatial scope.
       * *local_maps* is the output folder for the local maps of the spatial scope.
-      * *potential* is the output folder for the ressource and technical potential maps.
+      * *potential* is the output folder for the resource and technical potential maps.
       * *regional_analysis* is the output folder for the time series and the report of the subregions.
       * *regression_in* is the folder where the regression parameters (FLH, fitting time series) are saved.
       * *regression_out* is the output folder for the regression results.

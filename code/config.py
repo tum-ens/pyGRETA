@@ -57,18 +57,18 @@ def general_settings():
     global root
 
     param = {}
-    param["author"] = "Kais Siala"  # the name of the person running the script
-    param["comment"] = "Workshop_example"
+    param["author"] = "User"  # the name of the person running the script
+    param["comment"] = "Tutorial"
 
     paths = {}
     fs = os.path.sep
     current_folder = os.path.dirname(os.path.abspath(__file__))
-    root = str(Path(current_folder).parent.parent.parent)
+    root = str(Path(current_folder).parent.parent)
     # For use at TUM ENS
     if root[-1] != fs:
-        root = root + fs + "Database_KS" + fs
+        root = root + fs + "Database" + fs
     else:
-        root = root + "Database_KS" + fs
+        root = root + "Database" + fs
 
     return paths, param
 
@@ -108,14 +108,14 @@ def scope_paths_and_parameters(paths, param):
     :rtype: tuple(dict, dict)
     """
     # Paths to the shapefiles
-    PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
+    PathTemp = root + "02 Shapefiles for regions" + fs 
 
-    paths["spatial_scope"] = PathTemp + "gadm36_GHA_0.shp"
-    paths["subregions"] = PathTemp + "gadm36_GHA_0.shp"
+    paths["spatial_scope"] = PathTemp + "User-defined" + fs + "gadm36_AUT_0.shp"
+    paths["subregions"] = PathTemp + "Clustering outputs" + fs + "Austria" + fs + "Wind_FLH - Solar_FLH" + fs + "05 final_output" + fs + "final_result.shp"
 
     # Name tags for the scope and the subregions
-    param["region_name"] = "Ghana"  # Name tag of the spatial scope
-    param["subregions_name"] = "Ghana_country"  # Name tag of the subregions
+    param["region_name"] = "Austria"  # Name tag of the spatial scope
+    param["subregions_name"] = "Austria"  # Name tag of the subregions
 
     # Year
     param["year"] = 2015
@@ -141,7 +141,7 @@ def computation_parameters(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 6
+    param["nproc"] = 36
     param["CPU_limit"] = True
     return param
 
@@ -262,12 +262,12 @@ def time_series_parameters(param):
     }
 
     # Stratified time series
-    param["modes"] = {"high": [90, 70], "mid": [60, 40], "low": [], "all": param["quantiles"]}
+    param["modes"] = {"all": param["quantiles"]}
     param["combo"] = {
         # dictionary of hub height and orientation combinations
-        "WindOn": {"2015": [60, 80, 100], "2030": [80, 100, 120], "2050": [100, 120, 140]},
+        "WindOn": {"2015": [80]},
         "WindOff": {"80m": [80], "100m": [100], "120m": [120]},
-        "PV": {"Solar": [0, 180, -90, 90]},
+        "PV": {"Solar": [0]},
         "CSP": {"all": []},
     }
 

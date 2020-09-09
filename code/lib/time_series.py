@@ -416,7 +416,7 @@ def combinations_for_time_series(paths, param, tech):
 
     # Reads the files present in input folder
     inputfiles = glob(paths["regression_out"] + subregions + "_" + tech + "_reg_coefficients*" + year + ".csv")
-
+    
     # Case 1: no files existing
     if len(inputfiles) == 0:
         warn("Run the regression first, before creating stratified time series!", UserWarning)

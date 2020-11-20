@@ -32,9 +32,9 @@ def crd_merra(Crd_regions, res_weather):
     Crd = np.array(
         [
             np.ceil((Crd_regions[:, 0] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
-            np.ceil(Crd_regions[:, 1] / res_weather[1]) * res_weather[1],
+            np.ceil((Crd_regions[:, 1] + res_weather[1] / 2) / res_weather[1]) * res_weather[1] - res_weather[1] / 2,
             np.floor((Crd_regions[:, 2] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
-            np.floor(Crd_regions[:, 3] / res_weather[1]) * res_weather[1],
+            np.floor((Crd_regions[:, 3] + res_weather[1] / 2) / res_weather[1]) * res_weather[1] - res_weather[1] / 2,
         ]
     )
     Crd = Crd.T
@@ -95,9 +95,10 @@ def subset(A, param):
         res = param["res_weather"]
         southlim = int(math.floor((crd[2] + res[0] / 10 + 90 + res[0] / 2) / res[0]))
         northlim = int(math.ceil((crd[0] - res[0] / 10 + 90 + res[0] / 2) / res[0]))
-        westlim = int(math.floor((crd[3] + res[1] / 10 + 180) / res[1]))
+        westlim = int(math.floor((crd[3] + res[1] / 10 + 180 + res[1] / 2) / res[1]))
         eastlim = int(math.ceil((crd[1] - res[1] / 10 + 180) / res[1]))
         subset = A[:, southlim:northlim, westlim:eastlim]
+        #import pdb; pdb.set_trace()
     else:
         subset = A
     return subset

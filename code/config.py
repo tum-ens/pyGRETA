@@ -159,6 +159,10 @@ def resolution_parameters(param):
     :rtype: dict
     """
     param["res_weather"] = np.array([1 / 2, 5 / 8])
+	param["res_landuse"] = np.array([1 / 240, 1 / 240])
+	param["res_topography"] = np.array([1 / 240, 1 / 240])
+	param["res_bathymetry"] = np.array([1 / 120, 1 / 120])
+	param["res_population"] = np.array([1 / 120, 1 / 120])
     param["res_desired"] = np.array([1 / 240, 1 / 240])
     return param
 

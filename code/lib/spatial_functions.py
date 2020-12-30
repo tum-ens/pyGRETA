@@ -262,3 +262,53 @@ def array2raster(newRasterfn, rasterOrigin, pixelWidth, pixelHeight, array):
     outband.WriteArray(np.flipud(array))
     outband.FlushCache()
     outband = None
+
+def aggregate_x_dim(array, res_data, res_desired, aggfun):
+    """
+    description
+    """
+    if aggfun == "category":
+        array2 = array.reshape(-1, int(res_desired[1] / res_data[1]))
+        array2 = np.array([np.bincount(b).argmax() for b in array2]).reshape(array.shape[0], int(array.shape[1]/(res_desired[1] / res_data[1])))
+    else:
+        array2 = array.reshape(array.shape[0], int(array.shape[1]/(res_desired[1] / res_data[1])), -1)
+        if aggfun == "mean":
+            array2 = np.mean(array2, 2)
+        elif aggfun == "sum":
+            array2 = np.sum(array2, 2)
+    return array2
+	
+
+def aggregate_y_dim(array, res_data, res_desired, aggfun):
+    """
+    description
+    """
+    if aggfun == "category":
+        array2 = array.transpose().reshape(-1, int(res_desired[0] / res_data[0]))
+        array2 = np.array([np.bincount(b).argmax() for b in array2]).reshape(int(array.shape[0]/(res_desired[0] / res_data[0])), array.shape[1], order="F")
+    else:
+        array2 = array.transpose().reshape(array.shape[1], int(array.shape[0]/(res_desired[0] / res_data[0])), -1)
+        if aggfun == "mean":
+            array2 = np.mean(array2, 2).transpose()
+        elif aggfun == "sum":
+            array2 = np.sum(array2, 2).transpose()
+    return array2
+	
+	
+def adjust_resolution(array, res_data, res_desired, aggfun=None):
+    """
+    description
+    """
+    if ((res_data[1] % res_desired[1] < 1e-10) and (res_data[1] > res_desired[1])): # data is coarse on x dimension (columns)
+        array = resizem(array, array.shape[0], array.shape[1]*int(res_data[1] / res_desired[1]))
+        if aggfun == "sum":
+            array = array / (res_data[1] % res_desired[1])
+    if ((res_desired[1] % res_data[1] < 1e-10) and (res_desired[1] > res_data[1])): # data is too detailed on x dimension
+        array = aggregate_x_dim(array, res_data, res_desired, aggfun)
+    if ((res_data[0] % res_desired[0] < 1e-10) and (res_data[0] > res_desired[0])): # data is coarse on y dimension (rows)
+        array = resizem(array, array.shape[0]*int(res_data[0] / res_desired[0]), array.shape[1])
+        if aggfun == "sum":
+            array = array / (res_data[0] % res_desired[0])
+    if ((res_desired[0] % res_data[0] < 1e-10) and (res_desired[0] > res_data[0])): # data is too detailed on y dimension
+        array = aggregate_y_dim(array, res_data, res_desired, aggfun)
+    return array

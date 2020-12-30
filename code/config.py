@@ -16,7 +16,6 @@ def configuration():
     paths, param = scope_paths_and_parameters(paths, param)
 
     param = computation_parameters(param)
-    param = resolution_parameters(param)
     param = weather_data_parameters(param)
     param = file_saving_options(param)
     param = time_series_parameters(param)
@@ -28,7 +27,7 @@ def configuration():
     param = offshore_wind_paramters(param)
 
     paths = weather_input_folder(paths, param)
-    paths = global_maps_input_paths(paths)
+    paths, param = global_maps_input_paths(paths, param)
     paths = output_folders(paths, param)
     paths = weather_output_paths(paths, param)
     paths = local_maps_paths(paths, param)
@@ -58,7 +57,7 @@ def general_settings():
 
     param = {}
     param["author"] = "Kais Siala"  # the name of the person running the script
-    param["comment"] = "Workshop_example"
+    param["comment"] = "Asia REC Alpha series param low resolution"
 
     paths = {}
     fs = os.path.sep
@@ -94,6 +93,9 @@ def scope_paths_and_parameters(paths, param):
       In case it is larger, features that lie completely outside the scope will be ignored, whereas those that lie partly inside it will be cropped using the bounding box
       of *spatial_scope*. In case it is smaller, all features are used with no modification.
     
+    * *res_desired* is a numpy array with two numbers. The first number is the resolution in the vertical dimension (in degrees of latitude),
+      the second is for the horizontal dimension (in degrees of longitude).
+    
     * *year* defines the year of the input data. 
     
     * *technology* defines the list of technologies that you are interested in.
@@ -110,18 +112,21 @@ def scope_paths_and_parameters(paths, param):
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
 
-    paths["spatial_scope"] = PathTemp + "gadm36_GHA_0.shp"
-    paths["subregions"] = PathTemp + "gadm36_GHA_0.shp"
+    paths["spatial_scope"] = PathTemp + "Singapore_and_neighbors.shp"
+    paths["subregions"] = PathTemp + "Singapore_and_neighbors.shp"
 
     # Name tags for the scope and the subregions
-    param["region_name"] = "Ghana"  # Name tag of the spatial scope
-    param["subregions_name"] = "Ghana_country"  # Name tag of the subregions
+    param["region_name"] = "Singapore and neighbors"  # Name tag of the spatial scope
+    param["subregions_name"] = "Singapore and neighbors"  # Name tag of the subregions
+    
+    # Desired resolution
+    param["res_desired"] = np.array([1 / 8, 1 / 8])
 
     # Year
     param["year"] = 2015
 
     # Technologies
-    param["technology"] = ["WindOn", "PV"]  # ["PV", "CSP", "WindOn", "WindOff"]
+    param["technology"] = ["PV"]  # ["PV", "CSP", "WindOn", "WindOff"]
 
     return paths, param
 
@@ -141,25 +146,8 @@ def computation_parameters(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 6
+    param["nproc"] = 10
     param["CPU_limit"] = True
-    return param
-
-
-def resolution_parameters(param):
-    """
-    This function defines the resolution of weather data (low resolution), and the desired resolution of output rasters (high resolution).
-    Both are numpy arrays with two numbers. The first number is the resolution in the vertical dimension (in degrees of latitude),
-    the second is for the horizontal dimension (in degrees of longitude).
-
-    :param param: Dictionary including the user preferences.
-    :type param: dict
-
-    :return param: The updated dictionary param.
-    :rtype: dict
-    """
-    param["res_weather"] = np.array([1 / 2, 5 / 8])
-    param["res_desired"] = np.array([1 / 240, 1 / 240])
     return param
 
 
@@ -170,8 +158,13 @@ def weather_data_parameters(param):
     * *MERRA_coverage*: If you have downloaded the MERRA-2 data for the world, enter the name tag ``'World'``. The code will later search for the data in the corresponding folder.
       It is possible to download the MERRA-2 just for the geographic scope of the analysis. In that case, enter another name tag (we recommend using the same one as the spatial scope).
     
-    * *MERRA_correction*: MERRA-2 contains some outliers, especially in the wind data. *MERRA_correction* sets the threshold of the relative distance between the yearly mean of the data point
-      to the yearly mean of its neighbors. 
+    * *MERRA_correction*: MERRA-2 contains some outliers, especially in the wind data. *MERRA_correction* decides whether these outliers are dealt with.
+    
+    * *MERRA_correction_factor*: if *MERRA_correction* is ``'True'``, this sets the threshold of the relative distance between the yearly mean of the data point
+      to the yearly mean of its neighbors.
+      
+    * *res_weather*: defines the resolution of weather data using a numpy array with two numbers. The first number is the resolution in the vertical dimension (in degrees of latitude),
+    the second is for the horizontal dimension (in degrees of longitude).
 
     :param param: Dictionary including the user preferences.
     :type param: dict
@@ -182,6 +175,7 @@ def weather_data_parameters(param):
     param["MERRA_coverage"] = "World"
     param["MERRA_correction"] = True
     param["MERRA_correction_factor"] = {"W50M": 0.35, "CLEARNESS": 0.35, "T2M": 0.35}  # Wind Speed  # Clearness index  # Temperature at 2 m
+    param["res_weather"] = np.array([1 / 2, 5 / 8])
     return param
 
 
@@ -192,7 +186,7 @@ def file_saving_options(param):
     * *savetiff* is a boolean that determines whether tif rasters for the potentials are saved (``True``), or whether only mat files are saved (``False``).
       The latter are saved in any case.
     
-    *  *report_sampling* is an integer that sets the sample size for the sorted FLH values per region (relevant for :mod:`potential.reporting`).
+    * *report_sampling* is an integer that sets the sample size for the sorted FLH values per region (relevant for :mod:`potential.report_potentials`).
     
     :param param: Dictionary including the user preferences.
     :type param: dict
@@ -250,7 +244,7 @@ def time_series_parameters(param):
     param["quantiles"] = [100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0]
 
     # User defined locations
-    param["useloc"] = {"Point1": (0, -80), "Point2": (1, 1)}  # {"point name": (latitude, longitude),...}
+    param["useloc"] = {"Jambi": (-1.59, 103.61)}  # {"point name": (latitude, longitude),...}
 
     # Regression
     param["regression"] = {
@@ -408,7 +402,7 @@ def pv_parameters(param):
     pv["resource"] = {"clearness_correction": 1}
     pv["technical"] = {
         "T_r": 25,  # °C
-        "loss_coeff": 0.37,
+        "loss_coeff": 0.26,
         "tracking": 0,  # 0 for no tracking, 1 for one-axis tracking, 2 for two-axes tracking
         "orientation": 0,  # | 0: Towards equator | 90: West | 180: Away from equator | -90: East |
     }
@@ -417,12 +411,13 @@ def pv_parameters(param):
         "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
         "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
     }
-    GCR = {"shadefree_period": 6, "day_north": 79, "day_south": 263}
+    #GCR = {"shadefree_period": 8, "day_north": 79, "day_south": 266}
+    GCR = {"shadefree_period": 11, "day_north": 356, "day_south": 172}
     pv["weight"] = {
         "GCR": GCR,
         "lu_availability": np.array([0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.02, 0.00, 0.02, 0.02, 0.02, 0.00, 0.02]),
         "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
-        "power_density": 0.000160,
+        "power_density": 0.000217,
         "f_performance": 0.75,
     }
     del GCR
@@ -627,7 +622,7 @@ def weather_input_folder(paths, param):
     return paths
 
 
-def global_maps_input_paths(paths):
+def global_maps_input_paths(paths, param):
     """
     This function defines the paths where the global maps are saved:
     
@@ -639,12 +634,17 @@ def global_maps_input_paths(paths):
       * *GWA* for the country data retrieved from the Global Wind Atlas (missing the country code, which will be filled in a for-loop in :mod:correction_functions.calc_gwa_correction)
       * *Countries* for the shapefiles of countries
       * *EEZ_global* for the shapefile of exclusive economic zones of countries
+      
+    It also defines the resolution of the input rasters (*res_landuse*, *res_topography*, *res_population*, *res_bathymetry*) using numpy arrays with two numbers. The first number is the resolution in the vertical dimension (in degrees of latitude),
+    the second is for the horizontal dimension (in degrees of longitude).
     
     :param paths: Dictionary including the paths.
     :type paths: dict
+    :param param: Dictionary including the user preferences.
+    :type param: dict
 
-    :return paths: The updated dictionary paths.
-    :rtype: dict
+    :return (paths, param): The updated dictionaries paths and param.
+    :rtype: tuple(dict, dict)
     """
     global root
     global fs
@@ -652,15 +652,23 @@ def global_maps_input_paths(paths):
     # Global maps
     PathTemp = root + "01 Raw inputs" + fs + "Maps" + fs
     paths["LU_global"] = PathTemp + "Landuse" + fs + "LCType.tif"
+    param["res_landuse"] = np.array([1 / 240, 1 / 240])
+    
     paths["Topo_tiles"] = PathTemp + "Topography" + fs
+    param["res_topography"] = np.array([1 / 240, 1 / 240])
+    
     paths["Pop_global"] = PathTemp + "Population" + fs + "gpw_v4_population_count_rev10_2015_30_sec.tif"
+    param["res_population"] = np.array([1 / 120, 1 / 120])
+    
     paths["Bathym_global"] = PathTemp + "Bathymetry" + fs + "ETOPO1_Ice_c_geotiff.tif"
+    param["res_bathymetry"] = np.array([1 / 60, 1 / 60])
+    
     paths["Protected"] = PathTemp + "Protected Areas" + fs + "WDPA_Nov2018-shapefile-polygons.shp"
     paths["GWA"] = PathTemp + "Global Wind Atlas" + fs + fs + "windSpeed.csv"
     paths["Countries"] = PathTemp + "Countries" + fs + "gadm36_0.shp"
     paths["EEZ_global"] = PathTemp + "EEZ" + fs + "eez_v10.shp"
 
-    return paths
+    return paths, param
 
 
 def output_folders(paths, param):

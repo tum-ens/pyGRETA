@@ -475,10 +475,6 @@ def weight_potential_maps(paths, param, tech):
         A_GCR = calc_gcr(Crd_all, m_high, n_high, res_desired, weight["GCR"])
     else:
         A_GCR = 1
-    A_test = A_GCR * weight["power_density"]
-    path_test = paths[tech]["weight"][:-4]+"2.tif"
-    array2raster(path_test, GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_test)
-    import pdb; pdb.set_trace()
 
     with rasterio.open(paths["PA"]) as src:
         A_protect = src.read(1)
@@ -579,7 +575,7 @@ def report_potentials(paths, param, tech):
     :rtype: None
     """
     timecheck("Start")
-    # read FLH, masking, area, and weighting matrix
+    # Read FLH, masking, area, and weighting matrix
     FLH = hdf5storage.read("FLH", paths[tech]["FLH"])
     A_mask = hdf5storage.read("A_mask", paths[tech]["mask"])
     A_weight = hdf5storage.read("A_weight", paths[tech]["weight"])

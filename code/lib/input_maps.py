@@ -14,18 +14,18 @@ def generate_maps_for_scope(paths, param):
     :return: The maps are saved directly in the desired paths.
     :rtype: None
     """
-    generate_distance(paths, param)
-    # generate_weather_files(paths, param)  # MERRA Weather data
-    # generate_landsea(paths, param)  # Land and Sea
-    # generate_subregions(paths, param)  # Subregions
-    # generate_area(paths, param)  # Area Gradient
-    # generate_landuse(paths, param)  # Landuse
-    # generate_bathymetry(paths, param)  # Bathymetry
-    # generate_topography(paths, param)  # Topography
-    # generate_slope(paths, param)  # Slope
-    # generate_population(paths, param)  # Population
-    # generate_protected_areas(paths, param)  # Protected areas
-    # generate_buffered_population(paths, param)  # Buffered Population
+    
+    generate_weather_files(paths, param)  # MERRA Weather data
+    generate_landsea(paths, param)  # Land and Sea
+    generate_subregions(paths, param)  # Subregions
+    generate_area(paths, param)  # Area Gradient
+    generate_landuse(paths, param)  # Landuse
+    generate_bathymetry(paths, param)  # Bathymetry
+    generate_topography(paths, param)  # Topography
+    generate_slope(paths, param)  # Slope
+    generate_population(paths, param)  # Population
+    generate_protected_areas(paths, param)  # Protected areas
+    generate_buffered_population(paths, param)  # Buffered Population
 
 
 def generate_weather_files(paths, param):
@@ -621,41 +621,6 @@ def generate_buffered_population(paths, param):
     create_json(paths["BUFFER"], param, ["region_name", "landuse", "WindOn", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "BUFFER"])
     timecheck("End")
 
-
-def generate_distance(paths, param):
-    """
-    """
-    Crd_all = param["Crd_all"]
-    res_desired = param["res_desired"]
-    GeoRef = param["GeoRef"]
-    
-    lat_vec = np.arange(Crd_all[2] + res_desired[0]/2, Crd_all[0] + res_desired[0]/2, res_desired[0])
-    lon_vec = np.arange(Crd_all[3] + res_desired[1]/2, Crd_all[1] + res_desired[1]/2, res_desired[1])
-    
-    singapore = (1.071, 104.067)
-    A_points = np.array(np.meshgrid(lat_vec, lon_vec)).T.reshape(-1,2)
-    A_distance = [distance(pt, singapore).km for pt in A_points]
-    
-    A_distance = np.array(A_distance).reshape(param["m_high"], param["n_high"])
-    paths["DISTANCE"]='D:\\Database_KS\\03 Intermediate files\\Files Singapore and neighbors\\Maps\\Singapore and neighbors_Distance.tif'
-    array2raster(paths["DISTANCE"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_distance)
-    
-    import pdb; pdb.set_trace()
-    flh = paths["PV"]["FLH"][:-3] + "tif"
-    FLH = rasterio.open(flh).read(1)
-    FLH = np.flipud(FLH)
-    Emi_PV = 148.9 -0.04979 * FLH + 0.005323 * A_distance
-    paths["Emi_PV"]='C:\\Users\\KSiala\\LRZ Sync+Share\\Suncable paper (Tobias Massier)\\GIS\\Emissions_PV.tif'
-    array2raster(paths["Emi_PV"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], Emi_PV)
-    Emi_Cable = 1.486 -0.0001591 * FLH + 0.002433 * A_distance
-    paths["Emi_Cable"]='C:\\Users\\KSiala\\LRZ Sync+Share\\Suncable paper (Tobias Massier)\\GIS\\Emissions_Cable.tif'
-    array2raster(paths["Emi_Cable"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], Emi_Cable)
-    Emi_Bat = 5.658 -0.0008669 * FLH + 0.003189 * A_distance
-    paths["Emi_Bat"]='C:\\Users\\KSiala\\LRZ Sync+Share\\Suncable paper (Tobias Massier)\\GIS\\Emissions_Batteries.tif'
-    array2raster(paths["Emi_Bat"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], Emi_Bat)
-    Emi_total = Emi_PV + Emi_Cable + Emi_Bat
-    paths["Emi_Total"]='C:\\Users\\KSiala\\LRZ Sync+Share\\Suncable paper (Tobias Massier)\\GIS\\Emissions_Total.tif'
-    array2raster(paths["Emi_Total"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], Emi_total)
     
 def generate_area(paths, param):
     """

@@ -32,11 +32,21 @@
         "code",
         "doc"
       ]
+    },
+    {
+      "login": "pgrimaud",
+      "name": "Pierre Grimaud",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1866496?v=4",
+      "profile": "https://github.com/pgrimaud",
+      "contributions": [
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,
-  "projectName": "renewable-timeseries",
+  "projectName": "pyGRETA",
   "projectOwner": "tum-ens",
   "repoType": "github",
-  "repoHost": "https://github.com"
+  "repoHost": "https://github.com",
+  "skipCi": true
 }

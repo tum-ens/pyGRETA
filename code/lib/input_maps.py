@@ -14,17 +14,18 @@ def generate_maps_for_scope(paths, param):
     :return: The maps are saved directly in the desired paths.
     :rtype: None
     """
-    generate_weather_files(paths, param)  # MERRA Weather data
-    generate_landsea(paths, param)  # Land and Sea
-    generate_subregions(paths, param)  # Subregions
-    generate_area(paths, param)  # Area Gradient
-    generate_landuse(paths, param)  # Landuse
-    generate_bathymetry(paths, param)  # Bathymetry
-    generate_topography(paths, param)  # Topography
-    generate_slope(paths, param)  # Slope
-    generate_population(paths, param)  # Population
-    generate_protected_areas(paths, param)  # Protected areas
-    generate_buffered_population(paths, param)  # Buffered Population
+    generate_distance(paths, param)
+    # generate_weather_files(paths, param)  # MERRA Weather data
+    # generate_landsea(paths, param)  # Land and Sea
+    # generate_subregions(paths, param)  # Subregions
+    # generate_area(paths, param)  # Area Gradient
+    # generate_landuse(paths, param)  # Landuse
+    # generate_bathymetry(paths, param)  # Bathymetry
+    # generate_topography(paths, param)  # Topography
+    # generate_slope(paths, param)  # Slope
+    # generate_population(paths, param)  # Population
+    # generate_protected_areas(paths, param)  # Protected areas
+    # generate_buffered_population(paths, param)  # Buffered Population
 
 
 def generate_weather_files(paths, param):
@@ -105,6 +106,7 @@ def generate_weather_files(paths, param):
             # Create the overall wind speed
             W50M = abs(U50M + (1j * V50M))
             # Calculate the clearness index
+            CLEARNESS = np.zeros(SWGDN.shape)
             CLEARNESS = np.divide(SWGDN, SWTDN, where=SWTDN != 0)
 
             sys.stdout.write("\n")
@@ -177,12 +179,16 @@ def generate_landsea(paths, param):
         sys.stdout.flush()
 
         # Calculate A_region
-        A_region = calc_region(countries_shp.iloc[reg], Crd_regions_land[reg, :], res_desired, GeoRef)
+        try:
+            A_region = calc_region(countries_shp.iloc[reg], Crd_regions_land[reg, :], res_desired, GeoRef)
 
-        # Include A_region in A_land
-        A_land[(Ind[reg, 2] - 1) : Ind[reg, 0], (Ind[reg, 3] - 1) : Ind[reg, 1]] = (
-            A_land[(Ind[reg, 2] - 1) : Ind[reg, 0], (Ind[reg, 3] - 1) : Ind[reg, 1]] + A_region
-        )
+            # Include A_region in A_land
+            A_land[(Ind[reg, 2] - 1) : Ind[reg, 0], (Ind[reg, 3] - 1) : Ind[reg, 1]] = (
+                A_land[(Ind[reg, 2] - 1) : Ind[reg, 0], (Ind[reg, 3] - 1) : Ind[reg, 1]] + A_region
+            )
+        except:
+            continue
+            
     # Saving file
     array2raster(paths["LAND"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_land)
     print("\nfiles saved: " + paths["LAND"])
@@ -301,16 +307,16 @@ def generate_landuse(paths, param):
     :rtype: None
     """
     timecheck("Start")
-    res_desired = param["res_desired"]
     Crd_all = param["Crd_all"]
-    Ind = ind_global(Crd_all, res_desired)[0]
+    Ind = ind_global(Crd_all, param["res_landuse"])[0]
     GeoRef = param["GeoRef"]
     with rasterio.open(paths["LU_global"]) as src:
         w = src.read(1, window=windows.Window.from_slices(slice(Ind[0] - 1, Ind[2]), slice(Ind[3] - 1, Ind[1])))
-    w = np.flipud(w)
+        w = np.flipud(w)
+    w = adjust_resolution(w, param["res_landuse"], param["res_desired"], "category")
     array2raster(paths["LU"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], w)
     print("files saved: " + paths["LU"])
-    create_json(paths["LU"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["LU_global", "LU"])
+    create_json(paths["LU"], param, ["region_name", "Crd_all", "res_landuse", "res_desired", "GeoRef"], paths, ["LU_global", "LU"])
     timecheck("End")
 
 
@@ -328,16 +334,17 @@ def generate_bathymetry(paths, param):
     :rtype: None
     """
     timecheck("Start")
-    res_desired = param["res_desired"]
     Crd_all = param["Crd_all"]
-    Ind = ind_global(Crd_all, res_desired)[0]
+    Ind = ind_global(Crd_all, param["res_desired"])[0]
     GeoRef = param["GeoRef"]
     with rasterio.open(paths["Bathym_global"]) as src:
         A_BATH = src.read(1)
-    A_BATH = resizem(A_BATH, 180 * 240, 360 * 240)
+    #A_BATH = resizem(A_BATH, 180 * 240, 360 * 240)
+    A_BATH = adjust_resolution(A_BATH, param["res_bathymetry"], param["res_desired"], "mean")
     A_BATH = np.flipud(A_BATH[Ind[0] - 1 : Ind[2], Ind[3] - 1 : Ind[1]])
+    
     array2raster(paths["BATH"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_BATH)
-    create_json(paths["BATH"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["Bathym_global", "BATH"])
+    create_json(paths["BATH"], param, ["region_name", "Crd_all", "res_bathymetry", "res_desired", "GeoRef"], paths, ["Bathym_global", "BATH"])
     print("files saved: " + paths["BATH"])
     timecheck("End")
 
@@ -356,28 +363,27 @@ def generate_topography(paths, param):
     :rtype: None
     """
     timecheck("Start")
-    res_desired = param["res_desired"]
     Crd_all = param["Crd_all"]
-    Ind = ind_global(Crd_all, res_desired)[0]
+    Ind = ind_global(Crd_all, param["res_topography"])[0]
     GeoRef = param["GeoRef"]
-    Topo = np.zeros((180 * 240, 360 * 240))
+    Topo = np.zeros((int(180 / param["res_topography"][0]), int(360 / param["res_topography"][1])))
     tile_extents = np.zeros((24, 4), dtype=int)
     i = 1
     j = 1
     for letter in char_range("A", "X"):
-        north = (i - 1) * 45 * 240 + 1
-        east = j * 60 * 240
-        south = i * 45 * 240
-        west = (j - 1) * 60 * 240 + 1
+        north = (i - 1) * 45 / param["res_topography"][0] + 1
+        east = j * 60 / param["res_topography"][1]
+        south = i * 45 / param["res_topography"][0]
+        west = (j - 1) * 60 / param["res_topography"][1] + 1
         tile_extents[ord(letter) - ord("A"), :] = [north, east, south, west]
         j = j + 1
         if j == 7:
             i = i + 1
             j = 1
-    n_min = (Ind[0] // (45 * 240)) * 45 * 240 + 1
-    e_max = (Ind[1] // (60 * 240) + 1) * 60 * 240
-    s_max = (Ind[2] // (45 * 240) + 1) * 45 * 240
-    w_min = (Ind[3] // (60 * 240)) * 60 * 240 + 1
+    n_min = (Ind[0] // (45 * 240)) * 45 / param["res_topography"][0] + 1
+    e_max = (Ind[1] // (60 * 240) + 1) * 60 / param["res_topography"][1]
+    s_max = (Ind[2] // (45 * 240) + 1) * 45 / param["res_topography"][0]
+    w_min = (Ind[3] // (60 * 240)) * 60 / param["res_topography"][1] + 1
 
     need = np.logical_and(
         (np.logical_and((tile_extents[:, 0] >= n_min), (tile_extents[:, 1] <= e_max))),
@@ -401,9 +407,10 @@ def generate_topography(paths, param):
             Topo[tile_extents[index, 0] - 1 : tile_extents[index, 2], tile_extents[index, 3] - 1 : tile_extents[index, 1]] = tile[0, 0:-1, 0:-1]
 
     A_TOPO = np.flipud(Topo[Ind[0] - 1 : Ind[2], Ind[3] - 1 : Ind[1]])
+    A_TOPO = adjust_resolution(A_TOPO, param["res_topography"], param["res_desired"], "mean")
     array2raster(paths["TOPO"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_TOPO)
     print("\nfiles saved: " + paths["TOPO"])
-    create_json(paths["TOPO"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["Topo_tiles", "TOPO"])
+    create_json(paths["TOPO"], param, ["region_name", "Crd_all", "res_topography", "res_desired", "GeoRef"], paths, ["Topo_tiles", "TOPO"])
     timecheck("End")
 
 
@@ -425,27 +432,27 @@ def generate_slope(paths, param):
     Crd_all = param["Crd_all"]
     Ind = ind_global(Crd_all, res_desired)[0]
     GeoRef = param["GeoRef"]
-    Lat1 = np.arange(-90, 90, 1 / 240)
-    Lat2 = np.arange(-90 + 1 / 240, 90 + 1 / 240, 1 / 240)
+    Lat1 = np.arange(-90, 90, res_desired[0])
+    Lat2 = np.arange(-90 + res_desired[0], 90 + res_desired[0], res_desired[0])
     latMid = (Lat1 + Lat2) / 2
     deltaLat = abs(Lat1 - Lat2)
 
-    Lat1 = np.arange(-90, 90, 1 / 240)
-    Lat2 = np.arange(-90 + 1 / 240, 90 + 1 / 240, 1 / 240)
+    Lat1 = np.arange(-90, 90, res_desired[0])
+    Lat2 = np.arange(-90 + res_desired[0], 90 + res_desired[0], res_desired[0])
     latMid_2 = (Lat1 + Lat2) / 2
 
-    Lon1 = np.arange(-180, 180, 1 / 240)
-    Lon2 = np.arange(-180 + 1 / 240, 180 + 1 / 240, 1 / 240)
+    Lon1 = np.arange(-180, 180, res_desired[1])
+    Lon2 = np.arange(-180 + res_desired[1], 180 + res_desired[1], res_desired[1])
     deltaLon = abs(Lon1 - Lon2)
 
     m_per_deg_lat = 111132.954 - 559.822 * cos(np.deg2rad(2 * latMid)) + 1.175 * cos(np.deg2rad(4 * latMid))
     m_per_deg_lon = (np.pi / 180) * 6367449 * cos(np.deg2rad(latMid_2))
 
-    x_cell = repmat(deltaLon, 180 * 240, 1) * repmat(m_per_deg_lon, 360 * 240, 1).T
+    x_cell = repmat(deltaLon, int(180 / res_desired[1]), 1) * repmat(m_per_deg_lon, int(360 / res_desired[1]), 1).T
     x_cell = x_cell[Ind[0] - 1 : Ind[2], Ind[3] - 1 : Ind[1]]
     x_cell = np.flipud(x_cell)
 
-    y_cell = repmat((deltaLat * m_per_deg_lat), 360 * 240, 1).T
+    y_cell = repmat((deltaLat * m_per_deg_lat), int(360 / res_desired[0]), 1).T
     y_cell = y_cell[Ind[0] - 1 : Ind[2], Ind[3] - 1 : Ind[1]]
     y_cell = np.flipud(y_cell)
 
@@ -463,7 +470,7 @@ def generate_slope(paths, param):
     A_SLP = np.flipud(slope_pc)
     array2raster(paths["SLOPE"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_SLP)
     print("files saved: " + paths["SLOPE"])
-    create_json(paths["SLOPE"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["TOPO", "SLOPE"])
+    create_json(paths["SLOPE"], param, ["region_name", "Crd_all", "res_topography", "res_desired", "GeoRef"], paths, ["TOPO", "SLOPE"])
     timecheck("End")
 
 
@@ -489,11 +496,12 @@ def generate_population(paths, param):
         A_POP_part = src.read(1)  # map is only between latitudes -60 and 85
     A_POP = np.zeros((21600, 43200))
     A_POP[600:18000, :] = A_POP_part
-    A_POP = resizem(A_POP, 180 * 240, 360 * 240) / 4  # density is divided by 4
+    A_POP = adjust_resolution(A_POP, param["res_population"], param["res_desired"], "sum")
+    #A_POP = resizem(A_POP, 180 * 240, 360 * 240) / 4  # density is divided by 4
     A_POP = np.flipud(A_POP[Ind[0] - 1 : Ind[2], Ind[3] - 1 : Ind[1]])
     array2raster(paths["POP"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_POP)
     print("\nfiles saved: " + paths["POP"])
-    create_json(paths["POP"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["Pop_global", "POP"])
+    create_json(paths["POP"], param, ["region_name", "Crd_all", "res_population", "res_desired", "GeoRef"], paths, ["Pop_global", "POP"])
     timecheck("End")
 
 
@@ -614,6 +622,41 @@ def generate_buffered_population(paths, param):
     timecheck("End")
 
 
+def generate_distance(paths, param):
+    """
+    """
+    Crd_all = param["Crd_all"]
+    res_desired = param["res_desired"]
+    GeoRef = param["GeoRef"]
+    
+    lat_vec = np.arange(Crd_all[2] + res_desired[0]/2, Crd_all[0] + res_desired[0]/2, res_desired[0])
+    lon_vec = np.arange(Crd_all[3] + res_desired[1]/2, Crd_all[1] + res_desired[1]/2, res_desired[1])
+    
+    singapore = (1.071, 104.067)
+    A_points = np.array(np.meshgrid(lat_vec, lon_vec)).T.reshape(-1,2)
+    A_distance = [distance(pt, singapore).km for pt in A_points]
+    
+    A_distance = np.array(A_distance).reshape(param["m_high"], param["n_high"])
+    paths["DISTANCE"]='D:\\Database_KS\\03 Intermediate files\\Files Singapore and neighbors\\Maps\\Singapore and neighbors_Distance.tif'
+    array2raster(paths["DISTANCE"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_distance)
+    
+    import pdb; pdb.set_trace()
+    flh = paths["PV"]["FLH"][:-3] + "tif"
+    FLH = rasterio.open(flh).read(1)
+    FLH = np.flipud(FLH)
+    Emi_PV = 148.9 -0.04979 * FLH + 0.005323 * A_distance
+    paths["Emi_PV"]='C:\\Users\\KSiala\\LRZ Sync+Share\\Suncable paper (Tobias Massier)\\GIS\\Emissions_PV.tif'
+    array2raster(paths["Emi_PV"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], Emi_PV)
+    Emi_Cable = 1.486 -0.0001591 * FLH + 0.002433 * A_distance
+    paths["Emi_Cable"]='C:\\Users\\KSiala\\LRZ Sync+Share\\Suncable paper (Tobias Massier)\\GIS\\Emissions_Cable.tif'
+    array2raster(paths["Emi_Cable"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], Emi_Cable)
+    Emi_Bat = 5.658 -0.0008669 * FLH + 0.003189 * A_distance
+    paths["Emi_Bat"]='C:\\Users\\KSiala\\LRZ Sync+Share\\Suncable paper (Tobias Massier)\\GIS\\Emissions_Batteries.tif'
+    array2raster(paths["Emi_Bat"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], Emi_Bat)
+    Emi_total = Emi_PV + Emi_Cable + Emi_Bat
+    paths["Emi_Total"]='C:\\Users\\KSiala\\LRZ Sync+Share\\Suncable paper (Tobias Massier)\\GIS\\Emissions_Total.tif'
+    array2raster(paths["Emi_Total"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], Emi_total)
+    
 def generate_area(paths, param):
     """
     This function retreives the coordinates of the spatial scope and computes the pixel area gradient of the corresponding

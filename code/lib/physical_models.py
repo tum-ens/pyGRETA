@@ -289,7 +289,7 @@ def tracking(axis, A_phi, A_alpha, A_beta, A_azimuth):
         Az_dif[Az_dif > 180] = Az_dif[Az_dif > 180] - 360
 
         # y is used to locate R on the right quadrant
-        y = np.zeros(x.shape())
+        y = np.zeros(x.shape)
         crit = np.logical_or(x == 0, np.logical_or(np.logical_and(x > 0, Az_dif > 0), np.logical_and(x < 0, Az_dif < 0)))
         y[crit] = 0
         crit = np.logical_and(x < 0, Az_dif > 0)
@@ -304,7 +304,7 @@ def tracking(axis, A_phi, A_alpha, A_beta, A_azimuth):
         beta = arccosd(cosd(R) * cosd(A_beta))
 
         # New orientation
-        orientation = np.zeros(A_beta.shape())
+        orientation = np.zeros(A_beta.shape)
         crit = np.logical_and(A_beta != 0, np.logical_and(-90 <= R, R <= 90))
         orientation[crit] = A_orientation[crit] + 180 + arcsind(sind(R[crit]) / sind(beta[crit]))
         crit = np.logical_and(-180 <= R, R < -90)

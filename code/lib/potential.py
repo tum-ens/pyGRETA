@@ -410,23 +410,23 @@ def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
     if Crd_all[2] > 0:
         day = GCR["day_north"]
         # Declination angle
-        delta = repmat(arcsind(0.3978) * sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), m_high, 1)
+        delta = repmat(arcsind(0.3978 * sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489))), m_high, 1)
 
     if Crd_all[0] < 0:
         day = GCR["day_south"]
         # Declination angle
-        delta = repmat(arcsind(0.3978) * sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), m_high, 1)
+        delta = repmat(-arcsind(0.3978 * sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489))), m_high, 1)
 
     if (Crd_all[2] * Crd_all[0]) < 0:
         lat_pos = int(np.sum(lat >= 0, axis=0)[0])
         day = GCR["day_north"]
         # Declination angle
-        delta_pos = repmat(arcsind(0.3978) * sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), lat_pos, 1)
+        delta_pos = repmat(arcsind(0.3978 * sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489))), lat_pos, 1)
 
         lat_neg = int(np.sum(lat < 0, axis=0)[0])
         day = GCR["day_south"]
         # Declination angle
-        delta_neg = repmat(arcsind(0.3978) * sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), lat_neg, 1)
+        delta_neg = repmat(-arcsind(0.3978 * sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489))), lat_neg, 1)
         delta = np.append(delta_neg, delta_pos, axis=0)
 
     # Elevation angle
@@ -475,6 +475,10 @@ def weight_potential_maps(paths, param, tech):
         A_GCR = calc_gcr(Crd_all, m_high, n_high, res_desired, weight["GCR"])
     else:
         A_GCR = 1
+    A_test = A_GCR * weight["power_density"]
+    path_test = paths[tech]["weight"][:-4]+"2.tif"
+    array2raster(path_test, GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_test)
+    import pdb; pdb.set_trace()
 
     with rasterio.open(paths["PA"]) as src:
         A_protect = src.read(1)

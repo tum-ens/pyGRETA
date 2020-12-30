@@ -58,7 +58,7 @@ def general_settings():
 
     param = {}
     param["author"] = "Kais Siala"  # the name of the person running the script
-    param["comment"] = "Workshop_example"
+    param["comment"] = "Asia REC Alpha series param low resolution"
 
     paths = {}
     fs = os.path.sep
@@ -110,18 +110,18 @@ def scope_paths_and_parameters(paths, param):
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
 
-    paths["spatial_scope"] = PathTemp + "gadm36_GHA_0.shp"
-    paths["subregions"] = PathTemp + "gadm36_GHA_0.shp"
+    paths["spatial_scope"] = PathTemp + "Singapore_and_neighbors.shp"
+    paths["subregions"] = PathTemp + "Singapore_and_neighbors.shp"
 
     # Name tags for the scope and the subregions
-    param["region_name"] = "Ghana"  # Name tag of the spatial scope
-    param["subregions_name"] = "Ghana_country"  # Name tag of the subregions
+    param["region_name"] = "Singapore and neighbors"  # Name tag of the spatial scope
+    param["subregions_name"] = "Singapore and neighbors"  # Name tag of the subregions
 
     # Year
     param["year"] = 2015
 
     # Technologies
-    param["technology"] = ["WindOn", "PV"]  # ["PV", "CSP", "WindOn", "WindOff"]
+    param["technology"] = ["PV"]  # ["PV", "CSP", "WindOn", "WindOff"]
 
     return paths, param
 
@@ -141,7 +141,7 @@ def computation_parameters(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 6
+    param["nproc"] = 10
     param["CPU_limit"] = True
     return param
 
@@ -159,11 +159,11 @@ def resolution_parameters(param):
     :rtype: dict
     """
     param["res_weather"] = np.array([1 / 2, 5 / 8])
-	param["res_landuse"] = np.array([1 / 240, 1 / 240])
-	param["res_topography"] = np.array([1 / 240, 1 / 240])
-	param["res_bathymetry"] = np.array([1 / 120, 1 / 120])
-	param["res_population"] = np.array([1 / 120, 1 / 120])
-    param["res_desired"] = np.array([1 / 240, 1 / 240])
+    param["res_landuse"] = np.array([1 / 240, 1 / 240])
+    param["res_topography"] = np.array([1 / 240, 1 / 240])
+    param["res_bathymetry"] = np.array([1 / 60, 1 / 60])
+    param["res_population"] = np.array([1 / 120, 1 / 120])
+    param["res_desired"] = np.array([1 / 8, 1 / 8])
     return param
 
 
@@ -254,7 +254,7 @@ def time_series_parameters(param):
     param["quantiles"] = [100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0]
 
     # User defined locations
-    param["useloc"] = {"Point1": (0, -80), "Point2": (1, 1)}  # {"point name": (latitude, longitude),...}
+    param["useloc"] = {"Jambi": (-1.59, 103.61)}  # {"point name": (latitude, longitude),...}
 
     # Regression
     param["regression"] = {
@@ -412,7 +412,7 @@ def pv_parameters(param):
     pv["resource"] = {"clearness_correction": 1}
     pv["technical"] = {
         "T_r": 25,  # °C
-        "loss_coeff": 0.37,
+        "loss_coeff": 0.26,
         "tracking": 0,  # 0 for no tracking, 1 for one-axis tracking, 2 for two-axes tracking
         "orientation": 0,  # | 0: Towards equator | 90: West | 180: Away from equator | -90: East |
     }
@@ -421,12 +421,13 @@ def pv_parameters(param):
         "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
         "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
     }
-    GCR = {"shadefree_period": 6, "day_north": 79, "day_south": 263}
+    #GCR = {"shadefree_period": 8, "day_north": 79, "day_south": 266}
+    GCR = {"shadefree_period": 11, "day_north": 356, "day_south": 172}
     pv["weight"] = {
         "GCR": GCR,
         "lu_availability": np.array([0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.02, 0.00, 0.02, 0.02, 0.02, 0.00, 0.02]),
         "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
-        "power_density": 0.000160,
+        "power_density": 0.000217,
         "f_performance": 0.75,
     }
     del GCR

@@ -25,6 +25,7 @@ import pyomo.environ as pyo
 from pyomo.opt import SolverFactory
 import json
 from warnings import warn
+#from geopy.distance import distance
 
 
 def sind(alpha):

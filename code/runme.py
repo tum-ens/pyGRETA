@@ -15,24 +15,24 @@ if __name__ == "__main__":
     paths, param = initialization()
 
     # Generate input raster maps
-    generate_maps_for_scope(paths, param)
+    #generate_maps_for_scope(paths, param)
 
     # Wind speed correction
-    # if "WindOn" in param["technology"] or "WindOff" in param["technology"]:
-    #     generate_wind_correction(paths, param)
+    if "WindOn" in param["technology"] or "WindOff" in param["technology"]:
+        generate_wind_correction(paths, param)
 
     for tech in param["technology"]:
         print("Tech: " + tech)
 
         # Generate potential maps and reports
-        calculate_full_load_hours(paths, param, tech)
-        mask_potential_maps(paths, param, tech)
-        weight_potential_maps(paths, param, tech)
-        report_potentials(paths, param, tech)
+        #calculate_full_load_hours(paths, param, tech)
+        #mask_potential_maps(paths, param, tech)
+        #weight_potential_maps(paths, param, tech)
+        #report_potentials(paths, param, tech)
 
-        # Generate time series
-        find_representative_locations(paths, param, tech)
-        generate_time_series_for_representative_locations(paths, param, tech)
+        # # Generate time series
+        # find_representative_locations(paths, param, tech)
+        # generate_time_series_for_representative_locations(paths, param, tech)
         generate_time_series_for_specific_locations(paths, param, tech)
 
     for tech in param["technology"]:

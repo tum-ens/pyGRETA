@@ -57,7 +57,7 @@ def general_settings():
 
     param = {}
     param["author"] = "Kais Siala"  # the name of the person running the script
-    param["comment"] = "Asia REC Alpha series param low resolution"
+    param["comment"] = "Workshop_example"
 
     paths = {}
     fs = os.path.sep
@@ -112,12 +112,12 @@ def scope_paths_and_parameters(paths, param):
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
 
-    paths["spatial_scope"] = PathTemp + "Singapore_and_neighbors.shp"
-    paths["subregions"] = PathTemp + "Singapore_and_neighbors.shp"
+    paths["spatial_scope"] = PathTemp + "gadm36_GHA_0.shp"
+    paths["subregions"] = PathTemp + "gadm36_GHA_0.shp"
 
     # Name tags for the scope and the subregions
-    param["region_name"] = "Singapore and neighbors"  # Name tag of the spatial scope
-    param["subregions_name"] = "Singapore and neighbors"  # Name tag of the subregions
+    param["region_name"] = "Ghana"  # Name tag of the spatial scope
+    param["subregions_name"] = "Ghana_country"  # Name tag of the subregions
     
     # Desired resolution
     param["res_desired"] = np.array([1 / 8, 1 / 8])
@@ -126,7 +126,7 @@ def scope_paths_and_parameters(paths, param):
     param["year"] = 2015
 
     # Technologies
-    param["technology"] = ["PV"]  # ["PV", "CSP", "WindOn", "WindOff"]
+    param["technology"] = ["WindOn", "PV"]  # ["PV", "CSP", "WindOn", "WindOff"]
 
     return paths, param
 
@@ -146,7 +146,7 @@ def computation_parameters(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 10
+    param["nproc"] = 6
     param["CPU_limit"] = True
     return param
 
@@ -244,7 +244,7 @@ def time_series_parameters(param):
     param["quantiles"] = [100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0]
 
     # User defined locations
-    param["useloc"] = {"Jambi": (-1.59, 103.61)}  # {"point name": (latitude, longitude),...}
+    param["useloc"] = {"Point1": (0, -80), "Point2": (1, 1)}  # {"point name": (latitude, longitude),...}
 
     # Regression
     param["regression"] = {
@@ -411,8 +411,8 @@ def pv_parameters(param):
         "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
         "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
     }
-    #GCR = {"shadefree_period": 8, "day_north": 79, "day_south": 266}
-    GCR = {"shadefree_period": 11, "day_north": 356, "day_south": 172}
+    GCR = {"shadefree_period": 8, "day_north": 79, "day_south": 263}
+    #GCR = {"shadefree_period": 11, "day_north": 356, "day_south": 172}
     pv["weight"] = {
         "GCR": GCR,
         "lu_availability": np.array([0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.02, 0.00, 0.02, 0.02, 0.02, 0.00, 0.02]),

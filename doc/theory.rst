@@ -335,7 +335,7 @@ Flow Losses
 Flow loss coefficient or heat removal factor :math:`F_r` is the ratio between the actual heat transfer to the maximum heat transfer possible between 
 the receiver and the heat transfer fluid (HTF). These losses result from the difference between the temperature of the receiver and 
 the temperature of the HTF and are dependent on the heat capacity and the flow rate of the HTF. 
-A typical value for parabolic toughts is 95%. 
+A typical value for parabolic troughts is 95%. 
 
 CSP Capacity Factor Calculation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

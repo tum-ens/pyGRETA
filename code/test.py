@@ -48,8 +48,6 @@ Num_pix = 10
 reMerra = np.zeros([200, 250, 8760])
 merraData = np.random.rand(8760)*10
 GWA_array = np.random.rand(3999, 8052)*10
-
-#gwa_cut = np.zeros([200, 250, 8760])
 gwa_cut = GWA_array[K_first:K_last+1, L_first:L_last+1]
 
 E = (merraData ** 3) * value_num_cells / Num_pix # What? E[h]
@@ -57,5 +55,15 @@ merra_cut_energy = gwa_cut / np.sum(gwa_cut)    #
 merra_cut_energy_redistributed = np.repeat(merra_cut_energy[..., None], 8760, axis=2) * E   # Expand the array along a new axis and multiply it to vector E (Broadcasting)
 merra_cut_redistributed = np.cbrt(merra_cut_energy_redistributed * Num_pix)     # Convert back from energy to wind speed
 reMerra[i_offset:i_offset + K_last + 1 - K_first, j_offset:j_offset + L_last + 1 - L_first, :] = merra_cut_redistributed
+
+# for h in range(8760):
+#     V = merraData[h]
+#     E = V**3
+#     E = E*value_num_cells/Num_pix
+#     merra_cut = gwa_cut/np.sum(gwa_cut)*E
+#     merra_cut = np.cbrt(merra_cut*Num_pix)
+#     reMerra[i_offset:i_offset+K_last+1-K_first,j_offset:j_offset+L_last+1-L_first,h] = merra_cut
+
+
 
 print('Finished!')

@@ -467,11 +467,9 @@ def redistribution_array(param, paths,merraData,i,j,xmin,xmax,ymin,ymax,GWA_arra
 
         gwa_cut = GWA_array[K_first:K_last+1, L_first:L_last+1]
         gwa_cut_energy = np.power(gwa_cut, 3)      # Convert from wind speed to wind energy
-
-        E = (merraData ** 3) * value_num_cells / Num_pix  # Contains the percentage of energy for each pixel of
         merra_cut_energy_redistributed = gwa_cut / np.sum(gwa_cut_energy)    # Redistribution
+        E = (merraData ** 3) * value_num_cells / Num_pix  # Contains the percentage of energy for each pixel of
         merra_cut_energy = np.repeat(merra_cut_energy_redistributed[..., None], 8760, axis=2) * E * Num_pix     # Expand the array along a new axis and multiply it with vector E (Broadcasting)
-
         merra_cut_redistributed_speed = np.cbrt(merra_cut_energy)  # Convert back from energy to wind speed
         reMerra[i_offset:i_offset + K_last + 1 - K_first, j_offset:j_offset + L_last + 1 - L_first,:8760] = merra_cut_redistributed_speed
 

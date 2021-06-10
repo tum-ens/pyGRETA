@@ -466,12 +466,12 @@ def redistribution_array(param, paths,merraData,i,j,xmin,xmax,ymin,ymax,GWA_arra
                 j_offset = 250 - (L_last+1-L_first)
 
         gwa_cut = GWA_array[K_first:K_last+1, L_first:L_last+1]
+        # Todo: value_num_cells / Num_pix ? # E = E*value_num_cells/Num_pix
         gwa_cut_energy = np.power(gwa_cut, 3)      # Convert from wind speed to wind energy
-        merra_cut_energy_redistributed = gwa_cut / np.sum(gwa_cut_energy)    # Redistribution
-        E = (merraData ** 3) * value_num_cells / Num_pix  # Contains the percentage of energy for each pixel of
-        merra_cut_energy = np.repeat(merra_cut_energy_redistributed[..., None], 8760, axis=2) * E * Num_pix     # Expand the array along a new axis and multiply it with vector E (Broadcasting)
-        merra_cut_redistributed_speed = np.cbrt(merra_cut_energy)  # Convert back from energy to wind speed
-        reMerra[i_offset:i_offset + K_last + 1 - K_first, j_offset:j_offset + L_last + 1 - L_first,:8760] = merra_cut_redistributed_speed
+        merra_cut_energy_weighting = gwa_cut / np.sum(gwa_cut_energy)    # Compute the weighting matrix how the energy is distributed within Global Wind Atlas data
+        merra_cut_speed_weighting = np.cbrt(merra_cut_energy_weighting)     # Convert the weighting matrix from energy to wind speeds
+        merra_cut_speed_redistributed = np.repeat(merra_cut_speed_weighting[..., None], 8760, axis=2) * merraData     # Expand the Merra time series of this pixle weighted by energy based distribution of Global Wind Atlas
+        reMerra[i_offset:i_offset + K_last + 1 - K_first, j_offset:j_offset + L_last + 1 - L_first, :8760] = merra_cut_speed_redistributed
 
     # --- old code by Thushara
 

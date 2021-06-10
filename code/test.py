@@ -9,6 +9,7 @@ xmax = 8
 ymin = 1
 ymax = 6
 
+
 GWA_array = np.random.rand(3999, 8052)*10
 x_gwa = np.random.rand(3999, 8052)*10
 y_gwa = np.random.rand(3999, 8052)*10

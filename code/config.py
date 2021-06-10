@@ -36,12 +36,13 @@ def configuration():
     paths = irena_paths(paths, param)
 
     for tech in param["technology"]:
-        paths[tech] = {}
-        paths = regression_paths(paths, param, tech)
-        paths = emhires_input_paths(paths, param, tech)
-        paths = potential_output_paths(paths, param, tech)
-        paths = regional_analysis_output_paths(paths, param, tech)
-        paths = discrete_output_paths(paths, param, tech)
+        if not tech in ["Biomass"]:
+            paths[tech] = {}
+            paths = regression_paths(paths, param, tech)
+            paths = emhires_input_paths(paths, param, tech)
+            paths = potential_output_paths(paths, param, tech)
+            paths = regional_analysis_output_paths(paths, param, tech)
+            paths = discrete_output_paths(paths, param, tech)
     return paths, param
 
 
@@ -59,7 +60,7 @@ def general_settings():
 
     param = {}
     param["author"] = "Thushara Addanki"  # the name of the person running the script
-    param["comment"] = "Ecuador"
+    param["comment"] = "Brazil"
 
     paths = {}
     fs = os.path.sep
@@ -111,19 +112,19 @@ def scope_paths_and_parameters(paths, param):
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
 
-    paths["spatial_scope"] = PathTemp + "gadm36_ECU_2.shp"
-    paths["subregions"] = PathTemp + "gadm36_ECU_2.shp"
+    paths["spatial_scope"] = PathTemp + "Germany_with_EEZ.shp"
+    paths["subregions"] = PathTemp + "gadm36_DEU_0.shp"
 
     # Name tags for the scope and the subregions
-    param["region_name"] = "Ecuador_gwa"  # Name tag of the spatial scope
-    param["subregions_name"] = "Ecuador_level0"  # Name tag of the subregions
-    param["country_code"] = "ECU" #used for reading GWA tiff file while redistribution
+    param["region_name"] = "Germany_gwa"  # Name tag of the spatial scope
+    param["subregions_name"] = "Germany_level0"  # Name tag of the subregions
+    param["country_code"] = "DEU" #used for reading GWA tiff file while redistribution
 
     # Year
     param["year"] = 2019
 
     # Technologies
-    param["technology"] = ["WindOff"]  # ["PV", "CSP", "WindOn", "WindOff"]
+    param["technology"] = ["WindOn"]  # ["PV", "CSP", "WindOn", "WindOff", "Biomass"]
 
     return paths, param
 
@@ -143,7 +144,7 @@ def computation_parameters(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 6
+    param["nproc"] = 36
     param["CPU_limit"] = True
     return param
 
@@ -249,7 +250,7 @@ def time_series_parameters(param):
     :rtype: dict
     """
     # Quantiles for time series
-    param["quantiles"] = [100, 95, 90, 50, 0]
+    param["quantiles"] = [95, 70, 25]
 
     # User defined locations
     param["useloc"] = {
@@ -325,6 +326,10 @@ def landuse_parameters(param):
         "type_urban": 13,
         "type_croplands": 12,
         "type_vegetation": 14,
+        "water_buffer" : 1,
+        "wetland_buffer" : 1,
+        "snow_buffer" : 4,
+        "boarder_buffer_pixel_amount" : 2,
         "Ross_coeff": np.array(
             [0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208]
         ),
@@ -424,14 +429,15 @@ def pv_parameters(param):
         "orientation": 0,  # | 0: Towards equator | 90: West | 180: Away from equator | -90: East |
     }
     pv["mask"] = {
-        "slope": 20,
-        "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
+        "slope": 10,
+        "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1]),
         "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
+        "pa_buffer_pixel_amount": 1,
     }
     GCR = {"shadefree_period": 6, "day_north": 79, "day_south": 263}
     pv["weight"] = {
         "GCR": GCR,
-        "lu_availability": np.array([0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.02, 0.00, 0.02, 0.02, 0.02, 0.00, 0.02]),
+        "lu_availability": np.array([0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.00, 0.00, 0.00, 0.02, 0.02, 0.00, 0.02]),
         "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
         "power_density": 0.000160,
         "f_performance": 0.75,
@@ -548,13 +554,15 @@ def onshore_wind_parameters(param):
     #windon["technical"] = {"w_in": 2, "w_r": 14, "w_off": 25, "P_r": 2.3, "hub_height": 99}
     windon["technical"] = {"w_in": 4, "w_r": 13, "w_off": 25, "P_r": 3, "hub_height": 80}
     windon["mask"] = {
-        "slope": 20,
-        "lu_suitability": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1]),
+        "slope": 17,
+        "lu_suitability": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1]),
         "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
-        "buffer_pixel_amount": 1,
+        "urban_buffer_pixel_amount": 4,
+        "pa_buffer_pixel_amount": 2,
+        "airport_buffer_pixel_amount" : 16
     }
     windon["weight"] = {
-        "lu_availability": np.array([0.00, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.10, 0.10, 0.10, 0.10, 0.00, 0.10, 0.00, 0.10, 0.00, 0.10]),
+        "lu_availability": np.array([0.00, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.10, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.10, 0.00, 0.10]),
         "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
         "power_density": 0.000008,
         "f_performance": 0.87,
@@ -679,8 +687,6 @@ def biomass_parameters(param):
     biomass['agro_emission factor'] = 1585 #kg/ton of crop residues
     
     biomass["forest"] = {
-        "Wood fuel, coniferous" : 11558306, #m3
-        "Wood fuel, non-coniferous" : 26963829, #m3
         "density, coniferous" : 0.75, #tons/m3
         "density, non-coniferous" : 0.85, #tons/m3
         "rpr" : 0.67,
@@ -772,7 +778,10 @@ def global_maps_input_paths(paths, param):
     paths["LS_global"] = PathTemp + "Livestock" + fs + "Glb_"
     param["res_livestock"] = np.array([1/120 , 1/120])
     
-    paths["Biomass"] = PathTemp + "FAOSTAT" + fs + "Admin level 2_"
+    paths["Biomass_Crops"] = PathTemp + "FAOSTAT" + fs + "Admin level 2_"
+    paths["Biomass_Forestry"] = PathTemp + "FAOSTAT" + fs + "FAOSTAT_Forestry_data_6-2-2021.csv"
+    
+    paths["Airports"] = PathTemp + "Openflights" + fs + "airports.csv"
     
     return paths, param
 
@@ -864,22 +873,18 @@ def weather_output_paths(paths, param):
     paths["W50M"] = paths["weather_data"] + "w50m_" + year + ".mat"
     paths["CLEARNESS"] = paths["weather_data"] + "clearness_" + year + ".mat"
     paths["T2M"] = paths["weather_data"] + "t2m_" + year + ".mat"
-    #paths["W50M_pixel"] = paths["MERRA_REFINED"] + "w50m_cube_" + year
+
     paths["MERRA_XMIN"] = paths["weather_data"] + "w50m_xmin" + year + ".mat"
     paths["MERRA_XMAX"] = paths["weather_data"] + "w50m_xmax" + year + ".mat"
     paths["MERRA_YMIN"] = paths["weather_data"] + "w50m_ymin" + year + ".mat"
     paths["MERRA_YMAX"] = paths["weather_data"] + "w50m_ymax" + year + ".mat"
-    paths["MERRA_RASTER"] = paths["weather_data"] + "Raster" + year + ".tif"
+
     paths["GWA_X"] = paths["weather_data"] + "gwa_x" + year + ".mat"
     paths["GWA_Y"] = paths["weather_data"] + "gwa_y" + year + ".mat"
-    #paths["MERRA_xy"] = paths["weather_data"] + "merra_xy" + year + ".mat"
-    #paths["GWA_mean"] = paths["weather_data"] + "gwa_mean" + ".mat"
-    #paths["GWA_RASTER"] = paths["weather_data"] + "gwa_mean" + ".tif"
-    #paths["MERRA_energy"] = paths["weather_data"] + "merra_energy" + ".mat"
-    #paths["MERRA_energy_RASTER"] = paths["weather_data"] + "merra_energy" + ".tif"
+
     paths["IND_GWA_MERRA_X"] = paths["weather_data"] + "ind_gwa_merra_x" + ".mat"
     paths["IND_GWA_MERRA_Y"] = paths["weather_data"] + "ind_gwa_merra_y" + ".mat"
-    #paths["TEST"] = paths["weather_data"] + "test" + ".tif"
+
 
     return paths
 
@@ -918,23 +923,43 @@ def local_maps_paths(paths, param):
     paths["SUB"] = PathTemp + "_Subregions.tif"  # Subregions pixels
     paths["LU"] = PathTemp + "_Landuse.tif"  # Land use types
     paths["TOPO"] = PathTemp + "_Topography.tif"  # Topography
+    
     paths["PA"] = PathTemp + "_Protected_areas.tif"  # Protected areas
+    paths["PV_PA_BUFFER"] = PathTemp + "_PV_Protected_areas_Buffered.tif"
+    paths["WINDON_PA_BUFFER"] = PathTemp + "_WindOn_Protected_areas_Buffered.tif"
+    
     paths["SLOPE"] = PathTemp + "_Slope.tif"  # Slope
     paths["BATH"] = PathTemp + "_Bathymetry.tif"  # Bathymetry
     paths["POP"] = PathTemp + "_Population.tif"  # Population
-    paths["BUFFER"] = PathTemp + "_Population_Buffered.tif"  # Buffered population
+    paths["POP_BUFFER"] = PathTemp + "_Population_Buffered.tif"  # Buffered population
+    
+    paths["WATER_BUFFER"] = PathTemp + "_Water_Buffered.tif"
+    paths["WETLAND_BUFFER"] = PathTemp + "_Wetland_Buffered.tif"
+    paths["SNOW_BUFFER"] = PathTemp + "_Snow_Buffered.tif"
+    
     paths["CORR_GWA"] = PathTemp + "_GWA_Correction.mat"  # Correction factors based on the GWA
     paths["AREA"] = PathTemp + "_Area.mat"  # Area per pixel in m²
     paths["GWA_WS"] = PathTemp + "_GWA_WindSpeed.tif"
     paths["LS"] = PathTemp + "_Livestock_"
     paths["BIOMASS_ENERGY"] = PathTemp + "_Biomass_Energy.tif"
     paths["BIOMASS_CO2"] = PathTemp + "_Biomass_CO2.tif"
+    
+    paths["AIRPORTS"] = PathTemp + "_Airports.tif"
+    paths["BOARDERS"] = PathTemp + "_Boarders.tif"
+    
     # Correction factors for wind speeds
     turbine_height_on = str(param["WindOn"]["technical"]["hub_height"])
     turbine_height_off = str(param["WindOff"]["technical"]["hub_height"])
     paths["CORR_ON"] = PathTemp + "_WindOn_Correction_" + turbine_height_on + ".tif"
     paths["CORR_OFF"] = PathTemp + "_WindOff_Correction_" + turbine_height_off + ".tif"
-
+    
+    paths["East"] = paths["local_maps"] + "Brazil_East_gwa_Biomass_CO2.tif"
+    paths["West"] = paths["local_maps"] + "Brazil_West_gwa_Biomass_CO2.tif"
+    paths["South"] = paths["local_maps"] + "Brazil_South_gwa_Biomass_CO2.tif"
+    paths["North"] = paths["local_maps"] + "Brazil_North_gwa_Biomass_CO2.tif"
+    
+    paths["CLUB_ENERGY"] = PathTemp + "_Biomass_Energy_Clubbed.tif"
+    paths["CLUB_CO2"] = PathTemp + "_Biomass_CO2_Clubbed.tif"
     return paths
 
 
@@ -1049,7 +1074,7 @@ def potential_output_paths(paths, param, tech):
     """
     region = param["region_name"]
     year = str(param["year"])
-
+    
     if tech in ["WindOn", "WindOff"]:
         hubheight = str(param[tech]["technical"]["hub_height"])
         PathTemp = paths["potential"] + region + "_" + tech + "_" + hubheight

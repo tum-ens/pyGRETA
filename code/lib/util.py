@@ -12,7 +12,7 @@ import rasterio
 from rasterio import windows, mask, MemoryFile
 import pandas as pd
 import numpy as np
-from scipy.ndimage import generic_filter, convolve
+from scipy.ndimage import generic_filter, convolve, maximum_filter, minimum_filter
 import geopandas as gpd
 from shapely.geometry import mapping, Point, Polygon
 import fiona
@@ -25,6 +25,8 @@ import pyomo.environ as pyo
 from pyomo.opt import SolverFactory
 import json
 from warnings import warn
+#import pyrosm
+#from pyrosm import get_data, OSM
 
 
 def sind(alpha):
@@ -154,7 +156,7 @@ def resizem(A_in, row_new, col_new):
     A_inf = A_in.flatten(order="F")[np.newaxis]
     A_out = reshape(
         repmat(
-            reshape(reshape(repmat((A_in.flatten(order="F")[np.newaxis]), row_rep, 1), (row_new, -1), order="F").T, (-1, 1), order="F"), 1, col_rep
+            reshape(reshape(repmat((A_in.flatten(order="F")[np.newaxis]), int(row_rep), 1), (int(row_new), -1), order="F").T, (-1, 1), order="F"), 1, int(col_rep)
         ).T,
         (col_new, row_new),
         order="F",

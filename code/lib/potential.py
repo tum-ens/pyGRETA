@@ -1,5 +1,5 @@
-from .physical_models import calc_CF_solar, calc_CF_windon, calc_CF_windoff
-from .spatial_functions import *
+from lib.physical_models import calc_CF_solar, calc_CF_windon, calc_CF_windoff
+from lib.spatial_functions import *
 
 
 def calculate_full_load_hours(paths, param, tech):
@@ -387,74 +387,31 @@ def calc_FLH_windon(row, args):
 
 
 def redistribution_array(param, paths,merraData,i,j,xmin,xmax,ymin,ymax,GWA_array,x_gwa,y_gwa,Num_pix):
-    """
-    What does this function do?
 
-    :param param:
-    :type param:
-    :param paths:
-    :type paths:
-    :param i:
-    :type i:
-    :param j:
-    :type j:
-    :param xmin:
-    :type xmin:
-    :param xmax:
-    :type xmax:
-    :param ymin:
-    :type ymin:
-    :param ymax:
-    :type ymax:
-    :param Num_pix:
-    :type Num_pix:
+    gwa_rows, gwa_cols = GWA_array.shape
+    
+    gwa_value = np.zeros([gwa_rows,gwa_cols])
+    
+    total_num_cells = 0
+    value_num_cells = 0
 
-    :return reMerra:
-    :rtype: numpy array
-
-    Aim:
-        Increase the resolution of the MERRA wind data by using Global Wind Atlas data.
-        For this reason, the low resolution MERRA data is redistributed by the energy distribution of the higher resolution Global Wind Atlas data
-
-    Algorithm:
-        1) Import wind data from Global Wind Atlas
-        2) Select pixels that are within one MERRA pixle
-        3) Convert from wind speed to energy
-        4) Redistribute MERRA data
-
-    ToDo: Where do the borders/limits come from? -> not shape file ?!?
-    """
-
-    # 1) Import
-    GWA_array = rasterio.open(paths["GWA_global"]).read(1)      # Import wind data from Global Wind Atlas
-    GWA_array[GWA_array.isnan()] = 0    # Why are there nan values?
-
-    x_gwa = hdf5storage.read("GWA_X", paths["GWA_X"])   # X-coordinate of each pixel of Global Wind Atlas Data
-    y_gwa = hdf5storage.read("GWA_Y", paths["GWA_Y"])   # Y-coordinate of each pixel of Global Wind Atlas Data
-
-
-    # 2) Selection
-    selection_index = (xmin <= x_gwa) & (x_gwa < xmax) & (ymin <= y_gwa) & (y_gwa < ymax)   # Determine the pixels that are inbetween the range
-    GWA_array[not selection_index] = 0        # Set pixel not covered by the shapfile to zero
-    value_num_cells = np.count_nonzero(GWA_array)       # Number of non-zero pixels
-    #print (value_num_cells)
-
-    coordinates_nonzero_pixels_x, coordinates_nonzero_pixels_y = selection_index.nonzero() # Determine the coordinates of non-zero pixels in order to determine the outer rows and columns. Tuple(x,y)
-    K_first = coordinates_nonzero_pixels_x[0]      # First x-coordinate of non-zero pixels
-    L_first = coordinates_nonzero_pixels_y[0]      # First y-coordinate of non-zero pixels
-    K_last = coordinates_nonzero_pixels_x[-1]      # Last x-coordinate of non-zero pixels
-    L_last = coordinates_nonzero_pixels_y[-1]      # Last y-coordinate of non-zero pixels
-
-
-    # 3) Conversion
-    # ToDo: Do the conversion only on the smaller array because all values out of the selection_index are zero or do it with gwa_cut
-    # GWA_array = np.power(GWA_array, 3)      # Convert from wind speed to wind energy
-
-
-    # 4) Redistribute MERRA data
-    reMerra = np.zeros([200, 250, 8760])
-
-    if np.sum(GWA_array):
+    for k in range(gwa_rows):
+        for l in range(gwa_cols):
+            if xmin <= x_gwa[k,l] < xmax and ymin <= y_gwa[k,l] < ymax:
+                gwa_value[k,l] = GWA_array[k,l]
+                total_num_cells = total_num_cells + 1
+                if gwa_value[k,l]:
+                    value_num_cells = value_num_cells+1
+                if total_num_cells == 1:
+                    K_first = k
+                    L_first = l
+                K_last = k
+                L_last = l
+                    
+    reMerra = np.zeros([200,250,8760])
+    #print (value_num_cells)        
+    if np.sum(gwa_value):
+        gwa_cut = gwa_value[K_first:K_last+1,L_first:L_last+1]
         i_offset = 0
         j_offset = 0
 
@@ -464,57 +421,13 @@ def redistribution_array(param, paths,merraData,i,j,xmin,xmax,ymin,ymax,GWA_arra
         if L_last+1-L_first != 250:
             if j < param["n_low"]/2:
                 j_offset = 250 - (L_last+1-L_first)
-
-        gwa_cut = GWA_array[K_first:K_last+1, L_first:L_last+1]
-        # Todo: value_num_cells / Num_pix ? # E = E*value_num_cells/Num_pix
-        gwa_cut_energy = np.power(gwa_cut, 3)      # Convert from wind speed to wind energy
-        merra_cut_energy_weighting = gwa_cut / np.sum(gwa_cut_energy)    # Compute the weighting matrix how the energy is distributed within Global Wind Atlas data
-        merra_cut_speed_weighting = np.cbrt(merra_cut_energy_weighting)     # Convert the weighting matrix from energy to wind speeds
-        merra_cut_speed_redistributed = np.repeat(merra_cut_speed_weighting[..., None], 8760, axis=2) * merraData     # Expand the Merra time series of this pixle weighted by energy based distribution of Global Wind Atlas
-        reMerra[i_offset:i_offset + K_last + 1 - K_first, j_offset:j_offset + L_last + 1 - L_first, :8760] = merra_cut_speed_redistributed
-
-    # --- old code by Thushara
-
-    # gwa_rows, gwa_cols = GWA_array.shape
-    #
-    # gwa_value = np.zeros([gwa_rows,gwa_cols])
-    #
-    # total_num_cells = 0
-    # value_num_cells = 0
-    #
-    # for k in range(gwa_rows):
-    #     for l in range(gwa_cols):
-    #         if xmin <= x_gwa[k,l] < xmax and ymin <= y_gwa[k,l] < ymax:
-    #             gwa_value[k,l] = GWA_array[k,l]
-    #             total_num_cells = total_num_cells + 1
-    #             if gwa_value[k,l]:
-    #                 value_num_cells = value_num_cells+1
-    #             if total_num_cells == 1:
-    #                 K_first = k
-    #                 L_first = l
-    #             K_last = k
-    #             L_last = l
-    #
-    # reMerra = np.zeros([200,250,8760])
-    # #print (value_num_cells)
-    # if np.sum(gwa_value):
-    #     gwa_cut = gwa_value[K_first:K_last+1,L_first:L_last+1]
-    #     i_offset = 0
-    #     j_offset = 0
-    #
-    #     if K_last+1-K_first != 200:
-    #         if i < param["m_low"]/2:
-    #             i_offset = 200 - (K_last+1-K_first)
-    #     if L_last+1-L_first != 250:
-    #         if j < param["n_low"]/2:
-    #             j_offset = 250 - (L_last+1-L_first)
-    #     for h in range(8760):
-    #         V = merraData[h]
-    #         E = V**3
-    #         E = E*value_num_cells/Num_pix
-    #         merra_cut = gwa_cut/np.sum(gwa_cut)*E
-    #         merra_cut = np.cbrt(merra_cut*Num_pix)
-    #         reMerra[i_offset:i_offset+K_last+1-K_first,j_offset:j_offset+L_last+1-L_first,h] = merra_cut
+        for h in range(8760):
+            V = merraData[h]
+            E = V**3
+            E = E*value_num_cells/Num_pix      
+            merra_cut = gwa_cut/np.sum(gwa_cut)*E
+            merra_cut = np.cbrt(merra_cut*Num_pix)
+            reMerra[i_offset:i_offset+K_last+1-K_first,j_offset:j_offset+L_last+1-L_first,h] = merra_cut
 
     return reMerra
 
@@ -1110,25 +1023,24 @@ def generate_biomass_production(paths, param):
         A_protect = src.read(1)
     A_protect = np.flipud(A_protect).astype(int)
     
-    #Pixels within the shapefile or country!
-    A_country_area = np.zeros(A_lu.shape)
-    list_regions = np.array_split(np.arange(0, nRegions), nproc)
-    param["status_bar_limit"] = list_regions[0][-1]
-    results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(
-        country_region, product(list_regions,[[param, paths, regions_shp, Crd_all, res_desired, GeoRef]])
-    )
-    # Collecting results
-    if nproc > 1:
-        for p in range(len(results)):
-            A_country_area = A_country_area + results[p]
-    else:
-        A_country_area = results[p]
-
-    #A_country_area = np.zeros(A_lu.shape)
-    #for reg in range(0, nRegions):
-        #A_region_extended = calc_region(regions_shp.loc[reg], Crd_all, res_desired, GeoRef)
-        #A_country_area = A_country_area + A_region_extended 
+    with rasterio.open(paths["SUB"]) as src:
+        A_country_area = src.read(1)
+    A_country_area = np.flipud(A_country_area).astype(int)
     
+    #Pixels within the shapefile or country!
+    # A_country_area = np.zeros(A_lu.shape)
+    # list_regions = np.array_split(np.arange(0, nRegions), nproc)
+    # param["status_bar_limit"] = list_regions[0][-1]
+    # results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(
+        # country_region, product(list_regions,[[param, paths, regions_shp, Crd_all, res_desired, GeoRef]])
+    # )
+    # # Collecting results
+    # if nproc > 1:
+        # for p in range(len(results)):
+            # A_country_area = A_country_area + results[p]
+    # else:
+        # A_country_area = results[p]
+   
     #Extract un-protected areas
     A_Notprotected = np.zeros(A_protect.shape) 
     val_include = [0,5,6,7,8,9,10]
@@ -1154,66 +1066,66 @@ def generate_biomass_production(paths, param):
         A_Bioenergy = results[p]["A_Bioenergy"]
         A_Bioco2 = results[p]["A_Bioco2"]
     
-    #Extract forest areas
-    A_lu_forest = np.zeros(A_lu.shape)
-    val_forest = [1,2,3,4,5]
-    for j in val_forest:
-        A_j = A_lu == j
-        A_lu_forest = A_lu_forest + A_j
-    A_lu_forest = np.multiply(A_lu_forest, A_country_area)
-    A_lu_forest = np.multiply(A_lu_forest, A_Notprotected)
-    n_lu_forest = np.sum(A_lu_forest)
-    print (n_lu_forest)    
+    # #Extract forest areas
+    # A_lu_forest = np.zeros(A_lu.shape)
+    # val_forest = [1,2,3,4,5]
+    # for j in val_forest:
+        # A_j = A_lu == j
+        # A_lu_forest = A_lu_forest + A_j
+    # A_lu_forest = np.multiply(A_lu_forest, A_country_area)
+    # A_lu_forest = np.multiply(A_lu_forest, A_Notprotected)
+    # n_lu_forest = np.sum(A_lu_forest)
+    # print (n_lu_forest)    
     
-    IRENA_dict = pd.read_csv(paths["IRENA_dict"], sep=";",index_col = ["Countries shapefile"],usecols=["Countries shapefile","IRENA"])
-    country_name = IRENA_dict["IRENA"][param["country_code"]]
-    print (country_name)
-    #Add Bio potential from forest wood
-    forest = param["Biomass"]["forest"]
-    if n_lu_forest:   
-        production_wood = pd.read_csv(paths["Biomass_Forestry"], index_col = ["Area"],usecols=["Area","Item","Value"])
-        production_wood = production_wood[production_wood.index==country_name].to_numpy()
-        print (production_wood)
-        for row in range(len(production_wood[:,0])):
-            if production_wood[row,0] == "Wood fuel, coniferous":
-                wood_coniferous = production_wood[row,1]
-                print (wood_coniferous)
-            else:
-                wood_coniferous = 0
-            if production_wood[row,0] == "Wood fuel, non-coniferous":
-                wood_nonconiferous = production_wood[row,1]
-                print (wood_nonconiferous)
-            else:
-                wood_nonconiferous = 0
+    # IRENA_dict = pd.read_csv(paths["IRENA_dict"], sep=";",index_col = ["Countries shapefile"],usecols=["Countries shapefile","IRENA"])
+    # country_name = IRENA_dict["IRENA"][param["country_code"]]
+    # print (country_name)
+    # #Add Bio potential from forest wood
+    # forest = param["Biomass"]["forest"]
+    # if n_lu_forest:   
+        # production_wood = pd.read_csv(paths["Biomass_Forestry"], index_col = ["Area"],usecols=["Area","Item","Value"])
+        # production_wood = production_wood[production_wood.index==country_name].to_numpy()
+        # print (production_wood)
+        # for row in range(len(production_wood[:,0])):
+            # if production_wood[row,0] == "Wood fuel, coniferous":
+                # wood_coniferous = production_wood[row,1]
+                # print (wood_coniferous)
+            # else:
+                # wood_coniferous = 0
+            # if production_wood[row,0] == "Wood fuel, non-coniferous":
+                # wood_nonconiferous = production_wood[row,1]
+                # print (wood_nonconiferous)
+            # else:
+                # wood_nonconiferous = 0
                     
-            #Forest Bio Energy
-            energy_lu_forest = A_lu_forest * (wood_coniferous*forest["density, coniferous"] + wood_nonconiferous*forest["density, non-coniferous"])*forest["rpr"]*forest["af"]*forest["lhv"] / n_lu_forest
-            A_Bioenergy = A_Bioenergy + energy_lu_forest
+            # #Forest Bio Energy
+            # energy_lu_forest = A_lu_forest * (wood_coniferous*forest["density, coniferous"] + wood_nonconiferous*forest["density, non-coniferous"])*forest["rpr"]*forest["af"]*forest["lhv"] / n_lu_forest
+            # A_Bioenergy = A_Bioenergy + energy_lu_forest
         
-            #Forest Bio CO2
-            co2_lu_forest = A_lu_forest * (wood_coniferous*forest["density, coniferous"] + wood_nonconiferous*forest["density, non-coniferous"])*forest["rpr"]*forest["af"]*forest["emission factor"] / n_lu_forest
-            A_Bioco2 = A_Bioco2 + co2_lu_forest
+            # #Forest Bio CO2
+            # co2_lu_forest = A_lu_forest * (wood_coniferous*forest["density, coniferous"] + wood_nonconiferous*forest["density, non-coniferous"])*forest["rpr"]*forest["af"]*forest["emission factor"] / n_lu_forest
+            # A_Bioco2 = A_Bioco2 + co2_lu_forest
     
     
-    #Add Bio potential from Livestock
-    n_animal = 0
-    for animal in param["Biomass"]["livestock"]["animal"]:
-        #Extract Livestock numbers
-        with rasterio.open(paths["LS"]+animal+".tif") as src:
-            A_LS_animal = src.read(1)
-        A_LS_animal = np.flipud(A_LS_animal)
-        A_LS_animal = np.multiply(A_LS_animal,A_Notprotected)
-        A_LS_animal = np.multiply(A_LS_animal,A_country_area)
+    # #Add Bio potential from Livestock
+    # n_animal = 0
+    # for animal in param["Biomass"]["livestock"]["animal"]:
+        # #Extract Livestock numbers
+        # with rasterio.open(paths["LS"]+animal+".tif") as src:
+            # A_LS_animal = src.read(1)
+        # A_LS_animal = np.flipud(A_LS_animal)
+        # A_LS_animal = np.multiply(A_LS_animal,A_Notprotected)
+        # A_LS_animal = np.multiply(A_LS_animal,A_country_area)
         
-        #Livestock Bio Energy
-        energy_ls_animal = A_LS_animal * param["Biomass"]["livestock"]["rpr"][n_animal] * param["Biomass"]["livestock"]["af"][n_animal] * param["Biomass"]["livestock"]["lhv"][n_animal]
-        A_Bioenergy = A_Bioenergy + energy_ls_animal
+        # #Livestock Bio Energy
+        # energy_ls_animal = A_LS_animal * param["Biomass"]["livestock"]["rpr"][n_animal] * param["Biomass"]["livestock"]["af"][n_animal] * param["Biomass"]["livestock"]["lhv"][n_animal]
+        # A_Bioenergy = A_Bioenergy + energy_ls_animal
         
-        #Livestock Bio CO2
-        co2_ls_animal = A_LS_animal * param["Biomass"]["livestock"]["rpr"][n_animal] * param["Biomass"]["livestock"]["af"][n_animal] * param["Biomass"]["livestock"]["emission factor"]
-        A_Bioco2 = A_Bioco2 + co2_ls_animal
+        # #Livestock Bio CO2
+        # co2_ls_animal = A_LS_animal * param["Biomass"]["livestock"]["rpr"][n_animal] * param["Biomass"]["livestock"]["af"][n_animal] * param["Biomass"]["livestock"]["emission factor"]
+        # A_Bioco2 = A_Bioco2 + co2_ls_animal
         
-        n_animal = n_animal+1
+        # n_animal = n_animal+1
         
     array2raster(paths["BIOMASS_ENERGY"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_Bioenergy)
     print("files saved: " + paths["BIOMASS_ENERGY"])
@@ -1344,3 +1256,43 @@ def crop_residues_potential(regions, args):
     Bioresults["A_Bioco2"] = A_Bioco2
     
     return Bioresults
+    
+def club_biomass(paths,param):
+
+    Crd_all = param["Crd_all"]
+    GeoRef = param["GeoRef"]
+    res_desired = param["res_desired"]
+    
+    Bioenergy = rasterio.open(paths["BIOMASS_ENERGY"])
+    A_Bioenergy = Bioenergy.read(1)
+    A_Bioenergy_rows, A_Bioenergy_cols = A_Bioenergy.shape
+
+    West = rasterio.open(paths["West"])
+    A_West = West.read(1)
+    A_West_rows, A_West_cols = A_West.shape
+    ind_West = ind_exact_points([West.xy(0,0,offset='ul')[1],West.xy(0,0,offset='ul')[0]], Crd_all, res_desired)
+    A_Bioenergy[A_Bioenergy_rows-ind_West[0]:A_Bioenergy_rows-ind_West[0]+A_West_rows, ind_West[1]:ind_West[1]+A_West_cols] = A_Bioenergy[A_Bioenergy_rows-ind_West[0]:A_Bioenergy_rows-ind_West[0]+A_West_rows, ind_West[1]:ind_West[1]+A_West_cols] + A_West
+    
+    North = rasterio.open(paths["North"])
+    A_North = North.read(1)
+    A_North_rows, A_North_cols = A_North.shape
+    ind_North = ind_exact_points([North.xy(0,0,offset='ul')[1],North.xy(0,0,offset='ul')[0]], Crd_all, res_desired)
+    A_Bioenergy[A_Bioenergy_rows-ind_North[0]:A_Bioenergy_rows-ind_North[0]+A_North_rows, ind_North[1]:ind_North[1]+A_North_cols] = A_Bioenergy[A_Bioenergy_rows-ind_North[0]:A_Bioenergy_rows-ind_North[0]+A_North_rows, ind_North[1]:ind_North[1]+A_North_cols] + A_North
+    
+    East = rasterio.open(paths["East"])
+    A_East = East.read(1)
+    A_East_rows, A_East_cols = A_East.shape
+    ind_East = ind_exact_points([East.xy(0,0,offset='ul')[1],East.xy(0,0,offset='ul')[0]], Crd_all, res_desired)
+    A_Bioenergy[A_Bioenergy_rows-ind_East[0]:A_Bioenergy_rows-ind_East[0]+A_East_rows, ind_East[1]:ind_East[1]+A_East_cols] = A_Bioenergy[A_Bioenergy_rows-ind_East[0]:A_Bioenergy_rows-ind_East[0]+A_East_rows, ind_East[1]:ind_East[1]+A_East_cols] + A_East
+    
+    South = rasterio.open(paths["South"])
+    A_South = South.read(1)
+    A_South_rows, A_South_cols = A_South.shape
+    ind_South = ind_exact_points([South.xy(0,0,offset='ul')[1],South.xy(0,0,offset='ul')[0]], Crd_all, res_desired)
+    A_Bioenergy[A_Bioenergy_rows-ind_South[0]:A_Bioenergy_rows-ind_South[0]+A_South_rows, ind_South[1]:ind_South[1]+A_South_cols] = A_Bioenergy[A_Bioenergy_rows-ind_South[0]:A_Bioenergy_rows-ind_South[0]+A_South_rows, ind_South[1]:ind_South[1]+A_South_cols] + A_South
+    
+    A_Bioenergy = np.flipud(A_Bioenergy)    
+    array2raster(paths["CLUB_CO2"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_Bioenergy)
+    print("files saved: " + paths["CLUB_CO2"])
+    create_json(paths["CLUB_CO2"], param, ["region_name", "landuse", "Biomass", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "BIOMASS_ENERGY"])
+    

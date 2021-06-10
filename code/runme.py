@@ -1,15 +1,15 @@
 from lib.correction_functions import generate_wind_correction
 from lib.initialization import initialization
-from lib.input_maps import generate_maps_for_scope
-from lib.potential import calculate_full_load_hours, mask_potential_maps, weight_potential_maps, report_potentials
+from lib.input_maps import generate_maps_for_scope, generate_buffered_maps
+from lib.potential import calculate_full_load_hours, mask_potential_maps, weight_potential_maps, report_potentials, generate_biomass_production, club_biomass
 from lib.regression import get_regression_coefficients
-# from lib.time_series import (
-#     find_representative_locations,
-#     generate_time_series_for_representative_locations,
-#     generate_time_series_for_regions,
-#     generate_time_series_for_specific_locations,
-#     generate_time_series_for_full_scope
-#)
+from lib.time_series import (
+    find_representative_locations,
+    generate_time_series_for_representative_locations,
+    generate_time_series_for_regions,
+    generate_time_series_for_specific_locations,
+    generate_time_series_for_full_scope
+)
 
 if __name__ == "__main__":
 
@@ -17,11 +17,19 @@ if __name__ == "__main__":
 
     # Generate input raster maps
     #generate_maps_for_scope(paths, param)
-
+    
+    # Generate buffer maps
+    #generate_buffered_maps(paths,param)
+    
+    
 
      #Wind speed correction
     #if "WindOn" in param["technology"] or "WindOff" in param["technology"]:
         #generate_wind_correction(paths, param)
+        
+    if "Biomass" in param["technology"]:
+        #generate_biomass_production(paths, param)
+        club_biomass(paths,param)
 
     for tech in param["technology"]:
         print("Tech: " + tech)

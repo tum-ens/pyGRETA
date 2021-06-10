@@ -1,5 +1,5 @@
-from .correction_functions import clean_IRENA_summary
-from .util import *
+from lib.correction_functions import clean_IRENA_summary
+from lib.util import *
 
 
 def pyomo_regression_model():

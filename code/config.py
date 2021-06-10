@@ -116,14 +116,14 @@ def scope_paths_and_parameters(paths, param):
 
     # Name tags for the scope and the subregions
     param["region_name"] = "Ecuador_gwa"  # Name tag of the spatial scope
-    param["subregions_name"] = "Ecuador_level2"  # Name tag of the subregions
+    param["subregions_name"] = "Ecuador_level0"  # Name tag of the subregions
     param["country_code"] = "ECU" #used for reading GWA tiff file while redistribution
 
     # Year
     param["year"] = 2019
 
     # Technologies
-    param["technology"] = ["WindOn"]  # ["PV", "CSP", "WindOn", "WindOff"]
+    param["technology"] = ["WindOff"]  # ["PV", "CSP", "WindOn", "WindOff"]
 
     return paths, param
 

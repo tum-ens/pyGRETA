@@ -16,10 +16,10 @@ if __name__ == "__main__":
     paths, param = initialization()
 
     # Generate input raster maps
-    #generate_maps_for_scope(paths, param)
+    # generate_maps_for_scope(paths, param)
     
     # Generate buffer maps
-    #generate_buffered_maps(paths,param)
+    # generate_buffered_maps(paths,param)
     
     
 

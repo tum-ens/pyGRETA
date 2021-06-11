@@ -152,7 +152,7 @@ def calculate_full_load_hours(paths, param, tech):
             for row,result in enumerate(results):
                 FLH[(list_rows[sublist][0]+row)*200:(list_rows[sublist][0]+row+1)*200,:] = result
             
-        FLH[A_country_area==0] = float("nan")
+        # FLH[A_country_area==0] = float("nan")
         FLH = np.flipud(FLH)
         hdf5storage.writes({"FLH": FLH}, paths[tech]["FLH"], store_python_metadata=True, matlab_compatible=True)
 
@@ -364,14 +364,15 @@ def calc_FLH_windon(row, args):
     
     turbine = param[tech]["technical"]
 
-    FLH = np.zeros([200,n_high])
+    FLH = np.zeros([200, n_high])
     
     #No of pixels from gwa for each pixel from merra
     Num_pix = (res_weather[0] * res_weather[1]) / (res_desired[0] * res_desired[1])
 
     for j in range(n_low):
+    # for j in range(5,6):
         print(str(row)+"_"+str(j))
-        FLH_part = np.zeros([200,250])
+        FLH_part = np.zeros([200, 250])
         reMerra = redistribution_array(param, paths, merraData[row,j,:],row,j,b_xmin[row,j],b_xmax[row,j],b_ymin[row,j],b_ymax[row,j],GWA_array,x_gwa,y_gwa,Num_pix)
         reRaster = np.flipud(rasterData)
         if np.sum(reMerra):
@@ -429,7 +430,7 @@ def redistribution_array(param, paths,merraData,i,j,xmin,xmax,ymin,ymax,GWA_arra
     # 1) Import
     # GWA_array = rasterio.open(paths["GWA_global"]).read(1)      # Import wind data from Global Wind Atlas
     # GWA_array[np.isnan(GWA_array)] = 0    # Why are there nan values?
-
+    #
     # x_gwa = hdf5storage.read("GWA_X", paths["GWA_X"])   # X-coordinate of each pixel of Global Wind Atlas Data
     # y_gwa = hdf5storage.read("GWA_Y", paths["GWA_Y"])   # Y-coordinate of each pixel of Global Wind Atlas Data
 
@@ -448,8 +449,6 @@ def redistribution_array(param, paths,merraData,i,j,xmin,xmax,ymin,ymax,GWA_arra
 
 
     # 3) Conversion
-    # ToDo: Do the conversion only on the smaller array because all values out of the selection_index are zero or do it with gwa_cut
-    # GWA_array = np.power(GWA_array, 3)      # Convert from wind speed to wind energy
 
 
     # 4) Redistribute MERRA data
@@ -468,11 +467,20 @@ def redistribution_array(param, paths,merraData,i,j,xmin,xmax,ymin,ymax,GWA_arra
 
         gwa_cut = GWA_array[K_first:K_last+1, L_first:L_last+1]
         # Todo: value_num_cells / Num_pix ? # E = E*value_num_cells/Num_pix
-        gwa_cut_energy = np.power(gwa_cut, 3)      # Convert from wind speed to wind energy
-        merra_cut_energy_weighting = gwa_cut / np.sum(gwa_cut_energy)    # Compute the weighting matrix how the energy is distributed within Global Wind Atlas data
+        # gwa_cut_energy = np.power(gwa_cut, 3)      # Convert from wind speed to wind energy
+        gwa_cut_energy = gwa_cut
+        sum = np.sum(gwa_cut_energy)
+        merra_cut_energy_weighting = gwa_cut_energy / np.sum(gwa_cut_energy)    # Compute the weighting matrix how the energy is distributed within Global Wind Atlas data
         merra_cut_speed_weighting = np.cbrt(merra_cut_energy_weighting)     # Convert the weighting matrix from energy to wind speeds
-        merra_cut_speed_redistributed = np.repeat(merra_cut_speed_weighting[..., None], 8760, axis=2) * merraData *np.cbrt(value_num_cells / Num_pix)    # Expand the Merra time series of this pixle weighted by energy based distribution of Global Wind Atlas
-        reMerra[i_offset:i_offset + K_last + 1 - K_first, j_offset:j_offset + L_last + 1 - L_first, :8760] = merra_cut_speed_redistributed
+        ratio = np.cbrt(value_num_cells / Num_pix)
+        expansion = np.repeat(merra_cut_speed_weighting[..., None], 8760, axis=2)
+        merra_cut_speed_redistributed = np.repeat(merra_cut_speed_weighting[..., None], 8760, axis=2) * merraData * np.cbrt(value_num_cells)    # Expand the Merra time series of this pixle weighted by energy based distribution of Global Wind Atlas
+        reMerra[i_offset:i_offset + K_last + 1 - K_first, j_offset:j_offset + L_last + 1 - L_first, :] = merra_cut_speed_redistributed
+        # for i in range(20):
+        #     print(merra_cut_speed_redistributed[:, :, i])
+        #
+        # for i in range(20):
+        #     print(reMerra[:,:,i])
 
     # --- old code by Thushara
 

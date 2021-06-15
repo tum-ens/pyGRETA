@@ -1,5 +1,6 @@
 from lib.physical_models import calc_CF_solar, calc_CF_windon, calc_CF_windoff
 from lib.spatial_functions import *
+import multiprocessing as mp
 
 
 def calculate_full_load_hours(paths, param, tech):
@@ -128,8 +129,7 @@ def calculate_full_load_hours(paths, param, tech):
             print("files saved:" + changeExt2tif(paths[tech]["FLH"]))
     
     elif tech in ["WindOn"]:
-        FLH = np.full((m_high, n_high), np.nan)
-        
+
         merraData = merraData["W50M"][::-1,:,:]
         rasterData = rasterData["A_cf"]
         
@@ -139,20 +139,35 @@ def calculate_full_load_hours(paths, param, tech):
         where_are_NaNs = np.isnan(GWA_array)
         GWA_array[where_are_NaNs] = 0
 
-        #multiprocessing #status: 20210510
-        list_rows = np.arange(0,m_low)
-        list_rows = np.array_split(list_rows,(m_low//nproc)+1)
-        param["status_bar_limit"] = list_rows[0][-1]
-        
-        for sublist in range(len(list_rows)):
-            results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(
-                calc_FLH_windon, product(list_rows[sublist], [[param, tech, paths, rasterData, merraData, GWA_array]])
-            )
-            #collecting results
-            for row,result in enumerate(results):
-                FLH[(list_rows[sublist][0]+row)*200:(list_rows[sublist][0]+row+1)*200,:] = result
-            
-        # FLH[A_country_area==0] = float("nan")
+        # param["status_bar_limit"] = list_rows_splitted[0][-1] # ToDo: Wo we need this?
+
+        # -------------------------------------------------------------------------------------
+        # Multiprocessing by Patrick 20210615
+
+        list_rows = np.arange(0, m_low)     # All rows within MERRA data
+        list_rows_splitted = np.array_split(list_rows, nproc)   # Splitted list acording to the number of parrallel processes
+
+        processes = []  # Store all single process of multiprocessing
+        list_results = mp.Manager().list()     # Multiprocess list for the computed FLH of each process
+        for sublist in list_rows_splitted:  # Run the 'calc_FLH_windon' for each of the splitted rows
+            p = mp.Process(target=calc_FLH_windon, args=([param, tech, paths, rasterData, merraData, GWA_array, sublist], list_results))
+            processes.append(p)
+
+        for p in processes:
+            p.start()   # Start all processes
+
+        for p in processes:
+            p.join()    # Wait until all processes are finished
+        print('All processes finished')
+
+        FLH = np.full((m_high, n_high), np.nan)
+        for element in list_results:
+            FLH[element['rows'], :] = element['FLH']    # Combine the results of each process into the big array 'FLH'
+        print('Results also finsished')
+
+        # ------------------------------------------------------------------------------------
+
+        # FLH[A_country_area==0] = float("nan")python
         FLH = np.flipud(FLH)
         hdf5storage.writes({"FLH": FLH}, paths[tech]["FLH"], store_python_metadata=True, matlab_compatible=True)
 
@@ -163,6 +178,15 @@ def calculate_full_load_hours(paths, param, tech):
         print("files saved:" + changeExt2tif(paths[tech]["FLH"]))
 
     timecheck("End")
+
+    # pool = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit)
+    # for sublist in list_rows_splitted:
+    #     data = [[param, tech, paths, rasterData, merraData, GWA_array, sublist]]
+    #     results = pool.starmap(calc_FLH_windon, param, tech, paths, rasterData, merraData, GWA_array, sublist)
+    #     # starmap(calc_FLH_windon, list_rows_splitted[sublist], [param, tech, paths, rasterData, merraData, GWA_array])
+    #     #collecting results
+    # for row,result in enumerate(results):       # FIXME are you assuming that the results are in the same order as in the list_rows?
+    #     FLH[(list_rows_splitted[sublist][0]+row)*200:(list_rows_splitted[sublist][0]+row+1)*200,:] = result
 
 
 def get_merra_raster_data(paths, param, tech):
@@ -318,7 +342,8 @@ def calc_FLH_windoff(hours, args):
     return FLH
 
 
-def calc_FLH_windon(row, args):
+# def calc_FLH_windon(row, args):
+def calc_FLH_windon(args, list_results):
     """
     This function computes the full-load hours for all valid pixels specified in *ind_nz* in *param*. Due to parallel processing,
     most of the inputs are collected in the list *args*.
@@ -339,13 +364,14 @@ def calc_FLH_windon(row, args):
     """
     # Decomposing the tuple args
     param = args[0]
-    paths = args[2]
     tech = args[1]
+    paths = args[2]
     rasterData = args[3]
     merraData = args[4]
     GWA_array = args[5]
+    rows = args[6]
 
-    b_xmin = hdf5storage.read("MERRA_XMIN", paths["MERRA_XMIN"])
+    b_xmin = hdf5storage.read("MERRA_XMIN", paths["MERRA_XMIN"])    #ToDo: move into calculate_fullload_hours?
     b_xmax = hdf5storage.read("MERRA_XMAX", paths["MERRA_XMAX"])
     b_ymin = hdf5storage.read("MERRA_YMIN", paths["MERRA_YMIN"])
     b_ymax = hdf5storage.read("MERRA_YMAX", paths["MERRA_YMAX"])
@@ -354,40 +380,39 @@ def calc_FLH_windon(row, args):
     y_gwa = hdf5storage.read("GWA_Y", paths["GWA_Y"])    
     
     reg_ind = param["Ind_nz"]
-    
     n_low = param["n_low"]
     res_weather = param["res_weather"]
     res_desired = param["res_desired"]
-    
     m_high = param["m_high"]
     n_high = param["n_high"]
     
     turbine = param[tech]["technical"]
 
-    FLH = np.zeros([200, n_high])
-    
-    #No of pixels from gwa for each pixel from merra
-    Num_pix = (res_weather[0] * res_weather[1]) / (res_desired[0] * res_desired[1])
+    FLH = np.zeros([len(rows)*200, n_high])
 
-    for j in range(n_low):
-    # for j in range(5,6):
-        print(str(row)+"_"+str(j))
-        FLH_part = np.zeros([200, 250])
-        reMerra = redistribution_array(param, paths, merraData[row,j,:],row,j,b_xmin[row,j],b_xmax[row,j],b_ymin[row,j],b_ymax[row,j],GWA_array,x_gwa,y_gwa,Num_pix)
-        reRaster = np.flipud(rasterData)
-        if np.sum(reMerra):
-            for hour in range(8760):
-                CF = calc_CF_windon(hour, turbine, reMerra, reRaster[row*200:((row+1)*200),j*250:((j+1)*250)])
+    reRaster = np.flipud(rasterData)  # ToDo: out of loop?
+    for row in rows:
+        for j in range(n_low):
+            print(str(row)+"_"+str(j))
 
-                # Aggregates CF to obtain the yearly FLH
-                CF[np.isnan(CF)] = 0
-                FLH_part = FLH_part + CF
-            FLH[:,(j*250):((j+1)*250)] = FLH_part
+            FLH_part = np.zeros([200, 250])
+            reMerra = redistribution_array(param, paths, merraData[row,j,:],row,j,b_xmin[row,j],b_xmax[row,j],b_ymin[row,j],b_ymax[row,j],GWA_array,x_gwa,y_gwa)
 
-    return FLH
+            if np.sum(reMerra):
+                for hour in range(8760):
+                    CF = calc_CF_windon(hour, turbine, reMerra, reRaster[row*200:((row+1)*200),j*250:((j+1)*250)])
+                    CF[np.isnan(CF)] = 0
+                    FLH_part = FLH_part + CF    # Aggregates CF to obtain the yearly FLH
+
+                row_difference = row-rows[0]
+                FLH[(row_difference*200):((row_difference+1)*200), (j*250):((j+1)*250)] = FLH_part
+
+    rows_higherResolution = np.arange(rows[0]*200, (rows[-1]+1)*200)    # Extend the rows due to the higher resolution after redistribution
+    data_tuple = { 'rows': rows_higherResolution, 'FLH': FLH}
+    list_results.append(data_tuple)    # Return the results with the corresponding rows of this process
 
 
-def redistribution_array(param, paths,merraData,i,j,xmin,xmax,ymin,ymax,GWA_array,x_gwa,y_gwa,Num_pix):
+def redistribution_array(param, paths,merraData,i,j,xmin,xmax,ymin,ymax,GWA_array,x_gwa,y_gwa):
 
     """
     What does this function do?
@@ -472,10 +497,11 @@ def redistribution_array(param, paths,merraData,i,j,xmin,xmax,ymin,ymax,GWA_arra
         sum = np.sum(gwa_cut_energy)
         merra_cut_energy_weighting = gwa_cut_energy / np.sum(gwa_cut_energy)    # Compute the weighting matrix how the energy is distributed within Global Wind Atlas data
         merra_cut_speed_weighting = np.cbrt(merra_cut_energy_weighting)     # Convert the weighting matrix from energy to wind speeds
-        ratio = np.cbrt(value_num_cells / Num_pix)
-        expansion = np.repeat(merra_cut_speed_weighting[..., None], 8760, axis=2)
+        # ratio = np.cbrt(value_num_cells / Num_pix)
+        # expansion = np.repeat(merra_cut_speed_weighting[..., None], 8760, axis=2)
         merra_cut_speed_redistributed = np.repeat(merra_cut_speed_weighting[..., None], 8760, axis=2) * merraData * np.cbrt(value_num_cells)    # Expand the Merra time series of this pixle weighted by energy based distribution of Global Wind Atlas
         reMerra[i_offset:i_offset + K_last + 1 - K_first, j_offset:j_offset + L_last + 1 - L_first, :] = merra_cut_speed_redistributed
+        test = 55
         # for i in range(20):
         #     print(merra_cut_speed_redistributed[:, :, i])
         #

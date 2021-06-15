@@ -503,15 +503,9 @@ def calc_CF_windon(hour, turbine, merraData, rasterData):
 
     # Calculate the wind speed a the desired height
     w_new_h = np.multiply(w50m_h,rasterData)
-    # if (rasterData.sum()):
-    #     print('Geil_raster!')
-    # b = w_new_h.sum()
-    # if(w_new_h.sum()):
-    #     print('Geil_w_new!')
     del w50m_h
 
     # Calculate the capacity factor
-
     a = turbine["w_in"] ** 3 / (turbine["w_in"] ** 3 - turbine["w_r"] ** 3)
     b = 1 / (turbine["w_r"] ** 3 - turbine["w_in"] ** 3)
 

@@ -145,7 +145,11 @@ def calculate_full_load_hours(paths, param, tech):
         # Multiprocessing by Patrick 20210615
 
         list_rows = np.arange(0, m_low)     # All rows within MERRA data
+        if nproc > m_low:
+            nproc = m_low   #   If there are more processes than rows available
         list_rows_splitted = np.array_split(list_rows, nproc)   # Splitted list acording to the number of parrallel processes
+        print('# of processes: ' + str(len(list_rows_splitted)))
+        print(list_rows_splitted)
 
         processes = []  # Store all single process of multiprocessing
         list_results = mp.Manager().list()     # Multiprocess list for the computed FLH of each process
@@ -154,7 +158,7 @@ def calculate_full_load_hours(paths, param, tech):
             processes.append(p)
 
         for p in processes:
-            p.start()   # Start all processes
+            p.start()   # Start all single processes
 
         for p in processes:
             p.join()    # Wait until all processes are finished
@@ -178,15 +182,6 @@ def calculate_full_load_hours(paths, param, tech):
         print("files saved:" + changeExt2tif(paths[tech]["FLH"]))
 
     timecheck("End")
-
-    # pool = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit)
-    # for sublist in list_rows_splitted:
-    #     data = [[param, tech, paths, rasterData, merraData, GWA_array, sublist]]
-    #     results = pool.starmap(calc_FLH_windon, param, tech, paths, rasterData, merraData, GWA_array, sublist)
-    #     # starmap(calc_FLH_windon, list_rows_splitted[sublist], [param, tech, paths, rasterData, merraData, GWA_array])
-    #     #collecting results
-    # for row,result in enumerate(results):       # FIXME are you assuming that the results are in the same order as in the list_rows?
-    #     FLH[(list_rows_splitted[sublist][0]+row)*200:(list_rows_splitted[sublist][0]+row+1)*200,:] = result
 
 
 def get_merra_raster_data(paths, param, tech):
@@ -385,34 +380,36 @@ def calc_FLH_windon(args, list_results):
     res_desired = param["res_desired"]
     m_high = param["m_high"]
     n_high = param["n_high"]
-    
     turbine = param[tech]["technical"]
 
     FLH = np.zeros([len(rows)*200, n_high])
-
     reRaster = np.flipud(rasterData)  # ToDo: out of loop?
+
+    #for row in range(10,11):
     for row in rows:
-        for j in range(n_low):
-            print(str(row)+"_"+str(j))
+        #for column in range(9,13):
+        for column in range(n_low):
+            print(str(row)+"_"+str(column))
 
             FLH_part = np.zeros([200, 250])
-            reMerra = redistribution_array(param, paths, merraData[row,j,:],row,j,b_xmin[row,j],b_xmax[row,j],b_ymin[row,j],b_ymax[row,j],GWA_array,x_gwa,y_gwa)
+            reMerra = redistribution_array(param, paths, merraData[row,column,:],row,column,b_xmin[row,column],b_xmax[row,column],b_ymin[row,column],b_ymax[row,column],GWA_array,x_gwa,y_gwa)
 
             if np.sum(reMerra):
                 for hour in range(8760):
-                    CF = calc_CF_windon(hour, turbine, reMerra, reRaster[row*200:((row+1)*200),j*250:((j+1)*250)])
+                    CF = calc_CF_windon(hour, turbine, reMerra, reRaster[row*200:((row+1)*200),column*250:((column+1)*250)])
                     CF[np.isnan(CF)] = 0
                     FLH_part = FLH_part + CF    # Aggregates CF to obtain the yearly FLH
 
                 row_difference = row-rows[0]
-                FLH[(row_difference*200):((row_difference+1)*200), (j*250):((j+1)*250)] = FLH_part
+                FLH[(row_difference*200):((row_difference+1)*200), (column*250):((column+1)*250)] = FLH_part
+                test=2
 
     rows_higherResolution = np.arange(rows[0]*200, (rows[-1]+1)*200)    # Extend the rows due to the higher resolution after redistribution
     data_tuple = { 'rows': rows_higherResolution, 'FLH': FLH}
     list_results.append(data_tuple)    # Return the results with the corresponding rows of this process
 
 
-def redistribution_array(param, paths,merraData,i,j,xmin,xmax,ymin,ymax,GWA_array,x_gwa,y_gwa):
+def redistribution_array(param, paths, merraData, i, j, xmin, xmax, ymin, ymax, GWA_array, x_gwa, y_gwa):
 
     """
     What does this function do?
@@ -452,19 +449,11 @@ def redistribution_array(param, paths,merraData,i,j,xmin,xmax,ymin,ymax,GWA_arra
     ToDo: Where do the borders/limits come from? -> not shape file ?!?
     """
 
-    # 1) Import
-    # GWA_array = rasterio.open(paths["GWA_global"]).read(1)      # Import wind data from Global Wind Atlas
-    # GWA_array[np.isnan(GWA_array)] = 0    # Why are there nan values?
-    #
-    # x_gwa = hdf5storage.read("GWA_X", paths["GWA_X"])   # X-coordinate of each pixel of Global Wind Atlas Data
-    # y_gwa = hdf5storage.read("GWA_Y", paths["GWA_Y"])   # Y-coordinate of each pixel of Global Wind Atlas Data
-
-
-    # 2) Selection
+    # 1) Selection
+    GWA_array_copy = GWA_array.copy()  # Create copy so that the origin array doesnt get changed
     selection_index = (xmin <= x_gwa) & (x_gwa < xmax) & (ymin <= y_gwa) & (y_gwa < ymax)   # Determine the pixels that are inbetween the range
-    GWA_array[np.invert(selection_index)] = 0  # Set pixel not covered by the shapfile to zero
-    value_num_cells = np.count_nonzero(GWA_array)       # Number of non-zero pixels
-    #print (value_num_cells)
+    GWA_array_copy[np.invert(selection_index)] = 0  # Set pixel not covered by the shapfile to zero
+    value_num_cells = np.count_nonzero(GWA_array_copy)       # Number of non-zero pixels
 
     coordinates_nonzero_pixels_x, coordinates_nonzero_pixels_y = selection_index.nonzero() # Determine the coordinates of non-zero pixels in order to determine the outer rows and columns. Tuple(x,y)
     K_first = coordinates_nonzero_pixels_x[0]      # First x-coordinate of non-zero pixels
@@ -472,11 +461,7 @@ def redistribution_array(param, paths,merraData,i,j,xmin,xmax,ymin,ymax,GWA_arra
     K_last = coordinates_nonzero_pixels_x[-1]      # Last x-coordinate of non-zero pixels
     L_last = coordinates_nonzero_pixels_y[-1]      # Last y-coordinate of non-zero pixels
 
-
-    # 3) Conversion
-
-
-    # 4) Redistribute MERRA data
+    # 2) Redistribute MERRA data
     reMerra = np.zeros([200, 250, 8760])
 
     if np.sum(GWA_array):
@@ -490,112 +475,13 @@ def redistribution_array(param, paths,merraData,i,j,xmin,xmax,ymin,ymax,GWA_arra
             if j < param["n_low"]/2:
                 j_offset = 250 - (L_last+1-L_first)
 
-        gwa_cut = GWA_array[K_first:K_last+1, L_first:L_last+1]
-        # Todo: value_num_cells / Num_pix ? # E = E*value_num_cells/Num_pix
-        # gwa_cut_energy = np.power(gwa_cut, 3)      # Convert from wind speed to wind energy
-        gwa_cut_energy = gwa_cut
-        sum = np.sum(gwa_cut_energy)
+        gwa_cut_energy = GWA_array_copy[K_first:K_last+1, L_first:L_last+1]     # Computation only for the nonzero values
         merra_cut_energy_weighting = gwa_cut_energy / np.sum(gwa_cut_energy)    # Compute the weighting matrix how the energy is distributed within Global Wind Atlas data
         merra_cut_speed_weighting = np.cbrt(merra_cut_energy_weighting)     # Convert the weighting matrix from energy to wind speeds
-        # ratio = np.cbrt(value_num_cells / Num_pix)
-        # expansion = np.repeat(merra_cut_speed_weighting[..., None], 8760, axis=2)
         merra_cut_speed_redistributed = np.repeat(merra_cut_speed_weighting[..., None], 8760, axis=2) * merraData * np.cbrt(value_num_cells)    # Expand the Merra time series of this pixle weighted by energy based distribution of Global Wind Atlas
         reMerra[i_offset:i_offset + K_last + 1 - K_first, j_offset:j_offset + L_last + 1 - L_first, :] = merra_cut_speed_redistributed
-        test = 55
-        # for i in range(20):
-        #     print(merra_cut_speed_redistributed[:, :, i])
-        #
-        # for i in range(20):
-        #     print(reMerra[:,:,i])
-
-    # --- old code by Thushara
-
-    # gwa_rows, gwa_cols = GWA_array.shape
-    #
-    # gwa_value = np.zeros([gwa_rows,gwa_cols])
-    #
-    # total_num_cells = 0
-    # value_num_cells = 0
-    #
-    # for k in range(gwa_rows):
-    #     for l in range(gwa_cols):
-    #         if xmin <= x_gwa[k,l] < xmax and ymin <= y_gwa[k,l] < ymax:
-    #             gwa_value[k,l] = GWA_array[k,l]
-    #             total_num_cells = total_num_cells + 1
-    #             if gwa_value[k,l]:
-    #                 value_num_cells = value_num_cells+1
-    #             if total_num_cells == 1:
-    #                 K_first = k
-    #                 L_first = l
-    #             K_last = k
-    #             L_last = l
-    #
-    # reMerra = np.zeros([200,250,8760])
-    # #print (value_num_cells)
-    # if np.sum(gwa_value):
-    #     gwa_cut = gwa_value[K_first:K_last+1,L_first:L_last+1]
-    #     i_offset = 0
-    #     j_offset = 0
-    #
-    #     if K_last+1-K_first != 200:
-    #         if i < param["m_low"]/2:
-    #             i_offset = 200 - (K_last+1-K_first)
-    #     if L_last+1-L_first != 250:
-    #         if j < param["n_low"]/2:
-    #             j_offset = 250 - (L_last+1-L_first)
-    #     for h in range(8760):
-    #         V = merraData[h]
-    #         E = V**3
-    #         E = E*value_num_cells/Num_pix
-    #         merra_cut = gwa_cut/np.sum(gwa_cut)*E
-    #         merra_cut = np.cbrt(merra_cut*Num_pix)
-    #         reMerra[i_offset:i_offset+K_last+1-K_first,j_offset:j_offset+L_last+1-L_first,h] = merra_cut
 
     return reMerra
-
-    # gwa_rows, gwa_cols = GWA_array.shape
-    
-    # gwa_value = np.zeros([gwa_rows,gwa_cols])
-    
-    # total_num_cells = 0
-    # value_num_cells = 0
-
-    # for k in range(gwa_rows):
-        # for l in range(gwa_cols):
-            # if xmin <= x_gwa[k,l] < xmax and ymin <= y_gwa[k,l] < ymax:
-                # gwa_value[k,l] = GWA_array[k,l]
-                # total_num_cells = total_num_cells + 1
-                # if gwa_value[k,l]:
-                    # value_num_cells = value_num_cells+1
-                # if total_num_cells == 1:
-                    # K_first = k
-                    # L_first = l
-                # K_last = k
-                # L_last = l
-                    
-    # reMerra = np.zeros([200,250,8760])
-    # #print (value_num_cells)        
-    # if np.sum(gwa_value):
-        # gwa_cut = gwa_value[K_first:K_last+1,L_first:L_last+1]
-        # i_offset = 0
-        # j_offset = 0
-
-        # if K_last+1-K_first != 200:
-            # if i < param["m_low"]/2:
-                # i_offset = 200 - (K_last+1-K_first)
-        # if L_last+1-L_first != 250:
-            # if j < param["n_low"]/2:
-                # j_offset = 250 - (L_last+1-L_first)
-        # for h in range(8760):
-            # V = merraData[h]
-            # E = V**3
-            # E = E*value_num_cells/Num_pix      
-            # merra_cut = gwa_cut/np.sum(gwa_cut)*E
-            # merra_cut = np.cbrt(merra_cut*Num_pix)
-            # reMerra[i_offset:i_offset+K_last+1-K_first,j_offset:j_offset+L_last+1-L_first,h] = merra_cut
-
-    # return reMerra
-
 
 
 def mask_potential_maps(paths, param, tech):

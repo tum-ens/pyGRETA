@@ -144,7 +144,7 @@ def computation_parameters(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 6
+    param["nproc"] = 36
     param["CPU_limit"] = True
     return param
 

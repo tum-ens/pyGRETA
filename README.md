@@ -1,6 +1,6 @@
 # pyGRETA
 <div align="left">
-<img src="doc\img\pyGRETA_logo.png" alt="pyGRETA_logo" width="80px">
+<img src="doc\img\pyGRETA_logo.png" alt="pyGRETA_logo" width="160px">
 </div>
 
 [![Documentation Status](https://readthedocs.org/projects/pygreta/badge/?version=latest)](http://pyGRETA.readthedocs.io/en/latest/?badge=latest)

@@ -2,7 +2,7 @@
 pyGRETA
 =======
 .. figure:: img/pyGRETA_logo.png
-   :width: 100%
+   :width: 20%
    :align: center
    :alt: pyGRETA_logo
 --------------------------------------------------

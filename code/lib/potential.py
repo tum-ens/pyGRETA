@@ -30,6 +30,7 @@ def calculate_full_load_hours(paths, param, tech):
     m_high = param["m_high"]
     n_high = param["n_high"]
     m_low = param["m_low"]
+    n_low = param["n_low"]
     CPU_limit = np.full((1, nproc), param["CPU_limit"])
     GeoRef = param["GeoRef"]
     res_desired = param["res_desired"]
@@ -143,19 +144,33 @@ def calculate_full_load_hours(paths, param, tech):
 
         # -------------------------------------------------------------------------------------
         # Multiprocessing by Patrick 20210615
+        # FIXME Import what?
+        b_xmin = hdf5storage.read("MERRA_XMIN", paths["MERRA_XMIN"])  # ToDo: move into calculate_fullload_hours? # ToDo: Put outside of function?
+        b_xmax = hdf5storage.read("MERRA_XMAX", paths["MERRA_XMAX"])
+        b_ymin = hdf5storage.read("MERRA_YMIN", paths["MERRA_YMIN"])
+        b_ymax = hdf5storage.read("MERRA_YMAX", paths["MERRA_YMAX"])
+
+        # FIXME Import What?
+        x_gwa = hdf5storage.read("GWA_X", paths["GWA_X"])
+        y_gwa = hdf5storage.read("GWA_Y", paths["GWA_Y"])
 
 
-        list_rows = np.arange(0, m_low)     # All rows within MERRA data
-        if nproc > m_low:
-            nproc = m_low   # Limit the number of processes to the number of rows
-        list_rows_splitted = np.array_split(list_rows, nproc)   # Splitted list acording to the number of parrallel processes
-        print('# of processes: ' + str(len(list_rows_splitted)))
+        list_pixles = np.arange(n_low*m_low)     # All pixles within MERRA data
+        # list_pixles = np.arange(100, 110) # debuging
+
+        list_pixles_splitted = np.array_split(list_pixles, nproc)   # Splitted list acording to the number of parrallel processes
+        print('# of processes: ' + str(len(list_pixles_splitted)))
         # print(list_rows_splitted)
 
         processes = []  # Store all single process of multiprocessing
-        list_results = mp.Manager().list()     # Multiprocess list for the computed FLH of each process
-        for sublist in list_rows_splitted:  # Run the 'calc_FLH_windon' for each of the splitted rows
-            p = mp.Process(target=calc_FLH_windon, args=([param, tech, paths, rasterData, merraData, GWA_array, sublist], list_results))
+        list_results = mp.Array('f', m_high*n_high, lock=False)
+        FLH = np.frombuffer(list_results, dtype=np.float32).reshape(m_high, n_high)
+        # np.copyto(FLH, np.full((m_high, n_high), np.nan))
+        FLH[:] = np.nan
+
+
+        for pixles in list_pixles_splitted:  # Run the 'calc_FLH_windon' for each of the splitted rows
+            p = mp.Process(target=calc_FLH_windon, args=(param, tech, paths, rasterData, merraData, GWA_array, b_xmin, b_xmax, b_ymin, b_ymax, x_gwa, y_gwa, pixles, list_results))
             processes.append(p)
 
         for p in processes:
@@ -164,11 +179,6 @@ def calculate_full_load_hours(paths, param, tech):
         for p in processes:
             p.join()    # Wait until all processes are finished
         print('All processes finished')
-
-        FLH = np.full((m_high, n_high), np.nan)
-        for element in list_results:
-            FLH[element['rows'], :] = element['FLH']    # Combine the results of each process into the big array 'FLH'
-        print('Results also finsished')
 
         # ------------------------------------------------------------------------------------
 
@@ -339,7 +349,7 @@ def calc_FLH_windoff(hours, args):
 
 
 # def calc_FLH_windon(row, args):
-def calc_FLH_windon(args, list_results):
+def calc_FLH_windon(param, tech, paths, rasterData, merraData, GWA_array, b_xmin, b_xmax, b_ymin, b_ymax, x_gwa, y_gwa, pixles, list_results):
     """
     This function computes the full-load hours for all valid pixels specified in *ind_nz* in *param*. Due to parallel processing,
     most of the inputs are collected in the list *args*.
@@ -359,58 +369,57 @@ def calc_FLH_windon(args, list_results):
     :rtype: numpy array
     """
     # Decomposing the tuple args
-    param = args[0]
-    tech = args[1]
-    paths = args[2]
-    rasterData = args[3]
-    merraData = args[4]
-    GWA_array = args[5]
-    rows = args[6]
+    # param = args[0]
+    # tech = args[1]
+    # paths = args[2]
+    # rasterData = args[3]
+    # merraData = args[4]
+    # GWA_array = args[5]
+    # pixles = args[6]
 
-    # ToDo: Put outside of function?
-    b_xmin = hdf5storage.read("MERRA_XMIN", paths["MERRA_XMIN"])    #ToDo: move into calculate_fullload_hours?
-    b_xmax = hdf5storage.read("MERRA_XMAX", paths["MERRA_XMAX"])
-    b_ymin = hdf5storage.read("MERRA_YMIN", paths["MERRA_YMIN"])
-    b_ymax = hdf5storage.read("MERRA_YMAX", paths["MERRA_YMAX"])
 
-    x_gwa = hdf5storage.read("GWA_X", paths["GWA_X"])
-    y_gwa = hdf5storage.read("GWA_Y", paths["GWA_Y"])    
     
-    reg_ind = param["Ind_nz"]
+    # reg_ind = param["Ind_nz"]
+    m_low = param["m_low"]
     n_low = param["n_low"]
-    res_weather = param["res_weather"]
-    res_desired = param["res_desired"]
+    # res_weather = param["res_weather"]
+    # res_desired = param["res_desired"]
     m_high = param["m_high"]
     n_high = param["n_high"]
     turbine = param[tech]["technical"]
 
-    FLH = np.zeros([len(rows)*200, n_high])
-    print(type(FLH))
+    # FLH = np.zeros([len(rows)*200, n_high])
+    # print(type(FLH))
+    FLH =[]
+    rows_higherResolution = []
+    columns_higherResolution = []
     reRaster = np.flipud(rasterData)  # ToDo: out of loop? # Why doing this?
 
     # rows = [10]   # In case for debuging
     # olumns = [10] # In case for debuging
-    columns = range(n_low)      # Loop over all columns
-    for row in rows:    # Loop over the rows given by the function call
-        for column in columns:
-            print('Pixle (' + str(row) + ',' + str(column) + ')')   # Print the recent computing pixle
+    # columns = range(n_low)      # Loop over all columns
 
-            FLH_part = np.zeros([200, 250])
-            reMerra = redistribution_array(param, paths, merraData[row,column,:],row,column,b_xmin[row,column],b_xmax[row,column],b_ymin[row,column],b_ymax[row,column],GWA_array,x_gwa,y_gwa)
+    FLH_np = np.frombuffer(list_results, dtype=np.float32).reshape(m_high, n_high)
 
-            if np.sum(reMerra):
-                for hour in range(8760):
-                    CF = calc_CF_windon(hour, turbine, reMerra, reRaster[row*200:((row+1)*200),column*250:((column+1)*250)])
-                    CF[np.isnan(CF)] = 0
-                    FLH_part = FLH_part + CF    # Aggregates CF to obtain the yearly FLH
+    for pixle in pixles:
+        row, column = np.unravel_index(pixle, (m_low, n_low))   # Generate row and column out of the numbered position
+        print('Pixle (' + str(row) + ',' + str(column) + ')')   # Print the recent computing pixle
 
-                row_difference = row-rows[0]
-                FLH[(row_difference*200):((row_difference+1)*200), (column*250):((column+1)*250)] = FLH_part
-                test=2
+        FLH_part = np.zeros([200, 250])
+        reMerra = redistribution_array(param, paths, merraData[row,column,:],row,column,b_xmin[row,column],b_xmax[row,column],b_ymin[row,column],b_ymax[row,column],GWA_array,x_gwa,y_gwa)
 
-    rows_higherResolution = np.arange(rows[0]*200, (rows[-1]+1)*200)    # Extend the rows due to the higher resolution after redistribution
-    data_tuple = { 'rows': rows_higherResolution, 'FLH': FLH}
-    list_results.append(data_tuple)    # Return the results with the corresponding rows of this process
+        if np.sum(reMerra):
+            for hour in range(8760):
+                CF = calc_CF_windon(hour, turbine, reMerra, reRaster[row*200:((row+1)*200),column*250:((column+1)*250)])
+                CF[np.isnan(CF)] = 0
+                FLH_part = FLH_part + CF    # Aggregates CF to obtain the yearly FLH
+
+            # rows_higherResolution = np.arange(row * 200, (row + 1) * 200)  # Extend the rows due to the higher resolution after redistribution Todo: use 'mm/n_high'?
+            # columns_higherResolution = np.arange(column * 250, (column + 1) * 250) # Extend the columns due to the higher resolution after redistribution
+
+            # FLH_np[rows_higherResolution, columns_higherResolution] = FLH_part
+            FLH_np[row * 200:((row + 1) * 200), column * 250:((column + 1) * 250)] = FLH_part
+
 
 
 def redistribution_array(param, paths, merraData, i, j, xmin, xmax, ymin, ymax, GWA_array, x_gwa, y_gwa):

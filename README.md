@@ -64,6 +64,9 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <td align="center"><a href="https://github.com/sonercandas"><img src="https://avatars.githubusercontent.com/u/17904824?v=4?s=100" width="100px;" alt=""/><br /><sub><b>sonercandas</b></sub></a><br /><a href="https://github.com/tum-ens/pyGRETA/commits?author=sonercandas" title="Documentation">📖</a></td>
     <td align="center"><a href="https://github.com/patrick-buchenberg"><img src="https://avatars.githubusercontent.com/u/84960180?v=4?s=100" width="100px;" alt=""/><br /><sub><b>patrick-buchenberg</b></sub></a><br /><a href="#platform-patrick-buchenberg" title="Packaging/porting to new platform">📦</a></td>
   </tr>
+  <tr>
+    <td align="center"><a href="https://github.com/molarana"><img src="https://avatars.githubusercontent.com/u/19924540?v=4?s=100" width="100px;" alt=""/><br /><sub><b>molarana</b></sub></a><br /><a href="#design-molarana" title="Design">🎨</a></td>
+  </tr>
 </table>
 
 <!-- markdownlint-restore -->

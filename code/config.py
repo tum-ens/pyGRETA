@@ -13,7 +13,7 @@ def configuration():
     :rtype: tuple(dict, dict)
     """
     paths, param = general_settings()
-    paths, param = scope_paths_and_parameters(paths, param)
+    # paths, param = scope_paths_and_parameters(paths, param)
 
     param = computation_parameters(param)
     param = resolution_parameters(param)
@@ -144,7 +144,7 @@ def computation_parameters(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 3
+    param["nproc"] = 72
     param["CPU_limit"] = True
     return param
 

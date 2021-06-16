@@ -472,7 +472,56 @@ def calc_CF_windoff(hour, reg_ind, turbine, m, n, merraData, rasterData):
 
     return CF
 
-def calc_CF_windon(hour, turbine, merraData, rasterData):
+# def calc_CF_windon(hour, turbine, merraData, rasterData):
+#     """
+#     This function computes the hourly capacity factor for onshore and offshore wind for all valid pixels within
+#     the spatial scope for a given hour.
+#
+#     :param hour: Hour within the year (from 0 to 8759).
+#     :type hour: integer
+#     :param reg_ind: indices of valid pixels within the spatial scope (pixels on land for onshore wind, on sea for offshore wind).
+#     :type reg_ind: tuple of arrays
+#     :param turbine: Dictionary including the turbine parameters (cut-in, cut-off and rated wind speed).
+#     :type turbine: dict
+#     :param m: number of rows.
+#     :type m: int
+#     :param n: number of columns.
+#     :type n: int
+#     :param merraData: Dictionary of numpy arrays containing the weather data for every point in *reg_ind*.
+#     :type merraData: dict
+#     :param rasterData: Dictionary of numpy arrays containing the wind speed correction for every point in *reg_ind*.
+#     :type rasterData: dict
+#
+#     :return CF: Capacity factors for all the valid points during that hour.
+#     :rtype: numpy array
+#     """
+#
+#     # Load MERRA data, increase its resolution, and fit it to the extent
+#     #w50m_h = resizem(merraData["W50M"][:, :, hour], m, n)
+#     w50m_h = merraData[:, :, hour]
+#     #w50m_h = w50m_h[tuple(reg_ind)]
+#
+#     # Calculate the wind speed a the desired height
+#     w_new_h = np.multiply(w50m_h,rasterData)
+#     # del w50m_h
+#
+#     # Calculate the capacity factor
+#     a = turbine["w_in"] ** 3 / (turbine["w_in"] ** 3 - turbine["w_r"] ** 3)
+#     b = 1 / (turbine["w_r"] ** 3 - turbine["w_in"] ** 3)
+#
+#     CF = np.zeros(w_new_h.shape)
+#     # Case 1 : above the cut-in speed and below the rated speed
+#     idx1 = np.logical_and(turbine["w_in"] < w_new_h, w_new_h < turbine["w_r"])
+#     CF[idx1] = a + b * w_new_h[idx1] ** 3
+#     # Case 2 : above the rated wind speed and below the cut_off speed
+#     idx2 = np.logical_and(turbine["w_r"] <= w_new_h, w_new_h <= turbine["w_off"])
+#     CF[idx2] = 1
+#     # Other cases (below cut-in or above cut-off
+#     CF[np.logical_not(np.logical_or(idx1, idx2))] = 0
+#
+#     return CF
+
+def calc_CF_windon(hours, turbine, merraData, rasterData):
     """
     This function computes the hourly capacity factor for onshore and offshore wind for all valid pixels within
     the spatial scope for a given hour.
@@ -498,11 +547,11 @@ def calc_CF_windon(hour, turbine, merraData, rasterData):
 
     # Load MERRA data, increase its resolution, and fit it to the extent
     #w50m_h = resizem(merraData["W50M"][:, :, hour], m, n)
-    w50m_h = merraData[:, :, hour]
+    w50m_h = merraData[:, :, hours]
     #w50m_h = w50m_h[tuple(reg_ind)]
 
     # Calculate the wind speed a the desired height
-    w_new_h = np.multiply(w50m_h,rasterData)
+    w_new_h = np.repeat(rasterData[..., None], len(hours), axis=2) * w50m_h
     del w50m_h
 
     # Calculate the capacity factor

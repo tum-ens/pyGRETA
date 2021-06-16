@@ -1,6 +1,7 @@
 from lib.physical_models import calc_CF_solar, calc_CF_windon, calc_CF_windoff
 from lib.spatial_functions import *
 import multiprocessing as mp
+import sys
 
 
 def calculate_full_load_hours(paths, param, tech):
@@ -132,10 +133,13 @@ def calculate_full_load_hours(paths, param, tech):
     elif tech in ["WindOn"]:
 
         merraData = merraData["W50M"][::-1,:,:]
+        #merraData = merraData.astype(dtype=np.float16)
         rasterData = rasterData["A_cf"]
+        #rasterData = rasterData.astype(dtype=np.float16)
         
         with rasterio.open(paths["GWA_global"]) as src:
             GWA_array = src.read(1)
+        #GWA_array = GWA_array.astype(dtype=np.float16)
         GWA_array = np.power(GWA_array, 3)
         where_are_NaNs = np.isnan(GWA_array)
         GWA_array[where_are_NaNs] = 0
@@ -156,28 +160,31 @@ def calculate_full_load_hours(paths, param, tech):
 
 
         list_pixles = np.arange(n_low*m_low)     # All pixles within MERRA data
-        # list_pixles = np.arange(100, 110) # debuging
-
-        list_pixles_splitted = np.array_split(list_pixles, nproc)   # Splitted list acording to the number of parrallel processes
-        print('# of processes: ' + str(len(list_pixles_splitted)))
-        # print(list_rows_splitted)
-
         processes = []  # Store all single process of multiprocessing
-        list_results = mp.Array('f', m_high*n_high, lock=False)
+        list_results = mp.RawArray('f', m_high*n_high)
         FLH = np.frombuffer(list_results, dtype=np.float32).reshape(m_high, n_high)
-        # np.copyto(FLH, np.full((m_high, n_high), np.nan))
         FLH[:] = np.nan
 
+        multiprocessing = True
+        if multiprocessing:
+            list_pixles_splitted = np.array_split(list_pixles, nproc)  # Splitted list acording to the number of parrallel processes
+            print('# of processes: ' + str(len(list_pixles_splitted)))
+            # print(list_rows_splitted)
 
-        for pixles in list_pixles_splitted:  # Run the 'calc_FLH_windon' for each of the splitted rows
-            p = mp.Process(target=calc_FLH_windon, args=(param, tech, paths, rasterData, merraData, GWA_array, b_xmin, b_xmax, b_ymin, b_ymax, x_gwa, y_gwa, pixles, list_results))
-            processes.append(p)
+            for pixles in list_pixles_splitted:  # Run the 'calc_FLH_windon' for each of the splitted rows
+                p = mp.Process(target=calc_FLH_windon, args=(param, tech, paths, rasterData, merraData, GWA_array, b_xmin, b_xmax, b_ymin, b_ymax, x_gwa, y_gwa, pixles, list_results))
+                processes.append(p)
 
-        for p in processes:
-            p.start()   # Start all single processes
+            for p in processes:
+                p.start()   # Start all single processes
 
-        for p in processes:
-            p.join()    # Wait until all processes are finished
+            for p in processes:
+                p.join()    # Wait until all processes are finished
+        else:
+            list_pixles = np.arange(100,110)  # All pixles within MERRA data
+            list_pixles = [np.ravel_multi_index((1, 2), (m_low, n_low))]  # debuging
+            calc_FLH_windon(param, tech, paths, rasterData, merraData, GWA_array, b_xmin, b_xmax, b_ymin, b_ymax, x_gwa, y_gwa, list_pixles, list_results)
+
         print('All processes finished')
 
         # ------------------------------------------------------------------------------------
@@ -368,17 +375,7 @@ def calc_FLH_windon(param, tech, paths, rasterData, merraData, GWA_array, b_xmin
     :return FLH: Full-load hours over the year for the technology.
     :rtype: numpy array
     """
-    # Decomposing the tuple args
-    # param = args[0]
-    # tech = args[1]
-    # paths = args[2]
-    # rasterData = args[3]
-    # merraData = args[4]
-    # GWA_array = args[5]
-    # pixles = args[6]
-
-
-    
+    # try:
     # reg_ind = param["Ind_nz"]
     m_low = param["m_low"]
     n_low = param["n_low"]
@@ -388,38 +385,42 @@ def calc_FLH_windon(param, tech, paths, rasterData, merraData, GWA_array, b_xmin
     n_high = param["n_high"]
     turbine = param[tech]["technical"]
 
-    # FLH = np.zeros([len(rows)*200, n_high])
-    # print(type(FLH))
-    FLH =[]
-    rows_higherResolution = []
-    columns_higherResolution = []
-    reRaster = np.flipud(rasterData)  # ToDo: out of loop? # Why doing this?
+    try:
+        reRaster = np.flipud(rasterData)  # ToDo: out of loop? # Why doing this?
+        FLH_np = np.frombuffer(list_results, dtype=np.float32).reshape(m_high, n_high)
+        print(pixles)
+        for pixle in pixles:
+            row, column = np.unravel_index(pixle, (m_low, n_low))   # Generate row and column out of the numbered position
+            print('Pixle (' + str(row) + ',' + str(column) + ')')   # Print the recent computing pixle
 
-    # rows = [10]   # In case for debuging
-    # olumns = [10] # In case for debuging
-    # columns = range(n_low)      # Loop over all columns
+            reMerra = redistribution_array(param, paths, merraData[row,column,:],row,column,b_xmin[row,column],b_xmax[row,column],b_ymin[row,column],b_ymax[row,column],GWA_array,x_gwa,y_gwa)
+            if np.sum(reMerra): # FIXME: Why is reMerra zero?
+                hours = np.arange(8760)
+                CF = calc_CF_windon(hours, turbine, reMerra, reRaster[row * 200:((row + 1) * 200), column * 250:((column + 1) * 250)])
+                FLH_part = np.nansum(CF, axis=2)
+            else:
+                FLH_part = np.zeros([200, 250])
+                print('zeros(' + str(row) + ',' + str(column) + ')')
 
-    FLH_np = np.frombuffer(list_results, dtype=np.float32).reshape(m_high, n_high)
+            # FLH_part = np.zeros([200, 250])
+            # if np.sum(reMerra):
+            #     for hour in range(8760):
+            #         CF = calc_CF_windon(hour, turbine, reMerra, reRaster[row*200:((row+1)*200),column*250:((column+1)*250)])
+            #         CF[np.isnan(CF)] = 0
+            #         FLH_part = FLH_part + CF    # Aggregates CF to obtain the yearly FLH
 
-    for pixle in pixles:
-        row, column = np.unravel_index(pixle, (m_low, n_low))   # Generate row and column out of the numbered position
-        print('Pixle (' + str(row) + ',' + str(column) + ')')   # Print the recent computing pixle
+            rows_higherResolution = np.arange(row * 200, ( row + 1) * 200)  # Extend the rows due to the higher resolution after redistribution Todo: use 'mm/n_high'?
+            columns_higherResolution = np.arange(column * 250, (column + 1) * 250)  # same for columns
+            FLH_np[np.ix_(rows_higherResolution, columns_higherResolution)] = FLH_part  # Assign the computed FLH to the big FLH array
+            if np.isnan(np.sum(FLH_part)):
+                print('Nan(' + str(row) + ',' + str(column) + ')')
 
-        FLH_part = np.zeros([200, 250])
-        reMerra = redistribution_array(param, paths, merraData[row,column,:],row,column,b_xmin[row,column],b_xmax[row,column],b_ymin[row,column],b_ymax[row,column],GWA_array,x_gwa,y_gwa)
-
-        if np.sum(reMerra):
-            for hour in range(8760):
-                CF = calc_CF_windon(hour, turbine, reMerra, reRaster[row*200:((row+1)*200),column*250:((column+1)*250)])
-                CF[np.isnan(CF)] = 0
-                FLH_part = FLH_part + CF    # Aggregates CF to obtain the yearly FLH
-
-            # rows_higherResolution = np.arange(row * 200, (row + 1) * 200)  # Extend the rows due to the higher resolution after redistribution Todo: use 'mm/n_high'?
-            # columns_higherResolution = np.arange(column * 250, (column + 1) * 250) # Extend the columns due to the higher resolution after redistribution
-
-            # FLH_np[rows_higherResolution, columns_higherResolution] = FLH_part
-            FLH_np[row * 200:((row + 1) * 200), column * 250:((column + 1) * 250)] = FLH_part
-
+    except:
+        e = sys.exc_info()[0]
+        print('Error!!')
+        print(e)
+    else:
+        print('Succesfully finished: ' + str(pixles))
 
 
 def redistribution_array(param, paths, merraData, i, j, xmin, xmax, ymin, ymax, GWA_array, x_gwa, y_gwa):
@@ -464,6 +465,7 @@ def redistribution_array(param, paths, merraData, i, j, xmin, xmax, ymin, ymax, 
 
     # 1) Selection
     GWA_array_copy = GWA_array.copy()  # Create copy so that the origin array doesnt get changed
+    # .astype(dtype=np.float16)
     selection_index = (xmin <= x_gwa) & (x_gwa < xmax) & (ymin <= y_gwa) & (y_gwa < ymax)   # Determine the pixels that are inbetween the range
     GWA_array_copy[np.invert(selection_index)] = 0  # Set pixel not covered by the shapfile to zero
     value_num_cells = np.count_nonzero(GWA_array_copy)       # Number of non-zero pixels
@@ -475,6 +477,7 @@ def redistribution_array(param, paths, merraData, i, j, xmin, xmax, ymin, ymax, 
     L_last = coordinates_nonzero_pixels_y[-1]      # Last y-coordinate of non-zero pixels
 
     # 2) Redistribute MERRA data
+    # reMerra = np.zeros([200, 250, 8760], dtype=np.float16)
     reMerra = np.zeros([200, 250, 8760])
 
     if np.sum(GWA_array_copy):

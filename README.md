@@ -1,7 +1,8 @@
 # pyGRETA
 <div align="left">
-<img src="doc\img\pyGRETA_logo.png" alt="pyGRETA_logo" width="40px">
+<img src="doc\img\pyGRETA_logo.png" alt="pyGRETA_logo" width="80px">
 </div>
+
 [![Documentation Status](https://readthedocs.org/projects/pygreta/badge/?version=latest)](http://pyGRETA.readthedocs.io/en/latest/?badge=latest)
 [![DOI](https://zenodo.org/badge/174577484.svg)](https://zenodo.org/badge/latestdoi/174577484)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)

@@ -144,6 +144,7 @@ def calculate_full_load_hours(paths, param, tech):
         # -------------------------------------------------------------------------------------
         # Multiprocessing by Patrick 20210615
 
+
         list_rows = np.arange(0, m_low)     # All rows within MERRA data
         if nproc > m_low:
             nproc = m_low   # Limit the number of processes to the number of rows

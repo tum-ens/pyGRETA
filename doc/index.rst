@@ -3,7 +3,7 @@ pyGRETA
 =======
 .. figure:: img/pyGRETA_logo.png
    :width: 20%
-   :align: center
+   :align: left
    :alt: pyGRETA_logo
 --------------------------------------------------
 python Generator of REnewable Time series and mAps 

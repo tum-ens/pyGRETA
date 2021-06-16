@@ -41,6 +41,15 @@
       "contributions": [
         "bug"
       ]
+    },
+    {
+      "login": "patrick-buchenberg",
+      "name": "patrick-buchenberg",
+      "avatar_url": "https://avatars.githubusercontent.com/u/84960180?v=4",
+      "profile": "https://github.com/patrick-buchenberg",
+      "contributions": [
+        "platform"
+      ]
     }
   ],
   "contributorsPerLine": 7,

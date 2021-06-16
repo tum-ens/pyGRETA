@@ -146,10 +146,10 @@ def calculate_full_load_hours(paths, param, tech):
 
         list_rows = np.arange(0, m_low)     # All rows within MERRA data
         if nproc > m_low:
-            nproc = m_low   #   If there are more processes than rows available
+            nproc = m_low   # Limit the number of processes to the number of rows
         list_rows_splitted = np.array_split(list_rows, nproc)   # Splitted list acording to the number of parrallel processes
         print('# of processes: ' + str(len(list_rows_splitted)))
-        print(list_rows_splitted)
+        # print(list_rows_splitted)
 
         processes = []  # Store all single process of multiprocessing
         list_results = mp.Manager().list()     # Multiprocess list for the computed FLH of each process
@@ -366,6 +366,7 @@ def calc_FLH_windon(args, list_results):
     GWA_array = args[5]
     rows = args[6]
 
+    # ToDo: Put outside of function?
     b_xmin = hdf5storage.read("MERRA_XMIN", paths["MERRA_XMIN"])    #ToDo: move into calculate_fullload_hours?
     b_xmax = hdf5storage.read("MERRA_XMAX", paths["MERRA_XMAX"])
     b_ymin = hdf5storage.read("MERRA_YMIN", paths["MERRA_YMIN"])
@@ -383,13 +384,15 @@ def calc_FLH_windon(args, list_results):
     turbine = param[tech]["technical"]
 
     FLH = np.zeros([len(rows)*200, n_high])
-    reRaster = np.flipud(rasterData)  # ToDo: out of loop?
+    print(type(FLH))
+    reRaster = np.flipud(rasterData)  # ToDo: out of loop? # Why doing this?
 
-    #for row in range(10,11):
-    for row in rows:
-        #for column in range(9,13):
-        for column in range(n_low):
-            print(str(row)+"_"+str(column))
+    # rows = [10]   # In case for debuging
+    # olumns = [10] # In case for debuging
+    columns = range(n_low)      # Loop over all columns
+    for row in rows:    # Loop over the rows given by the function call
+        for column in columns:
+            print('Pixle (' + str(row) + ',' + str(column) + ')')   # Print the recent computing pixle
 
             FLH_part = np.zeros([200, 250])
             reMerra = redistribution_array(param, paths, merraData[row,column,:],row,column,b_xmin[row,column],b_xmax[row,column],b_ymin[row,column],b_ymax[row,column],GWA_array,x_gwa,y_gwa)
@@ -464,7 +467,7 @@ def redistribution_array(param, paths, merraData, i, j, xmin, xmax, ymin, ymax, 
     # 2) Redistribute MERRA data
     reMerra = np.zeros([200, 250, 8760])
 
-    if np.sum(GWA_array):
+    if np.sum(GWA_array_copy):
         i_offset = 0
         j_offset = 0
 

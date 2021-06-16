@@ -1,4 +1,3 @@
-# pyGRETA
 <div align="left">
 <img src="doc\img\pyGRETA_logo.png" alt="pyGRETA_logo" width="160px">
 </div>

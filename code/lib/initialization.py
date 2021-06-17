@@ -2,7 +2,7 @@ from config import configuration
 from lib.spatial_functions import *
 
 
-def initialization():
+def initialization(config_file):
     """
     This function reads the user-defined parameters and paths from :mod:`config.py`, then adds additional parameters related
     to the shapefiles. 
@@ -17,7 +17,7 @@ def initialization():
     """
     timecheck("Start")
     # import param and paths
-    paths, param = configuration()
+    paths, param = configuration(config_file)
 
     # Read shapefile of scope
     scope_shp = gpd.read_file(paths["spatial_scope"])

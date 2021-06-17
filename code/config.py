@@ -1,11 +1,12 @@
 import os
 from pathlib import Path
 from warnings import warn
+import pandas as pd
 
 import numpy as np
 
 
-def configuration():
+def configuration(config_file):
     """
     This function is the main configuration function that calls all the other modules in the code.
 
@@ -13,7 +14,7 @@ def configuration():
     :rtype: tuple(dict, dict)
     """
     paths, param = general_settings()
-    # paths, param = scope_paths_and_parameters(paths, param)
+    paths, param = scope_paths_and_parameters(paths, param, config_file)
 
     param = computation_parameters(param)
     param = resolution_parameters(param)
@@ -80,7 +81,7 @@ def general_settings():
 ###########################
 
 
-def scope_paths_and_parameters(paths, param):
+def scope_paths_and_parameters(paths, param, config_file):
     """
     This function defines the path of the geographic scope of the output *spatial_scope* and of the subregions of interest *subregions*.
     Both paths should point to shapefiles of polygons or multipolygons.
@@ -112,21 +113,40 @@ def scope_paths_and_parameters(paths, param):
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
 
-    paths["spatial_scope"] = PathTemp + "Germany_with_EEZ.shp"
-    paths["subregions"] = PathTemp + "gadm36_DEU_0.shp"
+    input_df = pd.read_csv(config_file, delimiter=':', comment='#', header=None, index_col=0, skip_blank_lines=True, )    # Import paramters from config_file
+    input_dict = input_df[1].to_dict()      # Convert dataframe to dict with values from the first column
 
-    # Name tags for the scope and the subregions
-    param["region_name"] = "Germany_gwa"  # Name tag of the spatial scope
-    param["subregions_name"] = "Germany_level0"  # Name tag of the subregions
-    param["country_code"] = "DEU" #used for reading GWA tiff file while redistribution
+    paths["spatial_scope"] = PathTemp + input_dict["spatial_scope"]
+    paths["subregions"] = PathTemp + input_dict["subregions"]
 
-    # Year
-    param["year"] = 2019
-
-    # Technologies
-    param["technology"] = ["WindOn"]  # ["PV", "CSP", "WindOn", "WindOff", "Biomass"]
+    param["region_name"] = input_dict["region_name"]    # Name tag of the spatial scope
+    param["subregions_name"] = input_dict["subregions_name"]    # Name tag of the subregions
+    param["country_code"] = input_dict["country_code"]
+    param["year"] = input_dict["year"]     # Convert string 'xxxx' to int
+    param["technology"] = input_dict["technology"].split(',')   # Creat array by comma separated string
 
     return paths, param
+
+    #----- old ----------------
+    # # Paths to the shapefiles
+    #
+    # PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
+    #
+    # paths["spatial_scope"] = PathTemp + "Germany_with_EEZ.shp"
+    # paths["subregions"] = PathTemp + "gadm36_DEU_0.shp"
+    #
+    # # Name tags for the scope and the subregions
+    # param["region_name"] = "Germany_gwa"  # Name tag of the spatial scope
+    # param["subregions_name"] = "Germany_level0"  # Name tag of the subregions
+    # param["country_code"] = "DEU"  # used for reading GWA tiff file while redistribution
+    #
+    # # Year
+    # param["year"] = 2019
+    #
+    # # Technologies
+    # param["technology"] = ["WindOn"]  # ["PV", "CSP", "WindOn", "WindOff", "Biomass"]
+    #
+    # return paths, param
 
 
 def computation_parameters(param):
@@ -144,7 +164,7 @@ def computation_parameters(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 72
+    param["nproc"] = 4
     param["CPU_limit"] = True
     return param
 

@@ -11,9 +11,11 @@ from lib.time_series import (
     generate_time_series_for_full_scope
 )
 
+config_file = 'sample.txt'
+
 if __name__ == "__main__":
 
-    paths, param = initialization()
+    paths, param = initialization(config_file)
 
     # Generate input raster maps
     # generate_maps_for_scope(paths, param)

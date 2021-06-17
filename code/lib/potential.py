@@ -160,20 +160,16 @@ def calculate_full_load_hours(paths, param, tech):
 
 
         list_pixles = np.arange(n_low*m_low)     # All pixles within MERRA data
-<<<<<<< HEAD
-=======
         # list_pixles = np.arange(100, 110) # debuging
         list_pixles_splitted = np.array_split(list_pixles, nproc)   # Splitted list acording to the number of parrallel processes
         print('# of processes: ' + str(len(list_pixles_splitted)))
         # print(list_rows_splitted)
 
->>>>>>> 1689117fbb5f62535881e2772231df4231c8f3ec
         processes = []  # Store all single process of multiprocessing
         list_results = mp.RawArray('f', m_high*n_high)
         FLH = np.frombuffer(list_results, dtype=np.float32).reshape(m_high, n_high)
         FLH[:] = np.nan
 
-<<<<<<< HEAD
         multiprocessing = True
         if multiprocessing:
             list_pixles_splitted = np.array_split(list_pixles, nproc)  # Splitted list acording to the number of parrallel processes
@@ -183,11 +179,9 @@ def calculate_full_load_hours(paths, param, tech):
             for pixles in list_pixles_splitted:  # Run the 'calc_FLH_windon' for each of the splitted rows
                 p = mp.Process(target=calc_FLH_windon, args=(param, tech, paths, rasterData, merraData, GWA_array, b_xmin, b_xmax, b_ymin, b_ymax, x_gwa, y_gwa, pixles, list_results))
                 processes.append(p)
-=======
         for pixles in list_pixles_splitted:  # Run the 'calc_FLH_windon' for each of the splitted rows
             p = mp.Process(target=calc_FLH_windon, args=(param, tech, paths, rasterData, merraData, GWA_array, b_xmin, b_xmax, b_ymin, b_ymax, x_gwa, y_gwa, pixles, list_results))
             processes.append(p)
->>>>>>> 1689117fbb5f62535881e2772231df4231c8f3ec
 
             for p in processes:
                 p.start()   # Start all single processes
@@ -389,11 +383,7 @@ def calc_FLH_windon(param, tech, paths, rasterData, merraData, GWA_array, b_xmin
     :return FLH: Full-load hours over the year for the technology.
     :rtype: numpy array
     """
-<<<<<<< HEAD
-    # try:
-=======
 
->>>>>>> 1689117fbb5f62535881e2772231df4231c8f3ec
     # reg_ind = param["Ind_nz"]
     m_low = param["m_low"]
     n_low = param["n_low"]
@@ -403,7 +393,6 @@ def calc_FLH_windon(param, tech, paths, rasterData, merraData, GWA_array, b_xmin
     n_high = param["n_high"]
     turbine = param[tech]["technical"]
 
-<<<<<<< HEAD
     try:
         reRaster = np.flipud(rasterData)  # ToDo: out of loop? # Why doing this?
         FLH_np = np.frombuffer(list_results, dtype=np.float32).reshape(m_high, n_high)
@@ -421,32 +410,10 @@ def calc_FLH_windon(param, tech, paths, rasterData, merraData, GWA_array, b_xmin
                 FLH_part = np.zeros([200, 250])
                 print('zeros(' + str(row) + ',' + str(column) + ')')
 
-            # FLH_part = np.zeros([200, 250])
-            # if np.sum(reMerra):
-            #     for hour in range(8760):
-            #         CF = calc_CF_windon(hour, turbine, reMerra, reRaster[row*200:((row+1)*200),column*250:((column+1)*250)])
-            #         CF[np.isnan(CF)] = 0
-            #         FLH_part = FLH_part + CF    # Aggregates CF to obtain the yearly FLH
-=======
-    reRaster = np.flipud(rasterData)  # ToDo: out of loop? # Why doing this?
-    FLH_np = np.frombuffer(list_results, dtype=np.float32).reshape(m_high, n_high)
-    for pixle in pixles:
-        row, column = np.unravel_index(pixle, (m_low, n_low))   # Generate row and column out of the numbered position
-        print('Pixle (' + str(row) + ',' + str(column) + ')')   # Print the recent computing pixle
-
-        reMerra = redistribution_array(param, paths, merraData[row,column,:],row,column,b_xmin[row,column],b_xmax[row,column],b_ymin[row,column],b_ymax[row,column],GWA_array,x_gwa,y_gwa)
-        FLH_part = np.zeros([200, 250])
-        if np.sum(reMerra):
-            for hour in range(8760):
-                CF = calc_CF_windon(hour, turbine, reMerra, reRaster[row*200:((row+1)*200),column*250:((column+1)*250)])
-                CF[np.isnan(CF)] = 0
-                FLH_part = FLH_part + CF    # Aggregates CF to obtain the yearly FLH
->>>>>>> 1689117fbb5f62535881e2772231df4231c8f3ec
-
             rows_higherResolution = np.arange(row * 200, ( row + 1) * 200)  # Extend the rows due to the higher resolution after redistribution Todo: use 'mm/n_high'?
             columns_higherResolution = np.arange(column * 250, (column + 1) * 250)  # same for columns
             FLH_np[np.ix_(rows_higherResolution, columns_higherResolution)] = FLH_part  # Assign the computed FLH to the big FLH array
-<<<<<<< HEAD
+
             if np.isnan(np.sum(FLH_part)):
                 print('Nan(' + str(row) + ',' + str(column) + ')')
 
@@ -456,9 +423,6 @@ def calc_FLH_windon(param, tech, paths, rasterData, merraData, GWA_array, b_xmin
         print(e)
     else:
         print('Succesfully finished: ' + str(pixles))
-=======
-
->>>>>>> 1689117fbb5f62535881e2772231df4231c8f3ec
 
 
 def redistribution_array(param, paths, merraData, i, j, xmin, xmax, ymin, ymax, GWA_array, x_gwa, y_gwa):

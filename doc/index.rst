@@ -5,6 +5,14 @@ pyGRETA
    :width: 20%
    :align: left
    :alt: pyGRETA_logo
+
+.. |br| raw:: html
+
+   <br />
+
+|br|
+
+|br|
 --------------------------------------------------
 python Generator of REnewable Time series and mAps 
 --------------------------------------------------

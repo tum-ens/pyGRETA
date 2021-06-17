@@ -113,7 +113,7 @@ def scope_paths_and_parameters(paths, param, config_file):
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
 
-    input_df = pd.read_csv(config_file, delimiter=':', comment='#', header=None, index_col=0, skip_blank_lines=True, )    # Import paramters from config_file
+    input_df = pd.read_csv('configs' + fs + config_file, delimiter=':', comment='#', header=None, index_col=0, skip_blank_lines=True, )    # Import paramters from config_file
     input_dict = input_df[1].to_dict()      # Convert dataframe to dict with values from the first column
 
     paths["spatial_scope"] = PathTemp + input_dict["spatial_scope"]

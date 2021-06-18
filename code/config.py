@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 from warnings import warn
 import pandas as pd
-
 import numpy as np
 
 
@@ -113,21 +112,22 @@ def scope_paths_and_parameters(paths, param, config_file):
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
 
-    input_df = pd.read_csv('configs' + fs + config_file, delimiter=':', comment='#', header=None, index_col=0, skip_blank_lines=True, )    # Import paramters from config_file
-    input_dict = input_df[1].to_dict()      # Convert dataframe to dict with values from the first column
+    input_df = pd.read_csv('configs' + fs + config_file, delimiter=':', comment='#', header=None, index_col=0,
+                           skip_blank_lines=True, )  # Import paramters from config_file
+    input_dict = input_df[1].to_dict()  # Convert dataframe to dict with values from the first column
 
     paths["spatial_scope"] = PathTemp + input_dict["spatial_scope"]
     paths["subregions"] = PathTemp + input_dict["subregions"]
 
-    param["region_name"] = input_dict["region_name"]    # Name tag of the spatial scope
-    param["subregions_name"] = input_dict["subregions_name"]    # Name tag of the subregions
+    param["region_name"] = input_dict["region_name"]  # Name tag of the spatial scope
+    param["subregions_name"] = input_dict["subregions_name"]  # Name tag of the subregions
     param["country_code"] = input_dict["country_code"]
-    param["year"] = input_dict["year"]     # Convert string 'xxxx' to int
-    param["technology"] = input_dict["technology"].split(',')   # Creat array by comma separated string
+    param["year"] = input_dict["year"]  # Convert string 'xxxx' to int
+    param["technology"] = input_dict["technology"].split(',')  # Creat array by comma separated string
 
     return paths, param
 
-    #----- old ----------------
+    # ----- old ----------------
     # # Paths to the shapefiles
     #
     # PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
@@ -182,7 +182,7 @@ def resolution_parameters(param):
     :rtype: dict
     """
     param["res_weather"] = np.array([1 / 2, 5 / 8])
-    param["res_desired"] = np.array([1/400 , 1/400])
+    param["res_desired"] = np.array([1 / 400, 1 / 400])
     return param
 
 
@@ -204,7 +204,8 @@ def weather_data_parameters(param):
     """
     param["MERRA_coverage"] = "World"
     param["MERRA_correction"] = True
-    param["MERRA_correction_factor"] = {"W50M": 0.35, "CLEARNESS": 0.35, "T2M": 0.35}  # Wind Speed  # Clearness index  # Temperature at 2 m
+    param["MERRA_correction_factor"] = {"W50M": 0.35, "CLEARNESS": 0.35,
+                                        "T2M": 0.35}  # Wind Speed  # Clearness index  # Temperature at 2 m
     return param
 
 
@@ -274,12 +275,12 @@ def time_series_parameters(param):
 
     # User defined locations
     param["useloc"] = {
-        "Aachen_Orsbach":(50.7983,6.0244),"Braunschweig":(52.2915,10.4464),
-        "Cottbus":(51.7760,14.3168),"Emden":(53.3881,7.2287),
-        "Flensburg":(54.7737,9.3752),"Frankfurt_Main":(50.0259,8.5213),
-        "Freiburg":(48.0232,7.8343),"Greifswald":(54.0967,13.4056),
-        "Hof":(50.3123,11.8760),"Ingolstadt":(48.7112,11.5362),
-        "Oberstdorf":(47.3984,10.2759)       
+        "Aachen_Orsbach": (50.7983, 6.0244), "Braunschweig": (52.2915, 10.4464),
+        "Cottbus": (51.7760, 14.3168), "Emden": (53.3881, 7.2287),
+        "Flensburg": (54.7737, 9.3752), "Frankfurt_Main": (50.0259, 8.5213),
+        "Freiburg": (48.0232, 7.8343), "Greifswald": (54.0967, 13.4056),
+        "Hof": (50.3123, 11.8760), "Ingolstadt": (48.7112, 11.5362),
+        "Oberstdorf": (47.3984, 10.2759)
     }  # {"point name": (latitude, longitude),...}
 
     # Regression
@@ -346,15 +347,18 @@ def landuse_parameters(param):
         "type_urban": 13,
         "type_croplands": 12,
         "type_vegetation": 14,
-        "water_buffer" : 1,
-        "wetland_buffer" : 1,
-        "snow_buffer" : 4,
-        "boarder_buffer_pixel_amount" : 2,
+        "water_buffer": 1,
+        "wetland_buffer": 1,
+        "snow_buffer": 4,
+        "boarder_buffer_pixel_amount": 2,
         "Ross_coeff": np.array(
-            [0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208]
+            [0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208,
+             0.0208, 0.0208, 0.0208, 0.0208]
         ),
-        "albedo": np.array([0.00, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.00, 0.20, 0.20, 0.20, 0.00, 0.20]),
-        "hellmann": np.array([0.10, 0.25, 0.25, 0.25, 0.25, 0.25, 0.20, 0.20, 0.25, 0.25, 0.15, 0.15, 0.20, 0.40, 0.20, 0.15, 0.15]),
+        "albedo": np.array(
+            [0.00, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.00, 0.20, 0.20, 0.20, 0.00, 0.20]),
+        "hellmann": np.array(
+            [0.10, 0.25, 0.25, 0.25, 0.25, 0.25, 0.20, 0.20, 0.25, 0.25, 0.15, 0.15, 0.20, 0.40, 0.20, 0.15, 0.15]),
         "height": np.array([213, 366, 366, 366, 366, 366, 320, 320, 366, 366, 274, 274, 320, 457, 320, 274, 274]),
     }
     param["landuse"] = landuse
@@ -457,14 +461,16 @@ def pv_parameters(param):
     GCR = {"shadefree_period": 6, "day_north": 79, "day_south": 263}
     pv["weight"] = {
         "GCR": GCR,
-        "lu_availability": np.array([0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.00, 0.00, 0.00, 0.02, 0.02, 0.00, 0.02]),
+        "lu_availability": np.array(
+            [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.00, 0.00, 0.00, 0.02, 0.02, 0.00, 0.02]),
         "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
         "power_density": 0.000160,
         "f_performance": 0.75,
     }
     del GCR
     if pv["technical"]["tracking"] != 0 and pv["technical"]["orientation"] not in [0, 180]:
-        warn("WARNING: " + str(pv["technical"]["tracking"]) + " axis tracking, overwrites orientation input: " + str(pv["technical"]["orientation"]))
+        warn("WARNING: " + str(pv["technical"]["tracking"]) + " axis tracking, overwrites orientation input: " + str(
+            pv["technical"]["orientation"]))
         pv["technical"]["orientation"] = "track_" + str(pv["technical"]["tracking"])
     param["PV"] = pv
     return param
@@ -522,7 +528,8 @@ def csp_parameters(param):
         "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
     }
     csp["weight"] = {
-        "lu_availability": np.array([0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.02, 0.00, 0.02, 0.02, 0.02, 0.00, 0.02]),
+        "lu_availability": np.array(
+            [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.02, 0.00, 0.02, 0.02, 0.02, 0.00, 0.02]),
         "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
         "power_density": 0.000160,
         "f_performance": 0.9 * 0.75,
@@ -570,8 +577,9 @@ def onshore_wind_parameters(param):
     :rtype: dict
     """
     windon = {}
-    windon["resource"] = {"res_correction": 0, "topo_correction": 0, "topo_weight": "capacity"}  # 'none' or 'size' or 'capacity'
-    #windon["technical"] = {"w_in": 2, "w_r": 14, "w_off": 25, "P_r": 2.3, "hub_height": 99}
+    windon["resource"] = {"res_correction": 0, "topo_correction": 0,
+                          "topo_weight": "capacity"}  # 'none' or 'size' or 'capacity'
+    # windon["technical"] = {"w_in": 2, "w_r": 14, "w_off": 25, "P_r": 2.3, "hub_height": 99}
     windon["technical"] = {"w_in": 4, "w_r": 13, "w_off": 25, "P_r": 3, "hub_height": 80}
     windon["mask"] = {
         "slope": 17,
@@ -579,10 +587,11 @@ def onshore_wind_parameters(param):
         "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
         "urban_buffer_pixel_amount": 4,
         "pa_buffer_pixel_amount": 2,
-        "airport_buffer_pixel_amount" : 16
+        "airport_buffer_pixel_amount": 16
     }
     windon["weight"] = {
-        "lu_availability": np.array([0.00, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.10, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.10, 0.00, 0.10]),
+        "lu_availability": np.array(
+            [0.00, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.10, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.10, 0.00, 0.10]),
         "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
         "power_density": 0.000008,
         "f_performance": 0.87,
@@ -631,13 +640,15 @@ def offshore_wind_paramters(param):
     windoff["technical"] = {"w_in": 3, "w_r": 16.5, "w_off": 34, "P_r": 7.58, "hub_height": 100}
     windoff["mask"] = {"depth": -40, "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1])}
     windoff["weight"] = {
-        "lu_availability": np.array([0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00]),
+        "lu_availability": np.array(
+            [0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00]),
         "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
         "power_density": 0.000020,
         "f_performance": 0.87,
     }
     param["WindOff"] = windoff
     return param
+
 
 def biomass_parameters(param):
     """
@@ -656,76 +667,77 @@ def biomass_parameters(param):
                 "Rice_Paddy",
                 "Maize",
                 "Sugarcane",
-                #"Oil_Palm",
+                # "Oil_Palm",
                 "Cassava",
-                "Coconut",              
+                "Coconut",
                 "Coffee_Green",
                 "Groundnut"
             ]
         ),
         "residue": {
-            "Rice_Paddy": ["Straw","Husk"],
-            "Maize": ["Stalk","Cob"],
-            "Sugarcane": ["Bagasse","Top&Leave"],
-            "Oil_Palm": ["Shell","Fiber","EFB","POME","Frond"],
+            "Rice_Paddy": ["Straw", "Husk"],
+            "Maize": ["Stalk", "Cob"],
+            "Sugarcane": ["Bagasse", "Top&Leave"],
+            "Oil_Palm": ["Shell", "Fiber", "EFB", "POME", "Frond"],
             "Cassava": ["Stalk"],
-            "Coconut": ["Husk","Shell","Frond"],
+            "Coconut": ["Husk", "Shell", "Frond"],
             "Coffee_Green": ["Husk"],
-            "Groundnut": ["Shell","Straw"]
+            "Groundnut": ["Shell", "Straw"]
         }
     }
     biomass["agro_rpr"] = {
-        "Rice_Paddy": {"Straw":1.00,"Husk":0.27},
-        "Maize": {"Stalk":1.00,"Cob":0.25},
-        "Sugarcane": {"Bagasse":0.25,"Top&Leave":0.30},
-        "Oil_Palm": {"Shell":0.07,"Fiber":0.13,"EFB":0.23,"POME":0.67,"Frond":0.55},
-        "Cassava": {"Stalk":0.09},
-        "Coconut": {"Husk":0.36,"Shell":0.16,"Frond":0.23},
-        "Coffee_Green": {"Husk":2.10},
-        "Groundnut": {"Shell":0.32,"Straw":2.30}
+        "Rice_Paddy": {"Straw": 1.00, "Husk": 0.27},
+        "Maize": {"Stalk": 1.00, "Cob": 0.25},
+        "Sugarcane": {"Bagasse": 0.25, "Top&Leave": 0.30},
+        "Oil_Palm": {"Shell": 0.07, "Fiber": 0.13, "EFB": 0.23, "POME": 0.67, "Frond": 0.55},
+        "Cassava": {"Stalk": 0.09},
+        "Coconut": {"Husk": 0.36, "Shell": 0.16, "Frond": 0.23},
+        "Coffee_Green": {"Husk": 2.10},
+        "Groundnut": {"Shell": 0.32, "Straw": 2.30}
     }
     biomass["agro_af"] = {
-        "Rice_Paddy": {"Straw":0.5,"Husk":0.47},
-        "Maize": {"Stalk":0.33,"Cob":0.67},
-        "Sugarcane": {"Bagasse":0.21,"Top&Leave":0.99},
-        "Oil_Palm": {"Shell":0.04,"Fiber":0.13,"EFB":0.58,"POME":0.65,"Frond":0.05},
-        "Cassava": {"Stalk":0.41},
-        "Coconut": {"Husk":0.60,"Shell":0.38,"Frond":0.81},
-        "Coffee_Green": {"Husk":0.33},
-        "Groundnut": {"Shell":1.00,"Straw":0.33}
+        "Rice_Paddy": {"Straw": 0.5, "Husk": 0.47},
+        "Maize": {"Stalk": 0.33, "Cob": 0.67},
+        "Sugarcane": {"Bagasse": 0.21, "Top&Leave": 0.99},
+        "Oil_Palm": {"Shell": 0.04, "Fiber": 0.13, "EFB": 0.58, "POME": 0.65, "Frond": 0.05},
+        "Cassava": {"Stalk": 0.41},
+        "Coconut": {"Husk": 0.60, "Shell": 0.38, "Frond": 0.81},
+        "Coffee_Green": {"Husk": 0.33},
+        "Groundnut": {"Shell": 1.00, "Straw": 0.33}
     }
     biomass["agro_lhv"] = {
-        "Rice_Paddy": {"Straw":3.89,"Husk":3.57},
-        "Maize": {"Stalk":3.97,"Cob":4.62},
-        "Sugarcane": {"Bagasse":1.79,"Top&Leave":1.89},
-        "Oil_Palm": {"Shell":4.72,"Fiber":3.08,"EFB":1.69,"POME":0.17,"Frond":2.21},
-        "Cassava": {"Stalk":4.72},
-        "Coconut": {"Husk":4.09,"Shell":4.58,"Frond":4.04},
-        "Coffee_Green": {"Husk":3.44},
-        "Groundnut": {"Shell":3.12,"Straw":4.88}
-    } #MWh/ton
-    biomass['agro_emission factor'] = 1585 #kg/ton of crop residues
-    
+        "Rice_Paddy": {"Straw": 3.89, "Husk": 3.57},
+        "Maize": {"Stalk": 3.97, "Cob": 4.62},
+        "Sugarcane": {"Bagasse": 1.79, "Top&Leave": 1.89},
+        "Oil_Palm": {"Shell": 4.72, "Fiber": 3.08, "EFB": 1.69, "POME": 0.17, "Frond": 2.21},
+        "Cassava": {"Stalk": 4.72},
+        "Coconut": {"Husk": 4.09, "Shell": 4.58, "Frond": 4.04},
+        "Coffee_Green": {"Husk": 3.44},
+        "Groundnut": {"Shell": 3.12, "Straw": 4.88}
+    }  # MWh/ton
+    biomass['agro_emission factor'] = 1585  # kg/ton of crop residues
+
     biomass["forest"] = {
-        "density, coniferous" : 0.75, #tons/m3
-        "density, non-coniferous" : 0.85, #tons/m3
-        "rpr" : 0.67,
-        "af" : 0.4,
-        "lhv" : 4.31, #MWh/ton
-        "emission factor" : 1500 #kg/ton of wood
+        "density, coniferous": 0.75,  # tons/m3
+        "density, non-coniferous": 0.85,  # tons/m3
+        "rpr": 0.67,
+        "af": 0.4,
+        "lhv": 4.31,  # MWh/ton
+        "emission factor": 1500  # kg/ton of wood
     }
-    
+
     biomass["livestock"] = {
-        "animal" : np.array(["Cattle","Sheep","Goats","Chickens","Pigs"]),
-        "rpr" : np.array([0.84,0.12,0.13,0.007,0.11]), #ton of manure per animal
-        "af" : np.array([0.02,0.02,0.02,0.47,0.47]),
-        "lhv" : np.array([1.01,1.31,1.31,2.43,2.93]), #MWh/ton of manure
-        "emission factor" : 859 #kg/ton of manure
+        "animal": np.array(["Cattle", "Sheep", "Goats", "Chickens", "Pigs"]),
+        "rpr": np.array([0.84, 0.12, 0.13, 0.007, 0.11]),  # ton of manure per animal
+        "af": np.array([0.02, 0.02, 0.02, 0.47, 0.47]),
+        "lhv": np.array([1.01, 1.31, 1.31, 2.43, 2.93]),  # MWh/ton of manure
+        "emission factor": 859  # kg/ton of manure
     }
-    
+
     param["Biomass"] = biomass
     return param
-    
+
+
 ###########################
 ##### Define Paths ########
 ###########################
@@ -779,30 +791,30 @@ def global_maps_input_paths(paths, param):
     PathTemp = root + "01 Raw inputs" + fs + "Maps" + fs
     paths["LU_global"] = PathTemp + "Landuse" + fs + "LCType.tif"
     param["res_landuse"] = np.array([1 / 240, 1 / 240])
-    
+
     paths["Topo_tiles"] = PathTemp + "Topography" + fs
     param["res_topography"] = np.array([1 / 240, 1 / 240])
-    
+
     paths["Pop_global"] = PathTemp + "Population" + fs + "gpw_v4_population_count_rev10_2015_30_sec.tif"
     param["res_population"] = np.array([1 / 120, 1 / 120])
-    
+
     paths["Bathym_global"] = PathTemp + "Bathymetry" + fs + "ETOPO1_Ice_c_geotiff.tif"
     param["res_bathymetry"] = np.array([1 / 60, 1 / 60])
-    
+
     paths["Protected"] = PathTemp + "Protected Areas" + fs + "WDPA_Nov2018-shapefile-polygons.shp"
     paths["GWA"] = PathTemp + "Global Wind Atlas" + fs + fs + "windSpeed.csv"
     paths["Countries"] = PathTemp + "Countries" + fs + "gadm36_0.shp"
     paths["EEZ_global"] = PathTemp + "EEZ" + fs + "eez_v10.shp"
     paths["GWA_global"] = PathTemp + "Global Wind Atlas Wind Speed" + fs + param["country_code"] + "_wind-speed_50m.tif"
-    
+
     paths["LS_global"] = PathTemp + "Livestock" + fs + "Glb_"
-    param["res_livestock"] = np.array([1/120 , 1/120])
-    
+    param["res_livestock"] = np.array([1 / 120, 1 / 120])
+
     paths["Biomass_Crops"] = PathTemp + "FAOSTAT" + fs + "Admin level 2_"
     paths["Biomass_Forestry"] = PathTemp + "FAOSTAT" + fs + "FAOSTAT_Forestry_data_6-2-2021.csv"
-    
+
     paths["Airports"] = PathTemp + "Openflights" + fs + "airports.csv"
-    
+
     return paths, param
 
 
@@ -869,7 +881,7 @@ def output_folders(paths, param):
 
     # Regression output
     paths["regression_out"] = paths["regional_analysis"] + "Regression outputs" + fs
-    
+
     return paths
 
 
@@ -904,7 +916,6 @@ def weather_output_paths(paths, param):
 
     paths["IND_GWA_MERRA_X"] = paths["weather_data"] + "ind_gwa_merra_x" + ".mat"
     paths["IND_GWA_MERRA_Y"] = paths["weather_data"] + "ind_gwa_merra_y" + ".mat"
-
 
     return paths
 
@@ -943,41 +954,41 @@ def local_maps_paths(paths, param):
     paths["SUB"] = PathTemp + "_Subregions.tif"  # Subregions pixels
     paths["LU"] = PathTemp + "_Landuse.tif"  # Land use types
     paths["TOPO"] = PathTemp + "_Topography.tif"  # Topography
-    
+
     paths["PA"] = PathTemp + "_Protected_areas.tif"  # Protected areas
     paths["PV_PA_BUFFER"] = PathTemp + "_PV_Protected_areas_Buffered.tif"
     paths["WINDON_PA_BUFFER"] = PathTemp + "_WindOn_Protected_areas_Buffered.tif"
-    
+
     paths["SLOPE"] = PathTemp + "_Slope.tif"  # Slope
     paths["BATH"] = PathTemp + "_Bathymetry.tif"  # Bathymetry
     paths["POP"] = PathTemp + "_Population.tif"  # Population
     paths["POP_BUFFER"] = PathTemp + "_Population_Buffered.tif"  # Buffered population
-    
+
     paths["WATER_BUFFER"] = PathTemp + "_Water_Buffered.tif"
     paths["WETLAND_BUFFER"] = PathTemp + "_Wetland_Buffered.tif"
     paths["SNOW_BUFFER"] = PathTemp + "_Snow_Buffered.tif"
-    
+
     paths["CORR_GWA"] = PathTemp + "_GWA_Correction.mat"  # Correction factors based on the GWA
     paths["AREA"] = PathTemp + "_Area.mat"  # Area per pixel in m²
     paths["GWA_WS"] = PathTemp + "_GWA_WindSpeed.tif"
     paths["LS"] = PathTemp + "_Livestock_"
     paths["BIOMASS_ENERGY"] = PathTemp + "_Biomass_Energy.tif"
     paths["BIOMASS_CO2"] = PathTemp + "_Biomass_CO2.tif"
-    
+
     paths["AIRPORTS"] = PathTemp + "_Airports.tif"
     paths["BOARDERS"] = PathTemp + "_Boarders.tif"
-    
+
     # Correction factors for wind speeds
     turbine_height_on = str(param["WindOn"]["technical"]["hub_height"])
     turbine_height_off = str(param["WindOff"]["technical"]["hub_height"])
     paths["CORR_ON"] = PathTemp + "_WindOn_Correction_" + turbine_height_on + ".tif"
     paths["CORR_OFF"] = PathTemp + "_WindOff_Correction_" + turbine_height_off + ".tif"
-    
+
     paths["East"] = paths["local_maps"] + "Brazil_East_gwa_Biomass_CO2.tif"
     paths["West"] = paths["local_maps"] + "Brazil_West_gwa_Biomass_CO2.tif"
     paths["South"] = paths["local_maps"] + "Brazil_South_gwa_Biomass_CO2.tif"
     paths["North"] = paths["local_maps"] + "Brazil_North_gwa_Biomass_CO2.tif"
-    
+
     paths["CLUB_ENERGY"] = PathTemp + "_Biomass_Energy_Clubbed.tif"
     paths["CLUB_CO2"] = PathTemp + "_Biomass_CO2_Clubbed.tif"
     return paths
@@ -1006,7 +1017,7 @@ def irena_paths(paths, param):
 
     # IRENA input
     paths["IRENA"] = (
-        root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA" + fs + "IRENA_RE_electricity_statistics_allcountries_alltech_" + year + ".csv"
+            root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA" + fs + "IRENA_RE_electricity_statistics_allcountries_alltech_" + year + ".csv"
     )
 
     current_folder = os.path.dirname(os.path.abspath(__file__))
@@ -1063,11 +1074,14 @@ def emhires_input_paths(paths, param, tech):
     global fs
 
     if tech == "WindOn":
-        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES" + fs + "TS.CF.COUNTRY.30yr.date.txt"
+        paths[tech][
+            "EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES" + fs + "TS.CF.COUNTRY.30yr.date.txt"
     elif tech == "WindOff":
-        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES" + fs + "TS.CF.OFFSHORE.30yr.date.txt"
+        paths[tech][
+            "EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES" + fs + "TS.CF.OFFSHORE.30yr.date.txt"
     elif tech == "PV":
-        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES" + fs + "EMHIRESPV_TSh_CF_Country_19862015.txt"
+        paths[tech][
+            "EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES" + fs + "EMHIRESPV_TSh_CF_Country_19862015.txt"
 
     return paths
 
@@ -1094,7 +1108,8 @@ def potential_output_paths(paths, param, tech):
     """
     region = param["region_name"]
     year = str(param["year"])
-    
+
+    PathTemp = ''
     if tech in ["WindOn", "WindOff"]:
         hubheight = str(param[tech]["technical"]["hub_height"])
         PathTemp = paths["potential"] + region + "_" + tech + "_" + hubheight
@@ -1141,6 +1156,7 @@ def regional_analysis_output_paths(paths, param, tech):
     subregions = param["subregions_name"]
     year = str(param["year"])
 
+    PathTemp = ''
     if tech in ["WindOn", "WindOff"]:
         hubheight = str(param[tech]["technical"]["hub_height"])
         PathTemp = paths["regional_analysis"] + subregions + "_" + tech + "_" + hubheight
@@ -1166,10 +1182,10 @@ def regional_analysis_output_paths(paths, param, tech):
 
 
 def discrete_output_paths(paths, param, tech):
-
     region = param["region_name"]
     year = str(param["year"])
 
+    PathTemp = ''
     if tech in ["WindOn", "WindOff"]:
         hubheight = str(param[tech]["technical"]["hub_height"])
         PathTemp = paths["discrete_analysis"] + region + "_" + tech + "_" + hubheight

@@ -1,5 +1,7 @@
 from config import configuration
 from lib.spatial_functions import *
+import numpy as np
+
 
 
 def initialization(config_file):

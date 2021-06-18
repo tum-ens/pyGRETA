@@ -14,19 +14,18 @@ import os
 # config_file = 'sample.txt'
 
 if __name__ == "__main__":
-    configs = os.listdir('configs')
-    for config in configs:
+
+    configs = os.listdir('configs')     # Look for config files of each country in folder 'configs'
+    for config in configs:      # Loop over all countries
         print('Started: ' + str(config))
 
-        paths, param = initialization(config)
+        paths, param = initialization(config)   # Initialize with the corresponding config for each country defined in folder 'configs'
 
         # Generate input raster maps
         # generate_maps_for_scope(paths, param)
 
         # Generate buffer maps
         # generate_buffered_maps(paths,param)
-
-
 
          #Wind speed correction
         #if "WindOn" in param["technology"] or "WindOff" in param["technology"]:
@@ -40,7 +39,7 @@ if __name__ == "__main__":
             print("Tech: " + tech)
 
             # Generate potential maps and reports
-            #calculate_full_load_hours(paths, param, tech)
+            calculate_full_load_hours(paths, param, tech)
             #mask_potential_maps(paths, param, tech)
             #weight_potential_maps(paths, param, tech)
             #report_potentials(paths, param, tech)

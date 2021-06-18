@@ -1,5 +1,5 @@
 from config import configuration
-from lib.spatial_functions import *
+from .spatial_functions import *
 import numpy as np
 
 

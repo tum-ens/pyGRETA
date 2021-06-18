@@ -1,5 +1,5 @@
-from lib.correction_functions import clean_weather_data
-from lib.spatial_functions import *
+from .correction_functions import clean_weather_data
+from .spatial_functions import *
 #import cython
 
 

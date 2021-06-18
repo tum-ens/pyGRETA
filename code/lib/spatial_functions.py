@@ -1,4 +1,4 @@
-from lib.util import *
+from .util import *
 
 
 def define_spatial_scope(scope_shp):

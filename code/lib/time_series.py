@@ -1,6 +1,6 @@
-from lib.spatial_functions import *
-from lib.physical_models import calc_CF_solar, calc_CF_windon, calc_CF_windoff
-from lib.potential import get_merra_raster_data, redistribution_array
+from .spatial_functions import *
+from .physical_models import calc_CF_solar, calc_CF_windon, calc_CF_windoff
+from .potential import get_merra_raster_data, redistribution_array
 
 
 def find_representative_locations(paths, param, tech):

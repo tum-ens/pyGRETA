@@ -1,1 +1,0 @@
-spatial_scope:Germany_with_EEZ.shpsubregions:gadm36_DEU_0.shpregion_name:Germany_gwasubregions_name:Germany_level0country_code:DEUyear:2019technology:WindOn#,CSP,WindOn,WindOff,Biomass

@@ -122,7 +122,7 @@ def scope_paths_and_parameters(paths, param, config_file):
     param["region_name"] = input_dict["region_name"]  # Name tag of the spatial scope
     param["subregions_name"] = input_dict["subregions_name"]  # Name tag of the subregions
     param["country_code"] = input_dict["country_code"]
-    param["year"] = input_dict["year"]  # Convert string 'xxxx' to int
+    param["year"] = int(input_dict["year"])  # Convert string 'xxxx' to int
     param["technology"] = input_dict["technology"].split(',')  # Creat array by comma separated string
 
     return paths, param
@@ -164,7 +164,7 @@ def computation_parameters(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 1
+    param["nproc"] = 2
     param["CPU_limit"] = True
     return param
 

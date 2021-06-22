@@ -15,19 +15,19 @@ def generate_maps_for_scope(paths, param):
     :return: The maps are saved directly in the desired paths.
     :rtype: None
     """
-    #generate_weather_files(paths, param)  # MERRA Weather data
-    #generate_array_coordinates(paths, param)
-    #generate_landsea(paths, param)  # Land and Sea
+    generate_weather_files(paths, param)  # MERRA Weather data
+    generate_array_coordinates(paths, param)
+    generate_landsea(paths, param)  # Land and Sea
     generate_subregions(paths, param)  # Subregions
-    #generate_area(paths, param)  # Area Gradient
-    #generate_landuse(paths, param)  # Landuse
-    #generate_bathymetry(paths, param)  # Bathymetry
-    #generate_topography(paths, param)  # Topography
-    #generate_slope(paths, param)  # Slope
-    #generate_protected_areas(paths, param)  # Protected areas
-    #generate_livestock(paths,param)
-    #generate_osm(paths, param)
-    #generate_population(paths, param)  # Population #not used anywhere?
+    generate_area(paths, param)  # Area Gradient
+    generate_landuse(paths, param)  # Landuse
+    generate_bathymetry(paths, param)  # Bathymetry
+    generate_topography(paths, param)  # Topography
+    generate_slope(paths, param)  # Slope
+    generate_protected_areas(paths, param)  # Protected areas
+    # generate_livestock(paths,param)
+    # generate_osm(paths, param)
+    # generate_population(paths, param)  # Population #not used anywhere?
    
 
 def generate_buffered_maps(paths,param):

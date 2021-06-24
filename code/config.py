@@ -125,6 +125,7 @@ def scope_paths_and_parameters(paths, param, config_file):
     param["year"] = int(input_dict["year"])  # Convert string 'xxxx' to int
     param["technology"] = input_dict["technology"].split(',')  # Creat array by comma separated string
 
+
     return paths, param
 
     # ----- old ----------------

@@ -1,7 +1,0 @@
-spatial_scope:gadm36_NAM_0.shp
-subregions:gadm36_NAM_0.shp
-region_name:Namibia_gwa
-subregions_name:Namibia_level0
-country_code:NAM
-year:2019
-technology:WindOn,PV

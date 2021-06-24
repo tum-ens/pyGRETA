@@ -125,7 +125,6 @@ def scope_paths_and_parameters(paths, param, config_file):
     param["year"] = int(input_dict["year"])  # Convert string 'xxxx' to int
     param["technology"] = input_dict["technology"].split(',')  # Creat array by comma separated string
 
-
     return paths, param
 
     # ----- old ----------------
@@ -165,7 +164,7 @@ def computation_parameters(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 2
+    param["nproc"] = 36
     param["CPU_limit"] = True
     return param
 
@@ -762,6 +761,7 @@ def weather_input_folder(paths, param):
     MERRA_coverage = param["MERRA_coverage"]
     year = str(param["year"])
     paths["MERRA_IN"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + MERRA_coverage + " " + year + fs
+    paths["GWA_global"] = root + "04 Global Wind Atlas Wind Speed" + fs + param["country_code"] + "_wind-speed_50m.tif"
 
     return paths
 
@@ -790,31 +790,37 @@ def global_maps_input_paths(paths, param):
 
     # Global maps
     PathTemp = root + "01 Raw inputs" + fs + "Maps" + fs
+    
+    paths["Countries"] = PathTemp + "Countries" + fs + "gadm36_0.shp"
+    
+    paths["EEZ_global"] = PathTemp + "EEZ" + fs + "eez_v10.shp"
+    
     paths["LU_global"] = PathTemp + "Landuse" + fs + "LCType.tif"
     param["res_landuse"] = np.array([1 / 240, 1 / 240])
 
+    paths["Bathym_global"] = PathTemp + "Bathymetry" + fs + "ETOPO1_Ice_c_geotiff.tif"
+    param["res_bathymetry"] = np.array([1 / 60, 1 / 60])
+    
     paths["Topo_tiles"] = PathTemp + "Topography" + fs
     param["res_topography"] = np.array([1 / 240, 1 / 240])
 
-    paths["Pop_global"] = PathTemp + "Population" + fs + "gpw_v4_population_count_rev10_2015_30_sec.tif"
-    param["res_population"] = np.array([1 / 120, 1 / 120])
-
-    paths["Bathym_global"] = PathTemp + "Bathymetry" + fs + "ETOPO1_Ice_c_geotiff.tif"
-    param["res_bathymetry"] = np.array([1 / 60, 1 / 60])
-
     paths["Protected"] = PathTemp + "Protected Areas" + fs + "WDPA_Nov2018-shapefile-polygons.shp"
-    paths["GWA"] = PathTemp + "Global Wind Atlas" + fs + fs + "windSpeed.csv"
-    paths["Countries"] = PathTemp + "Countries" + fs + "gadm36_0.shp"
-    paths["EEZ_global"] = PathTemp + "EEZ" + fs + "eez_v10.shp"
-    paths["GWA_global"] = PathTemp + "Global Wind Atlas Wind Speed" + fs + param["country_code"] + "_wind-speed_50m.tif"
 
     paths["LS_global"] = PathTemp + "Livestock" + fs + "Glb_"
     param["res_livestock"] = np.array([1 / 120, 1 / 120])
+    
+    paths["WSF_global"] = PathTemp + "WSF" + fs + "WSF2015_v1_EPSG4326" + fs + "WSF2015_v1_EPSG4326"
+    param["res_settlements"] = np.array([1/10000 , 1/10000])
+    
+    paths["Pop_global"] = PathTemp + "Population" + fs + "gpw_v4_population_count_rev10_2015_30_sec.tif"
+    param["res_population"] = np.array([1 / 120, 1 / 120])
+
+    paths["Airports"] = PathTemp + "Openflights" + fs + "airports.csv"
+
+    paths["GWA"] = PathTemp + "Global Wind Atlas" + fs + fs + "windSpeed.csv"
 
     paths["Biomass_Crops"] = PathTemp + "FAOSTAT" + fs + "Admin level 2_"
     paths["Biomass_Forestry"] = PathTemp + "FAOSTAT" + fs + "FAOSTAT_Forestry_data_6-2-2021.csv"
-
-    paths["Airports"] = PathTemp + "Openflights" + fs + "airports.csv"
 
     return paths, param
 
@@ -953,31 +959,26 @@ def local_maps_paths(paths, param):
     paths["LAND"] = PathTemp + "_Land.tif"  # Land pixels
     paths["EEZ"] = PathTemp + "_EEZ.tif"  # Sea pixels
     paths["SUB"] = PathTemp + "_Subregions.tif"  # Subregions pixels
+    paths["AREA"] = PathTemp + "_Area.mat"  # Area per pixel in m²
     paths["LU"] = PathTemp + "_Landuse.tif"  # Land use types
-    paths["TOPO"] = PathTemp + "_Topography.tif"  # Topography
-
-    paths["PA"] = PathTemp + "_Protected_areas.tif"  # Protected areas
-    paths["PV_PA_BUFFER"] = PathTemp + "_PV_Protected_areas_Buffered.tif"
-    paths["WINDON_PA_BUFFER"] = PathTemp + "_WindOn_Protected_areas_Buffered.tif"
-
-    paths["SLOPE"] = PathTemp + "_Slope.tif"  # Slope
     paths["BATH"] = PathTemp + "_Bathymetry.tif"  # Bathymetry
+    paths["TOPO"] = PathTemp + "_Topography.tif"  # Topography
+    paths["SLOPE"] = PathTemp + "_Slope.tif"  # Slope
+    paths["PA"] = PathTemp + "_Protected_areas.tif"  # Protected areas
+    
+    paths["LS"] = PathTemp + "_Livestock_" #Livestock density per animal type
     paths["POP"] = PathTemp + "_Population.tif"  # Population
+    
     paths["POP_BUFFER"] = PathTemp + "_Population_Buffered.tif"  # Buffered population
-
-    paths["WATER_BUFFER"] = PathTemp + "_Water_Buffered.tif"
-    paths["WETLAND_BUFFER"] = PathTemp + "_Wetland_Buffered.tif"
-    paths["SNOW_BUFFER"] = PathTemp + "_Snow_Buffered.tif"
+    paths["WATER_BUFFER"] = PathTemp + "_Water_Buffered.tif" #Buffered Water
+    paths["WETLAND_BUFFER"] = PathTemp + "_Wetland_Buffered.tif" #Buffered Wetlands
+    paths["SNOW_BUFFER"] = PathTemp + "_Snow_Buffered.tif" #Buffered Snow
+    paths["AIRPORTS"] = PathTemp + "_Airports.tif" #Buffered Airports
+    paths["BOARDERS"] = PathTemp + "_Boarders.tif" #Buffered Boarders
+    paths["PV_PA_BUFFER"] = PathTemp + "_PV_Protected_areas_Buffered.tif" #Buffered Protected areas for PV
+    paths["WINDON_PA_BUFFER"] = PathTemp + "_WindOn_Protected_areas_Buffered.tif" #Buffered Protected areas for Wind Onshore
 
     paths["CORR_GWA"] = PathTemp + "_GWA_Correction.mat"  # Correction factors based on the GWA
-    paths["AREA"] = PathTemp + "_Area.mat"  # Area per pixel in m²
-    paths["GWA_WS"] = PathTemp + "_GWA_WindSpeed.tif"
-    paths["LS"] = PathTemp + "_Livestock_"
-    paths["BIOMASS_ENERGY"] = PathTemp + "_Biomass_Energy.tif"
-    paths["BIOMASS_CO2"] = PathTemp + "_Biomass_CO2.tif"
-
-    paths["AIRPORTS"] = PathTemp + "_Airports.tif"
-    paths["BOARDERS"] = PathTemp + "_Boarders.tif"
 
     # Correction factors for wind speeds
     turbine_height_on = str(param["WindOn"]["technical"]["hub_height"])
@@ -985,13 +986,17 @@ def local_maps_paths(paths, param):
     paths["CORR_ON"] = PathTemp + "_WindOn_Correction_" + turbine_height_on + ".tif"
     paths["CORR_OFF"] = PathTemp + "_WindOff_Correction_" + turbine_height_off + ".tif"
 
+    paths["BIOMASS_ENERGY"] = PathTemp + "_Biomass_Energy.tif" #Biomass energy per pixel
+    paths["BIOMASS_CO2"] = PathTemp + "_Biomass_CO2.tif" #Biomass co2 per pixel
+    
+    #To be used only when the country is split and want to club the map for full country
     paths["East"] = paths["local_maps"] + "Brazil_East_gwa_Biomass_CO2.tif"
     paths["West"] = paths["local_maps"] + "Brazil_West_gwa_Biomass_CO2.tif"
     paths["South"] = paths["local_maps"] + "Brazil_South_gwa_Biomass_CO2.tif"
     paths["North"] = paths["local_maps"] + "Brazil_North_gwa_Biomass_CO2.tif"
-
     paths["CLUB_ENERGY"] = PathTemp + "_Biomass_Energy_Clubbed.tif"
     paths["CLUB_CO2"] = PathTemp + "_Biomass_CO2_Clubbed.tif"
+
     return paths
 
 

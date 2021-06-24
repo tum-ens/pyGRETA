@@ -7,8 +7,7 @@ from lib.time_series import (
     find_representative_locations,
     generate_time_series_for_representative_locations,
     generate_time_series_for_regions,
-    generate_time_series_for_specific_locations,
-    generate_time_series_for_full_scope
+    generate_time_series_for_specific_locations
 )
 import os
 
@@ -20,13 +19,13 @@ if __name__ == "__main__":
 
         paths, param = initialization(config)   # Initialize with the corresponding config for each country defined in folder 'configs'
 
-        # Generate input raster maps
+        # # Generate input raster maps
         generate_maps_for_scope(paths, param)
 
-        # Generate buffer maps
+        # # Generate buffer maps
         generate_buffered_maps(paths, param)
 
-         #Wind speed correction
+         # #Wind speed correction
         if "WindOn" in param["technology"] or "WindOff" in param["technology"]:
             generate_wind_correction(paths, param)
 
@@ -44,7 +43,6 @@ if __name__ == "__main__":
             report_potentials(paths, param, tech)
 
             # Generate time series
-            #generate_time_series_for_full_scope(paths, param, tech)
             #find_representative_locations(paths, param, tech)
             #generate_time_series_for_representative_locations(paths, param, tech)
             #generate_time_series_for_specific_locations(paths, param, tech)

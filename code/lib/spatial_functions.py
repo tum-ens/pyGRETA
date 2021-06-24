@@ -452,29 +452,6 @@ def recalc_topo_resolution(array, res_data, res_desired):
                 
     return array1
     
-    
-def recalc_pop_resolution(array, res_data, res_desired):
-    
-    array1 = np.zeros([int(array.shape[0]*res_data[0]/res_desired[0]),int(array.shape[1]*res_data[1]/res_desired[1])])
-    array1[:] = np.NaN
-    for i in range(0,array.shape[0],3):
-        for j in range(0,array.shape[1],3):
-            array1[int(i*10/3):int(i*10/3)+2,int(j*10/3):int(j*10/3)+2] = array[i,j] #first row, first column
-            array1[int(i*10/3):int(i*10/2)+2,int(j*10/3)+4:int(j*10/3)+5] = array[i,j+1] 
-            array1[int(i*10/3):int(i*10/3)+2,int(j*10/3)+7:int(j*10/3)+9] = array[i,j+2]
-            
-            array1[int(i*10/3)+4:int(i*10/3)+5,int(j*10/3):int(j*10/3)+3] = array[i+1,j] #third row, first column
-            array1[int(i*10/3)+4:int(i*10/3)+5,int(j*10/3)+4:int(j*10/3)+5] = array[i+1,j+1] 
-            array1[int(i*10/3)+4:int(i*10/3)+5,int(j*10/3)+7:int(j*10/3)+9] = array[i+1,j+2]
-            
-            array1[int(i*10/3)+7:int(i*10/3)+9,int(j*10/3):int(j*10/3)+2] = array[i+2,j] #fifth row, first column
-            array1[int(i*10/3)+7:int(i*10/3)+9,int(j*10/3)+4:int(j*10/3)+5] = array[i+2,j+1] 
-            array1[int(i*10/3)+7:int(i*10/3)+9,int(j*10/3)+7:int(j*10/3)+9] = array[i+2,j+2]
-            
-            #array1[int(i*10/3)+3,int(j*10/3):int(j*10/3)+3] = np.mean([array[i,j]*1/3,array[i,j+1]*2/3])
-            #array1[int(i*10/3)+6,int(j*10/3):int(j*10/3)+3] = np.mean([array[i,j+1]*2/3,array[i,j+2]*1/3])
-
-    return array1
 
 def recalc_bath_resolution(array, res_data, res_desired):
     
@@ -519,6 +496,7 @@ def recalc_bath_resolution(array, res_data, res_desired):
             array1[int(i*20/3)+13,int(j*20/3)+13] = np.mean([array1[int(i*20/3)+13,int(j*20/3)+7],array1[int(i*20/3)+13,int(j*20/3)+14],array1[int(i*20/3)+7,int(j*20/3)+13],array1[int(i*20/3)+14,int(j*20/3)+13]],dtype=np.float64)
                 
     return array1
+
     
 def recalc_livestock_resolution(array, res_data, res_desired):
     

@@ -969,7 +969,8 @@ def report_potentials(paths, param, tech):
     display_progress("Reporting ", (nRegions, status))
     for reg in range(0, nRegions):
         # Get name of region
-        regions.loc[reg, "Region"] = regions_shp.loc[reg]["NAME_SHORT"] + "_" + location
+        #regions.loc[reg, "Region"] = regions_shp.loc[reg]["NAME_SHORT"] + "_" + location
+        regions.loc[reg, "Region"] = regions_shp.loc[reg]["GID_0"] + "_" + location
 
         # Compute region_mask
         A_region_extended = calc_region(regions_shp.loc[reg], Crd_all, res_desired, GeoRef)

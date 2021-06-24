@@ -26,6 +26,7 @@ def generate_maps_for_scope(paths, param):
     generate_slope(paths, param)  # Slope
     generate_protected_areas(paths, param)  # Protected areas
     # generate_livestock(paths,param)
+    # generate_settlements(paths, param)
     # generate_osm(paths, param)
     # generate_population(paths, param)  # Population #not used anywhere?
    
@@ -757,6 +758,102 @@ def generate_livestock(paths, param):
     
     timecheck("End")
 
+
+def generate_settlements(paths, param):
+    """
+    This function reads the global map of settlements, and creates a raster out of it for the desired scope.
+       See :mod:`config.py` for more information on the settlements map.
+
+    :param paths: Dictionary including the paths to the global settlements raster *WSF_global* and to the output path *WSF*.
+    :type paths: dict
+    :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
+    :type param: dict
+
+    :return: The tif file for *WSF* is saved in its respective path, along with its metadata in a JSON file.
+    :rtype: None
+    """
+    timecheck("Start")
+    #res_desired = param["res_desired"]
+    Crd_all = param["Crd_all"]
+    Ind = ind_global(Crd_all, param["res_settlements"])[0]
+    GeoRef = param["GeoRef"]
+    print ("Read the variables")
+    print (Crd_all)
+    #long = ["w180","w170","w160","w150","w140","w130","w120","w110","w100","w090","w080","w070","w060","w050","w040","w030","w020","w010","e000","e010","e020","e030","e","","",""]
+    print (int(Crd_all[0] + (10 - Crd_all[0] % 10)))
+    print (int(Crd_all[1] + (10 - Crd_all[1] % 10)))
+    print (int((Crd_all[2]//10)*10))
+    print (int((Crd_all[3]//10)*10))
+    
+    North = int(Crd_all[0] + (10 - Crd_all[0] % 10))
+    East = int(Crd_all[1] + (10 - Crd_all[1] % 10))
+    South = int((Crd_all[2]//10)*10)
+    West = int((Crd_all[3]//10)*10)
+    
+    # North = 90
+    # East = 180
+    # South = -90
+    # West = -180
+    
+    WSF_raw = np.zeros([int((North - South)/10*111321),int((East - West)/10*111321)],dtype=bool)
+    for lat in range(int((North - South)/10)):
+        for long in range(int((East - West)/10)):
+            if West+long*10 == 0:
+                str_west = str("_e000")
+                str_west1 = str("_e010")
+            elif West+long*10 < 0:
+                if West+long*10 == -10:
+                    str_west = str("_w010")
+                    str_west1 = str("_e000")
+                elif West+long*10 > -100:
+                    str_west = str("_w0")+str(abs(West+long*10))
+                    str_west1 = str("_w0")+str(abs(West+(long+1)*10))
+                elif West+long*10 == -100:
+                    str_west = str("_w100")
+                    str_west1 = str("_w090")
+                else:
+                    str_west = str("_w")+str(abs(West+long*10))
+                    str_west1 = str("_w")+str(abs(West+(long+1)*10))
+            else:
+                if West+long*10 < 90:
+                    str_west = str("_e0")+str(West+long*10)
+                    str_west1 = str("_e0")+str(West+(long+1)*10)
+                elif West+long*10 == 90:
+                    str_west = str("_e090")
+                    str_west1 = str("_e100")
+                else:
+                    str_west = str("_e")+str(West+long*10)
+                    str_west1 = str("_e")+str(West+(long+1)*10)
+            if South+lat*10 == 0:
+                str_south = str("_n00")
+                str_south1 = str("_s10")
+            elif South+lat*10 < 0:
+                str_south = str("_s")+str(abs(South+lat*10))
+                str_south1 = str("_s")+str(abs(South+(lat+1)*10))
+            else:
+                str_south = str("_n")+str(South+lat*10)
+                str_south1 = str("_n")+str(South+(lat+1)*10)
+                
+            x = str_west+str_south+str_west1+str_south1+".tif"
+            print (x)
+            if os.path.isfile(paths["WSF_global"]+x):
+                with rasterio.open(paths["WSF_global"]+x) as src:
+                    w = src.read(1)
+                w = np.flipud(w)
+                WSF_raw[lat*111321:(lat+1)*111321,long*111321:(long+1)*111321] = w
+                
+            print (np.sum(WSF_raw))
+    with rasterio.open(paths["WSF_global"]) as src:
+        w = src.read(1)
+        print ("Opened the global file")
+        w = np.flipud(w)
+    #w = adjust_resolution(w, param["res_settlements"], param["res_desired"], "category")
+    #w = recalc_lu_resolution(w, param["res_landuse"], param["res_desired"], lu_a)
+    array2raster(paths["WSF"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], w)
+    print("files saved: " + paths["WSF"])
+    create_json(paths["WSF"], param, ["region_name", "Crd_all", "res_settlements", "res_desired", "GeoRef"], paths, ["WSF_global", "WSF"])
+    timecheck("End")
+    
   
 def generate_buffered_protected_areas(paths, param):
     """

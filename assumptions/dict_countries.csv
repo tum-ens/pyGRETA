@@ -1,244 +1,258 @@
 IRENA;Countries shapefile;Countries Alpha-2 code;NAME_SHORT;ENTSO-E;EUROSTAT
+Aruba;ABW;AW;;;
 Afghanistan;AFG;AF;;;
-Albania;ALB;AL;;;Albania
-Algeria;DZA;DZ;;;
-Amer Samoa;ASM;AS;;;
-Andorra;AND;AD;;;
 Angola;AGO;AO;;;
 Anguilla;AIA;AI;;;
-Antigua Barb;ATG;AG;;;
+Aland Islands;ALA;AX;;;
+Albania;ALB;AL;;;Albania
+Andorra;AND;AD;;;
+United Arab Em;ARE;AE;;;
 Argentina;ARG;AR;;;
 Armenia;ARM;AM;;;
-Aruba;ABW;AW;;;
+Amer Samoa;ASM;AS;;;
+Antarctica;ATA;AQ;;;
+French Southern Territories;ATF;TF;;;
+Antigua Barb;ATG;AG;;;
 Australia;AUS;AU;;;
 Austria;AUT;AT;AT;AT;Austria
 Azerbaijan;AZE;AZ;;;
-Bahamas;BHS;BS;;;
-Bahrain;BHR;BH;;;
-Bangladesh;BGD;BD;;;
-Barbados;BRB;BB;;;
-Belarus;BLR;BY;;;
-Belgium;BEL;BE;BE;BE;Belgium
-Belize;BLZ;BZ;;;
-Benin;BEN;BJ;;;
-Bermuda;BMU;BM;;;
-BES Islands;BES;BQ;;;
-Bhutan;BTN;BT;;;
-Bolivia;BOL;BO;;;
-Bosnia Herzg;BIH;BA;BA;BA;Bosnia and Herzegovina
-Botswana;BWA;BW;;;
-Br Virgin Is;VGB;VG;;;
-Brazil;BRA;BR;;;
-Brunei Darsm;BRN;BN;;;
-Bulgaria;BGR;BG;BG;BG;Bulgaria
-Burkina Faso;BFA;BF;;;
 Burundi;BDI;BI;;;
-Cabo Verde;CPV;CV;;;
-Cambodia;KHM;KH;;;
-Cameroon;CMR;CM;;;
-Canada;CAN;CA;;;
-Cayman Is;CYM;KY;;;
+Belgium;BEL;BE;BE;BE;Belgium
+Benin;BEN;BJ;;;
+BES Islands;BES;BQ;;;
+Burkina Faso;BFA;BF;;;
+Bangladesh;BGD;BD;;;
+Bulgaria;BGR;BG;BG;BG;Bulgaria
+Bahrain;BHR;BH;;;
+Bahamas;BHS;BS;;;
+Bosnia Herzg;BIH;BA;BA;BA;Bosnia and Herzegovina
+St Barth;BLM;BL;;;
+Belarus;BLR;BY;;;
+Belize;BLZ;BZ;;;
+Bermuda;BMU;BM;;;
+Bolivia;BOL;BO;;;
+Brazil;BRA;BR;;;
+Barbados;BRB;BB;;;
+Brunei Darsm;BRN;BN;;;
+Bhutan;BTN;BT;;;
+Bouvet Island;BVT;BV;;;
+Botswana;BWA;BW;;;
 Cent Afr Rep;CAF;CF;;;
-Chad;TCD;TD;;;
+Canada;CAN;CA;;;
+Cocos Is;CCK;CC;;;
+Switzerland;CHE;CH;CH;CH;
 Chile;CHL;CL;;;
 China;CHN;CN;;;
-China HK SAR;HKG;HK;;;
-China Mac SAR;MAC;MO;;;
-Chinese Taipei;TWN;TW;;;
-Christmas Is;CXR;CX;;;
-Cocos Is;CCK;CC;;;
-Colombia;COL;CO;;;
-Comoros;COM;KM;;;
+Cote d Ivoire;CIV;CI;;;
+Cameroon;CMR;CM;;;
 Congo DR;COD;CD;;;
 Congo Rep;COG;CG;;;
 Cook Is;COK;CK;;;
+Colombia;COL;CO;;;
+Comoros;COM;KM;;;
+Cabo Verde;CPV;CV;;;
 Costa Rica;CRI;CR;;;
-Cote d Ivoire;CIV;CI;;;
-Croatia;HRV;HR;HR;HR;Croatia
 Cuba;CUB;CU;;;
 Curacao;CUW;CW;;;
+Christmas Is;CXR;CX;;;
+Cayman Is;CYM;KY;;;
 Cyprus;CYP;CY;CY;CY;Cyprus
 Czechia;CZE;CZ;CZ;CZ;Czechia
-Denmark;DNK;DK;DK;DK;Denmark
+Germany;DEU;DE;DE;DE;Germany (until 1990 former territory of the FRG)
 Djibouti;DJI;DJ;;;
 Dominica;DMA;DM;;;
+Denmark;DNK;DK;DK;DK;Denmark
 Dominican Rep;DOM;DO;;;
+Algeria;DZA;DZ;;;
 Ecuador;ECU;EC;EC;;
 Egypt;EGY;EG;;;
-El Salvador;SLV;SV;;;
-Eq Guinea;GNQ;GQ;;;
 Eritrea;ERI;ER;;;
+Westn Sahara;ESH;EH;;;
+Spain;ESP;ES;ES;ES;Spain
 Estonia;EST;EE;EE;EE;Estonia
-Eswatini;SWZ;SZ;;;
 Ethiopia;ETH;ET;;;
-Falklands Malv;FLK;FK;;;
-Faroe Islands;FRO;FO;;;
-Fiji;FJI;FJ;;;
 Finland;FIN;FI;FI;FI;Finland
-Fr Guiana;GUF;GF;;;
-Fr Polynesia;PYF;PF;;;
+Fiji;FJI;FJ;;;
+Falklands Malv;FLK;FK;;;
 France;FRA;FR;FR;FR;France
+Faroe Islands;FRO;FO;;;
+Micronesia;FSM;FM;;;
 Gabon;GAB;GA;;;
-Gambia;GMB;GM;;;
+UK;GBR;GB;UK;GB, NI;United Kingdom
 Georgia;GEO;GE;;;Georgia
-Germany;DEU;DE;DE;DE;Germany (until 1990 former territory of the FRG)
+Guernsey;GGY;GG;;;
 Ghana;GHA;GH;GH;;Ghana
 Gibraltar;GIB;GI;;;
-Greece;GRC;GR;EL;GR;Greece
-Greenland;GRL;GL;;;
-Grenada;GRD;GD;;;
-Guadeloupe;GLP;GP;;;
-Guam;GUM;GU;;;
-Guatemala;GTM;GT;;;
-Guyana;GUY;GY;;;
 Guinea;GIN;GN;;;
+Guadeloupe;GLP;GP;;;
+Gambia;GMB;GM;;;
 Guinea Bissau;GNB;GW;;;
-Haiti;HTI;HT;;;
-Holy See;VAT;VA;;;
+Eq Guinea;GNQ;GQ;;;
+Greece;GRC;GR;EL;GR;Greece
+Grenada;GRD;GD;;;
+Greenland;GRL;GL;;;
+Guatemala;GTM;GT;;;
+Fr Guiana;GUF;GF;;;
+Guam;GUM;GU;;;
+Guyana;GUY;GY;;;
+China HK SAR;HKG;HK;;;
+Heard Island and McDonald Islands;HMD;HM;;;
 Honduras;HND;HN;;;
+Croatia;HRV;HR;HR;HR;Croatia
+Haiti;HTI;HT;;;
 Hungary;HUN;HU;HU;HU;Hungary
-Iceland;ISL;IS;IS;IS;Iceland
-India;IND;IN;;;
 Indonesia;IDN;ID;;;
+Isle of Man;IMN;IM;;;
+India;IND;IN;;;
+British Indian Ocean Territory;IOT;IO;;;
+Ireland;IRL;IE;IE;IE;Ireland
 Iran IR;IRN;IR;;;
 Iraq;IRQ;IQ;;;
-Ireland;IRL;IE;IE;IE;Ireland
+Iceland;ISL;IS;IS;IS;Iceland
 Israel;ISR;IL;;;
 Italy;ITA;IT;IT;IT;Italy
 Jamaica;JAM;JM;;;
-Japan;JPN;JP;;;
+Jersey;JEY;JE;;;
 Jordan;JOR;JO;;;
+Japan;JPN;JP;;;
+St Kitts Nevis;KANN;KN;;;
 Kazakhstan;KAZ;KZ;;;
 Kenya;KEN;KE;;;
-Kiribati;KIR;KI;;;
-Korea DPR;PRK;KP;;;
-Korea Rep;KOR;KR;;;
-Kosovo*;XKO;XK;;;Kosovo (under United Nations Security Council Resolution 1244/99)
-Kuwait;KWT;KW;;;
 Kyrgyzstan;KGZ;KG;;;
+Cambodia;KHM;KH;;;
+Kiribati;KIR;KI;;;
+Saint Kitts and Nevis;KNA;KN;;;
+Korea Rep;KOR;KR;;;
+Kuwait;KWT;KW;;;
 Lao PDR;LAO;LA;;;
-Latvia;LVA;LV;LV;LV;Latvia
 Lebanon;LBN;LB;;;
-Lesotho;LSO;LS;;;
 Liberia;LBR;LR;;;
 Libya;LBY;LY;;;
+St Lucia;LCA;LC;;;
 Liechtenstein;LIE;LI;;;
+Sri Lanka;LKA;LK;;;
+Lesotho;LSO;LS;;;
 Lithuania;LTU;LT;LT;LT;Lithuania
 Luxembourg;LUX;LU;LU;LU;Luxembourg
+Latvia;LVA;LV;LV;LV;Latvia
+China Mac SAR;MAC;MO;;;
+St Martin;MAF;MF;;;
+Morocco;MAR;MA;;;
+Monaco;MCO;MC;;;
+Moldova Rep;MDA;MD;;;Moldova
 Madagascar;MDG;MG;;;
-Malawi;MWI;MW;;;
-Malaysia;MYS;MY;;;
 Maldives;MDV;MV;;;
+Mexico;MEX;MX;;;
+Marshall Is;MHL;MH;;;
+North Macedonia;MKD;MK;MK;MK;North Macedonia
 Mali;MLI;ML;;;
 Malta;MLT;MT;;;Malta
-Marshall Is;MHL;MH;;;
-Martinique;MTQ;MQ;;;
-Mauritania;MRT;MR;;;
-Mauritius;MUS;MU;;;
-Mayotte;MYT;YT;;;
-Mexico;MEX;MX;;;
-Micronesia;FSM;FM;;;
-Moldova Rep;MDA;MD;;;Moldova
-Monaco;MCO;MC;;;
-Mongolia;MNG;MN;;;
-Montenegro;MNE;ME;ME;ME;Montenegro
-Montserrat;MSR;MS;;;
-Morocco;MAR;MA;;;
-Mozambique;MOZ;MZ;;;
 Myanmar;MMR;MM;;;
-Namibia;NAM;NA;;;
-Nauru;NRU;NR;;;
-Nepal;NPL;NP;;;
-Netherlands;NLD;NL;NL;NL;Netherlands
-New Caledon;NCL;NC;;;
-New Zealand;NZL;NZ;;;
-Nicaragua;NIC;NI;;;
-Niger;NER;NE;;;
-Nigeria;NGA;NG;;;
-Niue;NIU;NU;;;
-Norfolk Is;NFK;NF;;;
-North Macedonia;MKD;MK;MK;MK;North Macedonia
-Norway;NOR;NO;NO;NO;Norway
+Montenegro;MNE;ME;ME;ME;Montenegro
+Mongolia;MNG;MN;;;
 Nth Mariana Is;MNP;MP;;;
+Mozambique;MOZ;MZ;;;
+Mauritania;MRT;MR;;;
+Montserrat;MSR;MS;;;
+Martinique;MTQ;MQ;;;
+Mauritius;MUS;MU;;;
+Malawi;MWI;MW;;;
+Malaysia;MYS;MY;;;
+Mayotte;MYT;YT;;;
+Namibia;NAM;NA;;;
+New Caledon;NCL;NC;;;
+Niger;NER;NE;;;
+Norfolk Is;NFK;NF;;;
+Nigeria;NGA;NG;;;
+Nicaragua;NIC;NI;;;
+Niue;NIU;NU;;;
+Netherlands;NLD;NL;NL;NL;Netherlands
+Norway;NOR;NO;NO;NO;Norway
+Nepal;NPL;NP;;;
+Nauru;NRU;NR;;;
+New Zealand;NZL;NZ;;;
 Oman;OMN;OM;;;
 Pakistan;PAK;PK;;;
-Palau;PLW;PW;;;
-Palestine;PSE;PS;;;
 Panama;PAN;PA;;;
-Papua N Guin;PNG;PG;;;
-Paraguay;PRY;PY;;;
+Pitcairn;PCN;PN;;;
 Peru;PER;PE;;;
 Philippines;PHL;PH;;;
-Pitcairn;PCN;PN;;;
+Palau;PLW;PW;;;
+Papua N Guin;PNG;PG;;;
 Poland;POL;PL;PL;PL;Poland
-Portugal;PRT;PT;PT;PT;Portugal
 Puerto Rico;PRI;PR;;;
+Korea DPR;PRK;KP;;;
+Portugal;PRT;PT;PT;PT;Portugal
+Paraguay;PRY;PY;;;
+Palestine;PSE;PS;;;
+Fr Polynesia;PYF;PF;;;
 Qatar;QAT;QA;;;
 Reunion;REU;RE;;;
 Romania;ROU;RO;RO;RO;Romania
 Russian Fed;RUS;RU;;;
 Rwanda;RWA;RW;;;
-Saint Helena;SHN;SH;;;
-Samoa;WSM;WS;;;
-San Marino;SMR;SM;;;
-Sao Tome Prn;STP;ST;;;
 Saudi Arabia;SAU;SA;;;
+Sudan;SDN;SD;;;
 Senegal;SEN;SN;;;
-Serbia;SRB;RS;RS;RS;Serbia
-Seychelles;SYC;SC;;;
-Sierra Leone;SLE;SL;;;
 Singapore;SGP;SG;SG;SG;
+South Georgia and the South Sandwich Islands;SGS;GS;;;
+Saint Helena;SHN;SH;;;
+Svalbard and Jan Mayen;SJM;SJ;;;
+Solomon Is;SLB;SB;;;
+Sierra Leone;SLE;SL;;;
+El Salvador;SLV;SV;;;
+San Marino;SMR;SM;;;
+Somalia;SOM;SO;;;
+St Pierre Mq;SPM;PM;;;
+Serbia;SRB;RS;RS;RS;Serbia
+South Sudan;SSD;SS;;;
+Sao Tome Prn;STP;ST;;;
+Suriname;SUR;SR;;;
 Slovakia;SVK;SK;SK;SK;Slovakia
 Slovenia;SVN;SI;SI;SI;Slovenia
-Solomon Is;SLB;SB;;;
-Somalia;SOM;SO;;;
-South Africa;ZAF;ZA;;;
-South Sudan;SSD;SS;;;
-Spain;ESP;ES;ES;ES;Spain
-Sri Lanka;LKA;LK;;;
-St Barth;BLM;BL;;;
-St Kitts Nevis;KANN;KN;;;
-St Lucia;LCA;LC;;;
-St Maarten;SXM;SX;;;
-St Martin;MAF;MF;;;
-St Pierre Mq;SPM;PM;;;
-St Vincent Gren;VCT;VC;;;
-Sudan;SDN;SD;;;
-Suriname;SUR;SR;;;
 Sweden;SWE;SE;SE;SE;Sweden
-Switzerland;CHE;CH;CH;CH;
+Eswatini;SWZ;SZ;;;
+St Maarten;SXM;SX;;;
+Seychelles;SYC;SC;;;
 Syrian AR;SYR;SY;;;
-Tajikistan;TJK;TJ;;;
-Tanzania;TZA;TZ;;;
-Thailand;THA;TH;;;
-Timor Leste;TLS;TL;;;
+Turks Caicos;TCA;TC;;;
+Chad;TCD;TD;;;
 Togo;TGO;TG;;;
+Thailand;THA;TH;;;
+Tajikistan;TJK;TJ;;;
 Tokelau;TKL;TK;;;
+Turkmenistan;TKM;TM;;;
+Timor Leste;TLS;TL;;;
 Tonga;TON;TO;;;
 Trinidad Tobago;TTO;TT;;;
 Tunisia;TUN;TN;;;
 Turkey;TUR;TR;;;Turkey
-Turkmenistan;TKM;TM;;;
-Turks Caicos;TCA;TC;;;
 Tuvalu;TUV;TV;;;
+Chinese Taipei;TWN;TW;;;
+Tanzania;TZA;TZ;;;
 Uganda;UGA;UG;;;
-UK;GBR;GB;UK;GB, NI;United Kingdom
 Ukraine;UKR;UA;;UA_W;Ukraine
-United Arab Em;ARE;AE;;;
+United States Minor Outlying Islands;UMI;UM;;;
 Uruguay;URY;UY;;;
-US Virgin Is;VIR;VI;;;
 USA;USA;US;;;
 Uzbekistan;UZB;UZ;;;
-Vanuatu;VUT;VU;;;
+Holy See;VAT;VA;;;
+St Vincent Gren;VCT;VC;;;
 Venezuela;VEN;VE;;;
+Br Virgin Is;VGB;VG;;;
+US Virgin Is;VIR;VI;;;
 Viet Nam;VNM;VN;;;
+Vanuatu;VUT;VU;;;
 Wallis Fut Is;WLF;WF;;;
-Westn Sahara;ESH;EH;;;
+Samoa;WSM;WS;;;
+Akrotiri and Dhekelia;XAD;XA;;;
+Caspian Sea;XCA;XC;;;
+Clipperton Island;XCL;XL;;;
+Kosovo;XKO;XK;;;Kosovo (under United Nations Security Council Resolution 1244/99)
+Northern Cyprus;XNC;XN;;;
+Paracel Islands;XPI;XP;;;
+Spratly Islands;XSP;XS;;;
 Yemen;YEM;YE;;;
+South Africa;ZAF;ZA;;;
 Zambia;ZMB;ZM;;;
 Zimbabwe;ZWE;ZW;;;
-Saint Kitts and Nevis;KNA;KN;;;
-United States Minor Outlying Islands;UMI;UM;;;
-Caspian Sea;XCA;XC;;;
-French Southern Territories;ATF;TF;;;
-Isle of Man;IMN;IM;;;

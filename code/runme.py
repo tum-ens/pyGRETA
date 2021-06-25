@@ -19,13 +19,15 @@ if __name__ == "__main__":
 
         paths, param = ii.initialization(config)   # Initialize with the corresponding config for each country defined in folder 'configs'
 
-        # # Generate input raster maps
-        im.generate_maps_for_scope(paths, param)
+        # Generate input raster maps
+        if(os.path.isfile(paths["PA"] + '.json')):
+            im.generate_maps_for_scope(paths, param)
 
-        # # Generate buffer maps
-        im.generate_buffered_maps(paths, param)
+        # Generate buffer maps
+        if(os.path.isfile(paths["WINDON_PA_BUFFER"] + '.json')):   # Check if there are already maps
+            im.generate_buffered_maps(paths, param)
 
-         # #Wind speed correction
+         # Wind speed correction
         if "WindOn" in param["technology"] or "WindOff" in param["technology"]:
             cf.generate_wind_correction(paths, param)
 

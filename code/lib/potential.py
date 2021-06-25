@@ -170,7 +170,7 @@ def calculate_full_load_hours(paths, param, tech):
         FLH[:] = np.nan
         list_pixles = np.arange(n_low * m_low)  # All pixles within MERRA data
 
-        multiprocessing = True
+        multiprocessing = False
         if multiprocessing:
             list_pixles_splitted = np.array_split(list_pixles,
                                                   nproc)  # Splitted list acording to the number of parrallel processes

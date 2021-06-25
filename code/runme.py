@@ -1,7 +1,7 @@
-from lib.correction_functions import generate_wind_correction
-from lib.initialization import initialization
-from lib.input_maps import generate_maps_for_scope, generate_buffered_maps
-from lib.potential import calculate_full_load_hours, mask_potential_maps, weight_potential_maps, report_potentials, generate_biomass_production, club_biomass
+import lib.correction_functions as cf    # old: generate_wind_correction
+import lib.initialization as ii          # old: import initialization
+import lib.input_maps as im              # old: generate_maps_for_scope, generate_buffered_maps
+import lib.potential as pl               # old: import calculate_full_load_hours, mask_potential_maps, weight_potential_maps, report_potentials, generate_biomass_production, club_biomass
 from lib.regression import get_regression_coefficients
 from lib.time_series import (
     find_representative_locations,
@@ -17,30 +17,30 @@ if __name__ == "__main__":
     for config in configs:      # Loop over all countries
         print('Started: ' + str(config))
 
-        paths, param = initialization(config)   # Initialize with the corresponding config for each country defined in folder 'configs'
+        paths, param = ii.initialization(config)   # Initialize with the corresponding config for each country defined in folder 'configs'
 
         # # Generate input raster maps
-        generate_maps_for_scope(paths, param)
+        im.generate_maps_for_scope(paths, param)
 
         # # Generate buffer maps
-        generate_buffered_maps(paths, param)
+        im.generate_buffered_maps(paths, param)
 
          # #Wind speed correction
         if "WindOn" in param["technology"] or "WindOff" in param["technology"]:
-            generate_wind_correction(paths, param)
+            cf.generate_wind_correction(paths, param)
 
         if "Biomass" in param["technology"]:
-            generate_biomass_production(paths, param)
+            pl.generate_biomass_production(paths, param)
             # club_biomass(paths,param)
 
         for tech in param["technology"]:
             print("Tech: " + tech)
 
             # Generate potential maps and reports
-            calculate_full_load_hours(paths, param, tech)
-            mask_potential_maps(paths, param, tech)
-            weight_potential_maps(paths, param, tech)
-            report_potentials(paths, param, tech)
+            pl.calculate_full_load_hours(paths, param, tech)
+            pl.mask_potential_maps(paths, param, tech)
+            pl.weight_potential_maps(paths, param, tech)
+            pl.report_potentials(paths, param, tech)
 
             # Generate time series
             #find_representative_locations(paths, param, tech)

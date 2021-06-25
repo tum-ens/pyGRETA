@@ -17,22 +17,29 @@ if __name__ == "__main__":
     for config in configs:      # Loop over all countries
         print('Started: ' + str(config))
 
-        paths, param = ii.initialization(config)   # Initialize with the corresponding config for each country defined in folder 'configs'
+        # Initialize with the corresponding config for each country defined in folder 'configs'
+        paths, param = ii.initialization(config)
+
+        # Download data from Global Wind Atlas
+        im.downloadGWA(paths, param)
 
         # Generate input raster maps
-        if(os.path.isfile(paths["PA"])):
+        if os.path.isfile(paths["PA"]):
             print('Skip generate_maps_for_scope')
         else:
             im.generate_maps_for_scope(paths, param)
         # Generate buffer maps
-        if(os.path.isfile(paths["WINDON_PA_BUFFER"])):   # Check if there are already maps
+        if os.path.isfile(paths["WINDON_PA_BUFFER"]):   # Check if there are already maps
             print('Skip generate_buffered_maps')
         else:
             im.generate_buffered_maps(paths, param)
 
          # Wind speed correction
-        if "WindOn" in param["technology"] or "WindOff" in param["technology"]:
-            cf.generate_wind_correction(paths, param)   # TODO: Into calculate full load hours?
+        if ("WindOn" in param["technology"] or "WindOff" in param["technology"]):
+            if os.path.isfile(paths["CORR_ON"]):
+                print('Skip generate_wind_correction')
+            else:
+                cf.generate_wind_correction(paths, param)  # TODO: Into calculate full load hours?
 
         if "Biomass" in param["technology"]:
             pl.generate_biomass_production(paths, param)

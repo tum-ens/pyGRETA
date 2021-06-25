@@ -1,6 +1,15 @@
 from .correction_functions import clean_weather_data
 from .spatial_functions import *
 #import cython
+import urllib.request
+import os
+
+def downloadGWA(paths, param):
+    local_file = paths["GWA_global"]
+    if not os.path.isfile(local_file):
+        print('Downlad GWA:' + local_file)
+        remote_url = 'https://globalwindatlas.info/api/gis/country/' + param["country_code"] + '/wind-speed/50'
+        urllib.request.urlretrieve(remote_url, local_file)
 
 
 def generate_maps_for_scope(paths, param):
@@ -31,7 +40,7 @@ def generate_maps_for_scope(paths, param):
     # generate_population(paths, param)  # Population #not used anywhere?
    
 
-def generate_buffered_maps(paths,param):
+def generate_buffered_maps(paths, param):
 
     # if "WindOn" in param["technology"]:
        # generate_buffered_population(paths, param)

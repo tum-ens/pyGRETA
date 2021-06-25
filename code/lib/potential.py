@@ -44,29 +44,24 @@ def calculate_full_load_hours(paths, param, tech):
     res_weather = param["res_weather"]
     Crd_all = param["Crd_all"]
     Ind = ind_merra(Crd_all, Crd_all, res_weather)[0]
-
+    
     if tech == "WindOff":
         with rasterio.open(paths["EEZ"]) as src:
             w = src.read(1)
     else:
         with rasterio.open(paths["LAND"]) as src:
             w = src.read(1)
-
+    
     param["Ind_nz"] = np.nonzero(np.flipud(w))
 
-    A_country_area = np.zeros(w.shape)
-    for reg in range(0, nRegions):
-        r = calc_region(regions_shp.loc[reg], Crd_all, res_desired, GeoRef)
-        A_country_area = A_country_area + r
-    A_country_area = np.flipud(A_country_area)
-    del w
-
+    del w    
+    
     # Obtain weather and correction matrices
     merraData, rasterData = get_merra_raster_data(paths, param, tech)
-
+        
     if tech in ["PV", "CSP"]:
 
-        day_filter = np.nonzero(merraData["CLEARNESS"][Ind[2] - 1: Ind[0], Ind[3] - 1: Ind[1], :].sum(axis=(0, 1)))
+        day_filter = np.nonzero(merraData["CLEARNESS"][Ind[2] - 1 : Ind[0], Ind[3] - 1 : Ind[1], :].sum(axis=(0, 1)))
         list_hours = np.arange(0, 8760)
         if nproc == 1:
             param["status_bar_limit"] = list_hours[-1]
@@ -77,15 +72,20 @@ def calculate_full_load_hours(paths, param, tech):
             results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(
                 calc_FLH_solar, product(list_hours, [[param, tech, rasterData, merraData]])
             )
-        # Collecting results
-        FLH = np.full((m_high, n_high), np.nan)
-        FLH[param["Ind_nz"]] = 0
+         # Collecting results
+        FLH_low = np.zeros((m_low, n_low))
+        
         if nproc > 1:
             for p in range(len(results)):
-                FLH[param["Ind_nz"]] = FLH[param["Ind_nz"]] + results[p]
+                FLH_low = FLH_low + results[p]
+                # print (np.sum(FLH_low))
         else:
             FLH[param["Ind_nz"]] = results
+        
+        FLH_high = resizem(FLH_low, m_high, n_high)
+        FLH = np.full((m_high, n_high),np.nan)
 
+        FLH[param["Ind_nz"]]=FLH_high[param["Ind_nz"]]
         hdf5storage.writes({"FLH": FLH}, paths[tech]["FLH"], store_python_metadata=True, matlab_compatible=True)
         create_json(
             paths[tech]["FLH"],
@@ -99,10 +99,9 @@ def calculate_full_load_hours(paths, param, tech):
         # Save GEOTIFF files
         if param["savetiff"]:
             GeoRef = param["GeoRef"]
-            array2raster(changeExt2tif(paths[tech]["FLH"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
-                         GeoRef["pixelHeight"], FLH)
+            array2raster(changeExt2tif(paths[tech]["FLH"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], FLH)
             print("files saved:" + changeExt2tif(paths[tech]["FLH"]))
-
+    
     elif tech in ["WindOff"]:
         list_hours = np.array_split(np.arange(0, 8760), nproc)
         param["status_bar_limit"] = list_hours[0][-1]
@@ -131,12 +130,16 @@ def calculate_full_load_hours(paths, param, tech):
         # Save GEOTIFF files
         if param["savetiff"]:
             GeoRef = param["GeoRef"]
-            array2raster(changeExt2tif(paths[tech]["FLH"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
-                         GeoRef["pixelHeight"], FLH)
+            array2raster(changeExt2tif(paths[tech]["FLH"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], FLH)
             print("files saved:" + changeExt2tif(paths[tech]["FLH"]))
-
+    
     elif tech in ["WindOn"]:
-
+        A_country_area = np.zeros((m_high, n_high))
+        for reg in range(0, nRegions):
+            r = calc_region(regions_shp.loc[reg], Crd_all, res_desired, GeoRef)  
+            A_country_area = A_country_area + r
+        A_country_area = np.flipud(A_country_area)
+        
         merraData = merraData["W50M"][::-1, :, :]
         # merraData = merraData.astype(dtype=np.float16)
         rasterData = rasterData["A_cf"]
@@ -170,7 +173,7 @@ def calculate_full_load_hours(paths, param, tech):
         FLH[:] = np.nan
         list_pixles = np.arange(n_low * m_low)  # All pixles within MERRA data
 
-        multiprocessing = False
+        multiprocessing = True
         if multiprocessing:
             list_pixles_splitted = np.array_split(list_pixles,
                                                   nproc)  # Splitted list acording to the number of parrallel processes
@@ -298,8 +301,13 @@ def calc_FLH_solar(hours, args):
     rasterData = args[2]
     merraData = args[3]
     reg_ind = param["Ind_nz"]
+    m_low = param["m_low"]
+    n_low = param["n_low"]
 
-    FLH = np.zeros(len(reg_ind[0]))
+    x = np.ones((m_low,n_low))
+    ind = np.nonzero(x)
+    
+    FLH = np.zeros((m_low, n_low))
     status = 0
     for hour in hours:
         if hour <= param["status_bar_limit"]:
@@ -308,16 +316,18 @@ def calc_FLH_solar(hours, args):
             display_progress(tech + " " + param["region_name"], [len(hours), status])
 
         if tech == "PV":
-            CF = calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech)[0]
+            CF = calc_CF_solar(hour, ind, param, merraData, rasterData, tech)[0]
+            
         elif tech == "CSP":
-            CF = calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech)[1]
+            CF = calc_CF_solar(hour, ind, param, merraData, rasterData, tech)[1]
 
         # Aggregates CF to obtain the yearly FLH
         CF[np.isnan(CF)] = 0
-        FLH = FLH + CF
-
-        # print(str(hour)+"_"+str(sum(FLH)))
-
+        
+        FLH[ind] = FLH[ind] + CF
+        
+        #print(str(hour)+"_"+str(sum(FLH)))
+    
     return FLH
 
 

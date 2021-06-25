@@ -30,13 +30,20 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
     csp = param["CSP"]["technical"]
     m_high = param["m_high"]
     n_high = param["n_high"]
-    res_desired = param["res_desired"]
+    m_low = param["m_low"]
+    n_low = param["n_low"]
+    # res_desired = param["res_desired"]
+    res_weather = param["res_weather"]
     Crd_all = param["Crd_all"]
 
     # Load MERRA data, increase its resolution, and fit it to the extent
     CLEARNESS_h = merraData["CLEARNESS"][:, :, hour]
-    CLEARNESS_h = resizem(CLEARNESS_h, m_high, n_high)
-    reg_ind_h = np.nonzero(CLEARNESS_h)
+    #CLEARNESS_h = resizem(CLEARNESS_h, m_high, n_high)
+    # reg_ind_h = np.nonzero(CLEARNESS_h)
+    
+    x = np.ones((m_low,n_low))
+    reg_ind_h = np.nonzero(x)
+    
     # Filter out night hours for every valid point
     filter_lat = np.logical_and(reg_ind[0] >= reg_ind_h[0].min(), reg_ind[0] <= reg_ind_h[0].max())
     filter_lon = np.logical_and(reg_ind[1] >= reg_ind_h[1].min(), reg_ind[1] <= reg_ind_h[1].max())
@@ -54,7 +61,7 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
         orient = 0
 
     # Compute the angles
-    A_phi, A_omega, A_delta, A_alpha, A_beta, A_azimuth, A_orientation = angles(hour, reg_ind_h, Crd_all, res_desired, orient)
+    A_phi, A_omega, A_delta, A_alpha, A_beta, A_azimuth, A_orientation = angles(hour, reg_ind_h, Crd_all, res_weather, orient)
 
     # Compute the hourly TOA radiation
     TOA_h = toa_hourly(A_alpha, hour)
@@ -67,8 +74,8 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
 
     CLEARNESS_h = CLEARNESS_h[reg_ind_h] * param[tech]["resource"]["clearness_correction"]
     TEMP_h = merraData["T2M"][:, :, hour]
-    TEMP_h = resizem(TEMP_h, m_high, n_high) - 273.15  # Convert to Celsius
-    TEMP_h = TEMP_h[reg_ind_h]
+    #TEMP_h = resizem(TEMP_h, m_high, n_high) - 273.15  # Convert to Celsius
+    TEMP_h = TEMP_h[reg_ind_h] - 273.15
 
     # Other matrices
     A_albedo = rasterData["A_albedo"][reg_ind_h]
@@ -121,7 +128,7 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
 
         # Compute losses due to heating of the PV cells
         LOSS_TEMP = loss(G_tilt_h, TEMP_h, A_Ross, pv)
-
+        
         # Compute the hourly capacity factor
         CF_pv = G_tilt_h * (1 - LOSS_TEMP) / 1000
 
@@ -130,6 +137,9 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
         aux = np.zeros(len(reg_ind[0]))
         aux[filter] = CF_pv
         CF_pv = aux
+        
+        # print (np.sum(CF_pv))
+
     else:
         CF_pv = None
 

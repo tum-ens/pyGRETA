@@ -33,8 +33,10 @@ def generate_maps_for_scope(paths, param):
 
 def generate_buffered_maps(paths,param):
 
-    if "WindOn" in param["technology"]:
-        generate_buffered_population(paths, param)
+    # if "WindOn" in param["technology"]:
+       # generate_buffered_population(paths, param)
+
+    generate_buffered_population(paths, param)
     generate_buffered_water(paths, param)
     generate_buffered_wetland(paths, param)
     generate_buffered_snow(paths, param)

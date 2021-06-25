@@ -19,11 +19,13 @@ if __name__ == "__main__":
 
         paths, param = ii.initialization(config)   # Initialize with the corresponding config for each country defined in folder 'configs'
 
-        # # Generate input raster maps
-        im.generate_maps_for_scope(paths, param)
+        # Generate input raster maps
+        if(os.path.isfile(paths["T2M"])):
+            im.generate_maps_for_scope(paths, param)
 
-        # # Generate buffer maps
-        im.generate_buffered_maps(paths, param)
+        # Generate buffer maps
+        if(os.path.isfile(paths["POP_BUFFER"])):   # Check if there are already maps
+            im.generate_buffered_maps(paths, param)
 
          # #Wind speed correction
         if "WindOn" in param["technology"] or "WindOff" in param["technology"]:

@@ -40,8 +40,8 @@ def generate_buffered_maps(paths,param):
     generate_buffered_water(paths, param)
     generate_buffered_wetland(paths, param)
     generate_buffered_snow(paths, param)
-    generate_airports(paths,param)
-    generate_country_boarders(paths,param)
+    generate_airports(paths, param)
+    generate_country_boarders(paths, param)
     generate_buffered_protected_areas(paths, param)
     
 

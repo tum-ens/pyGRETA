@@ -1119,9 +1119,12 @@ def generate_country_boarders(paths,param):
     kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
         
     for reg in range(0, nCountries):
-        A_country_area = calc_region(countries_shp.loc[reg], Crd_all, res_desired, GeoRef)
-        A_country_buffered = minimum_filter(A_country_area, footprint=kernel, mode="constant", cval=1)
-        A_countries_buffered = A_countries_buffered + A_country_buffered 
+        try:
+            A_country_area = calc_region(countries_shp.loc[reg], Crd_all, res_desired, GeoRef)
+            A_country_buffered = minimum_filter(A_country_area, footprint=kernel, mode="constant", cval=1)
+            A_countries_buffered = A_countries_buffered + A_country_buffered 
+        except:
+            pass
     print (np.sum(A_countries_buffered))
     A_countries_buffered = A_countries_buffered > 0
     print (np.sum(A_countries_buffered))

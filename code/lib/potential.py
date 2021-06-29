@@ -24,7 +24,8 @@ def calculate_full_load_hours(paths, param, tech):
     :return: The raster of FLH potential is saved as mat and tif files, along with the json metadata file.
     :rtype: None
     """
-    timecheck("Start")
+    # timecheck("Start")
+    logger.info('Start')
     logger.info("Region: " + param["region_name"])
 
     if tech in ["WindOn", "WindOff"]:

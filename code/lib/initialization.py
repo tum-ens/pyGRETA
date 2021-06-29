@@ -1,6 +1,7 @@
 from config import configuration
 from .spatial_functions import *
 import numpy as np
+from lib.log import logger
 
 
 
@@ -18,7 +19,7 @@ def initialization(config_file):
    :return: The updated dictionaries param and paths.
     :rtype: tuple(dict, dict)
     """
-    timecheck("Start")
+    logger.info("Start")
     # import param and paths
     paths, param = configuration(config_file)
 
@@ -49,17 +50,17 @@ def initialization(config_file):
     param["m_low"] = int((Ind_all_low[:, 0] - Ind_all_low[:, 2] + 1)[0])  # number of rows
     param["n_low"] = int((Ind_all_low[:, 1] - Ind_all_low[:, 3] + 1)[0])  # number of columns
     param["GeoRef"] = calc_geotiff(Crd_all, res_desired)
-    timecheck("End")
+    # timecheck("End")
 
     # Display initial information
-    print("\nRegion: " + param["region_name"] + " - Year: " + str(param["year"]))
-    print("Folder Path: " + paths["region"] + "\n")
+    logger.info("\nRegion: " + param["region_name"] + " - Year: " + str(param["year"]))
+    logger.info("Folder Path: " + paths["region"] + "\n")
 
     return paths, param
 
 
 def read_shapfile_countries(paths, param, scope_shp, bounds_box):
-    timecheck("Read shapefile of countries")
+    logger.info("Read shapefile of countries")
     # Extract land areas
     countries_shp = gpd.read_file(paths["Countries"], bbox=scope_shp)
     countries_shp = countries_shp.to_crs({"init": "epsg:4326"})
@@ -82,7 +83,7 @@ def read_shapfile_countries(paths, param, scope_shp, bounds_box):
     return paths, param
 
 def read_shapefile_EEZ(paths, param, scope_shp, bounds_box):
-    timecheck("Read shapefile of EEZ")
+    logger.info("Read shapefile of EEZ")
     # Extract sea areas
     eez_shp = gpd.read_file(paths["EEZ_global"], bbox=scope_shp)
     eez_shp = eez_shp.to_crs({"init": "epsg:4326"})
@@ -105,7 +106,7 @@ def read_shapefile_EEZ(paths, param, scope_shp, bounds_box):
     return paths, param
 
 def read_shapefile_subregions(paths, param, scope_shp, bounds_box):
-    timecheck("Read shapefile of subregions")
+    logger.info("Read shapefile of subregions")
     # Read shapefile of regions
     regions_shp = gpd.read_file(paths["subregions"], bbox=scope_shp)
     regions_shp = regions_shp.to_crs({"init": "epsg:4326"})

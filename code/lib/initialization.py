@@ -14,7 +14,8 @@ def initialization(config_file):
     Finally, it saves the number of rows and columns in the low and righ resolution, and a georeference dictionary
     used for saving tif files.
 
-    :return: The updated dictionaries param and paths.
+   
+   :return: The updated dictionaries param and paths.
     :rtype: tuple(dict, dict)
     """
     timecheck("Start")

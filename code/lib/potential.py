@@ -4,7 +4,9 @@ import multiprocessing as mp
 import sys
 import numpy as np
 from .util import *
+import traceback
 #import util
+from .log import logger
 
 
 def calculate_full_load_hours(paths, param, tech):
@@ -23,12 +25,12 @@ def calculate_full_load_hours(paths, param, tech):
     :rtype: None
     """
     timecheck("Start")
-    print("Region: " + param["region_name"])
+    logger.info("Region: " + param["region_name"])
 
     if tech in ["WindOn", "WindOff"]:
-        print("\n" + tech + " - HUB_HEIGHTS: " + str(param[tech]["technical"]["hub_height"]))
+        logger.info("\n" + tech + " - HUB_HEIGHTS: " + str(param[tech]["technical"]["hub_height"]))
     elif tech in ["PV"] and "orientation" in param["PV"]["technical"].keys():
-        print("\n" + tech + " - Orientation: " + str(param[tech]["technical"]["orientation"]))
+        logger.info("\n" + tech + " - Orientation: " + str(param[tech]["technical"]["orientation"]))
 
     nproc = param["nproc"]
     m_high = param["m_high"]
@@ -134,23 +136,24 @@ def calculate_full_load_hours(paths, param, tech):
             print("files saved:" + changeExt2tif(paths[tech]["FLH"]))
     
     elif tech in ["WindOn"]:
-        A_country_area = np.zeros((m_high, n_high))
-        for reg in range(0, nRegions):
-            r = calc_region(regions_shp.loc[reg], Crd_all, res_desired, GeoRef)  
-            A_country_area = A_country_area + r
-        A_country_area = np.flipud(A_country_area)
+        # A_country_area = np.zeros((m_high, n_high))
+        # for reg in range(0, nRegions):
+        #     r = calc_region(regions_shp.loc[reg], Crd_all, res_desired, GeoRef)
+        #     A_country_area = A_country_area + r
+        # A_country_area = np.flipud(A_country_area)
         
         merraData = merraData["W50M"][::-1, :, :]
-        # merraData = merraData.astype(dtype=np.float16)
+
         rasterData = rasterData["A_cf"]
-        # rasterData = rasterData.astype(dtype=np.float16)
+        #rasterData = rasterData.astype(dtype=np.float32)
 
         with rasterio.open(paths["GWA_global"]) as src:
             GWA_array = src.read(1)
-        # GWA_array = GWA_array.astype(dtype=np.float16)
-        GWA_array = np.power(GWA_array, 3)
-        where_are_NaNs = np.isnan(GWA_array)
-        GWA_array[where_are_NaNs] = 0
+        GWA_array[np.isnan(GWA_array)] = 0
+
+        #merraData = merraData.astype(dtype=np.float32)
+        GWA_array = GWA_array.astype(dtype=np.float16)
+        #rasterData = rasterData.astype(dtype=np.float32)
 
         # param["status_bar_limit"] = list_rows_splitted[0][-1] # ToDo: Wo we need this?
 
@@ -173,32 +176,34 @@ def calculate_full_load_hours(paths, param, tech):
         FLH[:] = np.nan
         list_pixles = np.arange(n_low * m_low)  # All pixles within MERRA data
 
-        multiprocessing = True
+        multiprocessing = True  # debuging
         if multiprocessing:
             list_pixles_splitted = np.array_split(list_pixles,
                                                   nproc)  # Splitted list acording to the number of parrallel processes
-            print('# of processes: ' + str(len(list_pixles_splitted)))
-            # print(list_pixles_splitted)
+            logger.info('# of processes: ' + str(len(list_pixles_splitted)))
+            logger.debug(list_pixles_splitted)
 
             for pixles in list_pixles_splitted:  # Run the 'calc_FLH_windon' for each of the splitted rows
                 p = mp.Process(target=calc_FLH_windon, args=(
-                    param, tech, paths, rasterData, merraData, GWA_array, b_xmin, b_xmax, b_ymin, b_ymax, x_gwa, y_gwa,
+                    param, tech, rasterData, merraData, GWA_array, b_xmin, b_xmax, b_ymin, b_ymax, x_gwa, y_gwa,
                     pixles, list_results))
                 processes.append(p)
 
+            logger.info('Starting processes for Wind computation')
             for p in processes:
                 p.start()  # Start all single processes
-            print('All processes started')
+            logger.info('All processes started')
 
             for p in processes:
                 p.join()  # Wait until all processes are finished
-            print('All processes finished')
+            logger.info('All processes finished')
         else:
             # list_pixles = np.arange(100,110)  # debuging
             # list_pixles = [np.ravel_multi_index((1, 2), (m_low, n_low))]  # debuging
-            calc_FLH_windon(param, tech, paths, rasterData, merraData, GWA_array, b_xmin, b_xmax, b_ymin, b_ymax, x_gwa,
+            print(list_pixles)
+            calc_FLH_windon(param, tech, rasterData, merraData, GWA_array, b_xmin, b_xmax, b_ymin, b_ymax, x_gwa,
                             y_gwa, list_pixles, list_results)
-            print('Calculations for all pixles done')
+            logger.info('Calculations for all pixles done')
 
         # ------------------------------------------------------------------------------------
 
@@ -206,12 +211,12 @@ def calculate_full_load_hours(paths, param, tech):
         FLH = np.flipud(FLH)
         hdf5storage.writes({"FLH": FLH}, paths[tech]["FLH"], store_python_metadata=True, matlab_compatible=True)
 
-        print("\nfiles saved: " + paths[tech]["FLH"])
+        logger.info("\nfiles saved: " + paths[tech]["FLH"])
 
         GeoRef = param["GeoRef"]
         array2raster(changeExt2tif(paths[tech]["FLH"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
                      GeoRef["pixelHeight"], FLH)
-        print("files saved:" + changeExt2tif(paths[tech]["FLH"]))
+        logger.info("files saved:" + changeExt2tif(paths[tech]["FLH"]))
 
     timecheck("End")
 
@@ -379,7 +384,7 @@ def calc_FLH_windoff(hours, args):
 
 
 # def calc_FLH_windon(row, args):
-def calc_FLH_windon(param, tech, paths, rasterData, merraData, GWA_array, b_xmin, b_xmax, b_ymin, b_ymax, x_gwa, y_gwa,
+def calc_FLH_windon(param, tech, rasterData, merraData, GWA_array, b_xmin, b_xmax, b_ymin, b_ymax, x_gwa, y_gwa,
                     pixles, list_results):
     """
     This function computes the full-load hours for all valid pixels specified in *ind_nz* in *param*. Due to parallel processing,
@@ -400,6 +405,8 @@ def calc_FLH_windon(param, tech, paths, rasterData, merraData, GWA_array, b_xmin
     :rtype: numpy array
     """
 
+    logger.debug('Process started')
+
     # reg_ind = param["Ind_nz"]
     m_low = param["m_low"]
     n_low = param["n_low"]
@@ -409,16 +416,16 @@ def calc_FLH_windon(param, tech, paths, rasterData, merraData, GWA_array, b_xmin
     n_high = param["n_high"]
     turbine = param[tech]["technical"]
 
-    try:
-        reRaster = np.flipud(rasterData)  # ToDo: out of loop? # Why doing this?
-        FLH_np = np.frombuffer(list_results, dtype=np.float32).reshape(m_high, n_high)
-        # print(pixles)
-        for pixle in pixles:
+    reRaster = np.flipud(rasterData)  # ToDo: out of loop? # Why doing this?
+    FLH_np = np.frombuffer(list_results, dtype=np.float32).reshape(m_high, n_high)
+    # logger.debug(pixles)
+    for pixle in pixles:
+        try:
             row, column = np.unravel_index(pixle,
                                            (m_low, n_low))  # Generate row and column out of the numbered position
-            print('Pixle (' + str(row) + ',' + str(column) + ')')  # Print the recent computing pixle
+            logger.debug('Pixle (' + str(row) + ',' + str(column) + ')')  # Print the recent computing pixle
 
-            reMerra = redistribution_array(param, paths, merraData[row, column, :], row, column, b_xmin[row, column],
+            reMerra = redistribution_array(param, merraData[row, column, :], row, column, b_xmin[row, column],
                                            b_xmax[row, column], b_ymin[row, column], b_ymax[row, column], GWA_array,
                                            x_gwa, y_gwa)
             if np.sum(reMerra):  # FIXME: Why is reMerra zero?
@@ -428,26 +435,24 @@ def calc_FLH_windon(param, tech, paths, rasterData, merraData, GWA_array, b_xmin
                 FLH_part = np.nansum(CF, axis=2)
             else:
                 FLH_part = np.zeros([200, 250])
-                print('zeros(' + str(row) + ',' + str(column) + ')')
+                logger.debug('zeros(' + str(row) + ',' + str(column) + ')')
 
             rows_higherResolution = np.arange(row * 200, (
                     row + 1) * 200)  # Extend the rows due to the higher resolution after redistribution Todo: use 'mm/n_high'?
             columns_higherResolution = np.arange(column * 250, (column + 1) * 250)  # same for columns
+            logger.debug('Write on FLH_np (' + str(row) + ',' + str(column) + ')')
             FLH_np[np.ix_(rows_higherResolution,
                           columns_higherResolution)] = FLH_part  # Assign the computed FLH to the big FLH array
 
-            # if np.isnan(np.sum(FLH_part)):
-            #    print('Nan(' + str(row) + ',' + str(column) + ')')
-
-    except:
-        print('!!Error!!')
-        e = sys.exc_info()[0]
-        print(e)
-    else:
-        print('Succesfully finished: ' + str(pixles))
+        except:
+            traceback.print_exc()
+            logger.error('Error on pixle (' + str(row) + ',' + str(column) + ')')
+        else:
+            pass
 
 
-def redistribution_array(param, paths, merraData, i, j, xmin, xmax, ymin, ymax, GWA_array, x_gwa, y_gwa):
+
+def redistribution_array(param, merraData, i, j, xmin, xmax, ymin, ymax, GWA_array, x_gwa, y_gwa):
     """
     What does this function do?
 
@@ -486,9 +491,11 @@ def redistribution_array(param, paths, merraData, i, j, xmin, xmax, ymin, ymax, 
     ToDo: Where do the borders/limits come from? -> not shape file ?!?
     """
 
+    logger.debug('start redistribution')
+
     # 1) Selection
-    GWA_array_copy = GWA_array.copy()  # Create copy so that the origin array doesnt get changed
-    # .astype(dtype=np.float16)
+    GWA_array_copy = GWA_array.astype(dtype=np.float32).copy()  # Create copy so that the origin array doesnt get changed
+    # GWA_array_copy = GWA_array.astype(dtype=np.float16).copy()
     selection_index = (xmin <= x_gwa) & (x_gwa < xmax) & (ymin <= y_gwa) & (
             y_gwa < ymax)  # Determine the pixels that are inbetween the range
     GWA_array_copy[np.invert(selection_index)] = 0  # Set pixel not covered by the shapfile to zero
@@ -501,9 +508,10 @@ def redistribution_array(param, paths, merraData, i, j, xmin, xmax, ymin, ymax, 
     L_last = coordinates_nonzero_pixels_y[-1]  # Last y-coordinate of non-zero pixels
 
     # 2) Redistribute MERRA data
-    # reMerra = np.zeros([200, 250, 8760], dtype=np.float16)
-    reMerra = np.zeros([200, 250, 8760])
+    #reMerra = np.zeros([200, 250, 8760], dtype=np.float16)
 
+    # logger.debug('reMerra')
+    reMerra = np.zeros([200, 250, 8760], dtype = np.float32)
     if np.sum(GWA_array_copy):
         i_offset = 0
         j_offset = 0
@@ -514,9 +522,11 @@ def redistribution_array(param, paths, merraData, i, j, xmin, xmax, ymin, ymax, 
         if L_last + 1 - L_first != 250:
             if j < param["n_low"] / 2:
                 j_offset = 250 - (L_last + 1 - L_first)
-
-        gwa_cut_energy = GWA_array_copy[K_first:K_last + 1,
+        # logger.debug('aaa')
+        gwa_cut_wind = GWA_array_copy[K_first:K_last + 1,
                          L_first:L_last + 1]  # Computation only for the nonzero values
+        # logger.debug('Energy')
+        gwa_cut_energy = np.power(gwa_cut_wind, 3)
         merra_cut_energy_weighting = gwa_cut_energy / np.sum(
             gwa_cut_energy)  # Compute the weighting matrix how the energy is distributed within Global Wind Atlas data
         merra_cut_speed_weighting = np.cbrt(
@@ -524,8 +534,11 @@ def redistribution_array(param, paths, merraData, i, j, xmin, xmax, ymin, ymax, 
         merra_cut_speed_redistributed = np.repeat(merra_cut_speed_weighting[..., None], 8760,
                                                   axis=2) * merraData * np.cbrt(
             value_num_cells)  # Expand the Merra time series of this pixle weighted by energy based distribution of Global Wind Atlas
+
+        # logger.debug('reMerra2')
         reMerra[i_offset:i_offset + K_last + 1 - K_first, j_offset:j_offset + L_last + 1 - L_first,
         :] = merra_cut_speed_redistributed
+
 
     return reMerra
 

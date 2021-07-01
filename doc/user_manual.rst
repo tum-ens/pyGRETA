@@ -13,11 +13,11 @@ First, clone the git repository in a directory of your choice using a Command Pr
 We recommend using conda and installing the environment from the file ``pyGRETA.yml`` that you can find in the repository. In the Command Prompt window, type::
 
 	$ cd pyGRETA\env\
-	$ conda env create -f ren_ts.yml
+	$ conda env create -f pyGRETA.yml
 
 Then activate the environment::
 
-	$ conda activate ren_ts
+	$ conda activate pyGRETA
 
 In the folder ``code``, you will find multiple files:
 

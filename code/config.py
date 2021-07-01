@@ -120,7 +120,7 @@ def scope_paths_and_parameters(paths, param):
     param["subregions_name"] = "Austria"  # Name tag of the subregions
 
     # Desired resolution
-    param["res_desired"] = np.array([1 / 8, 1 / 8])
+    param["res_desired"] = np.array([1 / 240, 1 / 240])
 
     # Year
     param["year"] = 2015

@@ -1,5 +1,5 @@
-from lib.correction_functions import clean_weather_data
-from lib.spatial_functions import *
+from .correction_functions import clean_weather_data
+from .spatial_functions import *
 
 
 def generate_maps_for_scope(paths, param):
@@ -449,11 +449,11 @@ def generate_slope(paths, param):
     m_per_deg_lon = (np.pi / 180) * 6367449 * cos(np.deg2rad(latMid_2))
 
     x_cell = repmat(deltaLon, int(180 / res_desired[1]), 1) * repmat(m_per_deg_lon, int(360 / res_desired[1]), 1).T
-    x_cell = x_cell[Ind[0] - 1 : Ind[2], Ind[3] - 1 : Ind[1]]
+    x_cell = x_cell[Ind[0] - 1 : Ind[2], Ind[3] -1: Ind[1]]
     x_cell = np.flipud(x_cell)
 
     y_cell = repmat((deltaLat * m_per_deg_lat), int(360 / res_desired[0]), 1).T
-    y_cell = y_cell[Ind[0] - 1 : Ind[2], Ind[3] - 1 : Ind[1]]
+    y_cell = y_cell[Ind[0] - 1 : Ind[2], Ind[3] -1: Ind[1]]
     y_cell = np.flipud(y_cell)
 
     with rasterio.open(paths["TOPO"]) as src:

@@ -1,5 +1,5 @@
-from lib.physical_models import calc_CF_solar, calc_CF_wind
-from lib.spatial_functions import *
+from .physical_models import calc_CF_solar, calc_CF_wind
+from .spatial_functions import *
 
 
 def calculate_full_load_hours(paths, param, tech):

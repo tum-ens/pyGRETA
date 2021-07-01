@@ -1,5 +1,5 @@
 from config import configuration
-from lib.spatial_functions import *
+from .spatial_functions import *
 
 
 def initialization():
@@ -50,23 +50,31 @@ def initialization():
         Crd_regions_land[reg, :] = crd_merra(box, res_weather)
 
     timecheck("Read shapefile of EEZ")
-    # Extract sea areas
-    eez_shp = gpd.read_file(paths["EEZ_global"], bbox=scope_shp)
-    eez_shp = eez_shp.to_crs({"init": "epsg:4326"})
+    # For the tutorial, a try-except was added. With this it is not necessary to download all raw data.
+    try:
+        # Extract sea areas
+        eez_shp = gpd.read_file(paths["EEZ_global"], bbox=scope_shp)
+        eez_shp = eez_shp.to_crs({"init": "epsg:4326"})
 
-    # Crop all polygons and take the part inside the bounding box
-    eez_shp["geometry"] = eez_shp["geometry"].buffer(0)
-    eez_shp["geometry"] = eez_shp["geometry"].intersection(bounds_box)
-    eez_shp = eez_shp[eez_shp.geometry.area > 0]
-    param["regions_sea"] = eez_shp
-    param["nRegions_sea"] = len(param["regions_sea"])
-    Crd_regions_sea = np.zeros((param["nRegions_sea"], 4))
+        # Crop all polygons and take the part inside the bounding box
+        eez_shp["geometry"] = eez_shp["geometry"].buffer(0)
+        eez_shp["geometry"] = eez_shp["geometry"].intersection(bounds_box)
+        eez_shp = eez_shp[eez_shp.geometry.area > 0]
+        param["regions_sea"] = eez_shp
+        param["nRegions_sea"] = len(param["regions_sea"])
+        Crd_regions_sea = np.zeros((param["nRegions_sea"], 4))
 
-    for reg in range(0, param["nRegions_sea"]):
-        # Box coordinates for MERRA2 data
-        r = eez_shp.bounds.iloc[reg]
-        box = np.array([r["maxy"], r["maxx"], r["miny"], r["minx"]])[np.newaxis]
-        Crd_regions_sea[reg, :] = crd_merra(box, res_weather)
+        for reg in range(0, param["nRegions_sea"]):
+            # Box coordinates for MERRA2 data
+            r = eez_shp.bounds.iloc[reg]
+            box = np.array([r["maxy"], r["maxx"], r["miny"], r["minx"]])[np.newaxis]
+            Crd_regions_sea[reg, :] = crd_merra(box, res_weather)
+    except:
+        print("#############################################################")
+        print("EEZ_global shapefile is missing in the database.")
+        print("If you want to run this step, make sure, it is downloaded and at the defined path (check config.py).")
+        print("For the tutorial, you can ignore this.")
+        print("#############################################################")
 
     timecheck("Read shapefile of subregions")
     # Read shapefile of regions
@@ -90,7 +98,10 @@ def initialization():
 
     # Saving parameters
     param["Crd_subregions"] = Crd_regions_sub
-    param["Crd_regions"] = np.concatenate((Crd_regions_land, Crd_regions_sea), axis=0)
+    try:
+        param["Crd_regions"] = np.concatenate((Crd_regions_land, Crd_regions_sea), axis=0)
+    except:
+        param["Crd_regions"] = np.concatenate((Crd_regions_land), axis=0)
 
     # Indices and matrix dimensions
     Ind_all_low = ind_merra(Crd_all, Crd_all, res_weather)

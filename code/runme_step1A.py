@@ -15,7 +15,15 @@ if __name__ == "__main__":
     paths, param = initialization()
 
     # Generate input raster maps
-    generate_maps_for_scope(paths, param)
+    # For the tutorial, a try-except was added. With this it is not necessary to download all raw data.
+    try:
+        generate_maps_for_scope(paths, param)
+    except:
+        print("#############################################################")
+        print("Raw input data is missing to run this step.")
+        print("If you want to run this step, make sure, all the raw input data is downloaded and at the right place.")
+        print("If not, you can also skip this step and continue with Step 2.")
+        print("#############################################################")
 
     # Wind speed correction
     if "WindOn" in param["technology"] or "WindOff" in param["technology"]:

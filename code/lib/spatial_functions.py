@@ -1,4 +1,4 @@
-from lib.util import *
+from .util import *
 
 
 def define_spatial_scope(scope_shp):
@@ -32,8 +32,10 @@ def crd_merra(Crd_regions, res_weather):
     Crd = np.array(
         [
             np.ceil((Crd_regions[:, 0] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
+            #np.ceil((Crd_regions[:, 1] / res_weather[1]) * res_weather[1]),
             np.ceil((Crd_regions[:, 1] + res_weather[1] / 2) / res_weather[1]) * res_weather[1] - res_weather[1] / 2,
             np.floor((Crd_regions[:, 2] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
+            #np.floor((Crd_regions[:, 3] / res_weather[1]) * res_weather[1]),
             np.floor((Crd_regions[:, 3] + res_weather[1] / 2) / res_weather[1]) * res_weather[1] - res_weather[1] / 2,
         ]
     )

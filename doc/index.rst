@@ -1,7 +1,18 @@
 =======
 pyGRETA
 =======
+.. figure:: img/pyGRETA_logo.png
+   :width: 20%
+   :align: left
+   :alt: pyGRETA_logo
 
+.. |br| raw:: html
+
+   <br />
+
+|br|
+
+|br|
 --------------------------------------------------
 python Generator of REnewable Time series and mAps 
 --------------------------------------------------
@@ -45,6 +56,13 @@ You do not need to use the code (*but you can*) if:
 
 Changes
 --------
+version 1.1.0
+^^^^^^^^^^^^^^
+
+* Introducing flexibility for resolutions.
+* Adding logo for the tool.
+* Minor fixes and improvements.
+
 version 1.0.1
 ^^^^^^^^^^^^^^
 

@@ -1,5 +1,5 @@
-from lib.physical_models import calc_CF_solar, calc_CF_wind
-from lib.spatial_functions import *
+from .physical_models import calc_CF_solar, calc_CF_wind
+from .spatial_functions import *
 
 
 def calculate_full_load_hours(paths, param, tech):
@@ -410,23 +410,23 @@ def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
     if Crd_all[2] > 0:
         day = GCR["day_north"]
         # Declination angle
-        delta = repmat(arcsind(0.3978) * sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), m_high, 1)
+        delta = repmat(arcsind(0.3978 * sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489))), m_high, 1)
 
     if Crd_all[0] < 0:
         day = GCR["day_south"]
         # Declination angle
-        delta = repmat(arcsind(0.3978) * sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), m_high, 1)
+        delta = repmat(-arcsind(0.3978 * sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489))), m_high, 1)
 
     if (Crd_all[2] * Crd_all[0]) < 0:
         lat_pos = int(np.sum(lat >= 0, axis=0)[0])
         day = GCR["day_north"]
         # Declination angle
-        delta_pos = repmat(arcsind(0.3978) * sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), lat_pos, 1)
+        delta_pos = repmat(arcsind(0.3978 * sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489))), lat_pos, 1)
 
         lat_neg = int(np.sum(lat < 0, axis=0)[0])
         day = GCR["day_south"]
         # Declination angle
-        delta_neg = repmat(arcsind(0.3978) * sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)), lat_neg, 1)
+        delta_neg = repmat(-arcsind(0.3978 * sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489))), lat_neg, 1)
         delta = np.append(delta_neg, delta_pos, axis=0)
 
     # Elevation angle
@@ -575,7 +575,7 @@ def report_potentials(paths, param, tech):
     :rtype: None
     """
     timecheck("Start")
-    # read FLH, masking, area, and weighting matrix
+    # Read FLH, masking, area, and weighting matrix
     FLH = hdf5storage.read("FLH", paths[tech]["FLH"])
     A_mask = hdf5storage.read("A_mask", paths[tech]["mask"])
     A_weight = hdf5storage.read("A_weight", paths[tech]["weight"])

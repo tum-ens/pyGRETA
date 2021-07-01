@@ -1,9 +1,12 @@
-# pyGRETA
+<div align="left">
+<img src="doc\img\pyGRETA_logo.png" alt="pyGRETA_logo" width="160px">
+</div>
+
 [![Documentation Status](https://readthedocs.org/projects/pygreta/badge/?version=latest)](http://pyGRETA.readthedocs.io/en/latest/?badge=latest)
 [![DOI](https://zenodo.org/badge/174577484.svg)](https://zenodo.org/badge/latestdoi/174577484)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors)
+[![All Contributors](https://img.shields.io/badge/all_contributors-8-orange.svg?style=flat-square)](#contributors)
 
 **py**thon **G**enerator of **RE**newable **T**ime series and m**A**ps: a tool that generates high-resolution potential maps and time series for user-defined regions within the globe.
 
@@ -53,18 +56,26 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <!-- markdownlint-disable -->
 <table>
   <tr>
-    <td align="center"><a href="https://github.com/kais-siala"><img src="https://avatars2.githubusercontent.com/u/21306297?v=4" width="100px;" alt=""/><br /><sub><b>kais-siala</b></sub></a><br /><a href="#question-kais-siala" title="Answering Questions">💬</a> <a href="https://github.com/tum-ens/pyGRETA/issues?q=author%3Akais-siala" title="Bug reports">🐛</a> <a href="https://github.com/tum-ens/pyGRETA/commits?author=kais-siala" title="Code">💻</a> <a href="https://github.com/tum-ens/pyGRETA/commits?author=kais-siala" title="Documentation">📖</a> <a href="#ideas-kais-siala" title="Ideas, Planning, & Feedback">🤔</a> <a href="#maintenance-kais-siala" title="Maintenance">🚧</a> <a href="https://github.com/tum-ens/pyGRETA/pulls?q=is%3Apr+reviewed-by%3Akais-siala" title="Reviewed Pull Requests">👀</a> <a href="https://github.com/tum-ens/pyGRETA/commits?author=kais-siala" title="Tests">⚠️</a> <a href="#talk-kais-siala" title="Talks">📢</a></td>
-    <td align="center"><a href="https://github.com/HoussameH"><img src="https://avatars2.githubusercontent.com/u/48953960?v=4" width="100px;" alt=""/><br /><sub><b>HoussameH</b></sub></a><br /><a href="#question-HoussameH" title="Answering Questions">💬</a> <a href="https://github.com/tum-ens/pyGRETA/commits?author=HoussameH" title="Code">💻</a> <a href="https://github.com/tum-ens/pyGRETA/commits?author=HoussameH" title="Documentation">📖</a></td>
-    <td align="center"><a href="https://github.com/pgrimaud"><img src="https://avatars1.githubusercontent.com/u/1866496?v=4" width="100px;" alt=""/><br /><sub><b>Pierre Grimaud</b></sub></a><br /><a href="https://github.com/tum-ens/pyGRETA/issues?q=author%3Apgrimaud" title="Bug reports">🐛</a></td>
+    <td align="center"><a href="https://github.com/kais-siala"><img src="https://avatars2.githubusercontent.com/u/21306297?v=4?s=100" width="100px;" alt=""/><br /><sub><b>kais-siala</b></sub></a><br /><a href="#question-kais-siala" title="Answering Questions">💬</a> <a href="https://github.com/tum-ens/pyGRETA/issues?q=author%3Akais-siala" title="Bug reports">🐛</a> <a href="https://github.com/tum-ens/pyGRETA/commits?author=kais-siala" title="Code">💻</a> <a href="https://github.com/tum-ens/pyGRETA/commits?author=kais-siala" title="Documentation">📖</a> <a href="#ideas-kais-siala" title="Ideas, Planning, & Feedback">🤔</a> <a href="#maintenance-kais-siala" title="Maintenance">🚧</a> <a href="https://github.com/tum-ens/pyGRETA/pulls?q=is%3Apr+reviewed-by%3Akais-siala" title="Reviewed Pull Requests">👀</a> <a href="https://github.com/tum-ens/pyGRETA/commits?author=kais-siala" title="Tests">⚠️</a> <a href="#talk-kais-siala" title="Talks">📢</a></td>
+    <td align="center"><a href="https://github.com/HoussameH"><img src="https://avatars2.githubusercontent.com/u/48953960?v=4?s=100" width="100px;" alt=""/><br /><sub><b>HoussameH</b></sub></a><br /><a href="#question-HoussameH" title="Answering Questions">💬</a> <a href="https://github.com/tum-ens/pyGRETA/commits?author=HoussameH" title="Code">💻</a> <a href="https://github.com/tum-ens/pyGRETA/commits?author=HoussameH" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/pgrimaud"><img src="https://avatars1.githubusercontent.com/u/1866496?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Pierre Grimaud</b></sub></a><br /><a href="https://github.com/tum-ens/pyGRETA/issues?q=author%3Apgrimaud" title="Bug reports">🐛</a></td>
+    <td align="center"><a href="https://github.com/thushara2020"><img src="https://avatars.githubusercontent.com/u/75068469?v=4?s=100" width="100px;" alt=""/><br /><sub><b>thushara2020</b></sub></a><br /><a href="https://github.com/tum-ens/pyGRETA/pulls?q=is%3Apr+reviewed-by%3Athushara2020" title="Reviewed Pull Requests">👀</a></td>
+    <td align="center"><a href="https://github.com/lodersky"><img src="https://avatars.githubusercontent.com/u/36160124?v=4?s=100" width="100px;" alt=""/><br /><sub><b>lodersky</b></sub></a><br /><a href="https://github.com/tum-ens/pyGRETA/commits?author=lodersky" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/sonercandas"><img src="https://avatars.githubusercontent.com/u/17904824?v=4?s=100" width="100px;" alt=""/><br /><sub><b>sonercandas</b></sub></a><br /><a href="https://github.com/tum-ens/pyGRETA/commits?author=sonercandas" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/patrick-buchenberg"><img src="https://avatars.githubusercontent.com/u/84960180?v=4?s=100" width="100px;" alt=""/><br /><sub><b>patrick-buchenberg</b></sub></a><br /><a href="#platform-patrick-buchenberg" title="Packaging/porting to new platform">📦</a></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="https://github.com/molarana"><img src="https://avatars.githubusercontent.com/u/19924540?v=4?s=100" width="100px;" alt=""/><br /><sub><b>molarana</b></sub></a><br /><a href="#design-molarana" title="Design">🎨</a></td>
   </tr>
 </table>
 
-<!-- markdownlint-enable -->
+<!-- markdownlint-restore -->
 <!-- prettier-ignore-end -->
+
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
 This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
 
 ## Please cite as:
 
-Kais Siala, & Houssame Houmy. (2020, June 1). tum-ens/pyGRETA: python Generator of REnewable Time series and mAps (Version v1.0.1). Zenodo. http://doi.org/10.5281/zenodo.3872068
+Kais Siala, & Houssame Houmy. (2020, June 1). tum-ens/pyGRETA: python Generator of REnewable Time series and mAps (Version v1.1.0). Zenodo. http://doi.org/10.5281/zenodo.3872068

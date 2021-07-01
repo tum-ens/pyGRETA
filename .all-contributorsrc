@@ -41,6 +41,51 @@
       "contributions": [
         "bug"
       ]
+    },
+    {
+      "login": "thushara2020",
+      "name": "thushara2020",
+      "avatar_url": "https://avatars.githubusercontent.com/u/75068469?v=4",
+      "profile": "https://github.com/thushara2020",
+      "contributions": [
+        "review"
+      ]
+    },
+    {
+      "login": "lodersky",
+      "name": "lodersky",
+      "avatar_url": "https://avatars.githubusercontent.com/u/36160124?v=4",
+      "profile": "https://github.com/lodersky",
+      "contributions": [
+        "doc"
+      ]
+    },
+    {
+      "login": "sonercandas",
+      "name": "sonercandas",
+      "avatar_url": "https://avatars.githubusercontent.com/u/17904824?v=4",
+      "profile": "https://github.com/sonercandas",
+      "contributions": [
+        "doc"
+      ]
+    },
+    {
+      "login": "patrick-buchenberg",
+      "name": "patrick-buchenberg",
+      "avatar_url": "https://avatars.githubusercontent.com/u/84960180?v=4",
+      "profile": "https://github.com/patrick-buchenberg",
+      "contributions": [
+        "platform"
+      ]
+    },
+    {
+      "login": "molarana",
+      "name": "molarana",
+      "avatar_url": "https://avatars.githubusercontent.com/u/19924540?v=4",
+      "profile": "https://github.com/molarana",
+      "contributions": [
+        "design"
+      ]
     }
   ],
   "contributorsPerLine": 7,

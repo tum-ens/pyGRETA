@@ -78,4 +78,4 @@ This project follows the [all-contributors](https://github.com/all-contributors/
 
 ## Please cite as:
 
-Kais Siala, & Houssame Houmy. (2020, June 1). tum-ens/pyGRETA: python Generator of REnewable Time series and mAps (Version v1.1.0). Zenodo. 10.5281/zenodo.3727416
+Kais Siala, & Houssame Houmy. (2020, June 1). tum-ens/pyGRETA: python Generator of REnewable Time series and mAps (Version v1.1.0). Zenodo. https://doi.org/10.5281/zenodo.3727416

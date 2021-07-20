@@ -174,8 +174,7 @@ def calculate_full_load_hours(paths, param, tech, multiprocessing):
 
         # multiprocessing = True  # debuging
         if multiprocessing:
-            list_pixles_splitted = np.array_split(list_pixles,
-                                                  nproc)  # Splitted list acording to the number of parrallel processes
+            list_pixles_splitted = np.array_split(list_pixles,nproc)  # Splitted list acording to the number of parrallel processes
             logger.info('# of processes: ' + str(len(list_pixles_splitted)))
             logger.debug(list_pixles_splitted)
 
@@ -185,7 +184,7 @@ def calculate_full_load_hours(paths, param, tech, multiprocessing):
                     pixles, list_results))
                 processes.append(p)
 
-            logger.info('Starting processes for Wind computation')
+            logger.info('Starting processes for wind computation')
             for p in processes:
                 p.start()  # Start all single processes
             logger.info('All processes started')
@@ -411,10 +410,9 @@ def calc_FLH_windon(param, tech, rasterData, merraData, GWA_array, b_xmin, b_xma
     FLH_np = np.frombuffer(list_results, dtype=np.float32).reshape(m_high, n_high)
 
     for pixle in pixles:
+        row, column = np.unravel_index(pixle, (m_low, n_low))  # Generate row and column out of the numbered position
+        logger.debug('Pixle (' + str(row) + ',' + str(column) + ')')  # Print the recent computing pixle
         try:
-            row, column = np.unravel_index(pixle,m_low, n_low)  # Generate row and column out of the numbered position
-            logger.debug('Pixle (' + str(row) + ',' + str(column) + ')')  # Print the recent computing pixle
-
             reMerra = redistribution_array(param, merraData[row, column, :], row, column, b_xmin[row, column], b_xmax[row, column], b_ymin[row, column], b_ymax[row, column], GWA_array, x_gwa, y_gwa)
             logger.debug('reMerra (' + str(row) + ',' + str(column) + ')')
 

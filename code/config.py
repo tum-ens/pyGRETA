@@ -117,12 +117,12 @@ def scope_paths_and_parameters(paths, param, config_file):
     input_dict = input_df[1].to_dict()  # Convert dataframe to dict with values from the first column
 
     #paths["spatial_scope"] = PathTemp + input_dict["spatial_scope"]
-    paths["subregions"] = PathTemp + input_dict["regions"]
-    param["region_name"] = input_dict["region_name"]  # Name tag of the spatial scope
-    param["subregions_name"] = input_dict["subregions_name"]  # Name tag of the subregions
-    param["country_code"] = input_dict["country_code"]
-    param["year"] = int(input_dict["year"])  # Convert string 'xxxx' to int
-    param["technology"] = input_dict["technology"].split(',')  # Creat array by comma separated string
+    paths["subregions"] = PathTemp + input_dict["regions"].replace(" ", "")
+    param["region_name"] = input_dict["region_name"].replace(" ", "")  # Name tag of the spatial scope
+    param["subregions_name"] = input_dict["subregions_name"] .replace(" ", "") # Name tag of the subregions
+    param["country_code"] = input_dict["country_code"].replace(" ", "")
+    param["year"] = int(input_dict["year"].replace(" ", ""))  # Convert string 'xxxx' to int
+    param["technology"] = input_dict["technology"].replace(" ", "").split(',')  # Creat array by comma separated string
 
     return paths, param
 

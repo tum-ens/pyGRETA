@@ -66,74 +66,79 @@ def generate_wind_correction(paths, param):
     :return: The rasters for wind correction CORR_ON and/or CORR_OFF are saved directly in the user-defined paths, along with their metadata in JSON files.
     :rtype: None
     """
-    timecheck("Start")
-    res_correction_on = param["WindOn"]["resource"]["res_correction"]
-    res_correction_off = param["WindOff"]["resource"]["res_correction"]
-    topo_correction = param["WindOn"]["resource"]["topo_correction"]
-    GeoRef = param["GeoRef"]
-    landuse = param["landuse"]
-    with rasterio.open(paths["LU"]) as src:
-        A_lu = np.flipud(src.read(1)).astype(int)
-    A_hellmann = changem(A_lu, landuse["hellmann"], landuse["type"]).astype(float)
+    if os.path.isfile(paths["CORR_ON"]) and os.path.isfile(paths["CORR_OFF"]):
+        logger.info('Skip')    # Skip generation if files are already there
 
-    # Onshore resolution correction
-    if "WindOn" in param["technology"]:
-        turbine_height_on = param["WindOn"]["technical"]["hub_height"]
+    else:
+        logger.info("Start")
+        #timecheck("Start")
+        res_correction_on = param["WindOn"]["resource"]["res_correction"]
+        res_correction_off = param["WindOff"]["resource"]["res_correction"]
+        topo_correction = param["WindOn"]["resource"]["topo_correction"]
+        GeoRef = param["GeoRef"]
+        landuse = param["landuse"]
+        with rasterio.open(paths["LU"]) as src:
+            A_lu = np.flipud(src.read(1)).astype(int)
+        A_hellmann = changem(A_lu, landuse["hellmann"], landuse["type"]).astype(float)
 
-        if res_correction_on:
-            m_low = param["m_low"]
-            n_low = param["n_low"]
-            m_high = param["m_high"]
-            n_high = param["n_high"]
-            res_weather = param["res_weather"]
-            res_desired = param["res_desired"]
-            A_gradient_height = changem(A_lu.astype(float), landuse["height"], landuse["type"])
-            Sigma = sumnorm_MERRA2((50 / A_gradient_height) ** A_hellmann, m_low, n_low, res_weather, res_desired)
-            A_cf_on = ((turbine_height_on / 50) * turbine_height_on / A_gradient_height) ** A_hellmann / resizem(Sigma, m_high, n_high)
-            del A_gradient_height, Sigma
-        else:
-            A_cf_on = (turbine_height_on / 50) ** A_hellmann
+        # Onshore resolution correction
+        if "WindOn" in param["technology"]:
+            turbine_height_on = param["WindOn"]["technical"]["hub_height"]
 
-        # Topographic correction (only onshore)
-        with rasterio.open(paths["LAND"]) as src:
-            A_land = np.flipud(src.read(1)).astype(int)
-        A_cf_on = A_cf_on * A_land
-        del A_land
-        if topo_correction:
-            if not os.path.isfile(paths["CORR_GWA"]):
-                calc_gwa_correction(paths, param)
-            gwa_correction = hdf5storage.read("correction_" + param["WindOn"]["resource"]["topo_weight"], paths["CORR_GWA"])
-            A_cf_on = A_cf_on * gwa_correction
-        array2raster(paths["CORR_ON"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf_on)
-        create_json(paths["CORR_ON"], param, ["region_name", "year", "WindOn", "landuse", "res_weather", "res_desired"], paths, ["LAND", "CORR_GWA"])
-        print("\nfiles saved: " + paths["CORR_ON"])
+            if res_correction_on:
+                m_low = param["m_low"]
+                n_low = param["n_low"]
+                m_high = param["m_high"]
+                n_high = param["n_high"]
+                res_weather = param["res_weather"]
+                res_desired = param["res_desired"]
+                A_gradient_height = changem(A_lu.astype(float), landuse["height"], landuse["type"])
+                Sigma = sumnorm_MERRA2((50 / A_gradient_height) ** A_hellmann, m_low, n_low, res_weather, res_desired)
+                A_cf_on = ((turbine_height_on / 50) * turbine_height_on / A_gradient_height) ** A_hellmann / resizem(Sigma, m_high, n_high)
+                del A_gradient_height, Sigma
+            else:
+                A_cf_on = (turbine_height_on / 50) ** A_hellmann
 
-    # Offshore resolution correction
-    if "WindOff" in param["technology"]:
-        turbine_height_off = param["WindOff"]["technical"]["hub_height"]
+            # Topographic correction (only onshore)
+            with rasterio.open(paths["LAND"]) as src:
+                A_land = np.flipud(src.read(1)).astype(int)
+            A_cf_on = A_cf_on * A_land
+            del A_land
+            if topo_correction:
+                if not os.path.isfile(paths["CORR_GWA"]):
+                    calc_gwa_correction(paths, param)
+                gwa_correction = hdf5storage.read("correction_" + param["WindOn"]["resource"]["topo_weight"], paths["CORR_GWA"])
+                A_cf_on = A_cf_on * gwa_correction
+            array2raster(paths["CORR_ON"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf_on)
+            create_json(paths["CORR_ON"], param, ["region_name", "year", "WindOn", "landuse", "res_weather", "res_desired"], paths, ["LAND", "CORR_GWA"])
+            logger.info("files saved: " + paths["CORR_ON"])
 
-        if res_correction_off:
-            m_low = param["m_low"]
-            n_low = param["n_low"]
-            m_high = param["m_high"]
-            n_high = param["n_high"]
-            res_weather = param["res_weather"]
-            res_desired = param["res_desired"]
-            A_gradient_height = changem(A_lu.astype(float), landuse["height"], landuse["type"])
-            Sigma = sumnorm_MERRA2((50 / A_gradient_height) ** A_hellmann, m_low, n_low, res_weather, res_desired)
-            A_cf_off = ((turbine_height_off / 50) * turbine_height_off / A_gradient_height) ** A_hellmann / resizem(Sigma, m_high, n_high)
-            del A_gradient_height, Sigma
-        else:
-            A_cf_off = (turbine_height_off / 50) ** A_hellmann
-        del A_hellmann
-        with rasterio.open(paths["EEZ"]) as src:
-            A_eez = np.flipud(src.read(1)).astype(int)
-        A_cf_off = A_cf_off * A_eez
+        # Offshore resolution correction
+        if "WindOff" in param["technology"]:
+            turbine_height_off = param["WindOff"]["technical"]["hub_height"]
 
-        array2raster(paths["CORR_OFF"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf_off)
-        create_json(paths["CORR_ON"], param, ["region_name", "year", "WindOff", "landuse", "res_weather", "res_desired"], paths, ["CORR_GWA"])
-        print("\nfiles saved: " + paths["CORR_OFF"])
-    timecheck("End")
+            if res_correction_off:
+                m_low = param["m_low"]
+                n_low = param["n_low"]
+                m_high = param["m_high"]
+                n_high = param["n_high"]
+                res_weather = param["res_weather"]
+                res_desired = param["res_desired"]
+                A_gradient_height = changem(A_lu.astype(float), landuse["height"], landuse["type"])
+                Sigma = sumnorm_MERRA2((50 / A_gradient_height) ** A_hellmann, m_low, n_low, res_weather, res_desired)
+                A_cf_off = ((turbine_height_off / 50) * turbine_height_off / A_gradient_height) ** A_hellmann / resizem(Sigma, m_high, n_high)
+                del A_gradient_height, Sigma
+            else:
+                A_cf_off = (turbine_height_off / 50) ** A_hellmann
+            del A_hellmann
+            with rasterio.open(paths["EEZ"]) as src:
+                A_eez = np.flipud(src.read(1)).astype(int)
+            A_cf_off = A_cf_off * A_eez
+
+            array2raster(paths["CORR_OFF"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf_off)
+            create_json(paths["CORR_OFF"], param, ["region_name", "year", "WindOff", "landuse", "res_weather", "res_desired"], paths, ["CORR_GWA"])
+            logger.info("files saved: " + paths["CORR_OFF"])
+        logger.debug("End")
 
 
 def calc_gwa_correction(paths, param):

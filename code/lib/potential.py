@@ -9,7 +9,7 @@ import traceback
 from .log import logger
 
 
-def calculate_full_load_hours(paths, param, tech):
+def calculate_full_load_hours(paths, param, tech, multiprocessing):
     """
     This function calculates the yearly FLH for a technology for all valid pixels in a spatial scope. Valid pixels are land pixels
     for WindOn, PV and CSP, and sea pixels for WindOff. The FLH values are calculated by summing up hourly capacity factors.
@@ -25,8 +25,8 @@ def calculate_full_load_hours(paths, param, tech):
     :rtype: None
     """
     # timecheck("Start")
-    logger.info('Start')
-    logger.info("Region: " + param["region_name"])
+    # logger.info('Start')
+    logger.info("Start - Region: " + param["region_name"])
 
     if tech in ["WindOn", "WindOff"]:
         logger.info("\n" + tech + " - HUB_HEIGHTS: " + str(param[tech]["technical"]["hub_height"]))
@@ -42,8 +42,8 @@ def calculate_full_load_hours(paths, param, tech):
     GeoRef = param["GeoRef"]
     res_desired = param["res_desired"]
     countries_shp = param["regions_land"]
-    nRegions = param["nRegions_sub"]
-    regions_shp = param["regions_sub"]
+    nRegions = param["nRegions_land"]
+    regions_shp = param["regions_land"]
     res_weather = param["res_weather"]
     Crd_all = param["Crd_all"]
     Ind = ind_merra(Crd_all, Crd_all, res_weather)[0]
@@ -97,13 +97,13 @@ def calculate_full_load_hours(paths, param, tech):
             paths,
             ["spatial_scope"],
         )
-        print("\nfiles saved: " + paths[tech]["FLH"])
+        logger.info("files saved: " + paths[tech]["FLH"])
 
         # Save GEOTIFF files
         if param["savetiff"]:
             GeoRef = param["GeoRef"]
             array2raster(changeExt2tif(paths[tech]["FLH"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], FLH)
-            print("files saved:" + changeExt2tif(paths[tech]["FLH"]))
+            logger.info("files saved:" + changeExt2tif(paths[tech]["FLH"]))
     
     elif tech in ["WindOff"]:
         list_hours = np.array_split(np.arange(0, 8760), nproc)
@@ -128,13 +128,13 @@ def calculate_full_load_hours(paths, param, tech):
             paths,
             ["spatial_scope"],
         )
-        print("\nfiles saved: " + paths[tech]["FLH"])
+        logger.info("files saved: " + paths[tech]["FLH"])
 
         # Save GEOTIFF files
         if param["savetiff"]:
             GeoRef = param["GeoRef"]
             array2raster(changeExt2tif(paths[tech]["FLH"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], FLH)
-            print("files saved:" + changeExt2tif(paths[tech]["FLH"]))
+            logger.info("files saved:" + changeExt2tif(paths[tech]["FLH"]))
     
     elif tech in ["WindOn"]:
         # A_country_area = np.zeros((m_high, n_high))
@@ -177,7 +177,7 @@ def calculate_full_load_hours(paths, param, tech):
         FLH[:] = np.nan
         list_pixles = np.arange(n_low * m_low)  # All pixles within MERRA data
 
-        multiprocessing = True  # debuging
+        # multiprocessing = True  # debuging
         if multiprocessing:
             list_pixles_splitted = np.array_split(list_pixles,
                                                   nproc)  # Splitted list acording to the number of parrallel processes
@@ -219,7 +219,7 @@ def calculate_full_load_hours(paths, param, tech):
                      GeoRef["pixelHeight"], FLH)
         logger.info("files saved:" + changeExt2tif(paths[tech]["FLH"]))
 
-    timecheck("End")
+    logger.debug("End")
 
 
 def get_merra_raster_data(paths, param, tech):
@@ -427,8 +427,9 @@ def calc_FLH_windon(param, tech, rasterData, merraData, GWA_array, b_xmin, b_xma
             logger.debug('Pixle (' + str(row) + ',' + str(column) + ')')  # Print the recent computing pixle
 
             reMerra = redistribution_array(param, merraData[row, column, :], row, column, b_xmin[row, column],
-                                           b_xmax[row, column], b_ymin[row, column], b_ymax[row, column], GWA_array,
-                                           x_gwa, y_gwa)
+                                           b_xmax[row, column], b_ymin[row, column], b_ymax[row, column], GWA_array, x_gwa, y_gwa)
+            logger.debug('reMerra (' + str(row) + ',' + str(column) + ')')
+
             if np.sum(reMerra):  # FIXME: Why is reMerra zero?
                 hours = np.arange(8760)
                 CF = calc_CF_windon(hours, turbine, reMerra,
@@ -444,7 +445,7 @@ def calc_FLH_windon(param, tech, rasterData, merraData, GWA_array, b_xmin, b_xma
             logger.debug('Write on FLH_np (' + str(row) + ',' + str(column) + ')')
             FLH_np[np.ix_(rows_higherResolution,
                           columns_higherResolution)] = FLH_part  # Assign the computed FLH to the big FLH array
-
+            logger.debug('Wrote on FLH_np (' + str(row) + ',' + str(column) + ')')
         except:
             traceback.print_exc()
             logger.error('Error on pixle (' + str(row) + ',' + str(column) + ')')
@@ -952,8 +953,8 @@ def report_potentials(paths, param, tech):
     Crd_all = param["Crd_all"]
     GeoRef = param["GeoRef"]
     res_desired = param["res_desired"]
-    nRegions = param["nRegions_sub"]
-    regions_shp = param["regions_sub"]
+    nRegions = param["nRegions_land"]
+    regions_shp = param["regions_land"]
 
     # Initialize regions list of sorted FLH, FLH_M, and FLH_W
     sorted_FLH_list = {}

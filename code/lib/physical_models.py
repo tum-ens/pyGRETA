@@ -1,6 +1,7 @@
 from .spatial_functions import crd_exact_points
 from .util import *
 import numpy as np
+from .log import logger
 
 np.seterr(divide="ignore")  # Repress invalid value or division by zero error
 
@@ -562,14 +563,16 @@ def calc_CF_windon(hours, turbine, merraData, rasterData):
     #w50m_h = w50m_h[tuple(reg_ind)]
 
     # Calculate the wind speed a the desired height
+    logger.debug('Start w_new_h')
     w_new_h = np.repeat(rasterData[..., None], len(hours), axis=2) * w50m_h
+    logger.debug('Finished w_new_h')
     del w50m_h
 
     # Calculate the capacity factor
     a = turbine["w_in"] ** 3 / (turbine["w_in"] ** 3 - turbine["w_r"] ** 3)
     b = 1 / (turbine["w_r"] ** 3 - turbine["w_in"] ** 3)
 
-    CF = np.zeros(w_new_h.shape)
+    CF = np.zeros(w_new_h.shape, dtype=np.float16)
     # Case 1 : above the cut-in speed and below the rated speed
     idx1 = np.logical_and(turbine["w_in"] < w_new_h, w_new_h < turbine["w_r"])
     CF[idx1] = a + b * w_new_h[idx1] ** 3

@@ -4,7 +4,7 @@ import os
 
 year = 2019
 technology = "PV" #,WindOn"
-path = "configs/"
+path = "../configs/"
 
 df = pd.read_excel('World-Timeplan.xlsx', sheet_name='Time Plan', engine='openpyxl')
 # print(df)

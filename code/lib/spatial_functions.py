@@ -205,10 +205,10 @@ def calc_region(region, Crd_reg, res_desired, GeoRef):
     A_region = np.ones((M, N))
     origin = [Crd_reg[3], Crd_reg[2]]
 
-    if region.geometry.geom_type == "MultiPolygon":
-        features = [feature for feature in region.geometry]
+    if region['geometry'].geom_type == "MultiPolygon":
+        features = [feature for feature in region['geometry']]
     else:
-        features = [region.geometry]
+        features = [region['geometry']]
     west = origin[0]
     south = origin[1]
     profile = {

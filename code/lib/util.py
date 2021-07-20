@@ -27,6 +27,7 @@ import json
 from warnings import warn
 #import pyrosm
 #from pyrosm import get_data, OSM
+from .log import logger
 
 
 def sind(alpha):
@@ -433,4 +434,4 @@ def create_json(filepath, param, param_keys, paths, paths_keys):
     new_dict["function"] = inspect.stack()[1][3]
     with open(new_file, "w") as json_file:
         json.dump(new_dict, json_file)
-    print("files saved: " + new_file)
+    logger.info("files saved: " + new_file)

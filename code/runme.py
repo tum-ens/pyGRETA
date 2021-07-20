@@ -11,8 +11,6 @@ from lib.time_series import (
 )
 import os
 from lib.log import logger
-#import logging
-#import shutil
 import psutil
 
 if __name__ == "__main__":
@@ -29,11 +27,9 @@ if __name__ == "__main__":
     for config in configs:       # Iterate over all config files for each country in folder 'configs'
 
         logger.info('Started: ' + str(config))
-        # Initialize for each country with the corresponding config defined in folder 'configs'
-        paths, param = ii.initialization(config)
+        paths, param = ii.initialization(config)    # Initialize for each country with the corresponding config defined in folder 'configs'
 
         im.downloadGWA(paths, param)    # Download wind speed data from Global Wind Atlas
-
         im.generate_maps_for_scope(paths, param, multiprocessing)    # Generate input raster maps
         im.generate_buffered_maps(paths, param, multiprocessing)     # Generate buffer maps
         cf.generate_wind_correction(paths, param)
@@ -43,7 +39,6 @@ if __name__ == "__main__":
         #     # club_biomass(paths,param)
 
         for tech in param["technology"]:
-            # print("Tech: " + tech)
             logger.info("Tech: " + tech)
 
             # Generate potential maps and reports

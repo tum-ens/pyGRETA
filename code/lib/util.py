@@ -435,3 +435,12 @@ def create_json(filepath, param, param_keys, paths, paths_keys):
     with open(new_file, "w") as json_file:
         json.dump(new_dict, json_file)
     logger.info("files saved: " + new_file)
+
+def deleteAllFiles(path):
+    for filename in os.listdir(path):
+        file = os.path.join(path, filename)
+        # print(file)
+        if os.path.isfile(file):
+            os.remove(file)
+        else:
+            deleteAllFiles(file)

@@ -39,11 +39,6 @@ def calculate_full_load_hours(paths, param, tech, multiprocessing):
     m_low = param["m_low"]
     n_low = param["n_low"]
     CPU_limit = np.full((1, nproc), param["CPU_limit"])
-    GeoRef = param["GeoRef"]
-    res_desired = param["res_desired"]
-    countries_shp = param["regions_land"]
-    nRegions = param["nRegions_land"]
-    regions_shp = param["regions_land"]
     res_weather = param["res_weather"]
     Crd_all = param["Crd_all"]
     Ind = ind_merra(Crd_all, Crd_all, res_weather)[0]
@@ -404,28 +399,23 @@ def calc_FLH_windon(param, tech, rasterData, merraData, GWA_array, b_xmin, b_xma
     :rtype: numpy array
     """
 
-    logger.debug('Process started')
+    logger.debug('Process started - Pixles: (' + str(pixles) + ')')
 
-    # reg_ind = param["Ind_nz"]
     m_low = param["m_low"]
     n_low = param["n_low"]
-    # res_weather = param["res_weather"]
-    # res_desired = param["res_desired"]
     m_high = param["m_high"]
     n_high = param["n_high"]
     turbine = param[tech]["technical"]
 
     reRaster = np.flipud(rasterData)  # ToDo: out of loop? # Why doing this?
     FLH_np = np.frombuffer(list_results, dtype=np.float32).reshape(m_high, n_high)
-    # logger.debug(pixles)
+
     for pixle in pixles:
         try:
-            row, column = np.unravel_index(pixle,
-                                           (m_low, n_low))  # Generate row and column out of the numbered position
+            row, column = np.unravel_index(pixle,m_low, n_low)  # Generate row and column out of the numbered position
             logger.debug('Pixle (' + str(row) + ',' + str(column) + ')')  # Print the recent computing pixle
 
-            reMerra = redistribution_array(param, merraData[row, column, :], row, column, b_xmin[row, column],
-                                           b_xmax[row, column], b_ymin[row, column], b_ymax[row, column], GWA_array, x_gwa, y_gwa)
+            reMerra = redistribution_array(param, merraData[row, column, :], row, column, b_xmin[row, column], b_xmax[row, column], b_ymin[row, column], b_ymax[row, column], GWA_array, x_gwa, y_gwa)
             logger.debug('reMerra (' + str(row) + ',' + str(column) + ')')
 
             if np.sum(reMerra):  # FIXME: Why is reMerra zero?
@@ -437,8 +427,7 @@ def calc_FLH_windon(param, tech, rasterData, merraData, GWA_array, b_xmin, b_xma
                 FLH_part = np.zeros([200, 250])
                 logger.debug('zeros(' + str(row) + ',' + str(column) + ')')
 
-            rows_higherResolution = np.arange(row * 200, (
-                    row + 1) * 200)  # Extend the rows due to the higher resolution after redistribution Todo: use 'mm/n_high'?
+            rows_higherResolution = np.arange(row * 200, (row + 1) * 200)  # Extend the rows due to the higher resolution after redistribution Todo: use 'mm/n_high'?
             columns_higherResolution = np.arange(column * 250, (column + 1) * 250)  # same for columns
             logger.debug('Write on FLH_np (' + str(row) + ',' + str(column) + ')')
             FLH_np[np.ix_(rows_higherResolution,
@@ -507,8 +496,6 @@ def redistribution_array(param, merraData, i, j, xmin, xmax, ymin, ymax, GWA_arr
 
     # 2) Redistribute MERRA data
     #reMerra = np.zeros([200, 250, 8760], dtype=np.float16)
-
-    # logger.debug('reMerra')
     reMerra = np.zeros([200, 250, 8760], dtype = np.float32)
     if np.sum(GWA_array_copy):
         i_offset = 0
@@ -520,23 +507,17 @@ def redistribution_array(param, merraData, i, j, xmin, xmax, ymin, ymax, GWA_arr
         if L_last + 1 - L_first != 250:
             if j < param["n_low"] / 2:
                 j_offset = 250 - (L_last + 1 - L_first)
-        # logger.debug('aaa')
-        gwa_cut_wind = GWA_array_copy[K_first:K_last + 1,
-                         L_first:L_last + 1]  # Computation only for the nonzero values
-        # logger.debug('Energy')
+
+        gwa_cut_wind = GWA_array_copy[K_first:K_last + 1, L_first:L_last + 1]  # Computation only for the nonzero values
+
         gwa_cut_energy = np.power(gwa_cut_wind, 3)
-        merra_cut_energy_weighting = gwa_cut_energy / np.sum(
-            gwa_cut_energy)  # Compute the weighting matrix how the energy is distributed within Global Wind Atlas data
-        merra_cut_speed_weighting = np.cbrt(
-            merra_cut_energy_weighting)  # Convert the weighting matrix from energy to wind speeds
+        merra_cut_energy_weighting = gwa_cut_energy / np.sum(gwa_cut_energy)  # Compute the weighting matrix how the energy is distributed within Global Wind Atlas data
+        merra_cut_speed_weighting = np.cbrt(merra_cut_energy_weighting)  # Convert the weighting matrix from energy to wind speeds
         merra_cut_speed_redistributed = np.repeat(merra_cut_speed_weighting[..., None], 8760,
                                                   axis=2) * merraData * np.cbrt(
             value_num_cells)  # Expand the Merra time series of this pixle weighted by energy based distribution of Global Wind Atlas
 
-        # logger.debug('reMerra2')
-        reMerra[i_offset:i_offset + K_last + 1 - K_first, j_offset:j_offset + L_last + 1 - L_first,
-        :] = merra_cut_speed_redistributed
-
+        reMerra[i_offset:i_offset + K_last + 1 - K_first, j_offset:j_offset + L_last + 1 - L_first,:] = merra_cut_speed_redistributed
 
     return reMerra
 

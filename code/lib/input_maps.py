@@ -1,15 +1,23 @@
 from .correction_functions import clean_weather_data
 from .spatial_functions import *
-#import cython
 import urllib.request
 import os
 import multiprocessing as mp
 from .log import logger
-import traceback
-import shutil
 
 def downloadGWA(paths, param):
-    if os.path.isfile(paths["GWA_global"]):     # Download wind data from Global Wind Atlas if it does not exist
+    """
+    This function downloads wind speed data from Global Wind Atlas (www.globalwindatlas.info) if it does not already exist
+
+    :param paths: Dictionary including the paths.
+    :type paths: dict
+    :param param: Dictionary including the user preferences.
+    :type param: dict
+
+    :return: The wind data is saved directly in the desired paths.
+    :rtype: None
+    """
+    if os.path.isfile(paths["GWA_global"]):
         logger.info('Skip')
     else:
         logger.info('Downlad GWA:' + paths["GWA_global"])
@@ -26,11 +34,12 @@ def generate_maps_for_scope(paths, param, multiprocessing):
     :type paths: dict
     :param param: Dictionary including the user preferences.
     :type param: dict
+    :param multiprocessing: Determines if multiprocessing is applied.
+    :type param: bool
     
     :return: The maps are saved directly in the desired paths.
     :rtype: None
     """
-    # multiprocessing = True    # debuging
     if multiprocessing:
         processes = []
         processes.append(mp.Process(target=generate_weather_files, args=(paths, param)))
@@ -56,33 +65,19 @@ def generate_maps_for_scope(paths, param, multiprocessing):
         logger.info('All processes finished')
 
     else:
-        # delete(paths["region"])
         generate_weather_files(paths, param)  # MERRA Weather data
-        # delete(paths["region"])
         generate_sea(paths, param)  # Land and Sea
-        # delete(paths["region"])
         generate_land(paths, param)  # Subregions
-        # delete(paths["region"])
         generate_area(paths, param)  # Area Gradient
-        # delete(paths["region"])
         generate_landuse(paths, param)  # Landuse
-        # delete(paths["region"])
         # generate_bathymetry(paths, param)  # Bathymetry # ToDo: not tested
-        # delete(paths["region"])
         generate_topography(paths, param)  # Topography
         # generate_livestock(paths,param)
         # generate_settlements(paths, param)
         # generate_osm(paths, param)
         # generate_population(paths, param)  # Population # not used anywhere?
 
-def delete(path):
-    for filename in os.listdir(path):
-        file = os.path.join(path, filename)
-        # print(file)
-        if os.path.isfile(file):
-            os.remove(file)
-        else:
-            delete(file)
+
 
 def generate_buffered_maps(paths, param, multiprocessing):
     """
@@ -97,8 +92,6 @@ def generate_buffered_maps(paths, param, multiprocessing):
     :return: The maps are saved directly in the desired paths.
     :rtype: None
     """
-
-    # multiprocessing = True    # debuging
     if multiprocessing:
         processes = []
         processes.append(mp.Process(target=generate_buffered_population, args=(paths, param)))
@@ -165,15 +158,9 @@ def generate_weather_files(paths, param):
         start = datetime.date(param["year"], 1, 1)
         end = datetime.date(param["year"], 12, 31)
         for date in pd.date_range(start, end):
-            # Show status bar
-            # status = status + 1
-            # sys.stdout.write("\r")
-            # sys.stdout.write("Reading NetCDF files " + "[%-50s] %d%%" % ("=" * ((status * 50) // delta), (status * 100) // delta))
-            # sys.stdout.flush()
 
-            # tomorrow = date + pd.Timedelta("1 day")
             if date.day == 29 and date.month == 2:
-                continue    # Skip additional day of non leap year ?
+                continue    # Skip additional day of non leap year
 
             # Name and path of the NetCDF file to be read
             name = paths["MERRA_IN"] + "MERRA2_400.tavg1_2d_rad_Nx." + date.strftime("%Y%m%d") + ".nc4.nc4"
@@ -220,7 +207,6 @@ def generate_weather_files(paths, param):
         # CLEARNESS = np.zeros(SWGDN.shape)
         CLEARNESS = np.divide(SWGDN, SWTDN, where=SWTDN != 0)
 
-        # sys.stdout.write("\n")
         logger.info("Writing Files: T2M, W50M, CLEARNESS")
         hdf5storage.writes({"T2M": T2M}, paths["T2M"], store_python_metadata=True, matlab_compatible=True)
         hdf5storage.writes({"W50M": W50M}, paths["W50M"], store_python_metadata=True, matlab_compatible=True)
@@ -349,7 +335,6 @@ def generate_sea(paths, param):
         Crd_all = param["Crd_all"]
         res_desired = param["res_desired"]
         GeoRef = param["GeoRef"]
-        nRegions_land = param["nRegions_land"]
         nRegions_sea = param["nRegions_sea"]
 
         # # timecheck("Start Land")
@@ -390,17 +375,9 @@ def generate_sea(paths, param):
         Crd_regions_sea = param["Crd_regions"][-nRegions_sea:]
         Ind = ind_merra(Crd_regions_sea, Crd_all, res_desired)
         A_sea = np.zeros((m_high, n_high))
-        # status = 0
-        for reg in range(0, param["nRegions_sea"]):
-            # Show status bar
-            # status = status + 1
-            # sys.stdout.write("\r")
-            # sys.stdout.write(
-            #     "Creating A_sea " + "[%-50s] %d%%" % ("=" * ((status * 50) // param["nRegions_sea"]), (status * 100) // param["nRegions_sea"])
-            # )
-            # sys.stdout.flush()
 
-            # Calculate A_region
+        for reg in range(0, param["nRegions_sea"]):
+            logger.debug('Region: ' + str(reg))
             A_region = calc_region(eez_shp.iloc[reg], Crd_regions_sea[reg, :], res_desired, GeoRef)
 
             # Include A_region in A_sea
@@ -411,13 +388,14 @@ def generate_sea(paths, param):
         # Fixing pixels on the borders to avoid duplicates
         A_sea[A_sea > 0] = 1
         #A_sea[A_land > 0] = 0
+
         # Saving file
         array2raster(paths["EEZ"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_sea)
         logger.info("files saved: " + paths["EEZ"])
         create_json(
             paths["EEZ"], param, ["region_name", "m_high", "n_high", "Crd_all", "res_desired", "GeoRef", "nRegions_sea"], paths, ["EEZ_global", "EEZ"]
         )
-        logger.debug("Finish Sea")
+        logger.debug("End")
 
 
 def generate_land(paths, param):
@@ -446,19 +424,13 @@ def generate_land(paths, param):
         GeoRef = param["GeoRef"]
         nRegions_land = param["nRegions_land"]
 
-        # timecheck("Start Subregions")
         # Read shapefile of regions
         regions_shp = param["regions_land"]
         Crd_regions_land = param["Crd_regions_land"]
         Ind = ind_merra(Crd_regions_land, Crd_all, res_desired)
         A_land = np.zeros((m_high, n_high))
-        # status = 0
         for reg in range(0, nRegions_land):
-            # Show status bar
-            # status = status + 1
-            # sys.stdout.write("\r")
-            # sys.stdout.write("Creating A_subregions " + "[%-50s] %d%%" % ("=" * ((status * 50) // nRegions_sub), (status * 100) // nRegions_sub))
-            # sys.stdout.flush()
+            logger.debug('Region: ' + str(reg))
 
             # Calculate A_region
             A_region = calc_region(regions_shp.iloc[reg], Crd_regions_land[reg, :], res_desired, GeoRef)
@@ -481,7 +453,6 @@ def generate_land(paths, param):
         create_json(
             paths["LAND"], param, ["subregions_name", "m_high", "n_high", "Crd_all", "res_desired", "GeoRef", "nRegions_sea"], paths, ["Countries", "LAND"] # FIXME: replaced regions by Countries
         )
-        # timecheck("Finish Subregions")
 
         logger.debug("End")
 
@@ -571,8 +542,6 @@ def generate_landuse(paths, param):
     else:
         logger.info("Start")
 
-        # timecheck("Start")
-        #res_desired = param["res_desired"]
         Crd_all = param["Crd_all"]
         Ind = ind_global(Crd_all, param["res_landuse"])[0]
         GeoRef = param["GeoRef"]
@@ -610,7 +579,6 @@ def generate_protected_areas(paths, param):
     else:
         logger.info("Start")
 
-        # timecheck("Start")
         protected_areas = param["protected_areas"]
         # set up protected areas dictionary
         protection_type = dict(zip(protected_areas["IUCN_Category"], protected_areas["type"]))
@@ -699,8 +667,6 @@ def generate_bathymetry(paths, param):
     else:
         logger.info("Start")
 
-        # timecheck("Start")
-        #res_desired = param["res_desired"]
         Crd_all = param["Crd_all"]
         Ind = ind_global(Crd_all, param["res_topography"])[0]
         GeoRef = param["GeoRef"]
@@ -715,6 +681,7 @@ def generate_bathymetry(paths, param):
         array2raster(paths["BATH"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_BATH)
         create_json(paths["BATH"], param, ["region_name", "Crd_all", "res_bathymetry", "res_desired", "GeoRef"], paths, ["Bathym_global", "BATH"])
         logger.info("files saved: " + paths["BATH"])
+
         logger.debug("End")
 
 
@@ -737,8 +704,6 @@ def generate_topography(paths, param):
     else:
         logger.info("Start")
 
-        #timecheck("Start")
-        #res_desired = param["res_desired"]
         Crd_all = param["Crd_all"]
         Ind = ind_global(Crd_all, param["res_topography"])[0]
         GeoRef = param["GeoRef"]
@@ -766,18 +731,9 @@ def generate_topography(paths, param):
             np.logical_and((tile_extents[:, 2] <= s_max), (tile_extents[:, 3] >= w_min)),
         )
 
-        # status = 0
         for letter in char_range("A", "X"):
             index = ord(letter) - ord("A")
             if need[index]:
-                # Show status bar
-                # status = status + 1
-                # sys.stdout.write("\r")
-                # sys.stdout.write(
-                #     "Generating topography map from tiles " + "[%-50s] %d%%" % ("=" * ((status * 50) // sum(need)), (status * 100) // sum(need))
-                # )
-                # sys.stdout.flush()
-
                 with rasterio.open(paths["Topo_tiles"] + "15-" + letter + ".tif") as src:
                     tile = src.read()
                 Topo[tile_extents[index, 0] - 1 : tile_extents[index, 2], tile_extents[index, 3] - 1 : tile_extents[index, 1]] = tile[0, 0:-1, 0:-1]
@@ -789,6 +745,7 @@ def generate_topography(paths, param):
         array2raster(paths["TOPO"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_TOPO)
         logger.info("files saved: " + paths["TOPO"])
         create_json(paths["TOPO"], param, ["region_name", "Crd_all", "res_topography", "res_desired", "GeoRef"], paths, ["Topo_tiles", "TOPO"])
+
         logger.debug("End")
 
         generate_slope(paths, param, A_TOPO)
@@ -1045,7 +1002,7 @@ def generate_buffered_protected_areas(paths, param):
     :rtype: None
     """
     logger.info("Start")
-    # timecheck("Start")
+
     GeoRef = param["GeoRef"]
     with rasterio.open(paths["PA"]) as src:
         A_pa = src.read(1)
@@ -1108,7 +1065,6 @@ def generate_buffered_population(paths, param):
 
     else:
         logger.info("Start")
-        # timecheck("Start")
         buffer_pixel_amount = param["WindOn"]["mask"]["urban_buffer_pixel_amount"]
         GeoRef = param["GeoRef"]
         with rasterio.open(paths["LU"]) as src:
@@ -1146,7 +1102,6 @@ def generate_buffered_water(paths, param):
 
     else:
         logger.info("Start")
-        # timecheck("Start")
         buffer_pixel_amount = param["landuse"]["water_buffer"]
         GeoRef = param["GeoRef"]
         with rasterio.open(paths["LU"]) as src:
@@ -1184,7 +1139,6 @@ def generate_buffered_wetland(paths, param):
 
     else:
         logger.info("Start")
-        # timecheck("Start")
         buffer_pixel_amount = param["landuse"]["wetland_buffer"]
         GeoRef = param["GeoRef"]
         with rasterio.open(paths["LU"]) as src:
@@ -1199,6 +1153,7 @@ def generate_buffered_wetland(paths, param):
         array2raster(paths["WETLAND_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notWetland)
         logger.info("files saved: " + paths["WETLAND_BUFFER"])
         create_json(paths["WETLAND_BUFFER"], param, ["region_name", "landuse", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "WETLAND_BUFFER"])
+
         logger.debug("End")
    
    
@@ -1222,7 +1177,6 @@ def generate_buffered_snow(paths, param):
 
     else:
         logger.info("Start")
-        # timecheck("Start")
         buffer_pixel_amount = param["landuse"]["snow_buffer"]
         GeoRef = param["GeoRef"]
         with rasterio.open(paths["LU"]) as src:
@@ -1237,6 +1191,7 @@ def generate_buffered_snow(paths, param):
         array2raster(paths["SNOW_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notSnow)
         logger.info("files saved: " + paths["SNOW_BUFFER"])
         create_json(paths["SNOW_BUFFER"], param, ["region_name", "landuse", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "SNOW_BUFFER"])
+
         logger.debug("End")
 
    
@@ -1247,7 +1202,6 @@ def generate_airports(paths,param):
 
     else:
         logger.info("Start")
-        # timecheck("Start")
         Crd_all = param["Crd_all"]
         GeoRef = param["GeoRef"]
         res_desired = param["res_desired"]
@@ -1309,7 +1263,7 @@ def generate_country_boarders(paths,param):
 
     else:
         logger.info("Start")
-        # timecheck("Start")
+
         Crd_all = param["Crd_all"]
         GeoRef = param["GeoRef"]
         res_desired = param["res_desired"]

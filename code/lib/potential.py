@@ -95,7 +95,7 @@ def calculate_full_load_hours(paths, param, tech, multiprocessing):
             param,
             ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired", "res_weather"],
             paths,
-            ["spatial_scope"],
+            ["subregions"],
         )
         logger.info("files saved: " + paths[tech]["FLH"])
 
@@ -126,7 +126,7 @@ def calculate_full_load_hours(paths, param, tech, multiprocessing):
             param,
             ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired", "res_weather"],
             paths,
-            ["spatial_scope"],
+            ["subregions"],
         )
         logger.info("files saved: " + paths[tech]["FLH"])
 
@@ -690,7 +690,7 @@ def mask_potential_maps(paths, param, tech):
         param,
         ["author", "comment", tech, "region_name", "year", "GeoRef", "landuse", "protected_areas"],
         paths,
-        ["spatial_scope", "PA", "LU", "SLOPE", "BATH"],
+        ["subregions", "PA", "LU", "SLOPE", "BATH"],
     )
 
     # Save GEOTIFF files
@@ -873,7 +873,7 @@ def weight_potential_maps(paths, param, tech):
         param,
         ["author", "comment", tech, "region_name", "year", "GeoRef", "landuse", "protected_areas"],
         paths,
-        ["spatial_scope", "PA", "LU", "AREA"],
+        ["subregions", "PA", "LU", "AREA"],
     )
 
     # Save GEOTIFF files
@@ -1107,7 +1107,7 @@ def report_potentials(paths, param, tech):
         param,
         ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired", "Crd_all", "GeoRef"],
         paths,
-        ["spatial_scope", "subregions", "AREA", tech],
+        ["subregions", "subregions", "AREA", tech],
     )
     print("files saved: " + paths[tech]["Region_Stats"])
 
@@ -1129,7 +1129,7 @@ def report_potentials(paths, param, tech):
         ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired", "Crd_all", "GeoRef",
          "report_sampling"],
         paths,
-        ["spatial_scope", "subregions", "AREA", tech],
+        ["subregions", "subregions", "AREA", tech],
     )
     print("files saved: " + paths[tech]["Sorted_FLH"])
     timecheck("End")

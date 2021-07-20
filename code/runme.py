@@ -13,10 +13,16 @@ import os
 from lib.log import logger
 import logging
 import shutil
+import psutil
 
 if __name__ == "__main__":
 
-    multiprocessing = False
+    print(psutil.virtual_memory().available)
+    if psutil.virtual_memory().available > 50*10**9:
+        multiprocessing = True
+    else:
+        multiprocessing = False
+    logger.info('Multiprocessing: ' + str(multiprocessing))
     #logger.setLevel(logging.DEBUG)    # Comment out to get more information on the console
 
     configs = os.listdir('../configs')     # Iterate over all config files for each country in folder 'configs'

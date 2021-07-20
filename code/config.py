@@ -116,9 +116,8 @@ def scope_paths_and_parameters(paths, param, config_file):
                            skip_blank_lines=True, )  # Import parameters from config_files in folder 'configs'
     input_dict = input_df[1].to_dict()  # Convert dataframe to dict with values from the first column
 
-    paths["spatial_scope"] = PathTemp + input_dict["spatial_scope"]
-    paths["subregions"] = PathTemp + input_dict["subregions"]
-
+    #paths["spatial_scope"] = PathTemp + input_dict["spatial_scope"]
+    paths["subregions"] = PathTemp + input_dict["regions"]
     param["region_name"] = input_dict["region_name"]  # Name tag of the spatial scope
     param["subregions_name"] = input_dict["subregions_name"]  # Name tag of the subregions
     param["country_code"] = input_dict["country_code"]

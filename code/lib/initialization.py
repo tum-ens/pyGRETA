@@ -39,7 +39,6 @@ def initialization(config_file):
     param["m_low"] = int((Ind_all_low[:, 0] - Ind_all_low[:, 2] + 1)[0])  # number of rows
     param["n_low"] = int((Ind_all_low[:, 1] - Ind_all_low[:, 3] + 1)[0])  # number of columns
     param["GeoRef"] = calc_geotiff(Crd_all, param["res_desired"])
-    # timecheck("End")
 
     # Display initial information
     logger.info("Region: " + param["region_name"] + " - Year: " + str(param["year"]))
@@ -47,42 +46,8 @@ def initialization(config_file):
 
     return paths, param
 
-# def read_shapfile_countries(paths, param, scope_shp, bounds_box):
-#     #logger.setLevel(logging.DEBUG)
-#     logger.info("Read shapefile of countries")
-#     # Extract land areas
-#     countries_shp = gpd.read_file(paths["Countries"], bbox=scope_shp)
-#     countries_shp.plot()
-#     logger.debug('File read')
-#     countries_shp_epsg = countries_shp.to_crs({"init": "epsg:4326"})
-#     countries_shp_epsg.plot()
-#     logger.debug('shp')
-#     # Crop all polygons and take the part inside the bounding box
-#     countries_shp_buffer = countries_shp_epsg["geometry"].buffer(0)
-#     countries_shp_buffer.plot()
-#     logging.debug('buffer')
-#     countries_shp["geometry"] = countries_shp_buffer.intersection(bounds_box)
-#     countries_shp.plot()
-#     plt.show()
-#     logger.debug('intersection')
-#     countries_shp = countries_shp[countries_shp.geometry.area > 0]
-#     param["regions_land"] = countries_shp
-#     param["nRegions_land"] = len(param["regions_land"])
-#
-#     logger.debug('cropped')
-#     Crd_regions_land = np.zeros((param["nRegions_land"], 4))
-#     for reg in range(0, param["nRegions_land"]):
-#         # Box coordinates for MERRA2 data
-#         r = countries_shp.bounds.iloc[reg]
-#         box = np.array([r["maxy"], r["maxx"], r["miny"], r["minx"]])[np.newaxis]
-#         Crd_regions_land[reg, :] = crd_merra(box, param["res_weather"])
-#     param['Crd_regions_land'] = Crd_regions_land
-#     logger.debug('done')
-#
-#     return param
-
 def read_shapefiles(paths, param):
-
+    logger.info("Start")
     scope_shp = gpd.read_file(paths["subregions"])      # Read shapefile of region
     scope_shp = scope_shp.to_crs({"init": "epsg:4326"})     # If it is not already in this format
     param["spatial_scope"] = define_spatial_scope(scope_shp)
@@ -92,11 +57,12 @@ def read_shapefiles(paths, param):
     param = read_shapefile_regions(param, scope_shp)
     param = read_shapefile_EEZ(paths, param, scope_shp)
 
+    logger.debug("End")
     return param
 
 
 def read_shapefile_regions(param, regions_shp):
-    logger.info("Read shapefile of regions")
+    logger.info("Start")
 
     regions_shp = regions_shp[regions_shp.geometry.area > 0] # ToDo: Keep it?
     # regions_shp.sort_values(by=["NAME_SHORT"], inplace=True)
@@ -112,13 +78,13 @@ def read_shapefile_regions(param, regions_shp):
         box = np.array([r["maxy"], r["maxx"], r["miny"], r["minx"]])[np.newaxis]
         Crd_regions_land[reg, :] = crd_merra(box, param["res_weather"])
     param["Crd_regions_land"] = Crd_regions_land
-    logger.debug('Finished')
+    logger.debug('End')
 
     return param
 
 
 def read_shapefile_EEZ(paths, param, scope_shp):
-    logger.info("Read shapefile of EEZ")
+    logger.info("Start")
 
     ymax, xmax, ymin, xmin = param['Crd_all']
     bounds_box = Polygon([(xmin, ymin), (xmin, ymax), (xmax, ymax), (xmax, ymin)])
@@ -139,17 +105,3 @@ def read_shapefile_EEZ(paths, param, scope_shp):
     param['Crd_regions_sea'] = Crd_regions_sea
 
     return param
-
-
-def test(paths, param, scope_shp, bounds_box):
-    regions_shp = gpd.read_file(paths["subregions"], bbox=scope_shp)
-    regions_shp.plot()
-    regions_shp_2 = gpd.read_file(paths["subregions"])
-    regions_shp_2.plot()
-    countries_shp = gpd.read_file(paths["Countries"], bbox=scope_shp)
-    countries_shp.plot()
-    countries_shp = countries_shp.intersection(bounds_box)  # Crop all polygons and take the part inside the bounding box
-    countries_shp.plot()
-    countries_shp = countries_shp[countries_shp.geometry.area > 0]
-    countries_shp.plot()
-    plt.show()

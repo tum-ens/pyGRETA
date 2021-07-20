@@ -29,9 +29,9 @@ def calculate_full_load_hours(paths, param, tech, multiprocessing):
     logger.info("Start - Region: " + param["region_name"])
 
     if tech in ["WindOn", "WindOff"]:
-        logger.info("\n" + tech + " - HUB_HEIGHTS: " + str(param[tech]["technical"]["hub_height"]))
+        logger.info(tech + " - HUB_HEIGHTS: " + str(param[tech]["technical"]["hub_height"]))
     elif tech in ["PV"] and "orientation" in param["PV"]["technical"].keys():
-        logger.info("\n" + tech + " - Orientation: " + str(param[tech]["technical"]["orientation"]))
+        logger.info(tech + " - Orientation: " + str(param[tech]["technical"]["orientation"]))
 
     nproc = param["nproc"]
     m_high = param["m_high"]
@@ -201,7 +201,7 @@ def calculate_full_load_hours(paths, param, tech, multiprocessing):
         else:
             # list_pixles = np.arange(100,110)  # debuging
             # list_pixles = [np.ravel_multi_index((1, 2), (m_low, n_low))]  # debuging
-            print(list_pixles)
+            logger.debug(list_pixles)
             calc_FLH_windon(param, tech, rasterData, merraData, GWA_array, b_xmin, b_xmax, b_ymin, b_ymax, x_gwa,
                             y_gwa, list_pixles, list_results)
             logger.info('Calculations for all pixles done')
@@ -331,8 +331,6 @@ def calc_FLH_solar(hours, args):
         CF[np.isnan(CF)] = 0
         
         FLH[ind] = FLH[ind] + CF
-        
-        #print(str(hour)+"_"+str(sum(FLH)))
     
     return FLH
 
@@ -449,8 +447,6 @@ def calc_FLH_windon(param, tech, rasterData, merraData, GWA_array, b_xmin, b_xma
         except:
             traceback.print_exc()
             logger.error('Error on pixle (' + str(row) + ',' + str(column) + ')')
-        else:
-            pass
 
 
 
@@ -561,7 +557,7 @@ def mask_potential_maps(paths, param, tech):
     :return: The files for the mask and the masked FLH are saved as tif and mat files, along with their metadata json files.
     :rtype: None
     """
-    timecheck("Start")
+    logger.info("Start")
     mask = param[tech]["mask"]
 
     if tech in ["PV", "CSP"]:
@@ -680,10 +676,10 @@ def mask_potential_maps(paths, param, tech):
 
     # Save HDF5 Files
     hdf5storage.writes({"A_mask": A_mask}, paths[tech]["mask"], store_python_metadata=True, matlab_compatible=True)
-    print("files saved: " + paths[tech]["mask"])
+    logger.info("files saved: " + paths[tech]["mask"])
     hdf5storage.writes({"FLH_mask": FLH_mask}, paths[tech]["FLH_mask"], store_python_metadata=True,
                        matlab_compatible=True)
-    print("files saved: " + paths[tech]["FLH_mask"])
+    logger.info("files saved: " + paths[tech]["FLH_mask"])
 
     create_json(
         paths[tech]["mask"],
@@ -698,13 +694,13 @@ def mask_potential_maps(paths, param, tech):
         GeoRef = param["GeoRef"]
         array2raster(changeExt2tif(paths[tech]["mask"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
                      GeoRef["pixelHeight"], A_mask)
-        print("files saved: " + changeExt2tif(paths[tech]["mask"]))
+        logger.info("files saved: " + changeExt2tif(paths[tech]["mask"]))
 
         array2raster(changeExt2tif(paths[tech]["FLH_mask"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
                      GeoRef["pixelHeight"], FLH_mask)
-        print("files saved: " + changeExt2tif(paths[tech]["FLH_mask"]))
+        logger.info("files saved: " + changeExt2tif(paths[tech]["FLH_mask"]))
 
-    timecheck("End")
+    logger.debug("End")
 
 
 def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
@@ -819,7 +815,7 @@ def weight_potential_maps(paths, param, tech):
     :return: The files for the weight and the weighted FLH are saved as tif and mat files, along with their metadata json files.
     :rtype: None
     """
-    timecheck("Start")
+    logger.info("Start")
     weight = param[tech]["weight"]
     Crd_all = param["Crd_all"]
     m_high = param["m_high"]
@@ -864,10 +860,10 @@ def weight_potential_maps(paths, param, tech):
     # Save HDF5 Files
     hdf5storage.writes({"A_weight": A_weight}, paths[tech]["weight"], store_python_metadata=True,
                        matlab_compatible=True)
-    print("files saved: " + paths[tech]["weight"])
+    logger.info("files saved: " + paths[tech]["weight"])
     hdf5storage.writes({"FLH_weight": FLH_weight}, paths[tech]["FLH_weight"], store_python_metadata=True,
                        matlab_compatible=True)
-    print("files saved: " + paths[tech]["FLH_weight"])
+    logger.info("files saved: " + paths[tech]["FLH_weight"])
     create_json(
         paths[tech]["weight"],
         param,
@@ -880,12 +876,12 @@ def weight_potential_maps(paths, param, tech):
     if param["savetiff"]:
         array2raster(changeExt2tif(paths[tech]["weight"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
                      GeoRef["pixelHeight"], A_weight)
-        print("files saved: " + changeExt2tif(paths[tech]["weight"]))
+        logger.info("files saved: " + changeExt2tif(paths[tech]["weight"]))
 
         array2raster(changeExt2tif(paths[tech]["FLH_weight"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
                      GeoRef["pixelHeight"], FLH_weight)
-        print("files saved: " + changeExt2tif(paths[tech]["FLH_weight"]))
-    timecheck("End")
+        logger.info("files saved: " + changeExt2tif(paths[tech]["FLH_weight"]))
+    logger.debug("End")
 
 
 def sampled_sorting(Raster, sampling):
@@ -935,7 +931,7 @@ def report_potentials(paths, param, tech):
     :return: The CSV files with the report and the sorted FLH are saved directly in the desired paths, along with the corresponding metadata in JSON files.
     :rtype: None
     """
-    timecheck("Start")
+    logger.info("Start")
     # read FLH, masking, area, and weighting matrix
     FLH = hdf5storage.read("FLH", paths[tech]["FLH"])
     A_mask = hdf5storage.read("A_mask", paths[tech]["mask"])
@@ -1109,7 +1105,7 @@ def report_potentials(paths, param, tech):
         paths,
         ["subregions", "subregions", "AREA", tech],
     )
-    print("files saved: " + paths[tech]["Region_Stats"])
+    logger.info("files saved: " + paths[tech]["Region_Stats"])
 
     # Save sorted lists to mat file
     for reg in sorted_FLH_list.keys():
@@ -1131,12 +1127,12 @@ def report_potentials(paths, param, tech):
         paths,
         ["subregions", "subregions", "AREA", tech],
     )
-    print("files saved: " + paths[tech]["Sorted_FLH"])
-    timecheck("End")
+    logger.info("files saved: " + paths[tech]["Sorted_FLH"])
+    logger.debug("End")
 
 
 def generate_biomass_production(paths, param):
-    timecheck("Start")
+    logger.info("Start")
     Crd_all = param["Crd_all"]
     GeoRef = param["GeoRef"]
     res_desired = param["res_desired"]
@@ -1258,17 +1254,17 @@ def generate_biomass_production(paths, param):
 
     array2raster(paths["BIOMASS_ENERGY"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
                  A_Bioenergy)
-    print("files saved: " + paths["BIOMASS_ENERGY"])
+    logger.info("files saved: " + paths["BIOMASS_ENERGY"])
     create_json(paths["BIOMASS_ENERGY"], param,
                 ["region_name", "landuse", "Biomass", "Crd_all", "res_desired", "GeoRef"], paths,
                 ["LU", "BIOMASS_ENERGY"])
 
     array2raster(paths["BIOMASS_CO2"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_Bioco2)
-    print("files saved: " + paths["BIOMASS_CO2"])
+    logger.info("files saved: " + paths["BIOMASS_CO2"])
     create_json(paths["BIOMASS_CO2"], param, ["region_name", "landuse", "Biomass", "Crd_all", "res_desired", "GeoRef"],
                 paths, ["LU", "BIOMASS_CO2"])
 
-    timecheck("End")
+    logger.debug("End")
 
 
 def country_region(regions, args):
@@ -1448,6 +1444,6 @@ def club_biomass(paths, param):
 
     A_Bioenergy = np.flipud(A_Bioenergy)
     array2raster(paths["CLUB_CO2"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_Bioenergy)
-    print("files saved: " + paths["CLUB_CO2"])
+    logger.info("files saved: " + paths["CLUB_CO2"])
     create_json(paths["CLUB_CO2"], param, ["region_name", "landuse", "Biomass", "Crd_all", "res_desired", "GeoRef"],
                 paths, ["LU", "BIOMASS_ENERGY"])

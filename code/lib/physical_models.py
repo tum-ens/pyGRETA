@@ -564,9 +564,13 @@ def calc_CF_windon(hours, turbine, merraData, rasterData):
 
     # Calculate the wind speed a the desired height
     logger.debug('Start w_new_h')
-    w_new_h = np.repeat(rasterData[..., None], len(hours), axis=2) * w50m_h
-    logger.debug('Finished w_new_h')
+    if isinstance(hours, list):     # Check if hours is only a scalar or an array of multiple hours
+        w_new_h = np.repeat(rasterData[..., None], len(hours), axis=2) * w50m_h
+    else:
+        w_new_h = rasterData * w50m_h
     del w50m_h
+    logger.debug('Finished w_new_h')
+
 
     # Calculate the capacity factor
     a = turbine["w_in"] ** 3 / (turbine["w_in"] ** 3 - turbine["w_r"] ** 3)

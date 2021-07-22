@@ -417,10 +417,13 @@ def calc_FLH_windon(param, tech, rasterData, merraData, GWA_array, b_xmin, b_xma
             logger.debug('reMerra (' + str(row) + ',' + str(column) + ')')
 
             if np.sum(reMerra):  # FIXME: Why is reMerra zero?
-                hours = np.arange(8760)
-                CF = calc_CF_windon(hours, turbine, reMerra,
-                                    reRaster[row * 200:((row + 1) * 200), column * 250:((column + 1) * 250)])
-                FLH_part = np.nansum(CF, axis=2)
+                FLH_part = np.zeros([200, 250])
+                for hour in np.arange(8760):
+                    FLH_part += calc_CF_windon(hour, turbine, reMerra,reRaster[row * 200:((row + 1) * 200), column * 250:((column + 1) * 250)])
+                #hours = np.arange(8760)
+                # CF = calc_CF_windon(hours, turbine, reMerra,
+                #                     reRaster[row * 200:((row + 1) * 200), column * 250:((column + 1) * 250)])
+                # FLH_part = np.nansum(CF, axis=2)
             else:
                 FLH_part = np.zeros([200, 250])
                 logger.debug('zeros(' + str(row) + ',' + str(column) + ')')

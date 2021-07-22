@@ -1,9 +1,8 @@
-import os
 from pathlib import Path
 from warnings import warn
 import pandas as pd
 import numpy as np
-
+import os
 
 def configuration(config_file):
     """
@@ -163,7 +162,7 @@ def computation_parameters(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 20
+    param["nproc"] = 50
     param["CPU_limit"] = True
     return param
 

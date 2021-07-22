@@ -1,16 +1,9 @@
 import lib.correction_functions as cf
-import lib.initialization as ii
 import lib.input_maps as im
 import lib.potential as pl
-from lib.regression import get_regression_coefficients
-from lib.time_series import (
-    find_representative_locations,
-    generate_time_series_for_representative_locations,
-    generate_time_series_for_regions,
-    generate_time_series_for_specific_locations
-)
-import os
 from lib.log import logger
+import initialization as ii
+import os
 import psutil
 
 if __name__ == "__main__":
@@ -23,7 +16,7 @@ if __name__ == "__main__":
         multiprocessing = False
     logger.info('Multiprocessing: ' + str(multiprocessing))
 
-    configs = os.listdir('../configs')
+    configs = sorted(os.listdir('../configs'))
     for config in configs:       # Iterate over all config files for each country in folder 'configs'
 
         logger.info('Started: ' + str(config))

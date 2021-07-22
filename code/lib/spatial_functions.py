@@ -1,4 +1,9 @@
-from .util import *
+from . import util as ul
+from osgeo import gdal, osr
+from rasterio import MemoryFile
+import numpy as np
+import math
+import rasterio
 
 
 def define_spatial_scope(scope_shp):
@@ -224,7 +229,7 @@ def calc_region(region, Crd_reg, res_desired, GeoRef):
     with MemoryFile() as memfile:
         with memfile.open(**profile) as f:
             f.write(A_region, 1)
-            out_image, out_transform = mask.mask(f, features, crop=False, nodata=0, all_touched=False, filled=True)
+            out_image, out_transform = ul.mask.mask(f, features, crop=False, nodata=0, all_touched=False, filled=True)
         A_region = out_image[0]
 
     return A_region
@@ -302,13 +307,13 @@ def adjust_resolution(array, res_data, res_desired, aggfun=None):
     description
     """
     if ((res_data[1] % res_desired[1] < 1e-10) and (res_data[1] > res_desired[1])): # data is coarse on x dimension (columns)
-        array = resizem(array, array.shape[0], int(array.shape[1]*(res_data[1] / res_desired[1])))
+        array = ul.resizem(array, array.shape[0], int(array.shape[1]*(res_data[1] / res_desired[1])))
         if aggfun == "sum":
             array = array / (res_data[1] % res_desired[1])
     if ((res_desired[1] % res_data[1] < 1e-10) and (res_desired[1] > res_data[1])): # data is too detailed on x dimension
         array = aggregate_x_dim(array, res_data, res_desired, aggfun)
     if ((res_data[0] % res_desired[0] < 1e-10) and (res_data[0] > res_desired[0])): # data is coarse on y dimension (rows)
-        array = resizem(array, int(array.shape[0]*(res_data[0] / res_desired[0])), array.shape[1])
+        array = ul.resizem(array, int(array.shape[0]*(res_data[0] / res_desired[0])), array.shape[1])
         if aggfun == "sum":
             array = array / (res_data[0] % res_desired[0])
     if ((res_desired[0] % res_data[0] < 1e-10) and (res_desired[0] > res_data[0])): # data is too detailed on y dimension

@@ -1,33 +1,14 @@
-from osgeo import ogr, gdal, osr
+from osgeo import ogr
 from numpy.matlib import repmat, reshape, sin, arcsin, cos, arccos, tan, arctan
-import os
-from os import getcwd, chdir
-from glob import glob
+from .log import logger
+import numpy as np
 import psutil
 import datetime
 import inspect
 import sys
-import math
-import rasterio
-from rasterio import windows, mask, MemoryFile
-import pandas as pd
-import numpy as np
-from scipy.ndimage import generic_filter, convolve, maximum_filter, minimum_filter
-import geopandas as gpd
-from shapely.geometry import mapping, Point, Polygon
-import fiona
-import hdf5storage
-from multiprocessing import Pool
-from itertools import product
-import h5netcdf
-import shutil
-import pyomo.environ as pyo
-from pyomo.opt import SolverFactory
+import os
 import json
-from warnings import warn
-#import pyrosm
-#from pyrosm import get_data, OSM
-from .log import logger
+
 
 
 def sind(alpha):

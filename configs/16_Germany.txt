@@ -1,0 +1,6 @@
+regions:gadm36_DEU_1.shp
+region_name:Germany_gwa
+subregions_name:Germany_level0
+country_code:DEU
+year:2019
+technology:WindOn,PV

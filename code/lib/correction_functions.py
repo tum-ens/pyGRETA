@@ -7,6 +7,7 @@ import itertools as it
 import hdf5storage
 import os
 import rasterio
+import scipy.ndimage
 
 
 
@@ -37,7 +38,7 @@ def clean_weather_data(paths, param):
         kernel[1, 1] = 0
 
         # Compute average Convolution
-        neighbors = sf.generic_filter(mean, np.nanmean, footprint=kernel, mode="constant", cval=np.NaN)
+        neighbors = scipy.ndimage.generic_filter(mean, np.nanmean, footprint=kernel, mode="constant", cval=np.NaN)
         ratio = mean / neighbors
 
         # Extract over threshold Points

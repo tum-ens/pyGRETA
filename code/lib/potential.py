@@ -67,7 +67,7 @@ def calculate_full_load_hours(paths, param, tech, multiprocessing):
         else:
             list_hours = np.array_split(list_hours[day_filter], nproc)
             param["status_bar_limit"] = list_hours[0][-1]
-            results = mp.Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(
+            results = mp.Pool(processes=nproc, initializer=ul.limit_cpu, initargs=CPU_limit).starmap(
                 calc_FLH_solar, it.product(list_hours, [[param, tech, rasterData, merraData]])
             )
          # Collecting results
@@ -103,7 +103,7 @@ def calculate_full_load_hours(paths, param, tech, multiprocessing):
     elif tech in ["WindOff"]:
         list_hours = np.array_split(np.arange(0, 8760), nproc)
         param["status_bar_limit"] = list_hours[0][-1]
-        results = mp.Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(
+        results = mp.Pool(processes=nproc, initializer=ul.limit_cpu, initargs=CPU_limit).starmap(
             calc_FLH_windoff, it.product(list_hours, [[param, tech, rasterData, merraData]])
         )
         # Collecting results
@@ -193,7 +193,7 @@ def calculate_full_load_hours(paths, param, tech, multiprocessing):
                 p.join()  # Wait until all processes are finished
             logger.info('All processes finished')
         else:
-            # list_pixles = np.arange(100,110)  # debuging
+            # list_pixles = np.arange(100,102)  # debuging
             # list_pixles = [np.ravel_multi_index((1, 2), (m_low, n_low))]  # debuging
             logger.debug(list_pixles)
             calc_FLH_windon(param, tech, rasterData, merraData, GWA_array, b_xmin, b_xmax, b_ymin, b_ymax, x_gwa,
@@ -1170,7 +1170,7 @@ def generate_biomass_production(paths, param):
     # Crop Residues potential
     list_regions = np.array_split(np.arange(0, nRegions), nproc)
     param["status_bar_limit"] = list_regions[0][-1]
-    results = mp.Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(
+    results = mp.Pool(processes=nproc, initializer=ul.limit_cpu, initargs=CPU_limit).starmap(
         crop_residues_potential, it.product(list_regions, [[param, paths, A_lu]])
     )
     # Collecting results

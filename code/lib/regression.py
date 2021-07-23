@@ -1,5 +1,7 @@
 from . import correction_functions as cf
 from . import util as ul
+from warnings import warn
+from glob import glob
 import pyomo as pyo
 import pandas as pd
 import numpy as np
@@ -307,7 +309,7 @@ def get_regression_coefficients(paths, param, tech):
             if region_data[None]["IRENA_best_worst"] == (True, True):
 
                 # create model instance
-                solver = SolverFactory(param["regression"]["solver"])
+                solver = pyo.optSolverFactory(param["regression"]["solver"])
                 model = pyomo_regression_model()
                 regression = model.create_instance(region_data)
 

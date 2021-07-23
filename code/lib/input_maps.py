@@ -12,6 +12,7 @@ import rasterio
 import h5netcdf
 import hdf5storage
 import datetime
+import scipy.ndimage
 
 
 def downloadGWA(paths, param):
@@ -150,7 +151,10 @@ def generate_weather_files(paths, param):
     :rtype: None
     """
     # print(paths["T2M"])
-    if os.path.isfile(paths["T2M"]) and os.path.isfile(paths["W50M"]) and os.path.isfile(paths["CLEARNESS"]):
+    if os.path.isfile(paths["T2M"]) and os.path.isfile(paths["W50M"]) and os.path.isfile(paths["CLEARNESS"]) and \
+            os.path.isfile(paths["MERRA_XMIN"]) and os.path.isfile(paths["MERRA_XMAX"]) and \
+            os.path.isfile(paths["MERRA_YMIN"]) and os.path.isfile(paths["MERRA_YMAX"]) and \
+            os.path.isfile(paths["GWA_X"]) and os.path.isfile(paths["GWA_Y"]):
         logger.info('Skip')    # Skip generation if files are already there
 
     else:
@@ -371,7 +375,7 @@ def generate_sea(paths, param):
         #         traceback.print_exc()
         #         logger.error(traceback.print_exc())
         # # Saving file
-        # ul.ul.array2raster(paths["LAND"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_land)
+        # ul.sf.array2raster(paths["LAND"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_land)
         # logger.info("\nfiles saved: " + paths["LAND"])
         # ul.create_json(
         #     paths["LAND"], param, ["region_name", "m_high", "n_high", "Crd_all", "res_desired", "GeoRef", "nRegions_land"], paths, ["Countries", "LAND"]
@@ -399,7 +403,7 @@ def generate_sea(paths, param):
         #A_sea[A_land > 0] = 0
 
         # Saving file
-        ul.array2raster(paths["EEZ"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_sea)
+        sf.array2raster(paths["EEZ"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_sea)
         logger.info("files saved: " + paths["EEZ"])
         ul.create_json(
             paths["EEZ"], param, ["region_name", "m_high", "n_high", "Crd_all", "res_desired", "GeoRef", "nRegions_sea"], paths, ["EEZ_global", "EEZ"]
@@ -457,7 +461,7 @@ def generate_land(paths, param):
         # A_sub = A_sub * (A_land + A_sea)
 
         # Saving file
-        ul.array2raster(paths["LAND"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_land)
+        sf.array2raster(paths["LAND"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_land)
         logger.info("files saved: " + paths["LAND"])
         ul.create_json(
             paths["LAND"], param, ["subregions_name", "m_high", "n_high", "Crd_all", "res_desired", "GeoRef", "nRegions_sea"], paths, ["Countries", "LAND"] # FIXME: replaced regions by Countries
@@ -556,17 +560,17 @@ def generate_landuse(paths, param):
         GeoRef = param["GeoRef"]
         lu_a = param["WindOn"]["weight"]["lu_availability"]
         with rasterio.open(paths["LU_global"]) as src:
-            w = src.read(1, window=windows.Window.from_slices(slice(Ind[0] - 1, Ind[2]), slice(Ind[3] - 1, Ind[1])))
+            w = src.read(1, window=rasterio.windows.Window.from_slices(slice(Ind[0] - 1, Ind[2]), slice(Ind[3] - 1, Ind[1])))
             w = np.flipud(w)
         w = sf.adjust_resolution(w, param["res_landuse"], param["res_desired"], "category")
         #if "WindOn" in param["technology"]:
         w = sf.recalc_lu_resolution(w, param["res_landuse"], param["res_desired"], lu_a)
-        ul.array2raster(paths["LU"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], w)
+        sf.array2raster(paths["LU"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], w)
         logger.info("files saved: " + paths["LU"])
         ul.create_json(paths["LU"], param, ["region_name", "Crd_all", "res_landuse", "res_desired", "GeoRef"], paths, ["LU_global", "LU"])
         logger.debug("End")
 
-        generate_protected_areas(paths, param)
+    generate_protected_areas(paths, param)
 
 
 def generate_protected_areas(paths, param):
@@ -610,7 +614,7 @@ def generate_protected_areas(paths, param):
         layer = dataset.GetLayerByIndex(0)
 
         # Add a new field
-        if not sf.field_exists("Raster", shp_path):
+        if not ul.field_exists("Raster", shp_path):
             new_field = ogr.FieldDefn("Raster", ogr.OFTInteger)
             layer.CreateField(new_field)
 
@@ -687,7 +691,7 @@ def generate_bathymetry(paths, param):
         print (A_BATH.shape)
         A_BATH = sf.recalc_topo_resolution(A_BATH, param["res_topography"], param["res_desired"])
 
-        ul.array2raster(paths["BATH"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_BATH)
+        sf.array2raster(paths["BATH"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_BATH)
         ul.create_json(paths["BATH"], param, ["region_name", "Crd_all", "res_bathymetry", "res_desired", "GeoRef"], paths, ["Bathym_global", "BATH"])
         logger.info("files saved: " + paths["BATH"])
 
@@ -707,7 +711,7 @@ def generate_topography(paths, param):
     :return: The tif file for *TOPO* is saved in its respective path, along with its metadata in a JSON file.
     :rtype: None
     """
-    if os.path.isfile(paths["TOPO"]):
+    if os.path.isfile(paths["TOPO"]) and os.path.isfile(paths["SLOPE"]):
         logger.info('Skip')    # Skip generation if files are already there
 
     else:
@@ -720,7 +724,7 @@ def generate_topography(paths, param):
         tile_extents = np.zeros((24, 4), dtype=int)
         i = 1
         j = 1
-        for letter in sf.char_range("A", "X"):
+        for letter in ul.char_range("A", "X"):
             north = (i - 1) * 45 / param["res_topography"][0] + 1
             east = j * 60 / param["res_topography"][1]
             south = i * 45 / param["res_topography"][0]
@@ -740,7 +744,7 @@ def generate_topography(paths, param):
             np.logical_and((tile_extents[:, 2] <= s_max), (tile_extents[:, 3] >= w_min)),
         )
 
-        for letter in sf.char_range("A", "X"):
+        for letter in ul.char_range("A", "X"):
             index = ord(letter) - ord("A")
             if need[index]:
                 with rasterio.open(paths["Topo_tiles"] + "15-" + letter + ".tif") as src:
@@ -751,7 +755,7 @@ def generate_topography(paths, param):
         A_TOPO = sf.adjust_resolution(A_TOPO, param["res_topography"], param["res_desired"], "mean")
         #if "WindOn" in param["technology"]:
         A_TOPO = sf.recalc_topo_resolution(A_TOPO, param["res_topography"], param["res_desired"])
-        ul.array2raster(paths["TOPO"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_TOPO)
+        sf.array2raster(paths["TOPO"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_TOPO)
         logger.info("files saved: " + paths["TOPO"])
         ul.create_json(paths["TOPO"], param, ["region_name", "Crd_all", "res_topography", "res_desired", "GeoRef"], paths, ["Topo_tiles", "TOPO"])
 
@@ -815,15 +819,15 @@ def generate_slope(paths, param, A_TOPO):
         #     A_TOPO = src.read(1)
 
         kernel = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]) / 8
-        dzdx = ul.convolve(A_TOPO, kernel) / x_cell
+        dzdx = scipy.ndimage.convolve(A_TOPO, kernel) / x_cell
         kernel = np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]]) / 8
-        dzdy = ul.convolve(A_TOPO, kernel) / y_cell
+        dzdy = scipy.ndimage.convolve(A_TOPO, kernel) / y_cell
 
         slope_deg = ul.arctan((dzdx ** 2 + dzdy ** 2) ** 0.5) * 180 / np.pi
         slope_pc = ul.tan(np.deg2rad(slope_deg)) * 100
 
         A_SLP = np.flipud(slope_pc)
-        ul.array2raster(paths["SLOPE"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_SLP)
+        sf.array2raster(paths["SLOPE"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_SLP)
         logger.info("files saved: " + paths["SLOPE"])
         ul.create_json(paths["SLOPE"], param, ["region_name", "Crd_all", "res_topography", "res_desired", "GeoRef"], paths, ["TOPO", "SLOPE"])
         logger.debug("End")
@@ -857,7 +861,7 @@ def generate_population(paths, param):
     A_POP = np.flipud(A_POP[Ind[0] - 1 : Ind[2], Ind[3] - 1 : Ind[1]])
     #if "WindOn" in param["technology"]:
     A_POP = sf.recalc_topo_resolution(A_POP, param["res_landuse"], param["res_desired"])
-    ul.array2raster(paths["POP"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_POP)
+    sf.array2raster(paths["POP"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_POP)
     print("files saved: " + paths["POP"])
     ul.create_json(paths["POP"], param, ["region_name", "Crd_all", "res_population", "res_desired", "GeoRef"], paths, ["Pop_global", "POP"])
     ul.timecheck("End")
@@ -886,13 +890,13 @@ def generate_livestock(paths, param):
     
     for animal in param["Biomass"]["livestock"]["animal"]:
         with rasterio.open(paths["LS_global"]+animal+"_2006.tif") as src:
-            A_LS = src.read(1, window=windows.Window.from_slices(slice(Ind[0] - 1, Ind[2]), slice(Ind[3] - 1, Ind[1])))
+            A_LS = src.read(1, window=rasterio.windows.Window.from_slices(slice(Ind[0] - 1, Ind[2]), slice(Ind[3] - 1, Ind[1])))
         A_LS = np.flipud(A_LS)
         A_LS = sf.recalc_livestock_resolution(A_LS, param["res_livestock"], param["res_desired"])
         #print (np.size(A_LS))
         A_LS[A_LS<0]=float(0)
         A_LS = np.multiply(A_LS, A_area) / (10 ** 6)
-        ul.array2raster(paths["LS"]+animal+".tif", GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_LS)
+        sf.array2raster(paths["LS"]+animal+".tif", GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_LS)
         print("files saved: " + paths["LS"]+animal+".tif")
         ul.create_json(paths["LS"]+animal+".tif", param, ["region_name", "Crd_all", "res_livestock", "res_desired", "GeoRef"], paths, ["LS_global", "LS"])
     
@@ -989,7 +993,7 @@ def generate_settlements(paths, param):
         w = np.flipud(w)
     #w = adjust_resolution(w, param["res_settlements"], param["res_desired"], "category")
     #w = recalc_lu_resolution(w, param["res_landuse"], param["res_desired"], lu_a)
-    ul.array2raster(paths["WSF"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], w)
+    sf.array2raster(paths["WSF"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], w)
     print("files saved: " + paths["WSF"])
     ul.create_json(paths["WSF"], param, ["region_name", "Crd_all", "res_settlements", "res_desired", "GeoRef"], paths, ["WSF_global", "WSF"])
     ul.timecheck("End")
@@ -1027,10 +1031,10 @@ def generate_buffered_protected_areas(paths, param):
         buffer_pixel_amount = param["PV"]["mask"]["pa_buffer_pixel_amount"]
         kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
         kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_pa_buffered = sf.maximum_filter(A_pa, footprint=kernel, mode="constant", cval=0)
+        A_pa_buffered = scipy.ndimage.maximum_filter(A_pa, footprint=kernel, mode="constant", cval=0)
         A_notProtected = (~A_pa_buffered).astype(int)
 
-        ul.array2raster(paths["PV_PA_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notProtected)
+        sf.array2raster(paths["PV_PA_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notProtected)
         logger.info("files saved: " + paths["PV_PA_BUFFER"])
         ul.create_json(paths["PV_PA_BUFFER"], param, ["region_name", "protected_areas", "PV", "Crd_all", "res_desired", "GeoRef"], paths, ["PA", "PV_PA_BUFFER"])
 
@@ -1044,10 +1048,10 @@ def generate_buffered_protected_areas(paths, param):
         buffer_pixel_amount = param["WindOn"]["mask"]["pa_buffer_pixel_amount"]
         kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
         kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_pa_buffered = sf.maximum_filter(A_pa, footprint=kernel, mode="constant", cval=0)
+        A_pa_buffered = scipy.ndimage.maximum_filter(A_pa, footprint=kernel, mode="constant", cval=0)
         A_notProtected = (~A_pa_buffered).astype(int)
 
-        ul.array2raster(paths["WINDON_PA_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notProtected)
+        sf.array2raster(paths["WINDON_PA_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notProtected)
         logger.info("files saved: " + paths["WINDON_PA_BUFFER"])
         ul.create_json(paths["WINDON_PA_BUFFER"], param, ["region_name", "protected_areas", "WindOn", "Crd_all", "res_desired", "GeoRef"], paths, ["PA", "WINDON_PA_BUFFER"])
 
@@ -1082,10 +1086,10 @@ def generate_buffered_population(paths, param):
         A_lu = A_lu == param["landuse"]["type_urban"]  # Land use type for Urban and built-up
         kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
         kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_lu_buffered = sf.maximum_filter(A_lu, footprint=kernel, mode="constant", cval=0)
+        A_lu_buffered = scipy.ndimage.maximum_filter(A_lu, footprint=kernel, mode="constant", cval=0)
         A_notPopulated = (~A_lu_buffered).astype(int)
 
-        ul.array2raster(paths["POP_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notPopulated)
+        sf.array2raster(paths["POP_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notPopulated)
         logger.info("files saved: " + paths["POP_BUFFER"])
         ul.create_json(paths["POP_BUFFER"], param, ["region_name", "landuse", "WindOn", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "POP_BUFFER"])
         logger.debug('End')
@@ -1119,10 +1123,10 @@ def generate_buffered_water(paths, param):
         A_lu = A_lu == 0 # Land use type for water
         kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
         kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_lu_buffered = sf.maximum_filter(A_lu, footprint=kernel, mode="constant", cval=0)
+        A_lu_buffered = scipy.ndimage.maximum_filter(A_lu, footprint=kernel, mode="constant", cval=0)
         A_notWater = (~A_lu_buffered).astype(int)
 
-        ul.array2raster(paths["WATER_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notWater)
+        sf.array2raster(paths["WATER_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notWater)
         logger.info("files saved: " + paths["WATER_BUFFER"])
         ul.create_json(paths["WATER_BUFFER"], param, ["region_name", "landuse", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "WATER_BUFFER"])
         logger.debug("End")
@@ -1156,10 +1160,10 @@ def generate_buffered_wetland(paths, param):
         A_lu = A_lu == 11 # Land use type for wetland
         kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
         kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_lu_buffered = sf.maximum_filter(A_lu, footprint=kernel, mode="constant", cval=0)
+        A_lu_buffered = scipy.ndimage.maximum_filter(A_lu, footprint=kernel, mode="constant", cval=0)
         A_notWetland = (~A_lu_buffered).astype(int)
 
-        ul.array2raster(paths["WETLAND_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notWetland)
+        sf.array2raster(paths["WETLAND_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notWetland)
         logger.info("files saved: " + paths["WETLAND_BUFFER"])
         ul.create_json(paths["WETLAND_BUFFER"], param, ["region_name", "landuse", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "WETLAND_BUFFER"])
 
@@ -1194,10 +1198,10 @@ def generate_buffered_snow(paths, param):
         A_lu = A_lu == 15 # Land use type for snow
         kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
         kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_lu_buffered = sf.maximum_filter(A_lu, footprint=kernel, mode="constant", cval=0)
+        A_lu_buffered = scipy.ndimage.maximum_filter(A_lu, footprint=kernel, mode="constant", cval=0)
         A_notSnow = (~A_lu_buffered).astype(int)
 
-        ul.array2raster(paths["SNOW_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notSnow)
+        sf.array2raster(paths["SNOW_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notSnow)
         logger.info("files saved: " + paths["SNOW_BUFFER"])
         ul.create_json(paths["SNOW_BUFFER"], param, ["region_name", "landuse", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "SNOW_BUFFER"])
 
@@ -1255,10 +1259,10 @@ def generate_airports(paths,param):
             buffer_pixel_amount = param["WindOn"]["mask"]["airport_buffer_pixel_amount"]
             kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
             kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-            airport_raster = sf.maximum_filter(airport_raster, footprint=kernel, mode="constant", cval=0)
+            airport_raster = scipy.ndimage.maximum_filter(airport_raster, footprint=kernel, mode="constant", cval=0)
             A_notAirport = (~airport_raster).astype(int)
 
-            ul.array2raster(paths["AIRPORTS"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notAirport)
+            sf.array2raster(paths["AIRPORTS"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notAirport)
             logger.info("files saved: " + paths["AIRPORTS"])
             ul.create_json(paths["AIRPORTS"], param, ["region_name", "landuse", "Biomass", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "AIRPORTS"])
 
@@ -1300,7 +1304,7 @@ def generate_country_boarders(paths,param):
         A_notBoarder = (A_countries_buffered).astype(int)
 
 
-        ul.array2raster(paths["BOARDERS"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notBoarder)
+        sf.array2raster(paths["BOARDERS"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notBoarder)
         logger.info("files saved: " + paths["BOARDERS"])
         ul.create_json(paths["BOARDERS"], param, ["region_name", "landuse", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "BOARDERS"])
 

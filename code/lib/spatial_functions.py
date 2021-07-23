@@ -1,6 +1,7 @@
 from . import util as ul
 from osgeo import gdal, osr
-from rasterio import MemoryFile
+#from rasterio import MemoryFile
+import rasterio.mask
 import numpy as np
 import math
 import rasterio
@@ -226,10 +227,10 @@ def calc_region(region, Crd_reg, res_desired, GeoRef):
         "transform": rasterio.transform.from_origin(west, south, GeoRef["pixelWidth"], GeoRef["pixelHeight"]),
     }
 
-    with MemoryFile() as memfile:
+    with rasterio.MemoryFile() as memfile:
         with memfile.open(**profile) as f:
             f.write(A_region, 1)
-            out_image, out_transform = ul.mask.mask(f, features, crop=False, nodata=0, all_touched=False, filled=True)
+            out_image, out_transform = rasterio.mask.mask(f, features, crop=False, nodata=0, all_touched=False, filled=True)
         A_region = out_image[0]
 
     return A_region

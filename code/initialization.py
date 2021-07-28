@@ -4,7 +4,7 @@ from lib.log import logger
 import geopandas as gpd
 import numpy as np
 import shapely
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 
 def initialization(config_file):
@@ -51,6 +51,7 @@ def read_shapefiles(paths, param):
     logger.info("Start")
     scope_shp = gpd.read_file(paths["subregions"])      # Read shapefile of region
     scope_shp = scope_shp.to_crs({"init": "epsg:4326"})     # If it is not already in this format
+
     param["spatial_scope"] = sf.define_spatial_scope(scope_shp)
 
     param["Crd_all"] = sf.crd_merra(param["spatial_scope"], param["res_weather"])[0]    # rectangle coordinates
@@ -61,6 +62,18 @@ def read_shapefiles(paths, param):
     logger.debug("End")
     return param
 
+
+def test(param, paths):
+    scope_shp = gpd.read_file(paths["subregions"])
+    eez_shp = gpd.read_file(paths["EEZ_global"])    # , bbox=scope_shp
+
+    param["technology"] = "WindOff"
+    if "WindOff" in param["technology"]:
+        countries = scope_shp['GID_0'].drop_duplicates()
+        together = scope_shp.append(eez_shp[eez_shp['ISO_Ter1'].isin(countries)], sort=False)
+    together.plot()
+
+    plt.show()
 
 def read_shapefile_regions(param, regions_shp):
     logger.info("Start")

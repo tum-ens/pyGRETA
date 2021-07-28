@@ -1,10 +1,4 @@
-from . import util as ul
-from osgeo import gdal, osr
-#from rasterio import MemoryFile
-import rasterio.mask
-import numpy as np
-import math
-import rasterio
+from .util import *
 
 
 def define_spatial_scope(scope_shp):
@@ -211,10 +205,10 @@ def calc_region(region, Crd_reg, res_desired, GeoRef):
     A_region = np.ones((M, N))
     origin = [Crd_reg[3], Crd_reg[2]]
 
-    if region['geometry'].geom_type == "MultiPolygon":
-        features = [feature for feature in region['geometry']]
+    if region.geometry.geom_type == "MultiPolygon":
+        features = [feature for feature in region.geometry]
     else:
-        features = [region['geometry']]
+        features = [region.geometry]
     west = origin[0]
     south = origin[1]
     profile = {
@@ -227,10 +221,10 @@ def calc_region(region, Crd_reg, res_desired, GeoRef):
         "transform": rasterio.transform.from_origin(west, south, GeoRef["pixelWidth"], GeoRef["pixelHeight"]),
     }
 
-    with rasterio.MemoryFile() as memfile:
+    with MemoryFile() as memfile:
         with memfile.open(**profile) as f:
             f.write(A_region, 1)
-            out_image, out_transform = rasterio.mask.mask(f, features, crop=False, nodata=0, all_touched=False, filled=True)
+            out_image, out_transform = mask.mask(f, features, crop=False, nodata=0, all_touched=False, filled=True)
         A_region = out_image[0]
 
     return A_region
@@ -308,13 +302,13 @@ def adjust_resolution(array, res_data, res_desired, aggfun=None):
     description
     """
     if ((res_data[1] % res_desired[1] < 1e-10) and (res_data[1] > res_desired[1])): # data is coarse on x dimension (columns)
-        array = ul.resizem(array, array.shape[0], int(array.shape[1]*(res_data[1] / res_desired[1])))
+        array = resizem(array, array.shape[0], int(array.shape[1]*(res_data[1] / res_desired[1])))
         if aggfun == "sum":
             array = array / (res_data[1] % res_desired[1])
     if ((res_desired[1] % res_data[1] < 1e-10) and (res_desired[1] > res_data[1])): # data is too detailed on x dimension
         array = aggregate_x_dim(array, res_data, res_desired, aggfun)
     if ((res_data[0] % res_desired[0] < 1e-10) and (res_data[0] > res_desired[0])): # data is coarse on y dimension (rows)
-        array = ul.resizem(array, int(array.shape[0]*(res_data[0] / res_desired[0])), array.shape[1])
+        array = resizem(array, int(array.shape[0]*(res_data[0] / res_desired[0])), array.shape[1])
         if aggfun == "sum":
             array = array / (res_data[0] % res_desired[0])
     if ((res_desired[0] % res_data[0] < 1e-10) and (res_desired[0] > res_data[0])): # data is too detailed on y dimension
@@ -322,97 +316,57 @@ def adjust_resolution(array, res_data, res_desired, aggfun=None):
     return array
     
     
-def recalc_lu_resolution(array, res_data, res_desired, lua):
+def recalc_lu_resolution(array, res_data, res_desired, array1, m_low, n_low):
     
-    array1 = np.zeros([int(array.shape[0]*res_data[0]/res_desired[0]),int(array.shape[1]*res_data[1]/res_desired[1])])
-    array1[:] = np.NaN
-    for i in range(0,array.shape[0],3):
-        for j in range(0,array.shape[1],3):
-            array1[int(i*5/3),int(j*5/3)] = array[i,j] #first row, first column
-            array1[int(i*5/3),int(j*5/3)+2] = array[i,j+1] 
-            array1[int(i*5/3),int(j*5/3)+4] = array[i,j+2]
-            
-            array1[int(i*5/3)+2,int(j*5/3)] = array[i+1,j] #third row, first column
-            array1[int(i*5/3)+2,int(j*5/3)+2] = array[i+1,j+1] 
-            array1[int(i*5/3)+2,int(j*5/3)+4] = array[i+1,j+2]
-            
-            array1[int(i*5/3)+4,int(j*5/3)] = array[i+2,j] #fifth row, first column
-            array1[int(i*5/3)+4,int(j*5/3)+2] = array[i+2,j+1] 
-            array1[int(i*5/3)+4,int(j*5/3)+4] = array[i+2,j+2]
-
-            if (array1[int(i*5/3),int(j*5/3)]==array1[int(i*5/3),int(j*5/3)+2]) or (lua[int(array1[int(i*5/3),int(j*5/3)])]>=lua[int(array1[int(i*5/3),int(j*5/3)+2])]):
-                array1[int(i*5/3),int(j*5/3)+1] = array1[int(i*5/3),int(j*5/3)+2]
-            else:
-                array1[int(i*5/3),int(j*5/3)+1] = array1[int(i*5/3),int(j*5/3)]
-            if (array1[int(i*5/3),int(j*5/3)+2]==array1[int(i*5/3),int(j*5/3)+4]) or (lua[int(array1[int(i*5/3),int(j*5/3)+2])]>=lua[int(array1[int(i*5/3),int(j*5/3)+4])]):
-                array1[int(i*5/3),int(j*5/3)+3] = array1[int(i*5/3),int(j*5/3)+4]
-            else:
-                array1[int(i*5/3),int(j*5/3)+3] = array1[int(i*5/3),int(j*5/3)+2]
-                
-            if (array1[int(i*5/3),int(j*5/3)]==array1[int(i*5/3)+2,int(j*5/3)]) or (lua[int(array1[int(i*5/3),int(j*5/3)])]>=lua[int(array1[int(i*5/3)+2,int(j*5/3)])]):
-                array1[int(i*5/3)+1,int(j*5/3)] = array1[int(i*5/3)+2,int(j*5/3)]
-            else:
-                array1[int(i*5/3)+1,int(j*5/3)] = array1[int(i*5/3),int(j*5/3)]
-            if array1[int(i*5/3),int(j*5/3)+2]==array1[int(i*5/3)+2,int(j*5/3)+2] or (lua[int(array1[int(i*5/3),int(j*5/3)+2])]>=lua[int(array1[int(i*5/3)+2,int(j*5/3)+2])]):
-                array1[int(i*5/3)+1,int(j*5/3)+2] = array1[int(i*5/3)+2,int(j*5/3)+2]
-            else:
-                array1[int(i*5/3)+1,int(j*5/3)+2] = array1[int(i*5/3),int(j*5/3)+2]
-            if array1[int(i*5/3),int(j*5/3)+4]==array1[int(i*5/3)+2,int(j*5/3)+4] or (lua[int(array1[int(i*5/3),int(j*5/3)+4])]>=lua[int(array1[int(i*5/3)+2,int(j*5/3)+4])]):
-                array1[int(i*5/3)+1,int(j*5/3)+4] = array1[int(i*5/3)+2,int(j*5/3)+4]
-            else:
-                array1[int(i*5/3)+1,int(j*5/3)+4] = array1[int(i*5/3),int(j*5/3)+4]
-                
-            if array1[int(i*5/3)+2,int(j*5/3)]==array1[int(i*5/3)+2,int(j*5/3)+2] or (lua[int(array1[int(i*5/3)+2,int(j*5/3)])]>=lua[int(array1[int(i*5/3)+2,int(j*5/3)+2])]):
-                array1[int(i*5/3)+2,int(j*5/3)+1] = array1[int(i*5/3)+2,int(j*5/3)+2]
-            else:
-                array1[int(i*5/3)+2,int(j*5/3)+1] = array1[int(i*5/3)+2,int(j*5/3)]
-            if array1[int(i*5/3)+2,int(j*5/3)+2]==array1[int(i*5/3)+2,int(j*5/3)+4] or (lua[int(array1[int(i*5/3)+2,int(j*5/3)+2])]>=lua[int(array1[int(i*5/3)+2,int(j*5/3)+4])]):
-                array1[int(i*5/3)+2,int(j*5/3)+3] = array1[int(i*5/3)+2,int(j*5/3)+4]
-            else:
-                array1[int(i*5/3)+2,int(j*5/3)+3] = array1[int(i*5/3)+2,int(j*5/3)+2]
-                
-            if array1[int(i*5/3)+2,int(j*5/3)]==array1[int(i*5/3)+4,int(j*5/3)] or (lua[int(array1[int(i*5/3)+2,int(j*5/3)])]>=lua[int(array1[int(i*5/3)+4,int(j*5/3)])]):
-                array1[int(i*5/3)+3,int(j*5/3)] = array1[int(i*5/3)+4,int(j*5/3)]
-            else:
-                array1[int(i*5/3)+3,int(j*5/3)] = array1[int(i*5/3)+2,int(j*5/3)]
-            if array1[int(i*5/3)+2,int(j*5/3)+2]==array1[int(i*5/3)+4,int(j*5/3)+2] or (lua[int(array1[int(i*5/3)+2,int(j*5/3)+2])]>=lua[int(array1[int(i*5/3)+4,int(j*5/3)+2])]):
-                array1[int(i*5/3)+3,int(j*5/3)+2] = array1[int(i*5/3)+4,int(j*5/3)+2]
-            else:
-                array1[int(i*5/3)+3,int(j*5/3)+2] = array1[int(i*5/3)+2,int(j*5/3)+2]
-            if (array1[int(i*5/3)+2,int(j*5/3)+4]==array1[int(i*5/3)+4,int(j*5/3)+4]) or (lua[int(array1[int(i*5/3)+2,int(j*5/3)+4])]>=lua[int(array1[int(i*5/3)+4,int(j*5/3)+4])]):
-                array1[int(i*5/3)+3,int(j*5/3)+4] = array1[int(i*5/3)+4,int(j*5/3)+4]
-            else:
-                array1[int(i*5/3)+3,int(j*5/3)+4] = array1[int(i*5/3)+2,int(j*5/3)+4]
-                
-            if (array1[int(i*5/3)+4,int(j*5/3)]==array1[int(i*5/3)+4,int(j*5/3)+2]) or (lua[int(array1[int(i*5/3)+4,int(j*5/3)])]>=lua[int(array1[int(i*5/3)+4,int(j*5/3)+2])]):
-                array1[int(i*5/3)+4,int(j*5/3)+1] = array1[int(i*5/3)+4,int(j*5/3)+2]
-            else:
-                array1[int(i*5/3)+4,int(j*5/3)+1] = array1[int(i*5/3)+4,int(j*5/3)]
-            if (array1[int(i*5/3)+4,int(j*5/3)+2]==array1[int(i*5/3)+4,int(j*5/3)+4]) or (lua[int(array1[int(i*5/3)+4,int(j*5/3)+2])]>=lua[int(array1[int(i*5/3)+4,int(j*5/3)+4])]):
-                array1[int(i*5/3)+4,int(j*5/3)+3] = array1[int(i*5/3)+4,int(j*5/3)+4]
-            else:
-                array1[int(i*5/3)+4,int(j*5/3)+3] = array1[int(i*5/3)+4,int(j*5/3)+2]
-                
-                
-            
-            if array1[int(i*5/3)+1,int(j*5/3)]==array1[int(i*5/3)+1,int(j*5/3)+2]==array1[int(i*5/3),int(j*5/3)+1]==array1[int(i*5/3)+2,int(j*5/3)+1]:
-                array1[int(i*5/3)+1,int(j*5/3)+1] = array1[int(i*5/3)+2,int(j*5/3)+1]
-            else:
-                array1[int(i*5/3)+1,int(j*5/3)+1] = array1[int(i*5/3),int(j*5/3)]
-            if array1[int(i*5/3)+1,int(j*5/3)+2]==array1[int(i*5/3)+1,int(j*5/3)+4]==array1[int(i*5/3),int(j*5/3)+3]==array1[int(i*5/3)+2,int(j*5/3)+3]:
-                array1[int(i*5/3)+1,int(j*5/3)+3] = array1[int(i*5/3)+2,int(j*5/3)+3]
-            else:
-                array1[int(i*5/3)+1,int(j*5/3)+3] = array1[int(i*5/3),int(j*5/3)+4]
-            
-            if array1[int(i*5/3)+3,int(j*5/3)]==array1[int(i*5/3)+3,int(j*5/3)+2]==array1[int(i*5/3)+2,int(j*5/3)+1]==array1[int(i*5/3)+4,int(j*5/3)+1]:
-                array1[int(i*5/3)+3,int(j*5/3)+1] = array1[int(i*5/3)+4,int(j*5/3)+1]
-            else:
-                array1[int(i*5/3)+3,int(j*5/3)+1] = array1[int(i*5/3)+4,int(j*5/3)]
-            if array1[int(i*5/3)+3,int(j*5/3)+2]==array1[int(i*5/3)+3,int(j*5/3)+4]==array1[int(i*5/3)+2,int(j*5/3)+3]==array1[int(i*5/3)+4,int(j*5/3)+3]:
-                array1[int(i*5/3)+3,int(j*5/3)+3] = array1[int(i*5/3)+4,int(j*5/3)+3]
-            else:
-                array1[int(i*5/3)+3,int(j*5/3)+3] = array1[int(i*5/3)+4,int(j*5/3)+4]
-                
+    # array1 = np.zeros([int(array.shape[0]*res_data[0]/res_desired[0]),int(array.shape[1]*res_data[1]/res_desired[1])])
+    # array1[:] = np.NaN
+    for m in range(m_low):
+        for n in range(n_low):
+            for i in range(0,200,6):
+                for j in range(0,250,6):
+                    array1[i,j] = array[int(i*5/6),int(j*5/6)] #first row, first column
+                    array1[i,j+1] = array[int(i*5/6),int(j*5/6)+1] 
+                    array1[i+1,j] = array[int(i*5/6)+1,int(j*5/6)]
+                    array1[i+1,j+1] = array[int(i*5/6)+1,int(j*5/6)+1]
+                    
+                    array1[i,j+4] = array[int(i*5/6),int(j*5/6)+3] 
+                    array1[i,j+5] = array[int(i*5/6),int(j*5/6)+4] 
+                    array1[i+1,j+4] = array[int(i*5/6)+1,int(j*5/6)+3]
+                    array1[i+1,j+5] = array[int(i*5/6)+1,int(j*5/6)+4]
+                    
+                    array1[i+4,j] = array[int(i*5/6)+3,int(j*5/6)]
+                    array1[i+4,j+1] = array[int(i*5/6)+3,int(j*5/6)+1]
+                    array1[i+5,j] = array[int(i*5/6)+4,int(j*5/6)]
+                    array1[i+5,j+1] = array[int(i*5/6)+4,int(j*5/6)+1]
+                    
+                    array1[i+4,j+4] = array[int(i*5/6)+3,int(j*5/6)+3]
+                    array1[i+4,j+5] = array[int(i*5/6)+3,int(j*5/6)+4]
+                    array1[i+5,j+4] = array[int(i*5/6)+4,int(j*5/6)+3]
+                    array1[i+5,j+5] = array[int(i*5/6)+4,int(j*5/6)+4]
+                    
+                    array1[i,j+2] = array[int(i*5/6),int(j*5/6)+2]
+                    array1[i,j+3] = array[int(i*5/6),int(j*5/6)+2]
+                    array1[i+1,j+2] = array[int(i*5/6)+1,int(j*5/6)+2]
+                    array1[i+1,j+3] = array[int(i*5/6)+1,int(j*5/6)+2]
+                    array1[i+2,j] = array[int(i*5/6)+2,int(j*5/6)]
+                    array1[i+3,j] = array[int(i*5/6)+2,int(j*5/6)]
+                    array1[i+2,j+1] = array[int(i*5/6)+2,int(j*5/6)+1]
+                    array1[i+3,j+1] = array[int(i*5/6)+2,int(j*5/6)+1]
+                    
+                    array1[i+2,j+2] = array[int(i*5/6)+2,int(j*5/6)+2]
+                    array1[i+2,j+3] = array[int(i*5/6)+2,int(j*5/6)+2]
+                    array1[i+3,j+2] = array[int(i*5/6)+2,int(j*5/6)+2]
+                    array1[i+3,j+3] = array[int(i*5/6)+2,int(j*5/6)+2]
+                    
+                    array1[i+2,j+4] = array[int(i*5/6)+2,int(j*5/6)+3]
+                    array1[i+3,j+4] = array[int(i*5/6)+2,int(j*5/6)+3]
+                    array1[i+2,j+5] = array[int(i*5/6)+2,int(j*5/6)+4]
+                    array1[i+3,j+5] = array[int(i*5/6)+2,int(j*5/6)+4]
+                    array1[i+4,j+2] = array[int(i*5/6)+3,int(j*5/6)+2]
+                    array1[i+4,j+3] = array[int(i*5/6)+3,int(j*5/6)+2]
+                    array1[i+5,j+2] = array[int(i*5/6)+4,int(j*5/6)+2]
+                    array1[i+5,j+3] = array[int(i*5/6)+4,int(j*5/6)+2]
+                                   
     return array1
     
 def recalc_topo_resolution(array, res_data, res_desired):

@@ -1,6 +1,5 @@
-from . import spatial_functions as sf
-from . import util as ul
-from .log import logger
+from .spatial_functions import crd_exact_points
+from .util import *
 import numpy as np
 
 np.seterr(divide="ignore")  # Repress invalid value or division by zero error
@@ -101,20 +100,20 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
         aux = np.maximum(
             np.minimum(
                 (
-                    ul.sind(A_delta) * ul.sind(A_phi) * ul.cosd(A_beta)
-                    - ul.sind(A_delta) * ul.cosd(A_phi) * ul.sind(A_beta) * ul.cosd(A_orientation)
-                    + ul.cosd(A_delta) * ul.cosd(A_phi) * ul.cosd(A_beta) * ul.cosd(A_omega)
-                    + ul.cosd(A_delta) * ul.sind(A_phi) * ul.sind(A_beta) * ul.cosd(A_orientation) * ul.cosd(A_omega)
-                    + ul.cosd(A_delta) * ul.sind(A_beta) * ul.sind(A_orientation) * ul.sind(A_omega)
+                    sind(A_delta) * sind(A_phi) * cosd(A_beta)
+                    - sind(A_delta) * cosd(A_phi) * sind(A_beta) * cosd(A_orientation)
+                    + cosd(A_delta) * cosd(A_phi) * cosd(A_beta) * cosd(A_omega)
+                    + cosd(A_delta) * sind(A_phi) * sind(A_beta) * cosd(A_orientation) * cosd(A_omega)
+                    + cosd(A_delta) * sind(A_beta) * sind(A_orientation) * sind(A_omega)
                 ),
                 1,
             ),
             -1,
         )
-        A_incidence = ul.arccosd(aux)
+        A_incidence = arccosd(aux)
         # Compute the coefficients for the HDKR model
-        R_b = ul.cosd(A_incidence) / ul.sind(A_alpha)
-        R_b[A_alpha <= 5] = ul.cosd(A_incidence[A_alpha <= 5]) / ul.sind(5)
+        R_b = cosd(A_incidence) / sind(A_alpha)
+        R_b[A_alpha <= 5] = cosd(A_incidence[A_alpha <= 5]) / sind(5)
         R_b[A_alpha <= 0] = 0
 
         F_direct, F_diffuse, F_reflected = coefficients(A_beta, RATIO, R_b, A_i, f)
@@ -146,7 +145,7 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
 
     if tech == "CSP":
         # Wind Speed Corrected at 2m
-        w2m_h = ul.resizem(merraData["W50M"][:, :, hour], m_high, n_high)
+        w2m_h = resizem(merraData["W50M"][:, :, hour], m_high, n_high)
         w2m_h = w2m_h[reg_ind] * rasterData["A_WindSpeed_Corr"][reg_ind]
 
         # Wind Speed cutoff filter:
@@ -157,18 +156,18 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
         aux = np.maximum(
             np.minimum(
                 (
-                    ul.sind(A_delta) * ul.sind(A_phi) * ul.cosd(A_beta)
-                    - ul.sind(A_delta) * ul.cosd(A_phi) * ul.sind(A_beta) * ul.cosd(A_orientation)
-                    + ul.cosd(A_delta) * ul.cosd(A_phi) * ul.cosd(A_beta) * ul.cosd(A_omega)
-                    + ul.cosd(A_delta) * ul.sind(A_phi) * ul.sind(A_beta) * ul.cosd(A_orientation) * ul.cosd(A_omega)
-                    + ul.cosd(A_delta) * ul.sind(A_beta) * ul.sind(A_orientation) * ul.sind(A_omega)
+                    sind(A_delta) * sind(A_phi) * cosd(A_beta)
+                    - sind(A_delta) * cosd(A_phi) * sind(A_beta) * cosd(A_orientation)
+                    + cosd(A_delta) * cosd(A_phi) * cosd(A_beta) * cosd(A_omega)
+                    + cosd(A_delta) * sind(A_phi) * sind(A_beta) * cosd(A_orientation) * cosd(A_omega)
+                    + cosd(A_delta) * sind(A_beta) * sind(A_orientation) * sind(A_omega)
                 ),
                 1,
             ),
             -1,
         )
-        A_incidence = ul.arccosd(aux)
-        R_b = ul.cosd(A_incidence) / ul.sind(A_alpha)
+        A_incidence = arccosd(aux)
+        R_b = cosd(A_incidence) / sind(A_alpha)
         F_direct_csp, _, _ = coefficients(90 - A_alpha, RATIO, R_b, A_i, f)
         S = TOA_h * CLEARNESS_h * F_direct_csp * (1 - SHADING)
         Qu = csp["Flow_coeff"] * (S - csp["AbRe_ratio"] * (csp["loss_coeff"] + csp["loss_coeff_wind"] * w2m_h ** 2) * (csp["T_avg_HTF"] - TEMP_h))
@@ -209,7 +208,7 @@ def angles(hour, reg_ind, Crd_all, res_desired, orient):
     :rtype: tuple of arrays
     """
     # Initialization
-    Crd_points = sf.crd_exact_points(reg_ind, Crd_all, res_desired)
+    Crd_points = crd_exact_points(reg_ind, Crd_all, res_desired)
     lat = Crd_points[0]
     lon = Crd_points[1]
     k = len(lat)  # number of points
@@ -221,7 +220,7 @@ def angles(hour, reg_ind, Crd_all, res_desired, orient):
     phi = lat
 
     # Equation of Time (in hours)
-    EOT = -0.128 * ul.sind(N * 360 / 365.25 - 2.80) - 0.165 * ul.sind(2 * N * 360 / 365.25 + 19.7)
+    EOT = -0.128 * sind(N * 360 / 365.25 - 2.80) - 0.165 * sind(2 * N * 360 / 365.25 + 19.7)
 
     # Time Correction Factor (in hours)
     TC = EOT + lon / 15  # no correction factor for differences to GMT, because data is in GMT
@@ -233,11 +232,11 @@ def angles(hour, reg_ind, Crd_all, res_desired, orient):
     omega = 15 * (omegast - 12)
 
     # Declination angle
-    delta = np.tile(ul.arcsind(0.3978 * ul.sin(N * 2 * np.pi / 365.25 - 1.400 + 0.0355 * ul.sin(N * 2 * np.pi / 365.25 - 0.0489))), k)
+    delta = np.tile(arcsind(0.3978 * sin(N * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(N * 2 * np.pi / 365.25 - 0.0489))), k)
     delta[phi < 0] = -delta[phi < 0]
 
     # Elevation angle (in degrees)
-    alpha = ul.arcsind(ul.sind(delta) * ul.sind(phi) + ul.cosd(delta) * ul.cosd(phi) * ul.cosd(omega))
+    alpha = arcsind(sind(delta) * sind(phi) + cosd(delta) * cosd(phi) * cosd(omega))
 
     # Optimal tilt angle (loosely based on Breyer 2010)
     beta = np.minimum(np.abs(phi), 55)  # The tilt angle is preferably equal to the latitude
@@ -253,8 +252,8 @@ def angles(hour, reg_ind, Crd_all, res_desired, orient):
     beta[np.logical_and(range_lat, range_lon)] = (beta[np.logical_and(range_lat, range_lon)] - 20) / 65 * 60 + 20  # Asia/China
 
     # Azimuth angle (in degrees)
-    aux = np.maximum(np.minimum(ul.sind(delta) * ul.cosd(phi) - ul.cosd(delta) * ul.sind(phi) * ul.cosd(omega) / ul.cosd(alpha), 1), -1)
-    aziam = ul.arccosd(aux)
+    aux = np.maximum(np.minimum(sind(delta) * cosd(phi) - cosd(delta) * sind(phi) * cosd(omega) / cosd(alpha), 1), -1)
+    aziam = arccosd(aux)
     azipm = 360 - aziam
     azi = aziam * ((omega < 0) * 1) + azipm * ((omega >= 0) * 1)
 
@@ -291,8 +290,8 @@ def tracking(axis, A_phi, A_alpha, A_beta, A_azimuth):
         A_orientation = np.zeros(A_alpha.shape)
         A_orientation[A_phi < 0] = 180
 
-        x = (ul.cosd(A_alpha) * (-ul.sind(A_azimuth - A_orientation))) / (
-            ul.cosd(A_alpha) * (-ul.cosd(A_azimuth - A_orientation)) * ul.sind(A_beta) + ul.sind(A_alpha) * ul.cosd(A_beta)
+        x = (cosd(A_alpha) * (-sind(A_azimuth - A_orientation))) / (
+            cosd(A_alpha) * (-cosd(A_azimuth - A_orientation)) * sind(A_beta) + sind(A_alpha) * cosd(A_beta)
         )
 
         # The difference should be the angular displacement
@@ -310,19 +309,19 @@ def tracking(axis, A_phi, A_alpha, A_beta, A_azimuth):
         y[crit] = -180
 
         # Tracking angle
-        R = ul.arctand(x) + y
+        R = arctand(x) + y
 
         # New beta
-        beta = ul.arccosd(ul.cosd(R) * ul.cosd(A_beta))
+        beta = arccosd(cosd(R) * cosd(A_beta))
 
         # New orientation
         orientation = np.zeros(A_beta.shape)
         crit = np.logical_and(A_beta != 0, np.logical_and(-90 <= R, R <= 90))
-        orientation[crit] = A_orientation[crit] + 180 + ul.arcsind(ul.sind(R[crit]) / ul.sind(beta[crit]))
+        orientation[crit] = A_orientation[crit] + 180 + arcsind(sind(R[crit]) / sind(beta[crit]))
         crit = np.logical_and(-180 <= R, R < -90)
-        orientation[crit] = A_orientation[crit] - ul.arcsind(ul.sind(R[crit]) / ul.sind(beta[crit]))
+        orientation[crit] = A_orientation[crit] - arcsind(sind(R[crit]) / sind(beta[crit]))
         crit = np.logical_and(90 < R, R <= 180)
-        orientation[crit] = A_orientation[crit] + 360 - ul.arcsind(ul.sind(R[crit]) / ul.sind(beta[crit]))
+        orientation[crit] = A_orientation[crit] + 360 - arcsind(sind(R[crit]) / sind(beta[crit]))
 
         A_orientation = orientation - 180
         A_beta = beta
@@ -350,7 +349,7 @@ def toa_hourly(alpha, hour):
     solarconst = 1367  # in W/m^2
     N = hour // 24 + 1
 
-    TOA_h = solarconst * (1 + 0.03344 * ul.cos(N * 2 * np.pi / 365.25 - 0.048869)) * ul.sind(alpha)
+    TOA_h = solarconst * (1 + 0.03344 * cos(N * 2 * np.pi / 365.25 - 0.048869)) * sind(alpha)
     TOA_h = np.maximum(TOA_h, 0)
 
     return TOA_h
@@ -380,9 +379,9 @@ def coefficients(beta, ratio, R_b, A_i, f):
     F_direct = (1 - ratio + ratio * A_i) * R_b
     F_direct[F_direct < 0] = 0
 
-    F_diffuse = ratio * (1 - A_i) * (1 + ul.cos(np.deg2rad(beta))) / 2 * (1 + f * ul.sin(np.deg2rad(beta / 2)) ** 3)
+    F_diffuse = ratio * (1 - A_i) * (1 + cos(np.deg2rad(beta))) / 2 * (1 + f * sin(np.deg2rad(beta / 2)) ** 3)
 
-    F_reflected = (1 - ul.cos(np.deg2rad(beta))) / 2
+    F_reflected = (1 - cos(np.deg2rad(beta))) / 2
 
     return F_direct, F_diffuse, F_reflected
 
@@ -460,7 +459,7 @@ def calc_CF_windoff(hour, reg_ind, turbine, m, n, merraData, rasterData):
     """
 
     # Load MERRA data, increase its resolution, and fit it to the extent
-    w50m_h = ul.resizem(merraData["W50M"][:, :, hour], m, n)
+    w50m_h = resizem(merraData["W50M"][:, :, hour], m, n)
     w50m_h = w50m_h[tuple(reg_ind)]
 
     # Calculate the wind speed a the desired height
@@ -563,23 +562,14 @@ def calc_CF_windon(hours, turbine, merraData, rasterData):
     #w50m_h = w50m_h[tuple(reg_ind)]
 
     # Calculate the wind speed a the desired height
-    logger.debug('Start w_new_h')
-    if np.isscalar(hours):     # Check if hours is only a scalar or an array of multiple hours
-        # print('scalar')
-        w_new_h = rasterData * w50m_h
-    else:
-        # print('array')
-        w_new_h = np.repeat(rasterData[..., None], len(hours), axis=2) * w50m_h
-
+    w_new_h = np.repeat(rasterData[..., None], len(hours), axis=2) * w50m_h
     del w50m_h
-    logger.debug('Finished w_new_h')
-
 
     # Calculate the capacity factor
     a = turbine["w_in"] ** 3 / (turbine["w_in"] ** 3 - turbine["w_r"] ** 3)
     b = 1 / (turbine["w_r"] ** 3 - turbine["w_in"] ** 3)
 
-    CF = np.zeros(w_new_h.shape, dtype=np.float16)
+    CF = np.zeros(w_new_h.shape)
     # Case 1 : above the cut-in speed and below the rated speed
     idx1 = np.logical_and(turbine["w_in"] < w_new_h, w_new_h < turbine["w_r"])
     CF[idx1] = a + b * w_new_h[idx1] ** 3

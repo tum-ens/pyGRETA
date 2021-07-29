@@ -1,13 +1,16 @@
-from .physical_models import calc_CF_solar, calc_CF_windon, calc_CF_windoff
-from .spatial_functions import *
+from . import physical_models as pm
+from . import spatial_functions as sf
+from . import util as ul
+from .log import logger
 import multiprocessing as mp
-import sys
+import itertools as it
+import pandas as pd
 import numpy as np
-from .util import *
-#import util
+import traceback
+import rasterio
+import hdf5storage
 
-
-def calculate_full_load_hours(paths, param, tech):
+def calculate_full_load_hours(paths, param, tech, multiprocessing):
     """
     This function calculates the yearly FLH for a technology for all valid pixels in a spatial scope. Valid pixels are land pixels
     for WindOn, PV and CSP, and sea pixels for WindOff. The FLH values are calculated by summing up hourly capacity factors.
@@ -18,17 +21,17 @@ def calculate_full_load_hours(paths, param, tech):
     :type param: dict
     :param tech: Technology under study.
     :type tech: str
-
+    :param multiprocessing: Determines if the computation uses multiprocessing (True/False)
+    :type multiprocessing: bool
     :return: The raster of FLH potential is saved as mat and tif files, along with the json metadata file.
     :rtype: None
     """
-    timecheck("Start")
-    print("Region: " + param["region_name"])
+    logger.info("Start - Region: " + param["region_name"])
 
     if tech in ["WindOn", "WindOff"]:
-        print("\n" + tech + " - HUB_HEIGHTS: " + str(param[tech]["technical"]["hub_height"]))
+        logger.info(tech + " - HUB_HEIGHTS: " + str(param[tech]["technical"]["hub_height"]))
     elif tech in ["PV"] and "orientation" in param["PV"]["technical"].keys():
-        print("\n" + tech + " - Orientation: " + str(param[tech]["technical"]["orientation"]))
+        logger.info(tech + " - Orientation: " + str(param[tech]["technical"]["orientation"]))
 
     nproc = param["nproc"]
     m_high = param["m_high"]
@@ -36,20 +39,15 @@ def calculate_full_load_hours(paths, param, tech):
     m_low = param["m_low"]
     n_low = param["n_low"]
     CPU_limit = np.full((1, nproc), param["CPU_limit"])
-    GeoRef = param["GeoRef"]
-    res_desired = param["res_desired"]
-    countries_shp = param["regions_land"]
-    nRegions = param["nRegions_sub"]
-    regions_shp = param["regions_sub"]
     res_weather = param["res_weather"]
     Crd_all = param["Crd_all"]
-    Ind = ind_merra(Crd_all, Crd_all, res_weather)[0]
+    Ind = sf.ind_merra(Crd_all, Crd_all, res_weather)[0]
     
     if tech == "WindOff":
         with rasterio.open(paths["EEZ"]) as src:
             w = src.read(1)
     else:
-        with rasterio.open(paths["SUB"]) as src:
+        with rasterio.open(paths["LAND"]) as src:
             w = src.read(1)
     
     param["Ind_nz"] = np.nonzero(np.flipud(w))
@@ -69,8 +67,8 @@ def calculate_full_load_hours(paths, param, tech):
         else:
             list_hours = np.array_split(list_hours[day_filter], nproc)
             param["status_bar_limit"] = list_hours[0][-1]
-            results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(
-                calc_FLH_solar, product(list_hours, [[param, tech, rasterData, merraData]])
+            results = mp.Pool(processes=nproc, initializer=ul.limit_cpu, initargs=CPU_limit).starmap(
+                calc_FLH_solar, it.product(list_hours, [[param, tech, rasterData, merraData]])
             )
          # Collecting results
         FLH_low = np.zeros((m_low, n_low))
@@ -80,33 +78,33 @@ def calculate_full_load_hours(paths, param, tech):
                 FLH_low = FLH_low + results[p]
                 # print (np.sum(FLH_low))
         else:
-            FLH[param["Ind_nz"]] = results
+            FLH_low = results
         
-        FLH_high = resizem(FLH_low, m_high, n_high)
+        FLH_high = ul.resizem(FLH_low, m_high, n_high)
         FLH = np.full((m_high, n_high),np.nan)
 
         FLH[param["Ind_nz"]]=FLH_high[param["Ind_nz"]]
         hdf5storage.writes({"FLH": FLH}, paths[tech]["FLH"], store_python_metadata=True, matlab_compatible=True)
-        create_json(
+        ul.create_json(
             paths[tech]["FLH"],
             param,
             ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired", "res_weather"],
             paths,
-            ["spatial_scope"],
+            ["subregions"],
         )
-        print("\nfiles saved: " + paths[tech]["FLH"])
+        logger.info("files saved: " + paths[tech]["FLH"])
 
         # Save GEOTIFF files
         if param["savetiff"]:
             GeoRef = param["GeoRef"]
-            array2raster(changeExt2tif(paths[tech]["FLH"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], FLH)
-            print("files saved:" + changeExt2tif(paths[tech]["FLH"]))
+            sf.array2raster(ul.changeExt2tif(paths[tech]["FLH"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], FLH)
+            logger.info("files saved:" + ul.changeExt2tif(paths[tech]["FLH"]))
     
     elif tech in ["WindOff"]:
         list_hours = np.array_split(np.arange(0, 8760), nproc)
         param["status_bar_limit"] = list_hours[0][-1]
-        results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(
-            calc_FLH_windoff, product(list_hours, [[param, tech, rasterData, merraData]])
+        results = mp.Pool(processes=nproc, initializer=ul.limit_cpu, initargs=CPU_limit).starmap(
+            calc_FLH_windoff, it.product(list_hours, [[param, tech, rasterData, merraData]])
         )
         # Collecting results
         FLH = np.full((m_high, n_high), np.nan)
@@ -118,39 +116,34 @@ def calculate_full_load_hours(paths, param, tech):
             FLH[param["Ind_nz"]] = results
 
         hdf5storage.writes({"FLH": FLH}, paths[tech]["FLH"], store_python_metadata=True, matlab_compatible=True)
-        create_json(
+        ul.create_json(
             paths[tech]["FLH"],
             param,
             ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired", "res_weather"],
             paths,
-            ["spatial_scope"],
+            ["subregions"],
         )
-        print("\nfiles saved: " + paths[tech]["FLH"])
+        logger.info("files saved: " + paths[tech]["FLH"])
 
         # Save GEOTIFF files
         if param["savetiff"]:
             GeoRef = param["GeoRef"]
-            array2raster(changeExt2tif(paths[tech]["FLH"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], FLH)
-            print("files saved:" + changeExt2tif(paths[tech]["FLH"]))
+            sf.array2raster(ul.changeExt2tif(paths[tech]["FLH"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], FLH)
+            logger.info("files saved:" + ul.changeExt2tif(paths[tech]["FLH"]))
     
     elif tech in ["WindOn"]:
-        # A_country_area = np.zeros((m_high, n_high))
-        # for reg in range(0, nRegions):
-            # r = calc_region(regions_shp.loc[reg], Crd_all, res_desired, GeoRef)  
-            # A_country_area = A_country_area + r
-        # A_country_area = np.flipud(A_country_area)
-        
         merraData = merraData["W50M"][::-1, :, :]
-        # merraData = merraData.astype(dtype=np.float16)
+
         rasterData = rasterData["A_cf"]
-        # rasterData = rasterData.astype(dtype=np.float16)
+        #rasterData = rasterData.astype(dtype=np.float32)
 
         with rasterio.open(paths["GWA_global"]) as src:
             GWA_array = src.read(1)
-        # GWA_array = GWA_array.astype(dtype=np.float16)
-        GWA_array = np.power(GWA_array, 3)
-        where_are_NaNs = np.isnan(GWA_array)
-        GWA_array[where_are_NaNs] = 0
+        GWA_array[np.isnan(GWA_array)] = 0
+
+        #merraData = merraData.astype(dtype=np.float32)
+        GWA_array = GWA_array.astype(dtype=np.float16)
+        #rasterData = rasterData.astype(dtype=np.float32)
 
         # param["status_bar_limit"] = list_rows_splitted[0][-1] # ToDo: Wo we need this?
 
@@ -173,52 +166,54 @@ def calculate_full_load_hours(paths, param, tech):
         FLH[:] = np.nan
         list_pixles = np.arange(n_low * m_low)  # All pixles within MERRA data
 
-        multiprocessing = True
+        # multiprocessing = True  # debuging
         if multiprocessing:
-            list_pixles_splitted = np.array_split(list_pixles,
-                                                  nproc)  # Splitted list acording to the number of parrallel processes
-            print('# of processes: ' + str(len(list_pixles_splitted)))
-            # print(list_pixles_splitted)
+            list_pixles_splitted = np.array_split(list_pixles,nproc)  # Splitted list acording to the number of parrallel processes
+            logger.info('# of processes: ' + str(len(list_pixles_splitted)))
+            logger.debug(list_pixles_splitted)
 
             for pixles in list_pixles_splitted:  # Run the 'calc_FLH_windon' for each of the splitted rows
                 p = mp.Process(target=calc_FLH_windon, args=(
-                    param, tech, paths, rasterData, merraData, GWA_array, b_xmin, b_xmax, b_ymin, b_ymax, x_gwa, y_gwa,
+                    param, tech, rasterData, merraData, GWA_array, b_xmin, b_xmax, b_ymin, b_ymax, x_gwa, y_gwa,
                     pixles, list_results))
                 processes.append(p)
 
+            logger.debug('Starting processes for wind computation')
             for p in processes:
                 p.start()  # Start all single processes
-            print('All processes started')
+            logger.info('All processes started')
 
             for p in processes:
                 p.join()  # Wait until all processes are finished
-            print('All processes finished')
+            logger.info('All processes finished')
         else:
-            # list_pixles = np.arange(100,110)  # debuging
+            # list_pixles = np.arange(100,102)  # debuging
             # list_pixles = [np.ravel_multi_index((1, 2), (m_low, n_low))]  # debuging
-            calc_FLH_windon(param, tech, paths, rasterData, merraData, GWA_array, b_xmin, b_xmax, b_ymin, b_ymax, x_gwa,
+            logger.debug(list_pixles)
+            calc_FLH_windon(param, tech, rasterData, merraData, GWA_array, b_xmin, b_xmax, b_ymin, b_ymax, x_gwa,
                             y_gwa, list_pixles, list_results)
-            print('Calculations for all pixles done')
+            logger.info('Calculations for all pixles done')
 
         # ------------------------------------------------------------------------------------
 
         # FLH[A_country_area==0] = float("nan")python
         FLH = np.flipud(FLH)
-        FLH_w = np.full((m_high, n_high), np.nan)
-        FLH_w[param["Ind_nz"]]=FLH[param["Ind_nz"]]
-        hdf5storage.writes({"FLH": FLH_w}, paths[tech]["FLH"], store_python_metadata=True, matlab_compatible=True)
+        FLH_scope = np.full((m_high, n_high), np.nan)
+        FLH_scope[param["Ind_nz"]] = FLH[param["Ind_nz"]]
 
-        print("\nfiles saved: " + paths[tech]["FLH"])
+        hdf5storage.writes({"FLH": FLH}, paths[tech]["FLH"], store_python_metadata=True, matlab_compatible=True)
+
+        logger.info("\nfiles saved: " + paths[tech]["FLH"])
 
         GeoRef = param["GeoRef"]
-        array2raster(changeExt2tif(paths[tech]["FLH"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
-                     GeoRef["pixelHeight"], FLH_w)
-        print("files saved:" + changeExt2tif(paths[tech]["FLH"]))
+        sf.array2raster(ul.changeExt2tif(paths[tech]["FLH"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
+                     GeoRef["pixelHeight"], FLH)
+        logger.info("files saved:" +ul.changeExt2tif(paths[tech]["FLH"]))
 
-    timecheck("End")
+    logger.debug("End")
 
 
-def get_merra_raster_data(paths, param, tech):
+def get_merra_raster_data(paths, param, tech): #ToDo clean up unnecessary things
     """
     This function returns a tuple of two dictionaries containing weather and correction rasters for specified technology.
 
@@ -251,13 +246,13 @@ def get_merra_raster_data(paths, param, tech):
             w = src.read(1)
         rasterData["A_lu"] = np.flipud(w)
         # A_Ross (Temperature coefficients for heating losses)
-        rasterData["A_Ross"] = changem(rasterData["A_lu"], param["landuse"]["Ross_coeff"],
+        rasterData["A_Ross"] = ul.changem(rasterData["A_lu"], param["landuse"]["Ross_coeff"],
                                        param["landuse"]["type"]).astype("float16")
         # A_albedo (Reflectivity coefficients)
-        rasterData["A_albedo"] = changem(rasterData["A_lu"], param["landuse"]["albedo"],
+        rasterData["A_albedo"] = ul.changem(rasterData["A_lu"], param["landuse"]["albedo"],
                                          param["landuse"]["type"]).astype("float16")
         # A_WS_Coef wind Speed at 2m above the ground
-        A_hellmann = changem(rasterData["A_lu"], landuse["hellmann"], landuse["type"])
+        A_hellmann = ul.changem(rasterData["A_lu"], landuse["hellmann"], landuse["type"])
         rasterData["A_WindSpeed_Corr"] = ((2 / 50) ** A_hellmann).astype("float16")
         del A_hellmann
 
@@ -302,7 +297,6 @@ def calc_FLH_solar(hours, args):
     tech = args[1]
     rasterData = args[2]
     merraData = args[3]
-    reg_ind = param["Ind_nz"]
     m_low = param["m_low"]
     n_low = param["n_low"]
 
@@ -315,20 +309,18 @@ def calc_FLH_solar(hours, args):
         if hour <= param["status_bar_limit"]:
             # Show progress of the simulation
             status = status + 1
-            display_progress(tech + " " + param["region_name"], [len(hours), status])
+            ul.display_progress(tech + " " + param["region_name"], [len(hours), status])
 
         if tech == "PV":
-            CF = calc_CF_solar(hour, ind, param, merraData, rasterData, tech)[0]
+            CF = pm.calc_CF_solar(hour, ind, param, merraData, rasterData, tech)[0]
             
         elif tech == "CSP":
-            CF = calc_CF_solar(hour, ind, param, merraData, rasterData, tech)[1]
+            CF = pm.calc_CF_solar(hour, ind, param, merraData, rasterData, tech)[1]
 
         # Aggregates CF to obtain the yearly FLH
         CF[np.isnan(CF)] = 0
         
         FLH[ind] = FLH[ind] + CF
-        
-        #print(str(hour)+"_"+str(sum(FLH)))
     
     return FLH
 
@@ -369,18 +361,19 @@ def calc_FLH_windoff(hours, args):
         if hour <= param["status_bar_limit"]:
             # Show progress of the simulation
             status = status + 1
-            display_progress(tech + " " + param["region_name"], [len(hours), status])
+            ul.display_progress(tech + " " + param["region_name"], [len(hours), status])
 
         # Calculate hourly capacity factor
-        CF = calc_CF_windoff(hour, reg_ind, turbine, m_high, n_high, merraData, rasterData)
+        CF = pm.calc_CF_windoff(hour, reg_ind, turbine, m_high, n_high, merraData, rasterData)
 
         # Aggregates CF to obtain the yearly FLH
         CF[np.isnan(CF)] = 0
         FLH = FLH + CF
     return FLH
 
+
 # def calc_FLH_windon(row, args):
-def calc_FLH_windon(param, tech, paths, rasterData, merraData, GWA_array, b_xmin, b_xmax, b_ymin, b_ymax, x_gwa, y_gwa,
+def calc_FLH_windon(param, tech, rasterData, merraData, GWA_array, b_xmin, b_xmax, b_ymin, b_ymax, x_gwa, y_gwa,
                     pixles, list_results):
     """
     This function computes the full-load hours for all valid pixels specified in *ind_nz* in *param*. Due to parallel processing,
@@ -401,61 +394,60 @@ def calc_FLH_windon(param, tech, paths, rasterData, merraData, GWA_array, b_xmin
     :rtype: numpy array
     """
 
-    # reg_ind = param["Ind_nz"]
+    logger.debug('Process started - Pixles: (' + str(pixles) + ')')
+
     m_low = param["m_low"]
     n_low = param["n_low"]
-    # res_weather = param["res_weather"]
-    # res_desired = param["res_desired"]
     m_high = param["m_high"]
     n_high = param["n_high"]
     turbine = param[tech]["technical"]
 
-    try:
-        reRaster = np.flipud(rasterData)  # ToDo: out of loop? # Why doing this?
-        FLH_np = np.frombuffer(list_results, dtype=np.float32).reshape(m_high, n_high)
-        # print(pixles)
-        for pixle in pixles:
-            row, column = np.unravel_index(pixle,
-                                           (m_low, n_low))  # Generate row and column out of the numbered position
-            print('Pixle (' + str(row) + ',' + str(column) + ')')  # Print the recent computing pixle
+    reRaster = np.flipud(rasterData)  # ToDo: out of loop? # Why doing this?
+    FLH_np = np.frombuffer(list_results, dtype=np.float32).reshape(m_high, n_high)
 
-            reMerra = redistribution_array(param, paths, merraData[row, column, :], row, column, b_xmin[row, column],
-                                           b_xmax[row, column], b_ymin[row, column], b_ymax[row, column], GWA_array,
-                                           x_gwa, y_gwa)
+    for pixle in pixles:
+        row, column = np.unravel_index(pixle, (m_low, n_low))  # Generate row and column out of the numbered position
+        logger.debug('Pixle (' + str(row) + ',' + str(column) + ')')  # Print the recent computing pixle
+        try:
+            reMerra = redistribution_array(param, merraData[row, column, :], row, column, b_xmin[row, column], b_xmax[row, column], b_ymin[row, column], b_ymax[row, column], GWA_array, x_gwa, y_gwa)
+            logger.debug('reMerra (' + str(row) + ',' + str(column) + ')')
+
             if np.sum(reMerra):  # FIXME: Why is reMerra zero?
-                hours = np.arange(8760)
-                CF = calc_CF_windon(hours, turbine, reMerra,
-                                    reRaster[row * 200:((row + 1) * 200), column * 250:((column + 1) * 250)])
-                FLH_part = np.nansum(CF, axis=2)
+                FLH_part = np.zeros([200, 250])
+                for hour in np.arange(8760):
+                    FLH_part += pm.calc_CF_windon(hour, turbine, reMerra,reRaster[row * 200:((row + 1) * 200), column * 250:((column + 1) * 250)])
+                # # Does the same as above but needs more virtual memory (RAM)
+                # hours = np.arange(8760)
+                # CF = calc_CF_windon(hours, turbine, reMerra,
+                #                     reRaster[row * 200:((row + 1) * 200), column * 250:((column + 1) * 250)])
+                # FLH_part = np.nansum(CF, axis=2)
             else:
                 FLH_part = np.zeros([200, 250])
-                print('zeros(' + str(row) + ',' + str(column) + ')')
+                logger.debug('zeros(' + str(row) + ',' + str(column) + ')')
 
-            rows_higherResolution = np.arange(row * 200, (
-                    row + 1) * 200)  # Extend the rows due to the higher resolution after redistribution Todo: use 'mm/n_high'?
+            rows_higherResolution = np.arange(row * 200, (row + 1) * 200)  # Extend the rows due to the higher resolution after redistribution Todo: use 'mm/n_high'?
             columns_higherResolution = np.arange(column * 250, (column + 1) * 250)  # same for columns
+            logger.debug('Write on FLH_np (' + str(row) + ',' + str(column) + ')')
             FLH_np[np.ix_(rows_higherResolution,
                           columns_higherResolution)] = FLH_part  # Assign the computed FLH to the big FLH array
+            logger.debug('Wrote on FLH_np (' + str(row) + ',' + str(column) + ')')
+        except:
+            traceback.print_exc()
+            logger.error('Error on pixle (' + str(row) + ',' + str(column) + ')')
 
-            # if np.isnan(np.sum(FLH_part)):
-            #    print('Nan(' + str(row) + ',' + str(column) + ')')
-
-    except:
-        print('!!Error!!')
-        e = sys.exc_info()[0]
-        print(e)
-    else:
-        print('Succesfully finished: ' + str(pixles))
+    logger.info('Done: ' + str(pixles))
 
 
-def redistribution_array(param, paths, merraData, i, j, xmin, xmax, ymin, ymax, GWA_array, x_gwa, y_gwa):
+
+
+def redistribution_array(param, merraData, i, j, xmin, xmax, ymin, ymax, GWA_array, x_gwa, y_gwa):
     """
     What does this function do?
 
     :param param:
     :type param:
-    :param paths:
-    :type paths:
+    :param merraData:
+    :type merraData:
     :param i:
     :type i:
     :param j:
@@ -468,8 +460,12 @@ def redistribution_array(param, paths, merraData, i, j, xmin, xmax, ymin, ymax, 
     :type ymin:
     :param ymax:
     :type ymax:
-    :param Num_pix:
-    :type Num_pix:
+    :param GWA_array:
+    :type GWA_array:
+    :param x_gwa:
+    :type x_gwa:
+    :param y_gwa:
+    :type y_gwa:
 
     :return reMerra:
     :rtype: numpy array
@@ -487,9 +483,11 @@ def redistribution_array(param, paths, merraData, i, j, xmin, xmax, ymin, ymax, 
     ToDo: Where do the borders/limits come from? -> not shape file ?!?
     """
 
+    logger.debug('start redistribution')
+
     # 1) Selection
-    GWA_array_copy = GWA_array.copy()  # Create copy so that the origin array doesnt get changed
-    # .astype(dtype=np.float16)
+    GWA_array_copy = GWA_array.astype(dtype=np.float32).copy()  # Create copy so that the origin array doesnt get changed
+    # GWA_array_copy = GWA_array.astype(dtype=np.float16).copy()
     selection_index = (xmin <= x_gwa) & (x_gwa < xmax) & (ymin <= y_gwa) & (
             y_gwa < ymax)  # Determine the pixels that are inbetween the range
     GWA_array_copy[np.invert(selection_index)] = 0  # Set pixel not covered by the shapfile to zero
@@ -502,9 +500,8 @@ def redistribution_array(param, paths, merraData, i, j, xmin, xmax, ymin, ymax, 
     L_last = coordinates_nonzero_pixels_y[-1]  # Last y-coordinate of non-zero pixels
 
     # 2) Redistribute MERRA data
-    # reMerra = np.zeros([200, 250, 8760], dtype=np.float16)
-    reMerra = np.zeros([200, 250, 8760])
-
+    #reMerra = np.zeros([200, 250, 8760], dtype=np.float16)
+    reMerra = np.zeros([200, 250, 8760], dtype = np.float32)
     if np.sum(GWA_array_copy):
         i_offset = 0
         j_offset = 0
@@ -516,22 +513,21 @@ def redistribution_array(param, paths, merraData, i, j, xmin, xmax, ymin, ymax, 
             if j < param["n_low"] / 2:
                 j_offset = 250 - (L_last + 1 - L_first)
 
-        gwa_cut_energy = GWA_array_copy[K_first:K_last + 1,
-                         L_first:L_last + 1]  # Computation only for the nonzero values
-        merra_cut_energy_weighting = gwa_cut_energy / np.sum(
-            gwa_cut_energy)  # Compute the weighting matrix how the energy is distributed within Global Wind Atlas data
-        merra_cut_speed_weighting = np.cbrt(
-            merra_cut_energy_weighting)  # Convert the weighting matrix from energy to wind speeds
+        gwa_cut_wind = GWA_array_copy[K_first:K_last + 1, L_first:L_last + 1]  # Computation only for the nonzero values
+
+        gwa_cut_energy = np.power(gwa_cut_wind, 3)
+        merra_cut_energy_weighting = gwa_cut_energy / np.sum(gwa_cut_energy)  # Compute the weighting matrix how the energy is distributed within Global Wind Atlas data
+        merra_cut_speed_weighting = np.cbrt(merra_cut_energy_weighting)  # Convert the weighting matrix from energy to wind speeds
         merra_cut_speed_redistributed = np.repeat(merra_cut_speed_weighting[..., None], 8760,
                                                   axis=2) * merraData * np.cbrt(
             value_num_cells)  # Expand the Merra time series of this pixle weighted by energy based distribution of Global Wind Atlas
-        reMerra[i_offset:i_offset + K_last + 1 - K_first, j_offset:j_offset + L_last + 1 - L_first,
-        :] = merra_cut_speed_redistributed
+
+        reMerra[i_offset:i_offset + K_last + 1 - K_first, j_offset:j_offset + L_last + 1 - L_first,:] = merra_cut_speed_redistributed
 
     return reMerra
 
 
-def mask_potential_maps(paths, param, tech):
+def mask_potential_maps(paths, param, tech): #ToDo optimize no. of lines
     """
     This function first reads the rasters for land use, slope, bathymetry, and protected areas for the scope. Based on user-defined assumptions on
     their suitabilities, it generates a masking raster to exclude the unsuitable pixels. Both the mask itself
@@ -547,7 +543,7 @@ def mask_potential_maps(paths, param, tech):
     :return: The files for the mask and the masked FLH are saved as tif and mat files, along with their metadata json files.
     :rtype: None
     """
-    timecheck("Start")
+    logger.info("Start")
     mask = param[tech]["mask"]
 
     if tech in ["PV", "CSP"]:
@@ -555,13 +551,13 @@ def mask_potential_maps(paths, param, tech):
             A_protect = src.read(1)
             A_protect = np.flipud(A_protect).astype(int)  # Protection categories 0-10, to be classified
         # Exclude protection categories that are not suitable
-        A_suitability_pa = changem(A_protect, mask["pa_suitability"], param["protected_areas"]["type"]).astype(float)
+        A_suitability_pa = ul.changem(A_protect, mask["pa_suitability"], param["protected_areas"]["type"]).astype(float)
         A_suitability_pa = (A_suitability_pa > 0).astype(int)
         with rasterio.open(paths["LU"]) as src:
             A_lu = src.read(1)
             A_lu = np.flipud(A_lu).astype(int)  # Landuse classes 0-16, to be reclassified
         # Exclude landuse types types that are not suitable
-        A_suitability_lu = changem(A_lu, mask["lu_suitability"], param["landuse"]["type"]).astype(float)
+        A_suitability_lu = ul.changem(A_lu, mask["lu_suitability"], param["landuse"]["type"]).astype(float)
         A_suitability_lu = (A_suitability_lu > 0).astype(int)
         with rasterio.open(paths["SLOPE"]) as src:
             A_slope = src.read(1)
@@ -612,8 +608,9 @@ def mask_potential_maps(paths, param, tech):
             A_NotLake = (np.flipud(A_NotLake)).astype(int)
         with rasterio.open(paths["HYDRORIVERS_BUFFER"]) as src:
             A_NotRiver = src.read(1)
-            A_NotRiver = (np.flipud(A_NotRiver)).astype(int)            
-        # Irrelevant parameters
+            A_NotRiver = (np.flipud(A_NotRiver)).astype(int)
+
+            # Irrelevant parameters
         A_bathymetry = 1
         A_notAirport = 1
 
@@ -622,21 +619,21 @@ def mask_potential_maps(paths, param, tech):
             A_protect = src.read(1)
             A_protect = np.flipud(A_protect).astype(int)  # Protection categories 0-10, to be classified
         # Exclude protection categories that are not suitable
-        A_suitability_pa = changem(A_protect, mask["pa_suitability"], param["protected_areas"]["type"]).astype(float)
+        A_suitability_pa = ul.changem(A_protect, mask["pa_suitability"], param["protected_areas"]["type"]).astype(float)
         A_suitability_pa = (A_suitability_pa > 0).astype(int)
         with rasterio.open(paths["LU"]) as src:
             A_lu = src.read(1)
             A_lu = np.flipud(A_lu).astype(int)  # Landuse classes 0-16, to be reclassified
         # Exclude landuse types types that are not suitable
-        A_suitability_lu = changem(A_lu, mask["lu_suitability"], param["landuse"]["type"]).astype(float)
+        A_suitability_lu = ul.changem(A_lu, mask["lu_suitability"], param["landuse"]["type"]).astype(float)
         A_suitability_lu = (A_suitability_lu > 0).astype(int)
         with rasterio.open(paths["SLOPE"]) as src:
             A_slope = src.read(1)
             A_slope = np.flipud(A_slope)  # Slope in percentage
             A_slope = (A_slope <= mask["slope"]).astype(int)
         # with rasterio.open(paths["POP_BUFFER"]) as src:
-            # A_notPopulated = src.read(1)
-            # A_notPopulated = (np.flipud(A_notPopulated)).astype(int)  # Is 1 for not populated areas
+        #     A_notPopulated = src.read(1)
+        #     A_notPopulated = (np.flipud(A_notPopulated)).astype(int)  # Is 1 for not populated areas
         with rasterio.open(paths["WATER_BUFFER"]) as src:
             A_notWater = src.read(1)
             A_notWater = (np.flipud(A_notWater)).astype(int)
@@ -688,6 +685,7 @@ def mask_potential_maps(paths, param, tech):
         with rasterio.open(paths["HYDRORIVERS"]) as src:
             A_Riv = src.read(1)
             A_NotRiver = (np.flipud(~A_Riv.astype(bool))).astype(int)
+
         # Irrelevant parameters
         A_bathymetry = 1
 
@@ -699,7 +697,7 @@ def mask_potential_maps(paths, param, tech):
             A_protect = src.read(1)
             A_protect = np.flipud(A_protect).astype(int)  # Protection categories 0-10, to be classified
         # Exclude protection categories that are not suitable
-        A_suitability_pa = changem(A_protect, mask["pa_suitability"], param["protected_areas"]["type"]).astype(float)
+        A_suitability_pa = ul.changem(A_protect, mask["pa_suitability"], param["protected_areas"]["type"]).astype(float)
         A_suitability_pa = (A_suitability_pa > 0).astype(int)
         with rasterio.open(paths["BATH"]) as src:
             A_bathymetry = src.read(1)
@@ -707,7 +705,7 @@ def mask_potential_maps(paths, param, tech):
             A_bathymetry = (A_bathymetry >= mask["depth"]).astype(int)  # (boolean)
         # Irrelevant parameters
         A_slope = 1
-        A_notSettlement = 1
+        A_notSettlement= 1
         A_notWater = 1
         A_notWetland = 1
         A_notSnow = 1
@@ -724,20 +722,20 @@ def mask_potential_maps(paths, param, tech):
 
     # Masking matrix for the suitable sites (pixels)
     A_mask = (
-            A_suitability_pa * A_suitability_lu * A_slope * A_bathymetry 
+            A_suitability_pa * A_suitability_lu * A_slope * A_bathymetry
             * A_notProtected * A_notAirport * A_notBoarder
             * A_notWater * A_notWetland * A_notSnow
-            * A_notRoads * A_notRails * A_notCommercial * A_notIndustrial 
+            * A_notRoads * A_notRails * A_notCommercial * A_notIndustrial
             * A_min_buffered * A_notMilitary * A_notPark * A_notRecreation
             * A_notSettlement * A_NotLake * A_NotRiver
-            ).astype(float)
+    ).astype(float)
 
     del A_suitability_lu, A_suitability_pa, A_slope, A_bathymetry
     del A_notProtected, A_notAirport, A_notBoarder
     del A_notWater, A_notWetland, A_notSnow
     del A_notRoads, A_notRails, A_notCommercial, A_notIndustrial
-    del A_min_buffered, A_notMilitary,A_notPark, A_notRecreation
-    del A_notSettlement, A_NotLake,A_NotRiver
+    del A_min_buffered, A_notMilitary, A_notPark, A_notRecreation
+    del A_notSettlement, A_NotLake, A_NotRiver
 
     # Calculate masked FLH
     FLH = hdf5storage.read("FLH", paths[tech]["FLH"])
@@ -746,31 +744,31 @@ def mask_potential_maps(paths, param, tech):
 
     # Save HDF5 Files
     hdf5storage.writes({"A_mask": A_mask}, paths[tech]["mask"], store_python_metadata=True, matlab_compatible=True)
-    print("files saved: " + paths[tech]["mask"])
+    logger.info("files saved: " + paths[tech]["mask"])
     hdf5storage.writes({"FLH_mask": FLH_mask}, paths[tech]["FLH_mask"], store_python_metadata=True,
                        matlab_compatible=True)
-    print("files saved: " + paths[tech]["FLH_mask"])
+    logger.info("files saved: " + paths[tech]["FLH_mask"])
 
-    create_json(
+    ul.create_json(
         paths[tech]["mask"],
         param,
         ["author", "comment", tech, "region_name", "year", "GeoRef", "landuse", "protected_areas"],
         paths,
-        ["spatial_scope", "PA", "LU", "SLOPE", "BATH"],
+        ["subregions", "PA", "LU", "SLOPE", "BATH"],
     )
 
     # Save GEOTIFF files
     if param["savetiff"]:
         GeoRef = param["GeoRef"]
-        array2raster(changeExt2tif(paths[tech]["mask"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
+        sf.array2raster(ul.changeExt2tif(paths[tech]["mask"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
                      GeoRef["pixelHeight"], A_mask)
-        print("files saved: " + changeExt2tif(paths[tech]["mask"]))
+        logger.info("files saved: " + ul.changeExt2tif(paths[tech]["mask"]))
 
-        array2raster(changeExt2tif(paths[tech]["FLH_mask"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
+        sf.array2raster(ul.changeExt2tif(paths[tech]["FLH_mask"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
                      GeoRef["pixelHeight"], FLH_mask)
-        print("files saved: " + changeExt2tif(paths[tech]["FLH_mask"]))
+        logger.info("files saved: " + ul.changeExt2tif(paths[tech]["FLH_mask"]))
 
-    timecheck("End")
+    logger.debug("End")
 
 
 def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
@@ -798,8 +796,8 @@ def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
     lon = np.arange((Crd_all[3] + res_desired[1] / 2), Crd_all[1], res_desired[1])[np.newaxis]
 
     # Repeating for all longitudes/latitudes
-    lat = repmat(lat.transpose(), 1, n_high)
-    lon = repmat(lon, m_high, 1)
+    lat = ul.repmat(lat.transpose(), 1, n_high)
+    lon = ul.repmat(lon, m_high, 1)
 
     # Solar time where shade-free exposure starts
     omegast = 12 - GCR["shadefree_period"] / 2
@@ -825,41 +823,41 @@ def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
     if Crd_all[2] > 0:
         day = GCR["day_north"]
         # Declination angle
-        delta = repmat(
-            arcsind(0.3978) * sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)),
+        delta = ul.repmat(
+            ul.arcsind(0.3978) * ul.sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * ul.sin(day * 2 * np.pi / 365.25 - 0.0489)),
             m_high, 1)
 
     if Crd_all[0] < 0:
         day = GCR["day_south"]
         # Declination angle
-        delta = repmat(
-            arcsind(0.3978) * sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)),
+        delta = ul.repmat(
+            ul.arcsind(0.3978) * ul.sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * ul.sin(day * 2 * np.pi / 365.25 - 0.0489)),
             m_high, 1)
 
     if (Crd_all[2] * Crd_all[0]) < 0:
         lat_pos = int(np.sum(lat >= 0, axis=0)[0])
         day = GCR["day_north"]
         # Declination angle
-        delta_pos = repmat(
-            arcsind(0.3978) * sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)),
+        delta_pos = ul.repmat(
+            ul.arcsind(0.3978) * ul.sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * ul.sin(day * 2 * np.pi / 365.25 - 0.0489)),
             lat_pos, 1)
 
         lat_neg = int(np.sum(lat < 0, axis=0)[0])
         day = GCR["day_south"]
         # Declination angle
-        delta_neg = repmat(
-            arcsind(0.3978) * sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * sin(day * 2 * np.pi / 365.25 - 0.0489)),
+        delta_neg = ul.repmat(
+            ul.arcsind(0.3978) * ul.sin(day * 2 * np.pi / 365.25 - 1.400 + 0.0355 * ul.sin(day * 2 * np.pi / 365.25 - 0.0489)),
             lat_neg, 1)
         delta = np.append(delta_neg, delta_pos, axis=0)
 
     # Elevation angle
-    alpha = arcsind(sind(delta) * sind(phi) + cosd(delta) * cosd(phi) * cosd(omega))
+    alpha = ul.arcsind(ul.sind(delta) * ul.sind(phi) + ul.cosd(delta) * ul.cosd(phi) * ul.cosd(omega))
 
     # Azimuth angle
-    azi = arccosd((sind(delta) * cosd(phi) - cosd(delta) * sind(phi) * cosd(omega)) / cosd(alpha))
+    azi = ul.arccosd((ul.sind(delta) * ul.cosd(phi) - ul.cosd(delta) * ul.sind(phi) * ul.cosd(omega)) / ul.cosd(alpha))
 
     # The GCR
-    A_GCR = 1 / (cosd(beta) + np.abs(cosd(azi)) * sind(beta) / tand(alpha))
+    A_GCR = 1 / (ul.cosd(beta) + np.abs(ul.cosd(azi)) * ul.sind(beta) / ul.tand(alpha))
 
     # Fix too large and too small values of GCR
     A_GCR[A_GCR < 0.2] = 0.2
@@ -868,7 +866,7 @@ def calc_gcr(Crd_all, m_high, n_high, res_desired, GCR):
     return A_GCR
 
 
-def weight_potential_maps(paths, param, tech):
+def weight_potential_maps(paths, param, tech): #ToDo change variable names
     """
     This function weights the power potential by including assumptions on the power density and the available area.
     Therefore, it reads the rasters for land use and protected areas for the scope. Based on user-defined assumptions on
@@ -885,9 +883,8 @@ def weight_potential_maps(paths, param, tech):
     :return: The files for the weight and the weighted FLH are saved as tif and mat files, along with their metadata json files.
     :rtype: None
     """
-    timecheck("Start")
+    logger.info("Start")
     weight = param[tech]["weight"]
-    mask = param[tech]["mask"]
     Crd_all = param["Crd_all"]
     m_high = param["m_high"]
     n_high = param["n_high"]
@@ -905,14 +902,14 @@ def weight_potential_maps(paths, param, tech):
         A_protect = np.flipud(A_protect).astype(int)  # Protection categories 0-10, to be classified
 
     # Calculate availability based on protection categories
-    A_availability_pa = changem(A_protect, mask["pa_suitability"], param["protected_areas"]["type"]).astype(float)
+    A_availability_pa = ul.changem(A_protect, weight["pa_suitability"], param["protected_areas"]["type"]).astype(float)
 
     with rasterio.open(paths["LU"]) as src:
         A_lu = src.read(1)
         A_lu = np.flipud(A_lu).astype(int)  # Landuse classes 0-16, to be reclassified
 
     # Calculate availability based on landuse types
-    A_availability_lu = changem(A_lu, mask["lu_suitability"], param["landuse"]["type"]).astype(float)
+    A_availability_lu = ul.changem(A_lu, weight["lu_suitability"], param["landuse"]["type"]).astype(float)
 
     # Calculate availability
     A_availability = np.minimum(A_availability_pa, A_availability_lu)
@@ -931,28 +928,28 @@ def weight_potential_maps(paths, param, tech):
     # Save HDF5 Files
     hdf5storage.writes({"A_weight": A_weight}, paths[tech]["weight"], store_python_metadata=True,
                        matlab_compatible=True)
-    print("files saved: " + paths[tech]["weight"])
+    logger.info("files saved: " + paths[tech]["weight"])
     hdf5storage.writes({"FLH_weight": FLH_weight}, paths[tech]["FLH_weight"], store_python_metadata=True,
                        matlab_compatible=True)
-    print("files saved: " + paths[tech]["FLH_weight"])
-    create_json(
+    logger.info("files saved: " + paths[tech]["FLH_weight"])
+    ul.create_json(
         paths[tech]["weight"],
         param,
         ["author", "comment", tech, "region_name", "year", "GeoRef", "landuse", "protected_areas"],
         paths,
-        ["spatial_scope", "PA", "LU", "AREA"],
+        ["subregions", "PA", "LU", "AREA"],
     )
 
     # Save GEOTIFF files
     if param["savetiff"]:
-        array2raster(changeExt2tif(paths[tech]["weight"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
+        sf.array2raster(ul.changeExt2tif(paths[tech]["weight"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
                      GeoRef["pixelHeight"], A_weight)
-        print("files saved: " + changeExt2tif(paths[tech]["weight"]))
+        logger.info("files saved: " + ul.changeExt2tif(paths[tech]["weight"]))
 
-        array2raster(changeExt2tif(paths[tech]["FLH_weight"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
+        sf.array2raster(ul.changeExt2tif(paths[tech]["FLH_weight"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
                      GeoRef["pixelHeight"], FLH_weight)
-        print("files saved: " + changeExt2tif(paths[tech]["FLH_weight"]))
-    timecheck("End")
+        logger.info("files saved: " + ul.changeExt2tif(paths[tech]["FLH_weight"]))
+    logger.debug("End")
 
 
 def sampled_sorting(Raster, sampling):
@@ -1002,7 +999,7 @@ def report_potentials(paths, param, tech):
     :return: The CSV files with the report and the sorted FLH are saved directly in the desired paths, along with the corresponding metadata in JSON files.
     :rtype: None
     """
-    timecheck("Start")
+    logger.info("Start")
     # read FLH, masking, area, and weighting matrix
     FLH = hdf5storage.read("FLH", paths[tech]["FLH"])
     A_mask = hdf5storage.read("A_mask", paths[tech]["mask"])
@@ -1020,8 +1017,8 @@ def report_potentials(paths, param, tech):
     Crd_all = param["Crd_all"]
     GeoRef = param["GeoRef"]
     res_desired = param["res_desired"]
-    nRegions = param["nRegions_sub"]
-    regions_shp = param["regions_sub"]
+    nRegions = param["nRegions_land"]
+    regions_shp = param["regions_land"]
 
     # Initialize regions list of sorted FLH, FLH_M, and FLH_W
     sorted_FLH_list = {}
@@ -1058,14 +1055,14 @@ def report_potentials(paths, param, tech):
     # Loop over each region
     # Display Progress
     status = 0
-    display_progress("Reporting ", (nRegions, status))
+    ul.display_progress("Reporting ", (nRegions, status))
     for reg in range(0, nRegions):
         # Get name of region
-        regions.loc[reg, "Region"] = regions_shp.loc[reg]["NAME_SHORT"] + "_" + location
-        # regions.loc[reg, "Region"] = regions_shp.loc[reg]["GID_0"] + "_" + location
+        #regions.loc[reg, "Region"] = regions_shp.loc[reg]["NAME_SHORT"] + "_" + location
+        regions.loc[reg, "Region"] = regions_shp.loc[reg]["GID_0"] + "_" + location
 
         # Compute region_mask
-        A_region_extended = calc_region(regions_shp.loc[reg], Crd_all, res_desired, GeoRef)
+        A_region_extended = sf.calc_region(regions_shp.loc[reg], Crd_all, res_desired, GeoRef)
 
         # Sum available : available pixels
         available = np.sum(A_region_extended)
@@ -1165,18 +1162,18 @@ def report_potentials(paths, param, tech):
         sorted_FLH_list[regions.loc[reg, "Region"]] = sort
         # Display Progress
         status += 1
-        display_progress("Reporting ", (nRegions, status))
+        ul.display_progress("Reporting ", (nRegions, status))
 
     # Export the dataframe as CSV
     regions.to_csv(paths[tech]["Region_Stats"], sep=";", decimal=",", index=True)
-    create_json(
+    ul.create_json(
         paths[tech]["Region_Stats"],
         param,
         ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired", "Crd_all", "GeoRef"],
         paths,
-        ["spatial_scope", "subregions", "AREA", tech],
+        ["subregions", "subregions", "AREA", tech],
     )
-    print("files saved: " + paths[tech]["Region_Stats"])
+    logger.info("files saved: " + paths[tech]["Region_Stats"])
 
     # Save sorted lists to mat file
     for reg in sorted_FLH_list.keys():
@@ -1190,42 +1187,40 @@ def report_potentials(paths, param, tech):
             store_python_metadata=True,
             matlab_compatible=True,
         )
-    create_json(
+    ul.create_json(
         paths[tech]["Sorted_FLH"],
         param,
         ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired", "Crd_all", "GeoRef",
          "report_sampling"],
         paths,
-        ["spatial_scope", "subregions", "AREA", tech],
+        ["subregions", "subregions", "AREA", tech],
     )
-    print("files saved: " + paths[tech]["Sorted_FLH"])
-    timecheck("End")
+    logger.info("files saved: " + paths[tech]["Sorted_FLH"])
+    logger.debug("End")
 
 
-def generate_biomass_production(paths, param, tech):
-    timecheck("Start")
+def generate_biomass_production(paths, param, tech): #ToDo update to new LU source
+    logger.info("Start")
     Crd_all = param["Crd_all"]
     GeoRef = param["GeoRef"]
     res_desired = param["res_desired"]
-    nRegions = param["nRegions_sub"]
-    regions_shp = param["regions_sub"]
     nRegions_land = param["nRegions_land"]
     countries_shp = param["regions_land"]
     nproc = param["nproc"]
     CPU_limit = np.full((1, nproc), param["CPU_limit"])
-    
+
     # open land use raster to read the land type
     with rasterio.open(paths["LU"]) as src:
         A_lu = src.read(1)
     A_lu = np.flipud(A_lu).astype(int)
-    
+
     # open the protected areas raster to read the protected area type
     with rasterio.open(paths["PA"]) as src:
         A_protect = src.read(1)
     A_protect = np.flipud(A_protect).astype(int)
-    
-    # open the subregions raster to read the valid pixels within scope
-    with rasterio.open(paths["SUB"]) as src:
+
+    # open the scope raster to read the valid pixels within scope
+    with rasterio.open(paths["LAND"]) as src:
         A_country_area = src.read(1)
     A_country_area = np.flipud(A_country_area).astype(int)
 
@@ -1235,18 +1230,18 @@ def generate_biomass_production(paths, param, tech):
     for i in val_include:
         A_i = A_protect == i
         A_Notprotected = A_Notprotected + A_i
-    
-    #Define the result arrays for bioenergy and bioco2 for whole scope
+
+    # Define the result arrays for bioenergy and bioco2 for whole scope
     A_Bioenergy = np.zeros(A_lu.shape)
     A_Bioco2 = np.zeros(A_lu.shape)
 
-    #==========Crop Residues Biomass potential==========#
-    timecheck("Crop Residues Start")
+    # ==========Crop Residues Biomass potential==========#
+    logger.info("Crop Residues Start")
     # Calculates for each subregion (level 2 administrative region)
     list_regions = np.array_split(np.arange(0, nRegions), nproc)
     param["status_bar_limit"] = list_regions[0][-1]
-    results = Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(
-        crop_residues_potential, product(list_regions, [[param, paths, A_lu]])
+    results = mp.Pool(processes=nproc, initializer=ul.limit_cpu, initargs=CPU_limit).starmap(
+        crop_residues_potential, it.product(list_regions, [[param, paths, A_lu]])
     )
     # Collecting results
     if nproc > 1:
@@ -1254,212 +1249,169 @@ def generate_biomass_production(paths, param, tech):
             A_Bioenergy = A_Bioenergy + results[p]["A_Bioenergy"]
             A_Bioco2 = A_Bioco2 + results[p]["A_Bioco2"]
     else:
-        A_Bioenergy = results["A_Bioenergy"]
+        A_Bioenergy = results["A_Bioenergy"]     # FIXME: p not resolved!
         A_Bioco2 = results["A_Bioco2"]
-    timecheck("Crop Residues End")
-   
-   #==========Livestock Biomass potential==========#
-    timecheck("Livestock Start")
+    logger.debug("Crop Residues End")
+
+    # ==========Livestock Biomass potential==========#
+    logger.info("Livestock Start")
     # Simple process for whole scope
-    n_animal = 0 #number of animals
+    n_animal = 0  # number of animals
     for animal in param["Biomass"]["livestock"]["animal"]:
-        #Extract Livestock density numbers
-        with rasterio.open(paths["LS"]+animal+".tif") as src:
+        # Extract Livestock density numbers
+        with rasterio.open(paths["LS"] + animal + ".tif") as src:
             A_LS_animal = src.read(1)
         A_LS_animal = np.flipud(A_LS_animal)
-        
+
         # Take out the protected areas
-        A_LS_animal = np.multiply(A_LS_animal,A_Notprotected)
+        A_LS_animal = np.multiply(A_LS_animal, A_Notprotected)
 
-        A_LS_animal = np.multiply(A_LS_animal,A_country_area)
+        A_LS_animal = np.multiply(A_LS_animal, A_country_area)
 
-        #Calculate Energy potential for each pixel
+        # Calculate Energy potential for each pixel
         energy_ls_animal = A_LS_animal * param["Biomass"]["livestock"]["rpr"][n_animal] * \
-                            param["Biomass"]["livestock"]["af"][n_animal] * \
-                            param["Biomass"]["livestock"]["lhv"][n_animal]
+                           param["Biomass"]["livestock"]["af"][n_animal] * \
+                           param["Biomass"]["livestock"]["lhv"][n_animal]
         A_Bioenergy = A_Bioenergy + energy_ls_animal
 
-        #Calculate CO2 released for each pixel
+        # Calculate CO2 released for each pixel
         co2_ls_animal = A_LS_animal * param["Biomass"]["livestock"]["rpr"][n_animal] * \
                         param["Biomass"]["livestock"]["af"][n_animal] * \
                         param["Biomass"]["livestock"]["emission factor"]
         A_Bioco2 = A_Bioco2 + co2_ls_animal
 
-        n_animal = n_animal+1 #call for next animal type
-    timecheck("Livestock End")
-    
-    #==========Forest wood Biomass potential==========#
-    timecheck("Forest Wood Start")
+        n_animal = n_animal + 1  # call for next animal type
+    logger.debug("Livestock End")
+
+    # ==========Forest wood Biomass potential==========#
+    logger.info("Forest Wood Start")
     # Extract forest areas from land type raster
     A_lu_forest = np.zeros(A_lu.shape)
-    val_forest = [1,2,3,4,5] #number codes for different types of forests
+    val_forest = [1, 2, 3, 4, 5]  # number codes for different types of forests
     for val in val_forest:
         A_val = A_lu == val
         A_lu_forest = A_lu_forest + A_val
-    A_lu_forest = np.multiply(A_lu_forest,A_country_area)
+    A_lu_forest = np.multiply(A_lu_forest, A_country_area)
 
     # Read the country codes
-    IRENA_dict = pd.read_csv(paths["IRENA_dict"], sep=";",index_col = ["Countries shapefile"],usecols=["Countries shapefile","IRENA"])
-    
+    IRENA_dict = pd.read_csv(paths["IRENA_dict"], sep=";", index_col=["Countries shapefile"],
+                             usecols=["Countries shapefile", "IRENA"])
+
     # For each country within scope
     for country in range(0, nRegions_land):
         # Extract valid pixels within the country
-        A_country_extended = calc_region(countries_shp.loc[country], Crd_all, res_desired, GeoRef)
-        
+        A_country_extended = sf.calc_region(countries_shp.loc[country], Crd_all, res_desired, GeoRef)
+
         # Extract the forest pixels within the country
         A_forest_country = np.multiply(A_lu_forest, A_country_extended)
-   
+
         # Take out the protect areas
         A_forest_country = np.multiply(A_forest_country, A_Notprotected)
-        
+
         # Calculate the number of valid pixels now
         n_lu_forest = np.sum(A_forest_country)
-        
+
         # Get the country alpha-2 code
         country_name = IRENA_dict["IRENA"][countries_shp.loc[country]["GID_0"]]
-    
+
         # if there are forest pixels within country, read the annual wood production values from FAO database
         if n_lu_forest:
-            production_wood = pd.read_csv(paths["Biomass_Forestry"], index_col = ["Area"],usecols=["Area","Item","Value"])
-            production_wood = production_wood[production_wood.index==country_name].to_numpy()
-    
-            for row in range(len(production_wood[:,0])):
-                if production_wood[row,0] == "Wood fuel, coniferous":
-                    wood_coniferous = production_wood[row,1]
+            production_wood = pd.read_csv(paths["Biomass_Forestry"], index_col=["Area"],
+                                          usecols=["Area", "Item", "Value"])
+            production_wood = production_wood[production_wood.index == country_name].to_numpy()
+
+            for row in range(len(production_wood[:, 0])):
+                if production_wood[row, 0] == "Wood fuel, coniferous":
+                    wood_coniferous = production_wood[row, 1]
                 else:
                     wood_coniferous = 0
-                if production_wood[row,0] == "Wood fuel, non-coniferous":
-                    wood_nonconiferous = production_wood[row,1]
+                if production_wood[row, 0] == "Wood fuel, non-coniferous":
+                    wood_nonconiferous = production_wood[row, 1]
                 else:
                     wood_nonconiferous = 0
 
-            #Add Bio potential from forest wood
+            # Add Bio potential from forest wood
             forest = param["Biomass"]["forest"]
-        
-            #Calculate Forest Bio Energy
+
+            # Calculate Forest Bio Energy
             energy_lu_forest = A_lu_forest / n_lu_forest * \
-                                (wood_coniferous*forest["density, coniferous"] + wood_nonconiferous*forest["density, non-coniferous"]) * \
-                                forest["rpr"] * forest["af"] * forest["lhv"] 
+                               (wood_coniferous * forest["density, coniferous"] + wood_nonconiferous * forest[
+                                   "density, non-coniferous"]) * \
+                               forest["rpr"] * forest["af"] * forest["lhv"]
             A_Bioenergy = A_Bioenergy + energy_lu_forest
 
-            #Calculate Forest Bio CO2
+            # Calculate Forest Bio CO2
             co2_lu_forest = A_lu_forest / n_lu_forest * \
-                            (wood_coniferous*forest["density, coniferous"] + wood_nonconiferous*forest["density, non-coniferous"]) * \
-                            forest["rpr"] * forest["af"] * forest["emission factor"] 
+                            (wood_coniferous * forest["density, coniferous"] + wood_nonconiferous * forest[
+                                "density, non-coniferous"]) * \
+                            forest["rpr"] * forest["af"] * forest["emission factor"]
             A_Bioco2 = A_Bioco2 + co2_lu_forest
-    
-    timecheck("Forest Wood Start")
-    hdf5storage.writes({"BIOMASS_ENERGY": A_Bioenergy}, paths[tech]["BIOMASS_ENERGY"], store_python_metadata=True, matlab_compatible=True)
-    create_json(
+
+    logger.info("Forest Wood Start")
+    hdf5storage.writes({"BIOMASS_ENERGY": A_Bioenergy}, paths[tech]["BIOMASS_ENERGY"], store_python_metadata=True,
+                       matlab_compatible=True)
+    ul.create_json(
         paths[tech]["BIOMASS_ENERGY"],
         param,
         ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired", "res_weather"],
         paths,
         ["spatial_scope"],
     )
-    print("\nfiles saved: " + paths[tech]["BIOMASS_ENERGY"])
+    logger.info("files saved: " + paths[tech]["BIOMASS_ENERGY"])
 
-    # Save GEOTIFF files
-    if param["savetiff"]:
-        GeoRef = param["GeoRef"]
-        array2raster(changeExt2tif(paths[tech]["BIOMASS_ENERGY"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_Bioenergy)
-        print("files saved:" + changeExt2tif(paths[tech]["BIOMASS_ENERGY"]))
-    
-    hdf5storage.writes({"BIOMASS_CO2": A_Bioco2}, paths[tech]["BIOMASS_CO2"], store_python_metadata=True, matlab_compatible=True)
-    create_json(
+    sf.array2raster(paths["BIOMASS_ENERGY"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
+                 A_Bioenergy)
+    logger.info("files saved: " + paths["BIOMASS_ENERGY"])
+    ul.create_json(paths["BIOMASS_ENERGY"], param,
+                ["region_name", "landuse", "Biomass", "Crd_all", "res_desired", "GeoRef"], paths,
+                ["LU", "BIOMASS_ENERGY"])
+
+    hdf5storage.writes({"BIOMASS_CO2": A_Bioco2}, paths[tech]["BIOMASS_CO2"], store_python_metadata=True,
+                       matlab_compatible=True)
+    ul.create_json(
         paths[tech]["BIOMASS_CO2"],
         param,
         ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired", "res_weather"],
         paths,
         ["spatial_scope"],
     )
-    print("\nfiles saved: " + paths[tech]["BIOMASS_CO2"])
+    logger.info("files saved: " + paths[tech]["BIOMASS_CO2"])
 
-    # Save GEOTIFF files
-    if param["savetiff"]:
-        GeoRef = param["GeoRef"]
-        array2raster(changeExt2tif(paths[tech]["BIOMASS_CO2"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_Bioco2)
-        print("files saved:" + changeExt2tif(paths[tech]["BIOMASS_CO2"]))
-           
-    timecheck("End")
+    sf.array2raster(paths["BIOMASS_CO2"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_Bioco2)
+    logger.info("files saved: " + paths["BIOMASS_CO2"])
+    ul.create_json(paths["BIOMASS_CO2"], param, ["region_name", "landuse", "Biomass", "Crd_all", "res_desired", "GeoRef"],
+                paths, ["LU", "BIOMASS_CO2"])
+
+    logger.debug("End")
 
 
-def report_biomass_potentials (paths, param, tech):
-    
-    timecheck("Start")
-    # read FLH, masking, area, and weighting matrix
-    A_Bioenergy = hdf5storage.read("BIOMASS_ENERGY", paths[tech]["BIOMASS_ENERGY"])
-    A_Bioco2 = hdf5storage.read("BIOMASS_CO2", paths[tech]["BIOMASS_CO2"])
-
-    # Initialize region masking parameters
-    Crd_all = param["Crd_all"]
-    GeoRef = param["GeoRef"]
-    res_desired = param["res_desired"]
-    nRegions_land = param["nRegions_land"]
-    countries_shp = param["regions_land"]
-
-    # Initialize dataframe
-    countries = pd.DataFrame(
-        0,
-        index=range(0, nRegions_land),
-        columns=[
-            "Country",
-            "Bio_Energy_Potential_TWh",
-            "Bio_CO2_emissions_million_tons"
-        ],
-    )
-    # Loop over each region
-    # Display Progress
-    status = 0
-    display_progress("Reporting ", (nRegions_land, status))
-    for reg in range(0, nRegions_land):
-        # Get name of Country
-        countries.loc[reg, "Country"] = countries_shp.loc[reg]["GID_0"]
-
-        # Compute region_mask
-        A_country_extended = calc_region(countries_shp.loc[reg], Crd_all, res_desired, GeoRef)
-
-        # Energy Potential
-        A_E_potential = A_Bioenergy * A_country_extended
-        energy_potential = np.nansum(A_E_potential)
-        countries.loc[reg, "Bio_Energy_Potential_TWh"] = energy_potential / (10 ** 6)
-        
-        # Interrupt reporting of region if no available energy
-        if int(energy_potential) == 0:
-            countries.drop([reg], axis=0, inplace=True)
-            continue
-        # Interrupt reporting of region already reported (may occur due to discrepancy in borders)
-        if countries.loc[reg, "Country"] in countries.loc[: reg - 1, "Country"].to_list():
-            ind_prev = countries.loc[countries["Country"] == countries.loc[reg, "Country"]].index[0]
-            if countries.loc[ind_prev, "Bio_Energy_Potential_TWh"] > int(energy_potential):
-                countries.drop([reg], axis=0, inplace=True)
-                continue
-            else:
-                countries.drop([ind_prev], axis=0, inplace=True)    
-        
-        A_CO2_emissions = A_Bioco2 * A_country_extended
-        CO2_emissions = np.nansum(A_CO2_emissions)
-        countries.loc[reg, "Bio_CO2_emissions_million_tons"] = CO2_emissions / (10 ** 9)
-                
-        # Display Progress
-        status += 1
-        display_progress("Reporting ", (nRegions_land, status))
-
-    # Export the dataframe as CSV
-    countries.to_csv(paths[tech]["Region_Stats"], sep=";", decimal=",", index=True)
-    create_json(
-        paths[tech]["Region_Stats"],
-        param,
-        ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired", "Crd_all", "GeoRef"],
-        paths,
-        ["spatial_scope", "subregions", "AREA", tech],
-    )
-    print("files saved: " + paths[tech]["Region_Stats"])
-    timecheck("End")
+# def country_region(regions, args):
+#     param = args[0]
+#     paths = args[1]
+#     regions_shp = args[2]
+#     Crd_all = args[3]
+#     res_desired = args[4]
+#     GeoRef = args[5]
+#
+#     m_high = param["m_high"]
+#     n_high = param["n_high"]
+#
+#     A_country_area = np.zeros([m_high, n_high])
+#     status = 0
+#     for reg in regions:
+#         if reg <= param["status_bar_limit"]:
+#             # Show progress of the simulation
+#             status = status + 1
+#             ul.display_progress("Country Area Pixels " + param["region_name"], [len(regions), status])
+#
+#         A_region_extended = sf.calc_region(regions_shp.loc[reg], Crd_all, res_desired, GeoRef)
+#         A_country_area = A_country_area + A_region_extended
+#
+#     return A_country_area
 
 
 def crop_residues_potential(regions, args):
-    timecheck ("Start")
+    logger.info("Start")
     param = args[0]
     paths = args[1]
     A_lu = args[2]
@@ -1476,15 +1428,13 @@ def crop_residues_potential(regions, args):
     A_Bioco2 = np.zeros([m_high, n_high])
 
     status = 0
-    # for each region in the scope
     for reg in regions:
         if reg <= param["status_bar_limit"]:
             # Show progress of the simulation
             status = status + 1
-            display_progress("Crop Residues " + param["region_name"], [len(regions), status])
-        
-        # Extract the pixels within the region
-        A_region_extended = calc_region(regions_shp.loc[reg], Crd_all, res_desired, GeoRef)
+            ul.display_progress("Crop Residues " + param["region_name"], [len(regions), status])
+
+        A_region_extended = sf.calc_region(regions_shp.loc[reg], Crd_all, res_desired, GeoRef)
 
         A_lu_crop = A_lu == param["landuse"]["type_croplands"]
         A_lu_veg = A_lu == param["landuse"]["type_vegetation"]
@@ -1557,12 +1507,86 @@ def crop_residues_potential(regions, args):
 
             co2_reg = co2_lu_crop + co2_lu_veg
             A_Bioco2 = A_Bioco2 + co2_reg
-    
     Bioresults = dict()
     Bioresults["A_Bioenergy"] = A_Bioenergy
     Bioresults["A_Bioco2"] = A_Bioco2
-    timecheck ("End")
+
+    logger.debug("End")
+
     return Bioresults
+
+
+def report_biomass_potentials(paths, param, tech):
+    logger.info("Start")
+    # read FLH, masking, area, and weighting matrix
+    A_Bioenergy = hdf5storage.read("BIOMASS_ENERGY", paths[tech]["BIOMASS_ENERGY"])
+    A_Bioco2 = hdf5storage.read("BIOMASS_CO2", paths[tech]["BIOMASS_CO2"])
+
+    # Initialize region masking parameters
+    Crd_all = param["Crd_all"]
+    GeoRef = param["GeoRef"]
+    res_desired = param["res_desired"]
+    nRegions_land = param["nRegions_land"]
+    countries_shp = param["regions_land"]
+
+    # Initialize dataframe
+    countries = pd.DataFrame(
+        0,
+        index=range(0, nRegions_land),
+        columns=[
+            "Country",
+            "Bio_Energy_Potential_TWh",
+            "Bio_CO2_emissions_million_tons"
+        ],
+    )
+    # Loop over each region
+    # Display Progress
+    status = 0
+    ul.display_progress("Reporting ", (nRegions_land, status))
+    for reg in range(0, nRegions_land):
+        # Get name of Country
+        countries.loc[reg, "Country"] = countries_shp.loc[reg]["GID_0"]
+
+        # Compute region_mask
+        A_country_extended = sf.calc_region(countries_shp.loc[reg], Crd_all, res_desired, GeoRef)
+
+        # Energy Potential
+        A_E_potential = A_Bioenergy * A_country_extended
+        energy_potential = np.nansum(A_E_potential)
+        countries.loc[reg, "Bio_Energy_Potential_TWh"] = energy_potential / (10 ** 6)
+
+        # Interrupt reporting of region if no available energy
+        if int(energy_potential) == 0:
+            countries.drop([reg], axis=0, inplace=True)
+            continue
+        # Interrupt reporting of region already reported (may occur due to discrepancy in borders)
+        if countries.loc[reg, "Country"] in countries.loc[: reg - 1, "Country"].to_list():
+            ind_prev = countries.loc[countries["Country"] == countries.loc[reg, "Country"]].index[0]
+            if countries.loc[ind_prev, "Bio_Energy_Potential_TWh"] > int(energy_potential):
+                countries.drop([reg], axis=0, inplace=True)
+                continue
+            else:
+                countries.drop([ind_prev], axis=0, inplace=True)
+
+        A_CO2_emissions = A_Bioco2 * A_country_extended
+        CO2_emissions = np.nansum(A_CO2_emissions)
+        countries.loc[reg, "Bio_CO2_emissions_million_tons"] = CO2_emissions / (10 ** 9)
+
+        # Display Progress
+        status += 1
+        ul.display_progress("Reporting ", (nRegions_land, status))
+
+    # Export the dataframe as CSV
+    countries.to_csv(paths[tech]["Region_Stats"], sep=";", decimal=",", index=True)
+    ul.create_json(
+        paths[tech]["Region_Stats"],
+        param,
+        ["author", "comment", tech, "region_name", "subregions_name", "year", "res_desired", "Crd_all", "GeoRef"],
+        paths,
+        ["spatial_scope", "subregions", "AREA", tech],
+    )
+    logger.info("files saved: " + paths[tech]["Region_Stats"])
+    logger.debug("End")
 
 
 def club_biomass(paths, param):
@@ -1577,7 +1601,7 @@ def club_biomass(paths, param):
     West = rasterio.open(paths["West"])
     A_West = West.read(1)
     A_West_rows, A_West_cols = A_West.shape
-    ind_West = ind_exact_points([West.xy(0, 0, offset='ul')[1], West.xy(0, 0, offset='ul')[0]], Crd_all, res_desired)
+    ind_West = sf.ind_exact_points([West.xy(0, 0, offset='ul')[1], West.xy(0, 0, offset='ul')[0]], Crd_all, res_desired)
     A_Bioenergy[A_Bioenergy_rows - ind_West[0]:A_Bioenergy_rows - ind_West[0] + A_West_rows,
     ind_West[1]:ind_West[1] + A_West_cols] = A_Bioenergy[A_Bioenergy_rows - ind_West[0]:A_Bioenergy_rows - ind_West[
         0] + A_West_rows, ind_West[1]:ind_West[1] + A_West_cols] + A_West
@@ -1585,7 +1609,7 @@ def club_biomass(paths, param):
     North = rasterio.open(paths["North"])
     A_North = North.read(1)
     A_North_rows, A_North_cols = A_North.shape
-    ind_North = ind_exact_points([North.xy(0, 0, offset='ul')[1], North.xy(0, 0, offset='ul')[0]], Crd_all, res_desired)
+    ind_North = sf.ind_exact_points([North.xy(0, 0, offset='ul')[1], North.xy(0, 0, offset='ul')[0]], Crd_all, res_desired)
     A_Bioenergy[A_Bioenergy_rows - ind_North[0]:A_Bioenergy_rows - ind_North[0] + A_North_rows,
     ind_North[1]:ind_North[1] + A_North_cols] = A_Bioenergy[
                                                 A_Bioenergy_rows - ind_North[0]:A_Bioenergy_rows - ind_North[
@@ -1595,7 +1619,7 @@ def club_biomass(paths, param):
     East = rasterio.open(paths["East"])
     A_East = East.read(1)
     A_East_rows, A_East_cols = A_East.shape
-    ind_East = ind_exact_points([East.xy(0, 0, offset='ul')[1], East.xy(0, 0, offset='ul')[0]], Crd_all, res_desired)
+    ind_East = sf.ind_exact_points([East.xy(0, 0, offset='ul')[1], East.xy(0, 0, offset='ul')[0]], Crd_all, res_desired)
     A_Bioenergy[A_Bioenergy_rows - ind_East[0]:A_Bioenergy_rows - ind_East[0] + A_East_rows,
     ind_East[1]:ind_East[1] + A_East_cols] = A_Bioenergy[A_Bioenergy_rows - ind_East[0]:A_Bioenergy_rows - ind_East[
         0] + A_East_rows, ind_East[1]:ind_East[1] + A_East_cols] + A_East
@@ -1603,7 +1627,7 @@ def club_biomass(paths, param):
     South = rasterio.open(paths["South"])
     A_South = South.read(1)
     A_South_rows, A_South_cols = A_South.shape
-    ind_South = ind_exact_points([South.xy(0, 0, offset='ul')[1], South.xy(0, 0, offset='ul')[0]], Crd_all, res_desired)
+    ind_South = sf.ind_exact_points([South.xy(0, 0, offset='ul')[1], South.xy(0, 0, offset='ul')[0]], Crd_all, res_desired)
     A_Bioenergy[A_Bioenergy_rows - ind_South[0]:A_Bioenergy_rows - ind_South[0] + A_South_rows,
     ind_South[1]:ind_South[1] + A_South_cols] = A_Bioenergy[
                                                 A_Bioenergy_rows - ind_South[0]:A_Bioenergy_rows - ind_South[
@@ -1611,7 +1635,7 @@ def club_biomass(paths, param):
                                                 ind_South[1]:ind_South[1] + A_South_cols] + A_South
 
     A_Bioenergy = np.flipud(A_Bioenergy)
-    array2raster(paths["CLUB_CO2"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_Bioenergy)
-    print("files saved: " + paths["CLUB_CO2"])
-    create_json(paths["CLUB_CO2"], param, ["region_name", "landuse", "Biomass", "Crd_all", "res_desired", "GeoRef"],
+    sf.array2raster(paths["CLUB_CO2"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_Bioenergy)
+    logger.info("files saved: " + paths["CLUB_CO2"])
+    ul.create_json(paths["CLUB_CO2"], param, ["region_name", "landuse", "Biomass", "Crd_all", "res_desired", "GeoRef"],
                 paths, ["LU", "BIOMASS_ENERGY"])

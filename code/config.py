@@ -1,9 +1,8 @@
-import os
 from pathlib import Path
 from warnings import warn
 import pandas as pd
 import numpy as np
-
+import os
 
 def configuration(config_file):
     """
@@ -60,7 +59,7 @@ def general_settings():
 
     param = {}
     param["author"] = "Thushara Addanki"  # the name of the person running the script
-    param["comment"] = "With Grasslands/Croplands"
+    param["comment"] = "Potential Analysis"
 
     paths = {}
     fs = os.path.sep
@@ -112,18 +111,17 @@ def scope_paths_and_parameters(paths, param, config_file):
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
 
-    input_df = pd.read_csv('configs' + fs + config_file, delimiter=':', comment='#', header=None, index_col=0,
-                           skip_blank_lines=True, )  # Import paramters from config_file
+    input_df = pd.read_csv('../configs' + fs + config_file, delimiter=':', comment='#', header=None, index_col=0,
+                           skip_blank_lines=True, )  # Import parameters from config_files in folder 'configs'
     input_dict = input_df[1].to_dict()  # Convert dataframe to dict with values from the first column
 
-    paths["spatial_scope"] = PathTemp + input_dict["spatial_scope"]
-    paths["subregions"] = PathTemp + input_dict["subregions"]
-
-    param["region_name"] = input_dict["region_name"]  # Name tag of the spatial scope
-    param["subregions_name"] = input_dict["subregions_name"]  # Name tag of the subregions
-    param["country_code"] = input_dict["country_code"]
-    param["year"] = int(input_dict["year"])  # Convert string 'xxxx' to int
-    param["technology"] = input_dict["technology"].split(',')  # Creat array by comma separated string
+    #paths["spatial_scope"] = PathTemp + input_dict["spatial_scope"]
+    paths["subregions"] = PathTemp + input_dict["regions"].replace(" ", "")
+    param["region_name"] = input_dict["region_name"].replace(" ", "")  # Name tag of the spatial scope
+    param["subregions_name"] = input_dict["subregions_name"] .replace(" ", "") # Name tag of the subregions
+    param["country_code"] = input_dict["country_code"].replace(" ", "")
+    param["year"] = int(input_dict["year"].replace(" ", ""))  # Convert string 'xxxx' to int
+    param["technology"] = input_dict["technology"].replace(" ", "").split(',')  # Creat array by comma separated string
 
     return paths, param
 
@@ -271,7 +269,7 @@ def time_series_parameters(param):
     :rtype: dict
     """
     # Quantiles for time series
-    param["quantiles"] = [50]
+    param["quantiles"] = [95, 70, 25]
 
     # User defined locations
     param["useloc"] = {
@@ -322,34 +320,14 @@ def landuse_parameters(param):
     :return param: The updated dictionary param.
     :rtype: dict
 
-    Land use reclassification::
-
-        # 0   -- Water
-        # 1   -- Evergreen needle leaf forest
-        # 2   -- Evergreen broad leaf forest
-        # 3   -- Deciduous needle leaf forest
-        # 4   -- deciduous broad leaf forest
-        # 5   -- Mixed forests
-        # 6   -- Closed shrublands
-        # 7   -- Open shrublands
-        # 8   -- Woody savannas
-        # 9   -- Savannas
-        # 10  -- Grasslands
-        # 11  -- Permanent wetland
-        # 12  -- Croplands
-        # 13  -- Urban and built-up
-        # 14  -- Croplands / natural vegetation mosaic
-        # 15  -- Snow and ice
-        # 16  -- Barren or sparsely vegetated
-    """
-    # Landuse reclassification
+# Landuse reclassification
         # 0	    No data
         # 10	Cropland, rainfed
         # 11	Herbaceous cover
         # 12	Tree or shrub cover
         # 20	Cropland, irrigated or post-flooding
         # 30	Mosaic cropland (>50%) / natural vegetation (tree, shrub, herbaceous cover) (<50%)
-        # 40	Mosaic natural vegetation (tree, shrub, herbaceous cover) (>50%) / cropland (<50%) 
+        # 40	Mosaic natural vegetation (tree, shrub, herbaceous cover) (>50%) / cropland (<50%)
         # 50	Tree cover, broadleaved, evergreen, closed to open (>15%)
         # 60	Tree cover, broadleaved, deciduous, closed to open (>15%)
         # 61	Tree cover, broadleaved, deciduous, closed (>40%)
@@ -382,10 +360,12 @@ def landuse_parameters(param):
         # 210	Water bodies
         # 220	Permanent snow and ice
 
-    
+    """
     landuse = {
         "type": np.array([0, 10, 11, 12, 20, 30, 40, 50, 60, 61, 62, 70, 71, 72, 80, 81, 82, 90, 100, 110, 120,
                         121, 122, 130, 140, 150, 151, 152, 153, 160, 170, 180, 190, 200, 201, 202, 210, 220]),
+
+
         "water_buffer": 1,
         "wetland_buffer": 1,
         "snow_buffer": 4,
@@ -439,7 +419,6 @@ def protected_areas_parameters(param):
     param["protected_areas"] = protected_areas
     return param
 
-
 def osm_areas(param):
 
     #"fclass" ILIKE 'commercial' OR 'industrial' OR 'quarry' OR 'military' OR 'park'
@@ -459,7 +438,6 @@ def osm_areas(param):
 
     param["osm_areas"] = osm_areas
     return param
-
 
 def pv_parameters(param):
     """
@@ -522,7 +500,7 @@ def pv_parameters(param):
     pv["weight"] = {
         "GCR": GCR,
         "lu_availability": np.array(
-            [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.02, 0.00, 0.02, 0.00, 0.02, 0.00, 0.02]),
+            [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.00, 0.00, 0.00, 0.02, 0.02, 0.00, 0.02]),
         "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
         "power_density": 0.000160,
         "f_performance": 0.75,
@@ -646,12 +624,12 @@ def onshore_wind_parameters(param):
         "lu_suitability": np.array([0,0,0,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,0,0,0,0,1,1,1,0,0]),
         "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
         "urban_buffer_pixel_amount": 4,
-        "pa_buffer_pixel_amount": 4,
+        "pa_buffer_pixel_amount": 2,
         "airport_buffer_pixel_amount": 16
     }
     windon["weight"] = {
         "lu_availability": np.array(
-            [0.00, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.10, 0.10, 0.10, 0.10, 0.00, 0.10, 0.00, 0.10, 0.00, 0.10]),
+            [0.00, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.10, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.10, 0.00, 0.10]),
         "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
         "power_density": 0.000008,
         "f_performance": 0.87,
@@ -870,7 +848,7 @@ def global_maps_input_paths(paths, param):
     param["res_livestock"] = np.array([1 / 120, 1 / 120])
     
     paths["WSF_global"] = PathTemp + "WSF" + fs + "WSF2015_Full.tif"
-    param["res_settlements"] = np.array([1/400 , 1/400])
+    param["res_settlements"] = np.array([1/400 , 1/400]) #resampled in QGIS
     
     paths["Pop_global"] = PathTemp + "Population" + fs + "gpw_v4_population_count_rev10_2015_30_sec.tif"
     param["res_population"] = np.array([1 / 120, 1 / 120])
@@ -881,12 +859,12 @@ def global_maps_input_paths(paths, param):
 
     paths["Biomass_Crops"] = PathTemp + "FAOSTAT" + fs + "Admin level 2_"
     paths["Biomass_Forestry"] = PathTemp + "FAOSTAT" + fs + "FAOSTAT_Forestry_data_6-2-2021.csv"
-    
-    paths["OSM"] = PathTemp + "OSM" + fs
-    
-    paths["HydroLakes"] = PathTemp + "HydroLakes" + fs + "HydroLAKES_polys_v10.shp" 
+
+    paths["OSM"] = PathTemp + "OSM" + fs # ToDo
+
+    paths["HydroLakes"] = PathTemp + "HydroLakes" + fs + "HydroLAKES_polys_v10.shp"
     paths["HydroRivers"] = PathTemp + "HydroRivers" + fs + "HydroRIVERS_v10.shp"
-    
+
     return paths, param
 
 
@@ -1033,7 +1011,7 @@ def local_maps_paths(paths, param):
     paths["ROADS"] = PathTemp + "_Roads.tif"
     paths["RAILS"] = PathTemp + "_Rails.tif"
     paths["OSM_AREAS"] = PathTemp + "_OSM_areas.tif"
-    
+
     paths["LS"] = PathTemp + "_Livestock_" #Livestock density per animal type
     paths["POP"] = PathTemp + "_Population.tif"  # Population
     
@@ -1045,6 +1023,7 @@ def local_maps_paths(paths, param):
     paths["BOARDERS"] = PathTemp + "_Boarders.tif" #Buffered Boarders
     paths["PV_PA_BUFFER"] = PathTemp + "_PV_Protected_areas_Buffered.tif" #Buffered Protected areas for PV
     paths["WINDON_PA_BUFFER"] = PathTemp + "_WindOn_Protected_areas_Buffered.tif" #Buffered Protected areas for Wind Onshore
+
     paths["OSM_COM_BUFFER"] = PathTemp + "_OSM_Commercial_Buffered.tif"
     paths["OSM_IND_BUFFER"] = PathTemp + "_OSM_Industrial_Buffered.tif"
     paths["OSM_MINE_BUFFER"] = PathTemp + "_OSM_Mining_Buffered.tif"
@@ -1052,17 +1031,17 @@ def local_maps_paths(paths, param):
     paths["PV_OSM_PARK_BUFFER"] = PathTemp + "_PV_OSM_Parks_Buffered.tif"
     paths["WINDON_OSM_PARK_BUFFER"] = PathTemp + "_WindOn_OSM_Parks_Buffered.tif"
     paths["OSM_REC_BUFFER"] = PathTemp + "_OSM_Recreation_Buffered.tif"
-    
+
     paths["WSF"] = PathTemp + "_Settlements.tif"
     paths["PV_WSF_BUFFER"] = PathTemp + "_PV_Settlements_Buffered.tif"
     paths["WINDON_WSF_BUFFER"] = PathTemp + "_WindOn_Settlements_Buffered.tif"
-    
+
     paths["HYDROLAKES"] = PathTemp + "_HydroLakes.tif"
     paths["HYDRORIVERS"] = PathTemp + "_HydroRivers.tif"
-    
+
     paths["HYDROLAKES_BUFFER"] = PathTemp + "_HydroLakes_Buffered.tif"
     paths["HYDRORIVERS_BUFFER"] = PathTemp + "_HydroRivers_Buffered.tif"
-    
+
     paths["CORR_GWA"] = PathTemp + "_GWA_Correction.mat"  # Correction factors based on the GWA
 
     # Correction factors for wind speeds
@@ -1071,10 +1050,6 @@ def local_maps_paths(paths, param):
     paths["CORR_ON"] = PathTemp + "_WindOn_Correction_" + turbine_height_on + ".tif"
     paths["CORR_OFF"] = PathTemp + "_WindOff_Correction_" + turbine_height_off + ".tif"
 
-    # not needed anymore?
-    # paths["BIOMASS_ENERGY"] = PathTemp + "_Biomass_Energy.tif" #Biomass energy per pixel
-    # paths["BIOMASS_CO2"] = PathTemp + "_Biomass_CO2.tif" #Biomass co2 per pixel
-    
     #To be used only when the country is split and want to club the map for full country
     # paths["East"] = paths["local_maps"] + "Brazil_East_gwa_Biomass_CO2.tif"
     # paths["West"] = paths["local_maps"] + "Brazil_West_gwa_Biomass_CO2.tif"
@@ -1216,11 +1191,13 @@ def potential_output_paths(paths, param, tech):
         PathTemp = paths["potential"] + region + "_" + tech + "_" + orientation
     elif tech in ["Biomass"]:
         PathTemp = paths["potential"] + region + "_" + tech
-    
+
+    # File name for Biomass
     if tech in ["Biomass"]:
         paths[tech]["BIOMASS_ENERGY"] = PathTemp + "_Biomass_Energy.mat"
         paths[tech]["BIOMASS_CO2"] = PathTemp + "_Biomass_CO2.mat"
-    else:    
+    # File name for all other tech
+    else:
         paths[tech]["FLH"] = PathTemp + "_FLH_" + year + ".mat"
         paths[tech]["mask"] = PathTemp + "_mask_" + year + ".mat"
         paths[tech]["FLH_mask"] = PathTemp + "_FLH_mask_" + year + ".mat"
@@ -1269,10 +1246,10 @@ def regional_analysis_output_paths(paths, param, tech):
         PathTemp = paths["regional_analysis"] + subregions + "_" + tech + "_" + orientation
     elif tech in ["Biomass"]:
         PathTemp = paths["regional_analysis"] + subregions + "_" + tech
-    
+
     paths[tech]["Region_Stats"] = PathTemp + "_Region_stats_" + year + ".csv"
-    
-    if not tech in ["Biomass"]:
+
+    if tech != "Biomass":
         paths[tech]["Locations"] = PathTemp + "_Locations.shp"
         paths[tech]["TS"] = PathTemp + "_TS_" + year + ".csv"
         paths[tech]["Sorted_FLH"] = PathTemp + "_sorted_FLH_sampled_" + year + ".mat"
@@ -1299,8 +1276,8 @@ def discrete_output_paths(paths, param, tech):
     elif tech in ["CSP"]:
         orientation = "0"
         PathTemp = paths["discrete_analysis"] + region + "_" + tech + "_" + orientation
-    
-    if not tech in ["Biomass"]:
+
+    if tech != "Biomass":
         paths[tech]["TS_discrete"] = PathTemp + "_TS_" + year + ".csv"
 
     return paths

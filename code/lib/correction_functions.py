@@ -1,7 +1,7 @@
 from .spatial_functions import calc_region, array2raster
 from .util import *
 
-
+# ToDo Clean entire file
 def clean_weather_data(paths, param):
     """
     This function detects data outliers in the weather input .mat files. An outlier is a data point, for which

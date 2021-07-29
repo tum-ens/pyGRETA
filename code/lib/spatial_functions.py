@@ -321,7 +321,7 @@ def adjust_resolution(array, res_data, res_desired, aggfun=None):
         array = aggregate_y_dim(array, res_data, res_desired, aggfun)
     return array
     
-    
+# ToDo check if they are needed now
 def recalc_lu_resolution(array, res_data, res_desired, lua):
     
     array1 = np.zeros([int(array.shape[0]*res_data[0]/res_desired[0]),int(array.shape[1]*res_data[1]/res_desired[1])])

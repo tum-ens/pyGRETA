@@ -27,23 +27,24 @@ if __name__ == "__main__":
         im.generate_buffered_maps(paths, param, multiprocessing)     # Generate buffer maps
         cf.generate_wind_correction(paths, param)
 
-        # if "Biomass" in param["technology"]:
-        #     pl.generate_biomass_production(paths, param)
-        #     # club_biomass(paths,param)
 
         for tech in param["technology"]:
             logger.info("Tech: " + tech)
+            if tech == "Biomass":
+                pl.generate_biomass_production(paths, param, tech)
+                pl.report_biomass_potentials(paths, param, tech)
+                # pl.club_biomass(paths,param)
+            else:
+                # Generate potential maps and reports
+                pl.calculate_full_load_hours(paths, param, tech, multiprocessing)
+                pl.mask_potential_maps(paths, param, tech)
+                pl.weight_potential_maps(paths, param, tech)
+                pl.report_potentials(paths, param, tech)
 
-            # Generate potential maps and reports
-            pl.calculate_full_load_hours(paths, param, tech, multiprocessing)
-            pl.mask_potential_maps(paths, param, tech)
-            pl.weight_potential_maps(paths, param, tech)
-            pl.report_potentials(paths, param, tech)
-
-            # Generate time series
-            #find_representative_locations(paths, param, tech)
-            #generate_time_series_for_representative_locations(paths, param, tech)
-            #generate_time_series_for_specific_locations(paths, param, tech)
+                # Generate time series
+                #find_representative_locations(paths, param, tech)
+                #generate_time_series_for_representative_locations(paths, param, tech)
+                #generate_time_series_for_specific_locations(paths, param, tech)
 
         #for tech in param["technology"]:
          #   print("Tech: " + tech)

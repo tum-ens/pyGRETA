@@ -10,7 +10,7 @@ import rasterio
 import scipy.ndimage
 
 
-
+# ToDo Clean entire file
 def clean_weather_data(paths, param):
     """
     This function detects data outliers in the weather input .mat files. An outlier is a data point, for which

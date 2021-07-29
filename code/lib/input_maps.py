@@ -104,7 +104,7 @@ def generate_buffered_maps(paths, param, multiprocessing):
     """
     if multiprocessing:
         processes = []
-        processes.append(mp.Process(target=generate_buffered_population, args=(paths, param)))
+        #processes.append(mp.Process(target=generate_buffered_population, args=(paths, param)))
         processes.append(mp.Process(target=generate_buffered_water, args=(paths, param)))
         processes.append(mp.Process(target=generate_buffered_wetland, args=(paths, param)))
         processes.append(mp.Process(target=generate_buffered_snow, args=(paths, param)))
@@ -122,7 +122,7 @@ def generate_buffered_maps(paths, param, multiprocessing):
         logger.info('All processes finished')
 
     else:
-        generate_buffered_population(paths, param)
+        #generate_buffered_population(paths, param)
         generate_buffered_water(paths, param)
         generate_buffered_wetland(paths, param)
         generate_buffered_snow(paths, param)
@@ -150,7 +150,7 @@ def generate_weather_files(paths, param):
     :return: The files T2M.mat, W50M.mat, and CLEARNESS.mat are saved directly in the defined paths, along with their metadata in JSON files.
     :rtype: None
     """
-    # print(paths["T2M"])
+    # logger.info(paths["T2M"])
     if os.path.isfile(paths["T2M"]) and os.path.isfile(paths["W50M"]) and os.path.isfile(paths["CLEARNESS"]) and \
             os.path.isfile(paths["MERRA_XMIN"]) and os.path.isfile(paths["MERRA_XMAX"]) and \
             os.path.isfile(paths["MERRA_YMIN"]) and os.path.isfile(paths["MERRA_YMAX"]) and \
@@ -534,7 +534,7 @@ def generate_area(paths, param):
         logger.debug("End")
 
 
-def generate_landuse(paths, param):
+def generate_landuse(paths, param): #ToDo remove the res_landuse
     """
     This function reads the global map of land use, and creates a raster out of it for the desired scope.
     There are 17 discrete possible values from 0 to 16, corresponding to different land use classes.
@@ -620,7 +620,7 @@ def generate_protected_areas(paths, param):
 
             for feat in layer:
                 pt = feat.GetField("IUCN_CAT")
-                feat.SetField("Raster", protection_type[pt])
+                feat.SetField("Raster", int(protection_type[pt]))
                 layer.SetFeature(feat)
                 feat = None
 
@@ -862,7 +862,7 @@ def generate_population(paths, param):
     #if "WindOn" in param["technology"]:
     A_POP = sf.recalc_topo_resolution(A_POP, param["res_landuse"], param["res_desired"])
     sf.array2raster(paths["POP"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_POP)
-    print("files saved: " + paths["POP"])
+    logger.info("files saved: " + paths["POP"])
     ul.create_json(paths["POP"], param, ["region_name", "Crd_all", "res_population", "res_desired", "GeoRef"], paths, ["Pop_global", "POP"])
     ul.timecheck("End")
 
@@ -897,107 +897,11 @@ def generate_livestock(paths, param):
         A_LS[A_LS<0]=float(0)
         A_LS = np.multiply(A_LS, A_area) / (10 ** 6)
         sf.array2raster(paths["LS"]+animal+".tif", GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_LS)
-        print("files saved: " + paths["LS"]+animal+".tif")
+        logger.info("files saved: " + paths["LS"]+animal+".tif")
         ul.create_json(paths["LS"]+animal+".tif", param, ["region_name", "Crd_all", "res_livestock", "res_desired", "GeoRef"], paths, ["LS_global", "LS"])
     
     ul.timecheck("End")
 
-
-def generate_settlements(paths, param):
-    """
-    This function reads the global map of settlements, and creates a raster out of it for the desired scope.
-       See :mod:`config.py` for more information on the settlements map.
-
-    :param paths: Dictionary including the paths to the global settlements raster *WSF_global* and to the output path *WSF*.
-    :type paths: dict
-    :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
-    :type param: dict
-
-    :return: The tif file for *WSF* is saved in its respective path, along with its metadata in a JSON file.
-    :rtype: None
-    """
-    ul.timecheck("Start")
-    #res_desired = param["res_desired"]
-    Crd_all = param["Crd_all"]
-    Ind = sf.ind_global(Crd_all, param["res_settlements"])[0]
-    GeoRef = param["GeoRef"]
-    print ("Read the variables")
-    print (Crd_all)
-    #long = ["w180","w170","w160","w150","w140","w130","w120","w110","w100","w090","w080","w070","w060","w050","w040","w030","w020","w010","e000","e010","e020","e030","e","","",""]
-    print (int(Crd_all[0] + (10 - Crd_all[0] % 10)))
-    print (int(Crd_all[1] + (10 - Crd_all[1] % 10)))
-    print (int((Crd_all[2]//10)*10))
-    print (int((Crd_all[3]//10)*10))
-    
-    North = int(Crd_all[0] + (10 - Crd_all[0] % 10))
-    East = int(Crd_all[1] + (10 - Crd_all[1] % 10))
-    South = int((Crd_all[2]//10)*10)
-    West = int((Crd_all[3]//10)*10)
-    
-    # North = 90
-    # East = 180
-    # South = -90
-    # West = -180
-    
-    WSF_raw = np.zeros([int((North - South)/10*111321),int((East - West)/10*111321)],dtype=bool)
-    for lat in range(int((North - South)/10)):
-        for long in range(int((East - West)/10)):
-            if West+long*10 == 0:
-                str_west = str("_e000")
-                str_west1 = str("_e010")
-            elif West+long*10 < 0:
-                if West+long*10 == -10:
-                    str_west = str("_w010")
-                    str_west1 = str("_e000")
-                elif West+long*10 > -100:
-                    str_west = str("_w0")+str(abs(West+long*10))
-                    str_west1 = str("_w0")+str(abs(West+(long+1)*10))
-                elif West+long*10 == -100:
-                    str_west = str("_w100")
-                    str_west1 = str("_w090")
-                else:
-                    str_west = str("_w")+str(abs(West+long*10))
-                    str_west1 = str("_w")+str(abs(West+(long+1)*10))
-            else:
-                if West+long*10 < 90:
-                    str_west = str("_e0")+str(West+long*10)
-                    str_west1 = str("_e0")+str(West+(long+1)*10)
-                elif West+long*10 == 90:
-                    str_west = str("_e090")
-                    str_west1 = str("_e100")
-                else:
-                    str_west = str("_e")+str(West+long*10)
-                    str_west1 = str("_e")+str(West+(long+1)*10)
-            if South+lat*10 == 0:
-                str_south = str("_n00")
-                str_south1 = str("_s10")
-            elif South+lat*10 < 0:
-                str_south = str("_s")+str(abs(South+lat*10))
-                str_south1 = str("_s")+str(abs(South+(lat+1)*10))
-            else:
-                str_south = str("_n")+str(South+lat*10)
-                str_south1 = str("_n")+str(South+(lat+1)*10)
-                
-            x = str_west+str_south+str_west1+str_south1+".tif"
-            print (x)
-            if os.path.isfile(paths["WSF_global"]+x):
-                with rasterio.open(paths["WSF_global"]+x) as src:
-                    w = src.read(1)
-                w = np.flipud(w)
-                WSF_raw[lat*111321:(lat+1)*111321,long*111321:(long+1)*111321] = w
-                
-            print (np.sum(WSF_raw))
-    with rasterio.open(paths["WSF_global"]) as src:
-        w = src.read(1)
-        print ("Opened the global file")
-        w = np.flipud(w)
-    #w = adjust_resolution(w, param["res_settlements"], param["res_desired"], "category")
-    #w = recalc_lu_resolution(w, param["res_landuse"], param["res_desired"], lu_a)
-    sf.array2raster(paths["WSF"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], w)
-    print("files saved: " + paths["WSF"])
-    ul.create_json(paths["WSF"], param, ["region_name", "Crd_all", "res_settlements", "res_desired", "GeoRef"], paths, ["WSF_global", "WSF"])
-    ul.timecheck("End")
-    
   
 def generate_buffered_protected_areas(paths, param):
     """
@@ -1058,41 +962,41 @@ def generate_buffered_protected_areas(paths, param):
     logger.debug("End")
     
     
-def generate_buffered_population(paths, param):
-    """
-    This function reads the land use raster, identifies urban areas, and excludes pixels around them based on a
-    user-defined buffer *buffer_pixel_amount*. It creates a masking raster of boolean values (0 or 1) for the scope.
-    Zero means the pixel is excluded, one means it is suitable.
-    The function is useful in case there is a policy to exclude renewable energy projects next to urban settlements.
-
-    :param paths: Dictionary including the path to the land use raster for the scope, and to the output path BUFFER.
-    :type paths: dict
-    :param param: Dictionary including the user-defined buffer (buffer_pixel_amount), the urban type within the land use map (type_urban), and the georeference dictionary.
-    :type param: dict
-
-    :return: The tif file for BUFFER is saved in its respective path, along with its metadata in a JSON file.
-    :rtype: None
-    """
-    if os.path.isfile(paths["POP_BUFFER"]):
-        logger.info('Skip')    # Skip generation if files are already there
-
-    else:
-        logger.info("Start")
-        buffer_pixel_amount = param["WindOn"]["mask"]["urban_buffer_pixel_amount"]
-        GeoRef = param["GeoRef"]
-        with rasterio.open(paths["LU"]) as src:
-            A_lu = src.read(1)
-        A_lu = np.flipud(A_lu).astype(int)
-        A_lu = A_lu == param["landuse"]["type_urban"]  # Land use type for Urban and built-up
-        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
-        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_lu_buffered = scipy.ndimage.maximum_filter(A_lu, footprint=kernel, mode="constant", cval=0)
-        A_notPopulated = (~A_lu_buffered).astype(int)
-
-        sf.array2raster(paths["POP_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notPopulated)
-        logger.info("files saved: " + paths["POP_BUFFER"])
-        ul.create_json(paths["POP_BUFFER"], param, ["region_name", "landuse", "WindOn", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "POP_BUFFER"])
-        logger.debug('End')
+# def generate_buffered_population(paths, param):
+#     """
+#     This function reads the land use raster, identifies urban areas, and excludes pixels around them based on a
+#     user-defined buffer *buffer_pixel_amount*. It creates a masking raster of boolean values (0 or 1) for the scope.
+#     Zero means the pixel is excluded, one means it is suitable.
+#     The function is useful in case there is a policy to exclude renewable energy projects next to urban settlements.
+#
+#     :param paths: Dictionary including the path to the land use raster for the scope, and to the output path BUFFER.
+#     :type paths: dict
+#     :param param: Dictionary including the user-defined buffer (buffer_pixel_amount), the urban type within the land use map (type_urban), and the georeference dictionary.
+#     :type param: dict
+#
+#     :return: The tif file for BUFFER is saved in its respective path, along with its metadata in a JSON file.
+#     :rtype: None
+#     """
+#     if os.path.isfile(paths["POP_BUFFER"]):
+#         logger.info('Skip')    # Skip generation if files are already there
+#
+#     else:
+#         logger.info("Start")
+#         buffer_pixel_amount = param["WindOn"]["mask"]["urban_buffer_pixel_amount"]
+#         GeoRef = param["GeoRef"]
+#         with rasterio.open(paths["LU"]) as src:
+#             A_lu = src.read(1)
+#         A_lu = np.flipud(A_lu).astype(int)
+#         A_lu = A_lu == 190 # Land use type for Urban and built-up
+#         kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
+#         kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
+#         A_lu_buffered = scipy.ndimage.maximum_filter(A_lu, footprint=kernel, mode="constant", cval=0)
+#         A_notPopulated = (~A_lu_buffered).astype(int)
+#
+#         sf.array2raster(paths["POP_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notPopulated)
+#         logger.info("files saved: " + paths["POP_BUFFER"])
+#         ul.create_json(paths["POP_BUFFER"], param, ["region_name", "landuse", "WindOn", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "POP_BUFFER"])
+#         logger.debug('End')
 
 
 def generate_buffered_water(paths, param):
@@ -1120,7 +1024,7 @@ def generate_buffered_water(paths, param):
         with rasterio.open(paths["LU"]) as src:
             A_lu = src.read(1)
         A_lu = np.flipud(A_lu).astype(int)
-        A_lu = A_lu == 0 # Land use type for water
+        A_lu = A_lu == 210 # Land use type for water
         kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
         kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
         A_lu_buffered = scipy.ndimage.maximum_filter(A_lu, footprint=kernel, mode="constant", cval=0)
@@ -1157,7 +1061,7 @@ def generate_buffered_wetland(paths, param):
         with rasterio.open(paths["LU"]) as src:
             A_lu = src.read(1)
         A_lu = np.flipud(A_lu).astype(int)
-        A_lu = A_lu == 11 # Land use type for wetland
+        A_lu = ((A_lu == 160) | (A_lu == 170) | (A_lu == 180)) # Land use type for wetland
         kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
         kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
         A_lu_buffered = scipy.ndimage.maximum_filter(A_lu, footprint=kernel, mode="constant", cval=0)
@@ -1195,7 +1099,7 @@ def generate_buffered_snow(paths, param):
         with rasterio.open(paths["LU"]) as src:
             A_lu = src.read(1)
         A_lu = np.flipud(A_lu).astype(int)
-        A_lu = A_lu == 15 # Land use type for snow
+        A_lu = A_lu == 220 # Land use type for snow
         kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
         kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
         A_lu_buffered = scipy.ndimage.maximum_filter(A_lu, footprint=kernel, mode="constant", cval=0)
@@ -1222,7 +1126,7 @@ def generate_airports(paths,param):
         nCountries = param["nRegions_land"]
 
          # Load Airports dictionary
-        airports_list = pd.read_csv(paths["Airports"], index_col = ["iso_country"],usecols=["iso_country","name","latitude_deg","longitude_deg"])
+        airports_list = pd.read_csv(paths["Airports"], index_col = ["iso_country"],usecols=["iso_country","name","latitude_deg","longitude_deg","type"])
 
          # Load IRENA dictionary
         IRENA_dict = pd.read_csv(paths["IRENA_dict"], sep=";",index_col = ["Countries shapefile"],usecols=["Countries shapefile","Countries Alpha-2 code"])
@@ -1232,9 +1136,13 @@ def generate_airports(paths,param):
             alpha2code = IRENA_dict["Countries Alpha-2 code"][countries_shp.iloc[reg]["GID_0"]]
             #print (alpha2code)
             airports_filtered = airports_list[airports_list.index==alpha2code]
+            airports_filtered = airports_filtered[(airports_filtered["type"] == "small_airport")
+                                                  | (airports_filtered["type"] == "medium_airport")
+                                                  | (airports_filtered["type"] == "large_airport")]
             #print (airports_filtered)
             airports.append(airports_filtered)
         airports = pd.concat(airports)
+        logger.info("Airports are filtered")
 
         # Filter points outside spatial scope
         lat_max, lon_max, lat_min, lon_min = param["spatial_scope"][0]
@@ -1309,43 +1217,626 @@ def generate_country_boarders(paths,param):
         ul.create_json(paths["BOARDERS"], param, ["region_name", "landuse", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "BOARDERS"])
 
         logger.debug("End")
-    
 
-def generate_osm(paths, param):
-    import pyrosm
-    from pyrosm import get_data, OSM
-    
-    ul.timecheck("Start")
-    Crd_all = param["Crd_all"]
+
+def generate_roads(paths, param):
+    # "fclass" ILIKE 'primary' OR "fclass" ILIKE 'secondary'
+
+    if os.path.isfile(paths["ROADS"]):
+        logger.info('Skip')  # Skip generation if files are already there
+
+    else:
+
+        logger.info("Start")
+
+        # First we will open our raster image, to understand how we will want to rasterize our vector
+        raster_ds = gdal.Open(paths["LU"], gdal.GA_ReadOnly)
+
+        # Fetch number of rows and columns
+        ncol = raster_ds.RasterXSize
+        nrow = raster_ds.RasterYSize
+
+        # Fetch projection and extent
+        proj = raster_ds.GetProjectionRef()
+        ext = raster_ds.GetGeoTransform()
+
+        raster_ds = None
+        shp_path = paths["OSM"] + "germany-roads.shp"
+        # Open the dataset from the file
+        dataset = ogr.Open(shp_path, 1)
+        layer = dataset.GetLayerByIndex(0)
+
+        # Add a new field
+        if not ul.field_exists("Raster", shp_path):
+            new_field = ogr.FieldDefn("Raster", ogr.OFTInteger)
+            layer.CreateField(new_field)
+
+        for feat in layer:
+            feat.SetField("Raster", 1)
+            layer.SetFeature(feat)
+            feat = None
+
+        # Create a second (modified) layer
+        outdriver = ogr.GetDriverByName("MEMORY")
+        source = outdriver.CreateDataSource("memData")
+
+        # Create the raster dataset
+        memory_driver = gdal.GetDriverByName("GTiff")
+        out_raster_ds = memory_driver.Create(paths["ROADS"], ncol, nrow, 1, gdal.GDT_Byte)
+
+        # Set the ROI image's projection and extent to our input raster's projection and extent
+        out_raster_ds.SetProjection(proj)
+        out_raster_ds.SetGeoTransform(ext)
+
+        # Fill our output band with the 0 blank, no class label, value
+        b = out_raster_ds.GetRasterBand(1)
+        b.Fill(0)
+
+        # Rasterize the shapefile layer to our new dataset
+        gdal.RasterizeLayer(
+            out_raster_ds,  # output to our new dataset
+            [1],  # output to our new dataset's first band
+            layer,  # rasterize this layer
+            None,
+            None,  # don't worry about transformations since we're in same projection
+            [0],  # burn value 0
+            [
+                "ALL_TOUCHED=FALSE",  # rasterize all pixels touched by polygons
+                "ATTRIBUTE=Raster",
+            ],  # put raster values according to the 'Raster' field values
+        )
+        ul.create_json(paths["ROADS"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["ROADS"])
+
+        # Close dataset
+        out_raster_ds = None
+        logger.info("files saved: " + paths["ROADS"])
+        logger.debug("End")
+
+
+def generate_railways(paths, param):
+    # "fclass" ILIKE 'primary' OR "fclass" ILIKE 'secondary'
+    if os.path.isfile(paths["RAILS"]):
+        logger.info('Skip')  # Skip generation if files are already there
+
+    else:
+
+        logger.info("Start")
+
+        # First we will open our raster image, to understand how we will want to rasterize our vector
+        raster_ds = gdal.Open(paths["LU"], gdal.GA_ReadOnly)
+
+        # Fetch number of rows and columns
+        ncol = raster_ds.RasterXSize
+        nrow = raster_ds.RasterYSize
+
+        # Fetch projection and extent
+        proj = raster_ds.GetProjectionRef()
+        ext = raster_ds.GetGeoTransform()
+
+        raster_ds = None
+        shp_path = paths["OSM"] + "germany-railways.shp"
+        # Open the dataset from the file
+        dataset = ogr.Open(shp_path, 1)
+        layer = dataset.GetLayerByIndex(0)
+
+        # Add a new field
+        if not ul.field_exists("Raster", shp_path):
+            new_field = ogr.FieldDefn("Raster", ogr.OFTInteger)
+            layer.CreateField(new_field)
+
+        for feat in layer:
+            feat.SetField("Raster", 1)
+            layer.SetFeature(feat)
+            feat = None
+
+        # Create a second (modified) layer
+        outdriver = ogr.GetDriverByName("MEMORY")
+        source = outdriver.CreateDataSource("memData")
+
+        # Create the raster dataset
+        memory_driver = gdal.GetDriverByName("GTiff")
+        out_raster_ds = memory_driver.Create(paths["RAILS"], ncol, nrow, 1, gdal.GDT_Byte)
+
+        # Set the ROI image's projection and extent to our input raster's projection and extent
+        out_raster_ds.SetProjection(proj)
+        out_raster_ds.SetGeoTransform(ext)
+
+        # Fill our output band with the 0 blank, no class label, value
+        b = out_raster_ds.GetRasterBand(1)
+        b.Fill(0)
+
+        # Rasterize the shapefile layer to our new dataset
+        gdal.RasterizeLayer(
+            out_raster_ds,  # output to our new dataset
+            [1],  # output to our new dataset's first band
+            layer,  # rasterize this layer
+            None,
+            None,  # don't worry about transformations since we're in same projection
+            [0],  # burn value 0
+            [
+                "ALL_TOUCHED=FALSE",  # rasterize all pixels touched by polygons
+                "ATTRIBUTE=Raster",
+            ],  # put raster values according to the 'Raster' field values
+        )
+        ul.create_json(paths["RAILS"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["RAILS"])
+
+        # Close dataset
+        out_raster_ds = None
+        logger.info("files saved: " + paths["RAILS"])
+        logger.debug("End")
+
+
+def generate_osm_areas(paths, param):
+    # "fclass" ILIKE 'commercial' OR "fclass" ILIKE 'industrial' OR "fclass" ILIKE 'quarry' OR "fclass" ILIKE 'military' OR "fclass" ILIKE 'park' OR "fclass" ILIKE 'recreation_ground'
+    if os.path.isfile(paths["OSM_AREAS"]):
+        logger.info('Skip')  # Skip generation if files are already there
+
+    else:
+
+        logger.info("Start")
+
+        osm_areas = param["osm_areas"]
+        # set up osm areas dictionary
+        osm_type = dict(zip(osm_areas["Category"], osm_areas["type"]))
+
+        # First we will open our raster image, to understand how we will want to rasterize our vector
+        raster_ds = gdal.Open(paths["LU"], gdal.GA_ReadOnly)
+
+        # Fetch number of rows and columns
+        ncol = raster_ds.RasterXSize
+        nrow = raster_ds.RasterYSize
+
+        # Fetch projection and extent
+        proj = raster_ds.GetProjectionRef()
+        ext = raster_ds.GetGeoTransform()
+
+        raster_ds = None
+        shp_path = paths["OSM"] + "germany-landuse-all.shp"
+        # Open the dataset from the file
+        dataset = ogr.Open(shp_path, 1)
+        layer = dataset.GetLayerByIndex(0)
+        # layer.SetAttributeFilter("fclass" ILIKE 'commercial' OR "fclass" ILIKE 'industrial' OR "fclass" ILIKE 'quarry' OR "fclass" ILIKE 'military' OR "fclass" ILIKE 'park' OR "fclass" ILIKE 'recreation_ground'")
+
+        # Add a new field
+        if not ul.field_exists("Raster", shp_path):
+            new_field = ogr.FieldDefn("Raster", ogr.OFTInteger)
+            layer.CreateField(new_field)
+
+        # layer = layer.SetAttributeFilter('fclass = "commercial" OR fclass = "industrial" OR fclass = "quarry" OR fclass = "military" OR fclass = "park" OR fclass = "recreation_ground"')
+
+        for feat in layer:
+            pt = feat.GetField("fclass")
+            if pt == "commercial" or pt == "industrial" or pt == "quarry" or pt == "military" or pt == "park" or pt == "recreation_ground":
+                feat.SetField("Raster", int(osm_type[pt]))
+            else:
+                feat.SetField("Raster", int(0))
+            layer.SetFeature(feat)
+            feat = None
+
+        # Create a second (modified) layer
+        outdriver = ogr.GetDriverByName("MEMORY")
+        source = outdriver.CreateDataSource("memData")
+
+        # Create the raster dataset
+        memory_driver = gdal.GetDriverByName("GTiff")
+        out_raster_ds = memory_driver.Create(paths["OSM_AREAS"], ncol, nrow, 1, gdal.GDT_Byte)
+
+        # Set the ROI image's projection and extent to our input raster's projection and extent
+        out_raster_ds.SetProjection(proj)
+        out_raster_ds.SetGeoTransform(ext)
+
+        # Fill our output band with the 0 blank, no class label, value
+        b = out_raster_ds.GetRasterBand(1)
+        b.Fill(0)
+
+        # Rasterize the shapefile layer to our new dataset
+        gdal.RasterizeLayer(
+            out_raster_ds,  # output to our new dataset
+            [1],  # output to our new dataset's first band
+            layer,  # rasterize this layer
+            None,
+            None,  # don't worry about transformations since we're in same projection
+            [0],  # burn value 0
+            [
+                "ALL_TOUCHED=FALSE",  # rasterize all pixels touched by polygons
+                "ATTRIBUTE=Raster",
+            ],  # put raster values according to the 'Raster' field values
+        )
+        ul.create_json(paths["OSM_AREAS"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
+                    ["OSM", "OSM_AREAS"])
+
+        # Close dataset
+        out_raster_ds = None
+        logger.info("files saved: " + paths["OSM_AREAS"])
+        logger.debug("End")
+
+
+def generate_buffered_osm_areas(paths, param):
+    """
+    This function reads the land use raster, identifies urban areas, and excludes pixels around them based on a
+    user-defined buffer *buffer_pixel_amount*. It creates a masking raster of boolean values (0 or 1) for the scope.
+    Zero means the pixel is excluded, one means it is suitable.
+    The function is useful in case there is a policy to exclude renewable energy projects next to urban settlements.
+
+    :param paths: Dictionary including the path to the land use raster for the scope, and to the output path BUFFER.
+    :type paths: dict
+    :param param: Dictionary including the user-defined buffer (buffer_pixel_amount), the urban type within the land use map (type_urban), and the georeference dictionary.
+    :type param: dict
+
+    :return: The tif file for BUFFER is saved in its respective path, along with its metadata in a JSON file.
+    :rtype: None
+    """
+    logger.info("Start")
     GeoRef = param["GeoRef"]
-    res_desired = param["res_desired"]
-    countries_shp = param["regions_land"]
-    nCountries = param["nRegions_land"]
-    m_high = param["m_high"]
-    n_high = param["n_high"]
-    
-    print (Crd_all)
-    for reg in range(0, nCountries):
-        if countries_shp.iloc[reg]["GID_0"] in param["country_code"]:
-            data = get_data(countries_shp.iloc[reg]["NAME_0"])
-            osm = OSM(data,[Crd_all[2],Crd_all[3],Crd_all[0],Crd_all[1]])
-            
-            print (osm)
-            drive_net = osm.get_network(network_type="driving")
-            drive_net.head(2)
-        
-            # transit = osm.get_data_by_custom_criteria(custom_filter={
-                                        # 'route': routes,
-                                        # 'railway': rails,
-                                        # 'bus': bus,
-                                        # 'public_transport': True},
-                                        # # Keep data matching the criteria above
-                                        # filter_type="keep",
-                                        # # Do not keep nodes (point data)    
-                                        # keep_nodes=False, 
-                                        # keep_ways=True, 
-                                        # keep_relations=True)
-                                        
-            # print (osm)
-    
-    ul.timecheck("End")
+    with rasterio.open(paths["OSM_AREAS"]) as src:
+        A_osma = src.read(1)
+    A_osma = np.flipud(A_osma).astype(int)
+
+
+    # Commercial Areas
+    if os.path.isfile(paths["OSM_COM_BUFFER"]):
+        logger.info('Skip')  # Skip generation if files are already there
+    else:
+        A_com = A_osma == 1
+        buffer_pixel_amount = 2
+        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
+        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
+        A_com_buffered = scipy.ndimage.maximum_filter(A_com, footprint=kernel, mode="constant", cval=0)
+        A_notCommercial = (~A_com_buffered).astype(int)
+        sf.array2raster(paths["OSM_COM_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
+                     A_notCommercial)
+        logger.info("files saved: " + paths["OSM_COM_BUFFER"])
+        ul.create_json(paths["OSM_COM_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
+                    ["OSM", "OSM_COM_BUFFER"])
+
+    # Industrical Areas
+    if os.path.isfile(paths["OSM_IND_BUFFER"]):
+        logger.info('Skip')  # Skip generation if files are already there
+    else:
+        A_ind = A_osma == 2
+        buffer_pixel_amount = 1
+        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
+        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
+        A_ind_buffered = scipy.ndimage.maximum_filter(A_ind, footprint=kernel, mode="constant", cval=0)
+        A_notIndustrial = (~A_ind_buffered).astype(int)
+        sf.array2raster(paths["OSM_IND_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
+                     A_notIndustrial)
+        logger.info("files saved: " + paths["OSM_IND_BUFFER"])
+        ul.create_json(paths["OSM_IND_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
+                    ["OSM", "OSM_IND_BUFFER"])
+
+    # Mining Areas
+    if os.path.isfile(paths["OSM_MINE_BUFFER"]):
+        logger.info('Skip')  # Skip generation if files are already there
+    else:
+        A_min = A_osma == 3
+        buffer_pixel_amount = 1
+        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
+        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
+        A_min_buffered = scipy.ndimage.maximum_filter(A_min, footprint=kernel, mode="constant", cval=0)
+        A_notMine = (~A_min_buffered).astype(int)
+        sf.array2raster(paths["OSM_MINE_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
+                     A_notMine)
+        logger.info("files saved: " + paths["OSM_MINE_BUFFER"])
+        ul.create_json(paths["OSM_MINE_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
+                    ["OSM", "OSM_MINE_BUFFER"])
+
+    # Military Areas
+    if os.path.isfile(paths["OSM_MIL_BUFFER"]):
+        logger.info('Skip')  # Skip generation if files are already there
+    else:
+        A_mil = A_osma == 4
+        buffer_pixel_amount = 2
+        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
+        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
+        A_mil_buffered = scipy.ndimage.maximum_filter(A_mil, footprint=kernel, mode="constant", cval=0)
+        A_notMilitary = (~A_mil_buffered).astype(int)
+        sf.array2raster(paths["OSM_MIL_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
+                     A_notMilitary)
+        logger.info("files saved: " + paths["OSM_MIL_BUFFER"])
+        ul.create_json(paths["OSM_MIL_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
+                    ["OSM", "OSM_MIL_BUFFER"])
+
+    # Parks
+    A_park = A_osma == 5
+    # Wind onshore
+    if os.path.isfile(paths["WINDON_OSM_PARK_BUFFER"]):
+        logger.info('Skip')  # Skip generation if files are already there
+    else:
+        buffer_pixel_amount = 2
+        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
+        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
+        A_park_buffered = scipy.ndimage.maximum_filter(A_park, footprint=kernel, mode="constant", cval=0)
+        A_notPark = (~A_park_buffered).astype(int)
+        sf.array2raster(paths["WINDON_OSM_PARK_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
+                     A_notPark)
+        logger.info("files saved: " + paths["WINDON_OSM_PARK_BUFFER"])
+        ul.create_json(paths["WINDON_OSM_PARK_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
+                    ["OSM", "WINDON_OSM_PARK_BUFFER"])
+    # PV
+    if os.path.isfile(paths["PV_OSM_PARK_BUFFER"]):
+        logger.info('Skip')  # Skip generation if files are already there
+    else:
+        buffer_pixel_amount = 1
+        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
+        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
+        A_park_buffered = scipy.ndimage.maximum_filter(A_park, footprint=kernel, mode="constant", cval=0)
+        A_notPark = (~A_park_buffered).astype(int)
+        sf.array2raster(paths["PV_OSM_PARK_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
+                     A_notPark)
+        logger.info("files saved: " + paths["PV_OSM_PARK_BUFFER"])
+        ul.create_json(paths["PV_OSM_PARK_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
+                    ["OSM", "PV_OSM_PARK_BUFFER"])
+
+    # Recreational Areas
+    if os.path.isfile(paths["OSM_REC_BUFFER"]):
+        logger.info('Skip')  # Skip generation if files are already there
+    else:
+        A_rec = A_osma == 6
+        buffer_pixel_amount = 1
+        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
+        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
+        A_rec_buffered = scipy.ndimage.maximum_filter(A_rec, footprint=kernel, mode="constant", cval=0)
+        A_notRecreation = (~A_rec_buffered).astype(int)
+        sf.array2raster(paths["OSM_REC_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
+                     A_notRecreation)
+        logger.info("files saved: " + paths["OSM_REC_BUFFER"])
+        ul.create_json(paths["OSM_REC_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
+                    ["OSM", "OSM_REC_BUFFER"])
+
+    logger.debug("End")
+
+
+def generate_settlements(paths, param):
+    """
+    This function reads the global map of settlements, and creates a raster out of it for the desired scope.
+       See :mod:`config.py` for more information on the settlements map.
+
+    :param paths: Dictionary including the paths to the global settlements raster *WSF_global* and to the output path *WSF*.
+    :type paths: dict
+    :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
+    :type param: dict
+
+    :return: The tif file for *WSF* is saved in its respective path, along with its metadata in a JSON file.
+    :rtype: None
+    """
+    Crd_all = param["Crd_all"]
+    Ind = sf.ind_global(Crd_all, param["res_settlements"])[0]
+    GeoRef = param["GeoRef"]
+    logger.info("Start")
+
+    if os.path.isfile(paths["WSF"]):
+        logger.info('Skip')  # Skip generation if files are already there
+    else:
+        with rasterio.open(paths["WSF_global"]) as src:
+            A_wsf = src.read(1, window=rasterio.windows.Window.from_slices(slice(Ind[0] - 1, Ind[2]),
+                                                                  slice(Ind[3] - 1, Ind[1]))).astype(bool)
+            A_wsf = np.flipud(A_wsf)
+        sf.array2raster(paths["WSF"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_wsf)
+        logger.info("files saved: " + paths["WSF"])
+        ul.create_json(paths["WSF"], param, ["region_name", "Crd_all", "res_settlements", "res_desired", "GeoRef"], paths,
+                    ["WSF_global", "WSF"])
+
+    # PV buffer
+    if os.path.isfile(paths["PV_WSF_BUFFER"]):
+        logger.info('Skip')  # Skip generation if files are already there
+    else:
+        buffer_pixel_amount = 1
+        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
+        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
+        A_pv_wsf = scipy.ndimage.maximum_filter(A_wsf, footprint=kernel, mode="constant", cval=0)
+        A_NotSettlement = (~A_pv_wsf).astype(int)
+
+        sf.array2raster(paths["PV_WSF_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
+                     A_NotSettlement)
+        logger.info("files saved: " + paths["PV_WSF_BUFFER"])
+        ul.create_json(paths["PV_WSF_BUFFER"], param, ["region_name", "Crd_all", "res_settlements", "res_desired", "GeoRef"],
+                    paths, ["WSF_global", "PV_WSF_BUFFER"])
+
+    # Onshore wind buffer
+    if os.path.isfile(paths["WINDON_WSF_BUFFER"]):
+        logger.info('Skip')  # Skip generation if files are already there
+    else:
+        buffer_pixel_amount = 4
+        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
+        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
+        A_wind_wsf = scipy.ndimage.maximum_filter(A_wsf, footprint=kernel, mode="constant", cval=0)
+        A_NotSettlement = (~A_wind_wsf).astype(int)
+
+        sf.array2raster(paths["WINDON_WSF_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
+                     A_NotSettlement)
+        logger.info("files saved: " + paths["WINDON_WSF_BUFFER"])
+        ul.create_json(paths["WINDON_WSF_BUFFER"], param,
+                    ["region_name", "Crd_all", "res_settlements", "res_desired", "GeoRef"], paths,
+                    ["WSF_global", "WINDON_WSF_BUFFER"])
+
+    logger.debug("End")
+
+
+def generate_HydroLakes(paths, param):
+    # "fclass" ILIKE 'primary' OR "fclass" ILIKE 'secondary'
+    logger.info("Start")
+
+    if os.path.isfile(paths["HYDROLAKES"]):
+        logger.info('Skip')  # Skip generation if files are already there
+
+    else:
+        # First we will open our raster image, to understand how we will want to rasterize our vector
+        raster_ds = gdal.Open(paths["LU"], gdal.GA_ReadOnly)
+
+        # Fetch number of rows and columns
+        ncol = raster_ds.RasterXSize
+        nrow = raster_ds.RasterYSize
+
+        # Fetch projection and extent
+        proj = raster_ds.GetProjectionRef()
+        ext = raster_ds.GetGeoTransform()
+
+        raster_ds = None
+        shp_path = paths["HydroLakes"]
+        # Open the dataset from the file
+        dataset = ogr.Open(shp_path, 1)
+        layer = dataset.GetLayerByIndex(0)
+
+        # Add a new field
+        if not ul.field_exists("Raster", shp_path):
+            new_field = ogr.FieldDefn("Raster", ogr.OFTInteger)
+            layer.CreateField(new_field)
+
+        for feat in layer:
+            feat.SetField("Raster", 1)
+            layer.SetFeature(feat)
+            feat = None
+
+        # Create a second (modified) layer
+        outdriver = ogr.GetDriverByName("MEMORY")
+        source = outdriver.CreateDataSource("memData")
+
+        # Create the raster dataset
+        memory_driver = gdal.GetDriverByName("GTiff")
+        out_raster_ds = memory_driver.Create(paths["HYDROLAKES"], ncol, nrow, 1, gdal.GDT_Byte)
+
+        # Set the ROI image's projection and extent to our input raster's projection and extent
+        out_raster_ds.SetProjection(proj)
+        out_raster_ds.SetGeoTransform(ext)
+
+        # Fill our output band with the 0 blank, no class label, value
+        b = out_raster_ds.GetRasterBand(1)
+        b.Fill(0)
+
+        # Rasterize the shapefile layer to our new dataset
+        gdal.RasterizeLayer(
+            out_raster_ds,  # output to our new dataset
+            [1],  # output to our new dataset's first band
+            layer,  # rasterize this layer
+            None,
+            None,  # don't worry about transformations since we're in same projection
+            [0],  # burn value 0
+            [
+                "ALL_TOUCHED=FALSE",  # rasterize all pixels touched by polygons
+                "ATTRIBUTE=Raster",
+            ],  # put raster values according to the 'Raster' field values
+        )
+        ul.create_json(paths["HYDROLAKES"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["HYDROLAKES"])
+
+        # Close dataset
+        out_raster_ds = None
+        logger.info("files saved: " + paths["HYDROLAKES"])
+
+    # Create Buffer
+    if os.path.isfile(paths["HYDROLAKES_BUFFER"]):
+        logger.info('Skip')  # Skip generation if files are already there
+    else:
+        GeoRef = param["GeoRef"]
+
+        with rasterio.open(paths["HYDROLAKES"]) as src:
+            A_lake = src.read(1).astype(bool)
+            A_lake = np.flipud(A_lake)
+        buffer_pixel_amount = 1
+        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
+        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
+        A_lake = scipy.ndimage.maximum_filter(A_lake, footprint=kernel, mode="constant", cval=0)
+        A_NotLake = (~A_lake).astype(int)
+
+        sf.array2raster(paths["HYDROLAKES_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
+                     A_NotLake)
+        logger.info("files saved: " + paths["HYDROLAKES_BUFFER"])
+        ul.create_json(paths["HYDROLAKES_BUFFER"], param,
+                    ["region_name", "Crd_all", "res_settlements", "res_desired", "GeoRef"], paths,
+                    ["HYDROLAKES", "HYDROLAKES_BUFFER"])
+
+    logger.debug("End")
+
+
+def generate_HydroRivers(paths, param):
+    # "fclass" ILIKE 'primary' OR "fclass" ILIKE 'secondary'
+    logger.info("Start")
+    if os.path.isfile(paths["HYDRORIVERS"]):
+        logger.info('Skip')  # Skip generation if files are already there
+
+    else:
+         # First we will open our raster image, to understand how we will want to rasterize our vector
+        raster_ds = gdal.Open(paths["LU"], gdal.GA_ReadOnly)
+
+        # Fetch number of rows and columns
+        ncol = raster_ds.RasterXSize
+        nrow = raster_ds.RasterYSize
+
+        # Fetch projection and extent
+        proj = raster_ds.GetProjectionRef()
+        ext = raster_ds.GetGeoTransform()
+
+        raster_ds = None
+        shp_path = paths["HydroRivers"]
+        # Open the dataset from the file
+        dataset = ogr.Open(shp_path, 1)
+        layer = dataset.GetLayerByIndex(0)
+
+        # Add a new field
+        if not ul.field_exists("Raster", shp_path):
+            new_field = ogr.FieldDefn("Raster", ogr.OFTInteger)
+            layer.CreateField(new_field)
+
+        for feat in layer:
+            feat.SetField("Raster", 1)
+            layer.SetFeature(feat)
+            feat = None
+
+        # Create a second (modified) layer
+        outdriver = ogr.GetDriverByName("MEMORY")
+        source = outdriver.CreateDataSource("memData")
+
+        # Create the raster dataset
+        memory_driver = gdal.GetDriverByName("GTiff")
+        out_raster_ds = memory_driver.Create(paths["HYDRORIVERS"], ncol, nrow, 1, gdal.GDT_Byte)
+
+        # Set the ROI image's projection and extent to our input raster's projection and extent
+        out_raster_ds.SetProjection(proj)
+        out_raster_ds.SetGeoTransform(ext)
+
+        # Fill our output band with the 0 blank, no class label, value
+        b = out_raster_ds.GetRasterBand(1)
+        b.Fill(0)
+
+        # Rasterize the shapefile layer to our new dataset
+        gdal.RasterizeLayer(
+            out_raster_ds,  # output to our new dataset
+            [1],  # output to our new dataset's first band
+            layer,  # rasterize this layer
+            None,
+            None,  # don't worry about transformations since we're in same projection
+            [0],  # burn value 0
+            [
+                "ALL_TOUCHED=FALSE",  # rasterize all pixels touched by polygons
+                "ATTRIBUTE=Raster",
+            ],  # put raster values according to the 'Raster' field values
+        )
+        ul.create_json(paths["HYDRORIVERS"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["HYDROLAKES"])
+
+    # Close dataset
+    out_raster_ds = None
+    logger.info("files saved: " + paths["HYDRORIVERS"])
+
+    # Create Buffer
+    if os.path.isfile(paths["HYDRORIVERS_BUFFER"]):
+        logger.info('Skip')  # Skip generation if files are already there
+    else:
+        GeoRef = param["GeoRef"]
+
+        with rasterio.open(paths["HYDRORIVERS"]) as src:
+            A_Riv = src.read(1).astype(bool)
+            A_Riv = np.flipud(A_Riv)
+        buffer_pixel_amount = 1
+        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
+        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
+        A_Riv = scipy.ndimage.maximum_filter(A_Riv, footprint=kernel, mode="constant", cval=0)
+        A_NotRiver = (~A_Riv).astype(int)
+
+        sf.array2raster(paths["HYDRORIVERS_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
+                     A_NotRiver)
+        logger.info("files saved: " + paths["HYDRORIVERS_BUFFER"])
+        ul.create_json(paths["HYDRORIVERS_BUFFER"], param,
+                    ["region_name", "Crd_all", "res_settlements", "res_desired", "GeoRef"], paths,
+                    ["HYDRORIVERS", "HYDRORIVERS_BUFFER"])
+
+    logger.debug("End")

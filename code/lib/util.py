@@ -1,32 +1,14 @@
-from osgeo import ogr, gdal, osr
+from osgeo import ogr
 from numpy.matlib import repmat, reshape, sin, arcsin, cos, arccos, tan, arctan
-import os
-from os import getcwd, chdir
-from glob import glob
+from .log import logger
+import numpy as np
 import psutil
 import datetime
 import inspect
 import sys
-import math
-import rasterio
-from rasterio import windows, mask, MemoryFile
-import pandas as pd
-import numpy as np
-from scipy.ndimage import generic_filter, convolve, maximum_filter, minimum_filter
-import geopandas as gpd
-from shapely.geometry import mapping, Point, Polygon, LineString
-import fiona
-import hdf5storage
-from multiprocessing import Pool
-from itertools import product
-import h5netcdf
-import shutil
-import pyomo.environ as pyo
-from pyomo.opt import SolverFactory
+import os
 import json
-from warnings import warn
-#import pyrosm
-#from pyrosm import get_data, OSM
+
 
 
 def sind(alpha):
@@ -433,4 +415,13 @@ def create_json(filepath, param, param_keys, paths, paths_keys):
     new_dict["function"] = inspect.stack()[1][3]
     with open(new_file, "w") as json_file:
         json.dump(new_dict, json_file)
-    print("files saved: " + new_file)
+    logger.info("files saved: " + new_file)
+
+def deleteAllFiles(path):
+    for filename in os.listdir(path):
+        file = os.path.join(path, filename)
+        # print(file)
+        if os.path.isfile(file):
+            os.remove(file)
+        else:
+            deleteAllFiles(file)

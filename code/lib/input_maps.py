@@ -84,7 +84,7 @@ def generate_maps_for_scope(paths, param, multiprocessing):
         generate_topography(paths, param)  # Topography
         # generate_livestock(paths,param)
         # generate_settlements(paths, param)
-        # generate_osm(paths, param)
+        generate_osm(paths, param)
         # generate_population(paths, param)  # Population # not used anywhere?
 
 
@@ -1218,6 +1218,26 @@ def generate_country_boarders(paths,param):
 
         logger.debug("End")
 
+def generate_osm(paths, param):
+
+    generate_roads(paths, param)
+    generate_railways(paths, param)
+    generate_osm_areas(paths, param)
+
+    # generate_airports(paths,param)
+    generate_subregions(paths, param)
+    # generate_landuse(paths, param)
+    generate_buffered_population(paths, param)
+    # generate_buffered_water(paths, param)
+    # generate_buffered_wetland(paths, param)
+    # generate_buffered_snow(paths, param)
+    generate_settlements(paths, param)
+    generate_HydroLakes(paths, param)
+    generate_HydroRivers(paths, param)
+
+def generate_osm_buffered(paths, param):
+    generate_buffered_osm_areas(paths, param)
+    generate_buffered_protected_areas(paths, param)
 
 def generate_roads(paths, param):
     # "fclass" ILIKE 'primary' OR "fclass" ILIKE 'secondary'

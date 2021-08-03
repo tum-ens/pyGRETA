@@ -25,7 +25,7 @@ if __name__ == "__main__":
         im.downloadGWA(paths, param)    # Download wind speed data from Global Wind Atlas
         im.generate_maps_for_scope(paths, param, multiprocessing)    # Generate input raster maps
         im.generate_buffered_maps(paths, param, multiprocessing)     # Generate buffer maps
-        cf.generate_wind_correction(paths, param)
+        # cf.generate_wind_correction(paths, param)
 
 
         for tech in param["technology"]:

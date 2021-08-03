@@ -4,7 +4,7 @@ import os
 
 year = 2019
 technology = "PV" #,WindOn"
-path = "configs/"
+path = "../configs/"
 
 df = pd.read_excel('World-Timeplan.xlsx', sheet_name='Time Plan', engine='openpyxl')
 # print(df)
@@ -16,8 +16,8 @@ for f in os.listdir(path):
 for i in range(len(df)):
     if (not np.isnan(df['ID'][i]) and str(df['Country Name'][i])!='nan'):
         f = open(path + str(int(df['ID'][i])) + "_" + df['Country Name'][i] + ".txt", "w")
-        f.write("spatial_scope:gadm36_" + str(df['Country Code'][i]) + "_0.shp" + "\n")
-        f.write("subregions:gadm36_" + str(df['Country Code'][i]) + "_0.shp" + "\n")
+        # f.write("spatial_scope:gadm36_" + str(df['Country Code'][i]) + "_0.shp" + "\n")
+        f.write("regions:gadm36_" + str(df['Country Code'][i]) + "_0.shp" + "\n")
         f.write("region_name:" + df['Country Name'][i] + "_gwa" + "\n")
         f.write("subregions_name:" + df['Country Name'][i] + "_level0" + "\n")
         f.write("country_code:" + str(df['Country Code'][i]) + "\n")

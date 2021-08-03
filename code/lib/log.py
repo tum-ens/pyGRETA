@@ -7,7 +7,7 @@ logger.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s;%(levelno)s %(processName)s; %(filename)s: %(funcName)s - %(levelname)s: %(message)s')
 
 # Logging to file
-file_handler = logging.FileHandler('output.log')
+file_handler = logging.FileHandler('../output.log')
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 

@@ -50,20 +50,27 @@ def generate_maps_for_scope(paths, param, multiprocessing):
     :return: The maps are saved directly in the desired paths.
     :rtype: None
     """
+
+    generate_land(paths, param)  # Subregions
+
     if multiprocessing:
         processes = []
         processes.append(mp.Process(target=generate_weather_files, args=(paths, param)))
         processes.append(mp.Process(target=generate_sea, args=(paths, param)))
-        processes.append(mp.Process(target=generate_land, args=(paths, param)))
         processes.append(mp.Process(target=generate_area, args=(paths, param)))
-        processes.append(mp.Process(target=generate_landuse, args=(paths, param)))
-        # processes.append(mp.Process(target=generate_bathymetry, args=(paths, param))) # ToDo: not tested
         processes.append(mp.Process(target=generate_topography, args=(paths, param)))
-
-        # generate_livestock(paths,param)
-        # generate_settlements(paths, param)
-        # generate_osm(paths, param)
-        # generate_population(paths, param)  # Population #not used anywhere?
+        # processes.append(mp.Process(target=generate_bathymetry, args=(paths, param))) # ToDo: not tested
+        processes.append(mp.Process(target=generate_landuse, args=(paths, param)))
+        processes.append(mp.Process(target=generate_protected_areas, args=(paths, param)))
+        processes.append(mp.Process(target=generate_airports, args=(paths, param)))
+        processes.append(mp.Process(target=generate_country_boarders, args=(paths, param)))
+        processes.append(mp.Process(target=generate_roads, args=(paths, param)))
+        processes.append(mp.Process(target=generate_railways, args=(paths, param)))
+        processes.append(mp.Process(target=generate_osm_areas, args=(paths, param)))
+        processes.append(mp.Process(target=generate_settlements, args=(paths, param)))
+        processes.append(mp.Process(target=generate_HydroLakes, args=(paths, param)))
+        processes.append(mp.Process(target=generate_HydroRivers, args=(paths, param)))
+        processes.append(mp.Process(target=generate_livestock, args=(paths, param)))
 
         logger.debug('Starting processes')
         for p in processes:
@@ -77,62 +84,79 @@ def generate_maps_for_scope(paths, param, multiprocessing):
     else:
         generate_weather_files(paths, param)  # MERRA Weather data
         generate_sea(paths, param)  # Land and Sea
-        generate_land(paths, param)  # Subregions
         generate_area(paths, param)  # Area Gradient
-        generate_landuse(paths, param)  # Landuse
-        # generate_bathymetry(paths, param)  # Bathymetry # ToDo: not tested
         generate_topography(paths, param)  # Topography
-        # generate_livestock(paths,param)
-        # generate_settlements(paths, param)
-        generate_osm(paths, param)
-        # generate_population(paths, param)  # Population # not used anywhere?
-
-
-
-def generate_buffered_maps(paths, param, multiprocessing):
-    """
-    # ToDo: What is this function doing?
-    This function calls the individual functions that generate the maps for the geographic scope.
-
-    :param paths: Dictionary including the paths.
-    :type paths: dict
-    :param param: Dictionary including the user preferences.
-    :type param: dict
-
-    :return: The maps are saved directly in the desired paths.
-    :rtype: None
-    """
-    if multiprocessing:
-        processes = []
-        #processes.append(mp.Process(target=generate_buffered_population, args=(paths, param)))
-        processes.append(mp.Process(target=generate_buffered_water, args=(paths, param)))
-        processes.append(mp.Process(target=generate_buffered_wetland, args=(paths, param)))
-        processes.append(mp.Process(target=generate_buffered_snow, args=(paths, param)))
-        processes.append(mp.Process(target=generate_airports, args=(paths, param)))
-        processes.append(mp.Process(target=generate_country_boarders, args=(paths, param)))
-        processes.append(mp.Process(target=generate_buffered_protected_areas, args=(paths, param)))
-
-        logger.debug('Starting processes')
-        for p in processes:
-            p.start()  # Start all single processes
-        logger.debug('All processes started')
-
-        for p in processes:
-            p.join()  # Wait until all processes are finished
-        logger.info('All processes finished')
-
-    else:
-        #generate_buffered_population(paths, param)
-        generate_buffered_water(paths, param)
-        generate_buffered_wetland(paths, param)
-        generate_buffered_snow(paths, param)
+        # generate_bathymetry(paths, param)  # Bathymetry # ToDo: not tested
+        generate_landuse(paths, param)  # Landuse
+        generate_protected_areas(paths,param)
         generate_airports(paths, param)
         generate_country_boarders(paths, param)
-        generate_buffered_protected_areas(paths, param)
+        generate_roads(paths, param)
+        generate_railways(paths, param)
+        generate_osm_areas(paths, param)
+        generate_settlements(paths, param)
+        generate_HydroLakes(paths, param)
+        generate_HydroRivers(paths, param)
+        generate_livestock(paths,param)
 
 
-    # if "WindOn" in param["technology"]:
-       # generate_buffered_population(paths, param)
+def generate_land(paths, param):
+    """
+    This function reads the shapefile of the subregions within the scope, and creates a raster out of it.
+
+    :param paths: Dictionary including the paths *SUB*, *LAND*, *EEZ*.
+    :type paths: dict
+    :param param: Dictionary including the geodataframe of the shapefile, the number of features, the coordinates of the bounding box of the spatial scope, and the number of rows and columns.
+    :type param: dict
+
+    :return: The tif file for *SUB* is saved in its respective path, along with its metadata in a JSON file.
+    :rtype: None
+    """
+
+    if os.path.isfile(paths["LAND"]):
+        logger.info('Skip')    # Skip generation if files are already there
+
+    else:
+        logger.info("Start")
+
+        m_high = param["m_high"]
+        n_high = param["n_high"]
+        Crd_all = param["Crd_all"]
+        res_desired = param["res_desired"]
+        GeoRef = param["GeoRef"]
+        nRegions_land = param["nRegions_land"]
+
+        # Read shapefile of regions
+        regions_shp = param["regions_land"]
+        Crd_regions_land = param["Crd_regions_land"]
+        Ind = sf.ind_merra(Crd_regions_land, Crd_all, res_desired)
+        A_land = np.zeros((m_high, n_high))
+        for reg in range(0, nRegions_land):
+            logger.debug('Region: ' + str(reg))
+
+            # Calculate A_region
+            A_region = sf.calc_region(regions_shp.iloc[reg], Crd_regions_land[reg, :], res_desired, GeoRef)
+
+            # Include A_region in A_sub
+            A_land[(Ind[reg, 2] - 1) : Ind[reg, 0], (Ind[reg, 3] - 1) : Ind[reg, 1]] = (
+                A_land[(Ind[reg, 2] - 1) : Ind[reg, 0], (Ind[reg, 3] - 1) : Ind[reg, 1]] + A_region
+            )
+
+        # Fixing pixels on the borders
+        # with rasterio.open(paths["EEZ"]) as src:
+        #     A_sea = np.flipud(src.read(1)).astype(int)
+        # with rasterio.open(paths["LAND"]) as src:
+        #     A_land = np.flipud(src.read(1)).astype(int)
+        # A_sub = A_sub * (A_land + A_sea)
+
+        # Saving file
+        sf.array2raster(paths["LAND"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_land)
+        logger.info("files saved: " + paths["LAND"])
+        ul.create_json(
+            paths["LAND"], param, ["subregions_name", "m_high", "n_high", "Crd_all", "res_desired", "GeoRef", "nRegions_sea"], paths, ["Countries", "LAND"] # FIXME: replaced regions by Countries
+        )
+
+        logger.debug("End")
 
 
 def generate_weather_files(paths, param):
@@ -411,65 +435,6 @@ def generate_sea(paths, param):
         logger.debug("End")
 
 
-def generate_land(paths, param):
-    """
-    This function reads the shapefile of the subregions within the scope, and creates a raster out of it.
-
-    :param paths: Dictionary including the paths *SUB*, *LAND*, *EEZ*.
-    :type paths: dict
-    :param param: Dictionary including the geodataframe of the shapefile, the number of features, the coordinates of the bounding box of the spatial scope, and the number of rows and columns.
-    :type param: dict
-
-    :return: The tif file for *SUB* is saved in its respective path, along with its metadata in a JSON file.
-    :rtype: None
-    """
-
-    if os.path.isfile(paths["LAND"]):
-        logger.info('Skip')    # Skip generation if files are already there
-
-    else:
-        logger.info("Start")
-
-        m_high = param["m_high"]
-        n_high = param["n_high"]
-        Crd_all = param["Crd_all"]
-        res_desired = param["res_desired"]
-        GeoRef = param["GeoRef"]
-        nRegions_land = param["nRegions_land"]
-
-        # Read shapefile of regions
-        regions_shp = param["regions_land"]
-        Crd_regions_land = param["Crd_regions_land"]
-        Ind = sf.ind_merra(Crd_regions_land, Crd_all, res_desired)
-        A_land = np.zeros((m_high, n_high))
-        for reg in range(0, nRegions_land):
-            logger.debug('Region: ' + str(reg))
-
-            # Calculate A_region
-            A_region = sf.calc_region(regions_shp.iloc[reg], Crd_regions_land[reg, :], res_desired, GeoRef)
-
-            # Include A_region in A_sub
-            A_land[(Ind[reg, 2] - 1) : Ind[reg, 0], (Ind[reg, 3] - 1) : Ind[reg, 1]] = (
-                A_land[(Ind[reg, 2] - 1) : Ind[reg, 0], (Ind[reg, 3] - 1) : Ind[reg, 1]] + A_region
-            )
-
-        # Fixing pixels on the borders
-        # with rasterio.open(paths["EEZ"]) as src:
-        #     A_sea = np.flipud(src.read(1)).astype(int)
-        # with rasterio.open(paths["LAND"]) as src:
-        #     A_land = np.flipud(src.read(1)).astype(int)
-        # A_sub = A_sub * (A_land + A_sea)
-
-        # Saving file
-        sf.array2raster(paths["LAND"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_land)
-        logger.info("files saved: " + paths["LAND"])
-        ul.create_json(
-            paths["LAND"], param, ["subregions_name", "m_high", "n_high", "Crd_all", "res_desired", "GeoRef", "nRegions_sea"], paths, ["Countries", "LAND"] # FIXME: replaced regions by Countries
-        )
-
-        logger.debug("End")
-
-
 def generate_area(paths, param):
     """
     This function retreives the coordinates of the spatial scope and computes the pixel area gradient of the corresponding
@@ -530,170 +495,6 @@ def generate_area(paths, param):
         hdf5storage.writes({"A_area": A_area}, paths["AREA"], store_python_metadata=True, matlab_compatible=True)
         logger.info("files saved: " + paths["AREA"])
         ul.create_json(paths["AREA"], param, ["Crd_all", "res_desired", "n_high"], paths, [])
-
-        logger.debug("End")
-
-
-def generate_landuse(paths, param): #ToDo remove the res_landuse
-    """
-    This function reads the global map of land use, and creates a raster out of it for the desired scope.
-    There are 17 discrete possible values from 0 to 16, corresponding to different land use classes.
-    See :mod:`config.py` for more information on the land use map.
-
-    :param paths: Dictionary including the paths to the global land use raster *LU_global* and to the output path *LU*.
-    :type paths: dict
-    :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
-    :type param: dict
-
-    :return: The tif file for *LU* is saved in its respective path, along with its metadata in a JSON file.
-    :rtype: None
-    """
-
-    if os.path.isfile(paths["LU"]):
-        logger.info('Skip')    # Skip generation if files are already there
-
-    else:
-        logger.info("Start")
-
-        Crd_all = param["Crd_all"]
-        Ind = sf.ind_global(Crd_all, param["res_landuse"])[0]
-        GeoRef = param["GeoRef"]
-        lu_a = param["WindOn"]["weight"]["lu_availability"]
-        with rasterio.open(paths["LU_global"]) as src:
-            w = src.read(1, window=rasterio.windows.Window.from_slices(slice(Ind[0] - 1, Ind[2]), slice(Ind[3] - 1, Ind[1])))
-            w = np.flipud(w)
-        w = sf.adjust_resolution(w, param["res_landuse"], param["res_desired"], "category")
-        #if "WindOn" in param["technology"]:
-        w = sf.recalc_lu_resolution(w, param["res_landuse"], param["res_desired"], lu_a)
-        sf.array2raster(paths["LU"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], w)
-        logger.info("files saved: " + paths["LU"])
-        ul.create_json(paths["LU"], param, ["region_name", "Crd_all", "res_landuse", "res_desired", "GeoRef"], paths, ["LU_global", "LU"])
-        logger.debug("End")
-
-    generate_protected_areas(paths, param)
-
-
-def generate_protected_areas(paths, param):
-    """
-    This function reads the shapefile of the globally protected areas, adds an attribute whose values are based on the dictionary
-    of conversion (protected_areas) to identify the protection category, then converts the shapefile into a raster for the scope.
-    The values are integers from 0 to 10.
-
-    :param paths: Dictionary including the paths to the shapefile of the globally protected areas, to the landuse raster of the scope, and to the output path PA.
-    :type paths: dict
-    :param param: Dictionary including the dictionary of conversion of protection categories (protected_areas).
-    :type param: dict
-    :return: The tif file for PA is saved in its respective path, along with its metadata in a JSON file.
-    :rtype: None
-    """
-    if os.path.isfile(paths["PA"]):
-        logger.info('Skip')    # Skip generation if files are already there
-
-    else:
-        logger.info("Start")
-
-        protected_areas = param["protected_areas"]
-        # set up protected areas dictionary
-        protection_type = dict(zip(protected_areas["IUCN_Category"], protected_areas["type"]))
-
-        # First we will open our raster image, to understand how we will want to rasterize our vector
-        raster_ds = gdal.Open(paths["LU"], gdal.GA_ReadOnly)    # ToDo: Adopt data from previous function
-
-        # Fetch number of rows and columns
-        ncol = raster_ds.RasterXSize
-        nrow = raster_ds.RasterYSize
-
-        # Fetch projection and extent
-        proj = raster_ds.GetProjectionRef()
-        ext = raster_ds.GetGeoTransform()
-
-        raster_ds = None
-        shp_path = paths["Protected"]
-        # Open the dataset from the file
-        dataset = ogr.Open(shp_path, 1)
-        layer = dataset.GetLayerByIndex(0)
-
-        # Add a new field
-        if not ul.field_exists("Raster", shp_path):
-            new_field = ogr.FieldDefn("Raster", ogr.OFTInteger)
-            layer.CreateField(new_field)
-
-            for feat in layer:
-                pt = feat.GetField("IUCN_CAT")
-                feat.SetField("Raster", int(protection_type[pt]))
-                layer.SetFeature(feat)
-                feat = None
-
-        # Create a second (modified) layer
-        outdriver = ogr.GetDriverByName("MEMORY")
-        source = outdriver.CreateDataSource("memData")
-
-        # Create the raster dataset
-        memory_driver = gdal.GetDriverByName("GTiff")
-        out_raster_ds = memory_driver.Create(paths["PA"], ncol, nrow, 1, gdal.GDT_Byte)
-
-        # Set the ROI image's projection and extent to our input raster's projection and extent
-        out_raster_ds.SetProjection(proj)
-        out_raster_ds.SetGeoTransform(ext)
-
-        # Fill our output band with the 0 blank, no class label, value
-        b = out_raster_ds.GetRasterBand(1)
-        b.Fill(0)
-
-        # Rasterize the shapefile layer to our new dataset
-        gdal.RasterizeLayer(
-            out_raster_ds,  # output to our new dataset
-            [1],  # output to our new dataset's first band
-            layer,  # rasterize this layer
-            None,
-            None,  # don't worry about transformations ul.since we're in same projection
-            [0],  # burn value 0
-            [
-                "ALL_TOUCHED=FALSE",  # rasterize all pixels touched by polygons
-                "ATTRIBUTE=Raster",
-            ],  # put raster values according to the 'Raster' field values
-        )
-        ul.create_json(paths["PA"], param, ["region_name", "protected_areas", "Crd_all", "res_desired", "GeoRef"], paths, ["Protected", "PA"])
-
-        # Close dataset
-        out_raster_ds = None
-        logger.info("files saved: " + paths["PA"])
-        logger.debug("End")
-
-
-def generate_bathymetry(paths, param):
-    """
-    This function reads the global map of bathymetry, resizes it, and creates a raster out of it for the desired scope.
-    The values are in meter (negative in the sea).
-
-    :param paths: Dictionary including the paths to the global bathymetry raster *Bathym_global* and to the output path *BATH*.
-    :type paths: dict
-    :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
-    :type param: dict
-
-    :return: The tif file for *BATH* is saved in its respective path, along with its metadata in a JSON file.
-    :rtype: None
-    """
-    if os.path.isfile(paths["BATH"]):
-        logger.info('Skip')    # Skip generation if files are already there
-
-    else:
-        logger.info("Start")
-
-        Crd_all = param["Crd_all"]
-        Ind = sf.ind_global(Crd_all, param["res_topography"])[0]
-        GeoRef = param["GeoRef"]
-        with rasterio.open(paths["Bathym_global"]) as src:
-            A_BATH = src.read(1)
-        #A_BATH = resizem(A_BATH, 180 * 240, 360 * 240)
-        A_BATH = sf.adjust_resolution(A_BATH, param["res_bathymetry"], param["res_topography"], "mean")
-        A_BATH = np.flipud(A_BATH[Ind[0] - 1 : Ind[2], Ind[3] - 1 : Ind[1]])
-        print (A_BATH.shape)
-        A_BATH = sf.recalc_topo_resolution(A_BATH, param["res_topography"], param["res_desired"])
-
-        sf.array2raster(paths["BATH"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_BATH)
-        ul.create_json(paths["BATH"], param, ["region_name", "Crd_all", "res_bathymetry", "res_desired", "GeoRef"], paths, ["Bathym_global", "BATH"])
-        logger.info("files saved: " + paths["BATH"])
 
         logger.debug("End")
 
@@ -833,102 +634,232 @@ def generate_slope(paths, param, A_TOPO):
         logger.debug("End")
 
 
-
-def generate_population(paths, param):
+def generate_bathymetry(paths, param): #ToDo Adapt to new resolution
     """
-    This function reads the global map of population density, resizes it, and creates a raster out of it for the desired scope.
-    The values are in population per pixel.
+    This function reads the global map of bathymetry, resizes it, and creates a raster out of it for the desired scope.
+    The values are in meter (negative in the sea).
 
-    :param paths: Dictionary including the paths to the global population raster *Pop_global* and to the output path *POP*.
+    :param paths: Dictionary including the paths to the global bathymetry raster *Bathym_global* and to the output path *BATH*.
     :type paths: dict
     :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
     :type param: dict
 
-    :return: The tif file for *POP* is saved in its respective path, along with its metadata in a JSON file.
+    :return: The tif file for *BATH* is saved in its respective path, along with its metadata in a JSON file.
     :rtype: None
     """
-    ul.timecheck("Start")
-    res_desired = param["res_desired"]
-    Crd_all = param["Crd_all"]
-    Ind = sf.ind_global(Crd_all, param["res_desired"])[0]
-    GeoRef = param["GeoRef"]
-    with rasterio.open(paths["Pop_global"]) as src:
-        A_POP_part = src.read(1)  # map is only between latitudes -60 and 85
-    A_POP = np.zeros((21600, 43200))
-    A_POP[600:18000, :] = A_POP_part
-    #A_POP = adjust_resolution(A_POP, param["res_population"], param["res_desired"], "sum")
-    #A_POP = resizem(A_POP, 180 * 240, 360 * 240) / 4  # density is divided by 4
-    A_POP = np.flipud(A_POP[Ind[0] - 1 : Ind[2], Ind[3] - 1 : Ind[1]])
-    #if "WindOn" in param["technology"]:
-    A_POP = sf.recalc_topo_resolution(A_POP, param["res_landuse"], param["res_desired"])
-    sf.array2raster(paths["POP"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_POP)
-    logger.info("files saved: " + paths["POP"])
-    ul.create_json(paths["POP"], param, ["region_name", "Crd_all", "res_population", "res_desired", "GeoRef"], paths, ["Pop_global", "POP"])
-    ul.timecheck("End")
+    if os.path.isfile(paths["BATH"]):
+        logger.info('Skip')    # Skip generation if files are already there
+
+    else:
+        logger.info("Start")
+
+        Crd_all = param["Crd_all"]
+        Ind = sf.ind_global(Crd_all, param["res_topography"])[0]
+        GeoRef = param["GeoRef"]
+        with rasterio.open(paths["Bathym_global"]) as src:
+            A_BATH = src.read(1)
+        #A_BATH = resizem(A_BATH, 180 * 240, 360 * 240)
+        A_BATH = sf.adjust_resolution(A_BATH, param["res_bathymetry"], param["res_topography"], "mean")
+        A_BATH = np.flipud(A_BATH[Ind[0] - 1 : Ind[2], Ind[3] - 1 : Ind[1]])
+        print (A_BATH.shape)
+        A_BATH = sf.recalc_topo_resolution(A_BATH, param["res_topography"], param["res_desired"])
+
+        sf.array2raster(paths["BATH"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_BATH)
+        ul.create_json(paths["BATH"], param, ["region_name", "Crd_all", "res_bathymetry", "res_desired", "GeoRef"], paths, ["Bathym_global", "BATH"])
+        logger.info("files saved: " + paths["BATH"])
+
+        logger.debug("End")
 
 
-def generate_livestock(paths, param):
+def generate_landuse(paths, param): #ToDo remove the res_landuse
     """
-    This function reads the global maps of each livestock density, resizes it, and creates a raster out of it for the desired scope.
-    The values are in number of animals per sq.km.
+    This function reads the global map of land use, and creates a raster out of it for the desired scope.
+    There are 17 discrete possible values from 0 to 16, corresponding to different land use classes.
+    See :mod:`config.py` for more information on the land use map.
 
-    :param paths: Dictionary including the paths to the global livestock rasters *LS_global* and to the output path *LS*.
+    :param paths: Dictionary including the paths to the global land use raster *LU_global* and to the output path *LU*.
     :type paths: dict
     :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
     :type param: dict
 
-    :return: The tif files for *LS* is saved in its respective path, along with its metadata in a JSON file.
+    :return: The tif file for *LU* is saved in its respective path, along with its metadata in a JSON file.
     :rtype: None
     """
-    ul.timecheck("Start")
-    res_desired = param["res_desired"]
-    Crd_all = param["Crd_all"]
-    Ind = sf.ind_global(Crd_all, param["res_livestock"])[0]
-    GeoRef = param["GeoRef"]
-    
-    A_area = hdf5storage.read("A_area", paths["AREA"])
-    
-    for animal in param["Biomass"]["livestock"]["animal"]:
-        with rasterio.open(paths["LS_global"]+animal+"_2006.tif") as src:
-            A_LS = src.read(1, window=rasterio.windows.Window.from_slices(slice(Ind[0] - 1, Ind[2]), slice(Ind[3] - 1, Ind[1])))
-        A_LS = np.flipud(A_LS)
-        A_LS = sf.recalc_livestock_resolution(A_LS, param["res_livestock"], param["res_desired"])
-        #print (np.size(A_LS))
-        A_LS[A_LS<0]=float(0)
-        A_LS = np.multiply(A_LS, A_area) / (10 ** 6)
-        sf.array2raster(paths["LS"]+animal+".tif", GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_LS)
-        logger.info("files saved: " + paths["LS"]+animal+".tif")
-        ul.create_json(paths["LS"]+animal+".tif", param, ["region_name", "Crd_all", "res_livestock", "res_desired", "GeoRef"], paths, ["LS_global", "LS"])
-    
-    ul.timecheck("End")
 
-  
-def generate_buffered_protected_areas(paths, param):
+    if os.path.isfile(paths["LU"]):
+        logger.info('Skip')    # Skip generation if files are already there
+
+    else:
+        logger.info("Start")
+
+        Crd_all = param["Crd_all"]
+        Ind = sf.ind_global(Crd_all, param["res_landuse"])[0]
+        GeoRef = param["GeoRef"]
+        lu_a = param["WindOn"]["weight"]["lu_availability"]
+        with rasterio.open(paths["LU_global"]) as src:
+            A_lu = src.read(1, window=rasterio.windows.Window.from_slices(slice(Ind[0] - 1, Ind[2]), slice(Ind[3] - 1, Ind[1])))
+            A_lu = np.flipud(A_lu).astype(int)
+        # A_lu = sf.adjust_resolution(A_lu, param["res_landuse"], param["res_desired"], "category")
+        # w = sf.recalc_lu_resolution(w, param["res_landuse"], param["res_desired"], lu_a)
+        sf.array2raster(paths["LU"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_lu)
+        logger.info("files saved: " + paths["LU"])
+        ul.create_json(paths["LU"], param, ["region_name", "Crd_all", "res_landuse", "res_desired", "GeoRef"], paths, ["LU_global", "LU"])
+        logger.debug("End")
+
+    # Buffer map for snow
+    if os.path.isfile(paths["SNOW_BUFFER"]):
+        logger.info('Skip')    # Skip generation if files are already there
+
+    else:
+        logger.info("Start")
+        buffer_pixel_amount = param["landuse"]["snow_buffer"]
+        GeoRef = param["GeoRef"]
+        A_snow = A_lu == 220 # Land use type for snow
+        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
+        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
+        A_snow_buffered = scipy.ndimage.maximum_filter(A_snow, footprint=kernel, mode="constant", cval=0)
+        A_notSnow = (~A_snow_buffered).astype(int)
+
+        sf.array2raster(paths["SNOW_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notSnow)
+        logger.info("files saved: " + paths["SNOW_BUFFER"])
+        ul.create_json(paths["SNOW_BUFFER"], param, ["region_name", "landuse", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "SNOW_BUFFER"])
+        logger.debug("End")
+
+    # Buffer map for wetlands
+    if os.path.isfile(paths["WETLAND_BUFFER"]):
+        logger.info('Skip')  # Skip generation if files are already there
+
+    else:
+        logger.info("Start")
+        buffer_pixel_amount = param["landuse"]["wetland_buffer"]
+        GeoRef = param["GeoRef"]
+        A_wetland = ((A_lu == 160) | (A_lu == 170) | (A_lu == 180))  # Land use type for wetland
+        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
+        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
+        A_wetland_buffered = scipy.ndimage.maximum_filter(A_wetland, footprint=kernel, mode="constant", cval=0)
+        A_notWetland = (~A_wetland_buffered).astype(int)
+
+        sf.array2raster(paths["WETLAND_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notWetland)
+        logger.info("files saved: " + paths["WETLAND_BUFFER"])
+        ul.create_json(paths["WETLAND_BUFFER"], param, ["region_name", "landuse", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "WETLAND_BUFFER"])
+        logger.debug("End")
+
+    # Buffer map for water
+    if os.path.isfile(paths["WATER_BUFFER"]):
+        logger.info('Skip')    # Skip generation if files are already there
+
+    else:
+        logger.info("Start")
+        buffer_pixel_amount = param["landuse"]["water_buffer"]
+        GeoRef = param["GeoRef"]
+
+        A_water = A_lu == 210 # Land use type for water
+        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
+        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
+        A_water_buffered = scipy.ndimage.maximum_filter(A_water, footprint=kernel, mode="constant", cval=0)
+        A_notWater = (~A_water_buffered).astype(int)
+
+        sf.array2raster(paths["WATER_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notWater)
+        logger.info("files saved: " + paths["WATER_BUFFER"])
+        ul.create_json(paths["WATER_BUFFER"], param, ["region_name", "landuse", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "WATER_BUFFER"])
+        logger.debug("End")
+
+
+def generate_protected_areas(paths, param):
     """
-    This function reads the land use raster, identifies urban areas, and excludes pixels around them based on a
-    user-defined buffer *buffer_pixel_amount*. It creates a masking raster of boolean values (0 or 1) for the scope.
-    Zero means the pixel is excluded, one means it is suitable.
-    The function is useful in case there is a policy to exclude renewable energy projects next to urban settlements.
+    This function reads the shapefile of the globally protected areas, adds an attribute whose values are based on the dictionary
+    of conversion (protected_areas) to identify the protection category, then converts the shapefile into a raster for the scope.
+    The values are integers from 0 to 10.
 
-    :param paths: Dictionary including the path to the land use raster for the scope, and to the output path BUFFER.
+    :param paths: Dictionary including the paths to the shapefile of the globally protected areas, to the land raster of the scope, and to the output path PA.
     :type paths: dict
-    :param param: Dictionary including the user-defined buffer (buffer_pixel_amount), the urban type within the land use map (type_urban), and the georeference dictionary.
+    :param param: Dictionary including the dictionary of conversion of protection categories (protected_areas).
     :type param: dict
-
-    :return: The tif file for BUFFER is saved in its respective path, along with its metadata in a JSON file.
+    :return: The tif file for PA is saved in its respective path, along with its metadata in a JSON file.
     :rtype: None
     """
-    logger.info("Start")
+    if os.path.isfile(paths["PA"]):
+        logger.info('Skip')    # Skip generation if files are already there
 
+    else:
+        logger.info("Start")
+
+        protected_areas = param["protected_areas"]
+        # set up protected areas dictionary
+        protection_type = dict(zip(protected_areas["IUCN_Category"], protected_areas["type"]))
+
+        # First we will open our raster image, to understand how we will want to rasterize our vector
+        raster_ds = gdal.Open(paths["LAND"], gdal.GA_ReadOnly)    # ToDo: Adopt data from previous function
+
+        # Fetch number of rows and columns
+        ncol = raster_ds.RasterXSize
+        nrow = raster_ds.RasterYSize
+
+        # Fetch projection and extent
+        proj = raster_ds.GetProjectionRef()
+        ext = raster_ds.GetGeoTransform()
+
+        raster_ds = None
+        shp_path = paths["Protected"]
+        # Open the dataset from the file
+        dataset = ogr.Open(shp_path, 1)
+        layer = dataset.GetLayerByIndex(0)
+
+        # Add a new field
+        if not ul.field_exists("Raster", shp_path):
+            new_field = ogr.FieldDefn("Raster", ogr.OFTInteger)
+            layer.CreateField(new_field)
+
+            for feat in layer:
+                pt = feat.GetField("IUCN_CAT")
+                feat.SetField("Raster", int(protection_type[pt]))
+                layer.SetFeature(feat)
+                feat = None
+
+        # Create a second (modified) layer
+        outdriver = ogr.GetDriverByName("MEMORY")
+        source = outdriver.CreateDataSource("memData")
+
+        # Create the raster dataset
+        memory_driver = gdal.GetDriverByName("GTiff")
+        out_raster_ds = memory_driver.Create(paths["PA"], ncol, nrow, 1, gdal.GDT_Byte)
+
+        # Set the ROI image's projection and extent to our input raster's projection and extent
+        out_raster_ds.SetProjection(proj)
+        out_raster_ds.SetGeoTransform(ext)
+
+        # Fill our output band with the 0 blank, no class label, value
+        b = out_raster_ds.GetRasterBand(1)
+        b.Fill(0)
+
+        # Rasterize the shapefile layer to our new dataset
+        gdal.RasterizeLayer(
+            out_raster_ds,  # output to our new dataset
+            [1],  # output to our new dataset's first band
+            layer,  # rasterize this layer
+            None,
+            None,  # don't worry about transformations ul.since we're in same projection
+            [0],  # burn value 0
+            [
+                "ALL_TOUCHED=FALSE",  # rasterize all pixels touched by polygons
+                "ATTRIBUTE=Raster",
+            ],  # put raster values according to the 'Raster' field values
+        )
+        ul.create_json(paths["PA"], param, ["region_name", "protected_areas", "Crd_all", "res_desired", "GeoRef"], paths, ["Protected", "PA"])
+
+        # Close dataset
+        out_raster_ds = None
+        logger.info("files saved: " + paths["PA"])
+
+    # Buffer maps for protected areas
     GeoRef = param["GeoRef"]
     with rasterio.open(paths["PA"]) as src:
         A_pa = src.read(1)
     A_pa = np.flipud(A_pa).astype(int)
-    A_pa = (A_pa>0) & (A_pa<6)
+    A_pa = (A_pa > 0) & (A_pa < 6) #All protected areas pixels
 
-    # if "PV" in param["technology"]:
     if os.path.isfile(paths["PV_PA_BUFFER"]):
-        logger.info('Skip-PV')  # Skip generation if files are already there
+            logger.info('Skip-PV')  # Skip generation if files are already there
 
     else:
         logger.info("Start-PV")
@@ -938,180 +869,35 @@ def generate_buffered_protected_areas(paths, param):
         A_pa_buffered = scipy.ndimage.maximum_filter(A_pa, footprint=kernel, mode="constant", cval=0)
         A_notProtected = (~A_pa_buffered).astype(int)
 
-        sf.array2raster(paths["PV_PA_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notProtected)
+        sf.array2raster(paths["PV_PA_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
+                        A_notProtected)
         logger.info("files saved: " + paths["PV_PA_BUFFER"])
-        ul.create_json(paths["PV_PA_BUFFER"], param, ["region_name", "protected_areas", "PV", "Crd_all", "res_desired", "GeoRef"], paths, ["PA", "PV_PA_BUFFER"])
-
+        ul.create_json(paths["PV_PA_BUFFER"], param,
+                       ["region_name", "protected_areas", "PV", "Crd_all", "res_desired", "GeoRef"], paths,
+                       ["PA", "PV_PA_BUFFER"])
 
     # if "WindOn" in param["technology"]:
     if os.path.isfile(paths["WINDON_PA_BUFFER"]):
         logger.info('Skip-WindOn')  # Skip generation if files are already there
 
     else:
-        logger.info("Start - WindOn")
+        logger.info("Start-WindOn")
         buffer_pixel_amount = param["WindOn"]["mask"]["pa_buffer_pixel_amount"]
         kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
         kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
         A_pa_buffered = scipy.ndimage.maximum_filter(A_pa, footprint=kernel, mode="constant", cval=0)
         A_notProtected = (~A_pa_buffered).astype(int)
 
-        sf.array2raster(paths["WINDON_PA_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notProtected)
+        sf.array2raster(paths["WINDON_PA_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
+                        A_notProtected)
         logger.info("files saved: " + paths["WINDON_PA_BUFFER"])
-        ul.create_json(paths["WINDON_PA_BUFFER"], param, ["region_name", "protected_areas", "WindOn", "Crd_all", "res_desired", "GeoRef"], paths, ["PA", "WINDON_PA_BUFFER"])
+        ul.create_json(paths["WINDON_PA_BUFFER"], param,
+                       ["region_name", "protected_areas", "WindOn", "Crd_all", "res_desired", "GeoRef"], paths,
+                       ["PA", "WINDON_PA_BUFFER"])
 
     logger.debug("End")
-    
-    
-# def generate_buffered_population(paths, param):
-#     """
-#     This function reads the land use raster, identifies urban areas, and excludes pixels around them based on a
-#     user-defined buffer *buffer_pixel_amount*. It creates a masking raster of boolean values (0 or 1) for the scope.
-#     Zero means the pixel is excluded, one means it is suitable.
-#     The function is useful in case there is a policy to exclude renewable energy projects next to urban settlements.
-#
-#     :param paths: Dictionary including the path to the land use raster for the scope, and to the output path BUFFER.
-#     :type paths: dict
-#     :param param: Dictionary including the user-defined buffer (buffer_pixel_amount), the urban type within the land use map (type_urban), and the georeference dictionary.
-#     :type param: dict
-#
-#     :return: The tif file for BUFFER is saved in its respective path, along with its metadata in a JSON file.
-#     :rtype: None
-#     """
-#     if os.path.isfile(paths["POP_BUFFER"]):
-#         logger.info('Skip')    # Skip generation if files are already there
-#
-#     else:
-#         logger.info("Start")
-#         buffer_pixel_amount = param["WindOn"]["mask"]["urban_buffer_pixel_amount"]
-#         GeoRef = param["GeoRef"]
-#         with rasterio.open(paths["LU"]) as src:
-#             A_lu = src.read(1)
-#         A_lu = np.flipud(A_lu).astype(int)
-#         A_lu = A_lu == 190 # Land use type for Urban and built-up
-#         kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
-#         kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-#         A_lu_buffered = scipy.ndimage.maximum_filter(A_lu, footprint=kernel, mode="constant", cval=0)
-#         A_notPopulated = (~A_lu_buffered).astype(int)
-#
-#         sf.array2raster(paths["POP_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notPopulated)
-#         logger.info("files saved: " + paths["POP_BUFFER"])
-#         ul.create_json(paths["POP_BUFFER"], param, ["region_name", "landuse", "WindOn", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "POP_BUFFER"])
-#         logger.debug('End')
 
 
-def generate_buffered_water(paths, param):
-    """
-    This function reads the land use raster, identifies urban areas, and excludes pixels around them based on a
-    user-defined buffer *buffer_pixel_amount*. It creates a masking raster of boolean values (0 or 1) for the scope.
-    Zero means the pixel is excluded, one means it is suitable.
-    The function is useful in case there is a policy to exclude renewable energy projects next to urban settlements.
-
-    :param paths: Dictionary including the path to the land use raster for the scope, and to the output path BUFFER.
-    :type paths: dict
-    :param param: Dictionary including the user-defined buffer (buffer_pixel_amount), the urban type within the land use map (type_urban), and the georeference dictionary.
-    :type param: dict
-
-    :return: The tif file for BUFFER is saved in its respective path, along with its metadata in a JSON file.
-    :rtype: None
-    """
-    if os.path.isfile(paths["WATER_BUFFER"]):
-        logger.info('Skip')    # Skip generation if files are already there
-
-    else:
-        logger.info("Start")
-        buffer_pixel_amount = param["landuse"]["water_buffer"]
-        GeoRef = param["GeoRef"]
-        with rasterio.open(paths["LU"]) as src:
-            A_lu = src.read(1)
-        A_lu = np.flipud(A_lu).astype(int)
-        A_lu = A_lu == 210 # Land use type for water
-        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
-        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_lu_buffered = scipy.ndimage.maximum_filter(A_lu, footprint=kernel, mode="constant", cval=0)
-        A_notWater = (~A_lu_buffered).astype(int)
-
-        sf.array2raster(paths["WATER_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notWater)
-        logger.info("files saved: " + paths["WATER_BUFFER"])
-        ul.create_json(paths["WATER_BUFFER"], param, ["region_name", "landuse", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "WATER_BUFFER"])
-        logger.debug("End")
-
-
-def generate_buffered_wetland(paths, param):
-    """
-    This function reads the land use raster, identifies urban areas, and excludes pixels around them based on a
-    user-defined buffer *buffer_pixel_amount*. It creates a masking raster of boolean values (0 or 1) for the scope.
-    Zero means the pixel is excluded, one means it is suitable.
-    The function is useful in case there is a policy to exclude renewable energy projects next to urban settlements.
-
-    :param paths: Dictionary including the path to the land use raster for the scope, and to the output path BUFFER.
-    :type paths: dict
-    :param param: Dictionary including the user-defined buffer (buffer_pixel_amount), the urban type within the land use map (type_urban), and the georeference dictionary.
-    :type param: dict
-
-    :return: The tif file for BUFFER is saved in its respective path, along with its metadata in a JSON file.
-    :rtype: None
-    """
-    if os.path.isfile(paths["WETLAND_BUFFER"]):
-        logger.info('Skip')    # Skip generation if files are already there
-
-    else:
-        logger.info("Start")
-        buffer_pixel_amount = param["landuse"]["wetland_buffer"]
-        GeoRef = param["GeoRef"]
-        with rasterio.open(paths["LU"]) as src:
-            A_lu = src.read(1)
-        A_lu = np.flipud(A_lu).astype(int)
-        A_lu = ((A_lu == 160) | (A_lu == 170) | (A_lu == 180)) # Land use type for wetland
-        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
-        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_lu_buffered = scipy.ndimage.maximum_filter(A_lu, footprint=kernel, mode="constant", cval=0)
-        A_notWetland = (~A_lu_buffered).astype(int)
-
-        sf.array2raster(paths["WETLAND_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notWetland)
-        logger.info("files saved: " + paths["WETLAND_BUFFER"])
-        ul.create_json(paths["WETLAND_BUFFER"], param, ["region_name", "landuse", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "WETLAND_BUFFER"])
-
-        logger.debug("End")
-   
-   
-def generate_buffered_snow(paths, param):
-    """
-    This function reads the land use raster, identifies urban areas, and excludes pixels around them based on a
-    user-defined buffer *buffer_pixel_amount*. It creates a masking raster of boolean values (0 or 1) for the scope.
-    Zero means the pixel is excluded, one means it is suitable.
-    The function is useful in case there is a policy to exclude renewable energy projects next to urban settlements.
-
-    :param paths: Dictionary including the path to the land use raster for the scope, and to the output path BUFFER.
-    :type paths: dict
-    :param param: Dictionary including the user-defined buffer (buffer_pixel_amount), the urban type within the land use map (type_urban), and the georeference dictionary.
-    :type param: dict
-
-    :return: The tif file for BUFFER is saved in its respective path, along with its metadata in a JSON file.
-    :rtype: None
-    """
-    if os.path.isfile(paths["SNOW_BUFFER"]):
-        logger.info('Skip')    # Skip generation if files are already there
-
-    else:
-        logger.info("Start")
-        buffer_pixel_amount = param["landuse"]["snow_buffer"]
-        GeoRef = param["GeoRef"]
-        with rasterio.open(paths["LU"]) as src:
-            A_lu = src.read(1)
-        A_lu = np.flipud(A_lu).astype(int)
-        A_lu = A_lu == 220 # Land use type for snow
-        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
-        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_lu_buffered = scipy.ndimage.maximum_filter(A_lu, footprint=kernel, mode="constant", cval=0)
-        A_notSnow = (~A_lu_buffered).astype(int)
-
-        sf.array2raster(paths["SNOW_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notSnow)
-        logger.info("files saved: " + paths["SNOW_BUFFER"])
-        ul.create_json(paths["SNOW_BUFFER"], param, ["region_name", "landuse", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "SNOW_BUFFER"])
-
-        logger.debug("End")
-
-   
 def generate_airports(paths,param):
 
     if os.path.isfile(paths["AIRPORTS"]):
@@ -1214,30 +1000,10 @@ def generate_country_boarders(paths,param):
 
         sf.array2raster(paths["BOARDERS"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notBoarder)
         logger.info("files saved: " + paths["BOARDERS"])
-        ul.create_json(paths["BOARDERS"], param, ["region_name", "landuse", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "BOARDERS"])
+        ul.create_json(paths["BOARDERS"], param, ["region_name", "landuse", "Crd_all", "res_desired", "GeoRef"], paths, ["LAND", "BOARDERS"])
 
         logger.debug("End")
 
-def generate_osm(paths, param):
-
-    generate_roads(paths, param)
-    generate_railways(paths, param)
-    generate_osm_areas(paths, param)
-
-    # generate_airports(paths,param)
-    generate_subregions(paths, param)
-    # generate_landuse(paths, param)
-    generate_buffered_population(paths, param)
-    # generate_buffered_water(paths, param)
-    # generate_buffered_wetland(paths, param)
-    # generate_buffered_snow(paths, param)
-    generate_settlements(paths, param)
-    generate_HydroLakes(paths, param)
-    generate_HydroRivers(paths, param)
-
-def generate_osm_buffered(paths, param):
-    generate_buffered_osm_areas(paths, param)
-    generate_buffered_protected_areas(paths, param)
 
 def generate_roads(paths, param):
     # "fclass" ILIKE 'primary' OR "fclass" ILIKE 'secondary'
@@ -1246,11 +1012,10 @@ def generate_roads(paths, param):
         logger.info('Skip')  # Skip generation if files are already there
 
     else:
-
         logger.info("Start")
 
         # First we will open our raster image, to understand how we will want to rasterize our vector
-        raster_ds = gdal.Open(paths["LU"], gdal.GA_ReadOnly)
+        raster_ds = gdal.Open(paths["LAND"], gdal.GA_ReadOnly)
 
         # Fetch number of rows and columns
         ncol = raster_ds.RasterXSize
@@ -1319,11 +1084,10 @@ def generate_railways(paths, param):
         logger.info('Skip')  # Skip generation if files are already there
 
     else:
-
         logger.info("Start")
 
         # First we will open our raster image, to understand how we will want to rasterize our vector
-        raster_ds = gdal.Open(paths["LU"], gdal.GA_ReadOnly)
+        raster_ds = gdal.Open(paths["LAND"], gdal.GA_ReadOnly)
 
         # Fetch number of rows and columns
         ncol = raster_ds.RasterXSize
@@ -1388,11 +1152,26 @@ def generate_railways(paths, param):
 
 def generate_osm_areas(paths, param):
     # "fclass" ILIKE 'commercial' OR "fclass" ILIKE 'industrial' OR "fclass" ILIKE 'quarry' OR "fclass" ILIKE 'military' OR "fclass" ILIKE 'park' OR "fclass" ILIKE 'recreation_ground'
+
+    """
+    This function reads the osm land use shapefile, identifies several areas, and excludes pixels around them based on a
+    user-defined buffers *buffer_pixel_amount*. It creates a masking raster of boolean values (0 or 1) for the scope.
+    Zero means the pixel is excluded, one means it is suitable.
+    The function is useful in case there is a policy to exclude renewable energy projects next to certain type of areas.
+
+    :param paths: Dictionary including the path to the osm land-use shapefile, and to the output path BUFFER.
+    :type paths: dict
+    :param param: Dictionary including the user-defined buffers (buffer_pixel_amount) and the georeference dictionary.
+    :type param: dict
+
+    :return: The tif file for BUFFER is saved in its respective path, along with its metadata in a JSON file.
+    :rtype: None
+    """
+
     if os.path.isfile(paths["OSM_AREAS"]):
         logger.info('Skip')  # Skip generation if files are already there
 
     else:
-
         logger.info("Start")
 
         osm_areas = param["osm_areas"]
@@ -1400,7 +1179,7 @@ def generate_osm_areas(paths, param):
         osm_type = dict(zip(osm_areas["Category"], osm_areas["type"]))
 
         # First we will open our raster image, to understand how we will want to rasterize our vector
-        raster_ds = gdal.Open(paths["LU"], gdal.GA_ReadOnly)
+        raster_ds = gdal.Open(paths["LAND"], gdal.GA_ReadOnly)
 
         # Fetch number of rows and columns
         ncol = raster_ds.RasterXSize
@@ -1468,30 +1247,12 @@ def generate_osm_areas(paths, param):
         # Close dataset
         out_raster_ds = None
         logger.info("files saved: " + paths["OSM_AREAS"])
-        logger.debug("End")
 
-
-def generate_buffered_osm_areas(paths, param):
-    """
-    This function reads the land use raster, identifies urban areas, and excludes pixels around them based on a
-    user-defined buffer *buffer_pixel_amount*. It creates a masking raster of boolean values (0 or 1) for the scope.
-    Zero means the pixel is excluded, one means it is suitable.
-    The function is useful in case there is a policy to exclude renewable energy projects next to urban settlements.
-
-    :param paths: Dictionary including the path to the land use raster for the scope, and to the output path BUFFER.
-    :type paths: dict
-    :param param: Dictionary including the user-defined buffer (buffer_pixel_amount), the urban type within the land use map (type_urban), and the georeference dictionary.
-    :type param: dict
-
-    :return: The tif file for BUFFER is saved in its respective path, along with its metadata in a JSON file.
-    :rtype: None
-    """
-    logger.info("Start")
+    # Create Buffer osm maps
     GeoRef = param["GeoRef"]
     with rasterio.open(paths["OSM_AREAS"]) as src:
         A_osma = src.read(1)
     A_osma = np.flipud(A_osma).astype(int)
-
 
     # Commercial Areas
     if os.path.isfile(paths["OSM_COM_BUFFER"]):
@@ -1503,11 +1264,12 @@ def generate_buffered_osm_areas(paths, param):
         kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
         A_com_buffered = scipy.ndimage.maximum_filter(A_com, footprint=kernel, mode="constant", cval=0)
         A_notCommercial = (~A_com_buffered).astype(int)
-        sf.array2raster(paths["OSM_COM_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
-                     A_notCommercial)
+        sf.array2raster(paths["OSM_COM_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
+                        GeoRef["pixelHeight"],
+                        A_notCommercial)
         logger.info("files saved: " + paths["OSM_COM_BUFFER"])
         ul.create_json(paths["OSM_COM_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
-                    ["OSM", "OSM_COM_BUFFER"])
+                       ["OSM", "OSM_COM_BUFFER"])
 
     # Industrical Areas
     if os.path.isfile(paths["OSM_IND_BUFFER"]):
@@ -1519,11 +1281,12 @@ def generate_buffered_osm_areas(paths, param):
         kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
         A_ind_buffered = scipy.ndimage.maximum_filter(A_ind, footprint=kernel, mode="constant", cval=0)
         A_notIndustrial = (~A_ind_buffered).astype(int)
-        sf.array2raster(paths["OSM_IND_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
-                     A_notIndustrial)
+        sf.array2raster(paths["OSM_IND_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
+                        GeoRef["pixelHeight"],
+                        A_notIndustrial)
         logger.info("files saved: " + paths["OSM_IND_BUFFER"])
         ul.create_json(paths["OSM_IND_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
-                    ["OSM", "OSM_IND_BUFFER"])
+                       ["OSM", "OSM_IND_BUFFER"])
 
     # Mining Areas
     if os.path.isfile(paths["OSM_MINE_BUFFER"]):
@@ -1535,11 +1298,12 @@ def generate_buffered_osm_areas(paths, param):
         kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
         A_min_buffered = scipy.ndimage.maximum_filter(A_min, footprint=kernel, mode="constant", cval=0)
         A_notMine = (~A_min_buffered).astype(int)
-        sf.array2raster(paths["OSM_MINE_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
-                     A_notMine)
+        sf.array2raster(paths["OSM_MINE_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
+                        GeoRef["pixelHeight"],
+                        A_notMine)
         logger.info("files saved: " + paths["OSM_MINE_BUFFER"])
         ul.create_json(paths["OSM_MINE_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
-                    ["OSM", "OSM_MINE_BUFFER"])
+                       ["OSM", "OSM_MINE_BUFFER"])
 
     # Military Areas
     if os.path.isfile(paths["OSM_MIL_BUFFER"]):
@@ -1551,11 +1315,12 @@ def generate_buffered_osm_areas(paths, param):
         kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
         A_mil_buffered = scipy.ndimage.maximum_filter(A_mil, footprint=kernel, mode="constant", cval=0)
         A_notMilitary = (~A_mil_buffered).astype(int)
-        sf.array2raster(paths["OSM_MIL_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
-                     A_notMilitary)
+        sf.array2raster(paths["OSM_MIL_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
+                        GeoRef["pixelHeight"],
+                        A_notMilitary)
         logger.info("files saved: " + paths["OSM_MIL_BUFFER"])
         ul.create_json(paths["OSM_MIL_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
-                    ["OSM", "OSM_MIL_BUFFER"])
+                       ["OSM", "OSM_MIL_BUFFER"])
 
     # Parks
     A_park = A_osma == 5
@@ -1568,11 +1333,13 @@ def generate_buffered_osm_areas(paths, param):
         kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
         A_park_buffered = scipy.ndimage.maximum_filter(A_park, footprint=kernel, mode="constant", cval=0)
         A_notPark = (~A_park_buffered).astype(int)
-        sf.array2raster(paths["WINDON_OSM_PARK_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
-                     A_notPark)
+        sf.array2raster(paths["WINDON_OSM_PARK_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
+                        GeoRef["pixelHeight"],
+                        A_notPark)
         logger.info("files saved: " + paths["WINDON_OSM_PARK_BUFFER"])
-        ul.create_json(paths["WINDON_OSM_PARK_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
-                    ["OSM", "WINDON_OSM_PARK_BUFFER"])
+        ul.create_json(paths["WINDON_OSM_PARK_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"],
+                       paths,
+                       ["OSM", "WINDON_OSM_PARK_BUFFER"])
     # PV
     if os.path.isfile(paths["PV_OSM_PARK_BUFFER"]):
         logger.info('Skip')  # Skip generation if files are already there
@@ -1582,11 +1349,13 @@ def generate_buffered_osm_areas(paths, param):
         kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
         A_park_buffered = scipy.ndimage.maximum_filter(A_park, footprint=kernel, mode="constant", cval=0)
         A_notPark = (~A_park_buffered).astype(int)
-        sf.array2raster(paths["PV_OSM_PARK_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
-                     A_notPark)
+        sf.array2raster(paths["PV_OSM_PARK_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
+                        GeoRef["pixelHeight"],
+                        A_notPark)
         logger.info("files saved: " + paths["PV_OSM_PARK_BUFFER"])
-        ul.create_json(paths["PV_OSM_PARK_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
-                    ["OSM", "PV_OSM_PARK_BUFFER"])
+        ul.create_json(paths["PV_OSM_PARK_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"],
+                       paths,
+                       ["OSM", "PV_OSM_PARK_BUFFER"])
 
     # Recreational Areas
     if os.path.isfile(paths["OSM_REC_BUFFER"]):
@@ -1598,13 +1367,14 @@ def generate_buffered_osm_areas(paths, param):
         kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
         A_rec_buffered = scipy.ndimage.maximum_filter(A_rec, footprint=kernel, mode="constant", cval=0)
         A_notRecreation = (~A_rec_buffered).astype(int)
-        sf.array2raster(paths["OSM_REC_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
-                     A_notRecreation)
+        sf.array2raster(paths["OSM_REC_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
+                        GeoRef["pixelHeight"],
+                        A_notRecreation)
         logger.info("files saved: " + paths["OSM_REC_BUFFER"])
         ul.create_json(paths["OSM_REC_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
-                    ["OSM", "OSM_REC_BUFFER"])
+                       ["OSM", "OSM_REC_BUFFER"])
 
-    logger.debug("End")
+        logger.debug("End")
 
 
 def generate_settlements(paths, param):
@@ -1674,7 +1444,7 @@ def generate_settlements(paths, param):
 
 
 def generate_HydroLakes(paths, param):
-    # "fclass" ILIKE 'primary' OR "fclass" ILIKE 'secondary'
+
     logger.info("Start")
 
     if os.path.isfile(paths["HYDROLAKES"]):
@@ -1682,7 +1452,7 @@ def generate_HydroLakes(paths, param):
 
     else:
         # First we will open our raster image, to understand how we will want to rasterize our vector
-        raster_ds = gdal.Open(paths["LU"], gdal.GA_ReadOnly)
+        raster_ds = gdal.Open(paths["LAND"], gdal.GA_ReadOnly)
 
         # Fetch number of rows and columns
         ncol = raster_ds.RasterXSize
@@ -1769,14 +1539,14 @@ def generate_HydroLakes(paths, param):
 
 
 def generate_HydroRivers(paths, param):
-    # "fclass" ILIKE 'primary' OR "fclass" ILIKE 'secondary'
+
     logger.info("Start")
     if os.path.isfile(paths["HYDRORIVERS"]):
         logger.info('Skip')  # Skip generation if files are already there
 
     else:
          # First we will open our raster image, to understand how we will want to rasterize our vector
-        raster_ds = gdal.Open(paths["LU"], gdal.GA_ReadOnly)
+        raster_ds = gdal.Open(paths["LAND"], gdal.GA_ReadOnly)
 
         # Fetch number of rows and columns
         ncol = raster_ds.RasterXSize
@@ -1860,3 +1630,112 @@ def generate_HydroRivers(paths, param):
                     ["HYDRORIVERS", "HYDRORIVERS_BUFFER"])
 
     logger.debug("End")
+
+
+def generate_livestock(paths, param):
+    """
+    This function reads the global maps of each livestock density, resizes it, and creates a raster out of it for the desired scope.
+    The values are in number of animals per sq.km.
+
+    :param paths: Dictionary including the paths to the global livestock rasters *LS_global* and to the output path *LS*.
+    :type paths: dict
+    :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
+    :type param: dict
+
+    :return: The tif files for *LS* is saved in its respective path, along with its metadata in a JSON file.
+    :rtype: None
+    """
+    ul.timecheck("Start")
+    res_desired = param["res_desired"]
+    Crd_all = param["Crd_all"]
+    Ind = sf.ind_global(Crd_all, param["res_livestock"])[0]
+    GeoRef = param["GeoRef"]
+
+    A_area = hdf5storage.read("A_area", paths["AREA"])
+
+    for animal in param["Biomass"]["livestock"]["animal"]:
+        with rasterio.open(paths["LS_global"] + animal + "_2006.tif") as src:
+            A_LS = src.read(1, window=rasterio.windows.Window.from_slices(slice(Ind[0] - 1, Ind[2]),
+                                                                          slice(Ind[3] - 1, Ind[1])))
+        A_LS = np.flipud(A_LS)
+        A_LS = sf.recalc_livestock_resolution(A_LS, param["res_livestock"], param["res_desired"])
+        # print (np.size(A_LS))
+        A_LS[A_LS < 0] = float(0)
+        A_LS = np.multiply(A_LS, A_area) / (10 ** 6)
+        sf.array2raster(paths["LS"] + animal + ".tif", GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
+                        GeoRef["pixelHeight"], A_LS)
+        logger.info("files saved: " + paths["LS"] + animal + ".tif")
+        ul.create_json(paths["LS"] + animal + ".tif", param,
+                       ["region_name", "Crd_all", "res_livestock", "res_desired", "GeoRef"], paths, ["LS_global", "LS"])
+
+    ul.timecheck("End")
+
+
+# def generate_population(paths, param): #ToDo function Not needed
+#     """
+#     This function reads the global map of population density, resizes it, and creates a raster out of it for the desired scope.
+#     The values are in population per pixel.
+#
+#     :param paths: Dictionary including the paths to the global population raster *Pop_global* and to the output path *POP*.
+#     :type paths: dict
+#     :param param: Dictionary including the desired resolution, the coordinates of the bounding box of the spatial scope, and the georeference dictionary.
+#     :type param: dict
+#
+#     :return: The tif file for *POP* is saved in its respective path, along with its metadata in a JSON file.
+#     :rtype: None
+#     """
+#     ul.timecheck("Start")
+#     res_desired = param["res_desired"]
+#     Crd_all = param["Crd_all"]
+#     Ind = sf.ind_global(Crd_all, param["res_desired"])[0]
+#     GeoRef = param["GeoRef"]
+#     with rasterio.open(paths["Pop_global"]) as src:
+#         A_POP_part = src.read(1)  # map is only between latitudes -60 and 85
+#     A_POP = np.zeros((21600, 43200))
+#     A_POP[600:18000, :] = A_POP_part
+#     #A_POP = adjust_resolution(A_POP, param["res_population"], param["res_desired"], "sum")
+#     #A_POP = resizem(A_POP, 180 * 240, 360 * 240) / 4  # density is divided by 4
+#     A_POP = np.flipud(A_POP[Ind[0] - 1 : Ind[2], Ind[3] - 1 : Ind[1]])
+#     #if "WindOn" in param["technology"]:
+#     A_POP = sf.recalc_topo_resolution(A_POP, param["res_landuse"], param["res_desired"])
+#     sf.array2raster(paths["POP"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_POP)
+#     logger.info("files saved: " + paths["POP"])
+#     ul.create_json(paths["POP"], param, ["region_name", "Crd_all", "res_population", "res_desired", "GeoRef"], paths, ["Pop_global", "POP"])
+#     ul.timecheck("End")
+
+
+# def generate_buffered_population(paths, param): #ToDo Not needed anymore
+#     """
+#     This function reads the land use raster, identifies urban areas, and excludes pixels around them based on a
+#     user-defined buffer *buffer_pixel_amount*. It creates a masking raster of boolean values (0 or 1) for the scope.
+#     Zero means the pixel is excluded, one means it is suitable.
+#     The function is useful in case there is a policy to exclude renewable energy projects next to urban settlements.
+#
+#     :param paths: Dictionary including the path to the land use raster for the scope, and to the output path BUFFER.
+#     :type paths: dict
+#     :param param: Dictionary including the user-defined buffer (buffer_pixel_amount), the urban type within the land use map (type_urban), and the georeference dictionary.
+#     :type param: dict
+#
+#     :return: The tif file for BUFFER is saved in its respective path, along with its metadata in a JSON file.
+#     :rtype: None
+#     """
+#     if os.path.isfile(paths["POP_BUFFER"]):
+#         logger.info('Skip')    # Skip generation if files are already there
+#
+#     else:
+#         logger.info("Start")
+#         buffer_pixel_amount = param["WindOn"]["mask"]["urban_buffer_pixel_amount"]
+#         GeoRef = param["GeoRef"]
+#         with rasterio.open(paths["LU"]) as src:
+#             A_lu = src.read(1)
+#         A_lu = np.flipud(A_lu).astype(int)
+#         A_lu = A_lu == 190 # Land use type for Urban and built-up
+#         kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
+#         kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
+#         A_lu_buffered = scipy.ndimage.maximum_filter(A_lu, footprint=kernel, mode="constant", cval=0)
+#         A_notPopulated = (~A_lu_buffered).astype(int)
+#
+#         sf.array2raster(paths["POP_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notPopulated)
+#         logger.info("files saved: " + paths["POP_BUFFER"])
+#         ul.create_json(paths["POP_BUFFER"], param, ["region_name", "landuse", "WindOn", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "POP_BUFFER"])
+#         logger.debug('End')

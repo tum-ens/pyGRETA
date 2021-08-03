@@ -70,7 +70,7 @@ def generate_maps_for_scope(paths, param, multiprocessing):
         processes.append(mp.Process(target=generate_settlements, args=(paths, param)))
         processes.append(mp.Process(target=generate_HydroLakes, args=(paths, param)))
         processes.append(mp.Process(target=generate_HydroRivers, args=(paths, param)))
-        processes.append(mp.Process(target=generate_livestock, args=(paths, param)))
+        # processes.append(mp.Process(target=generate_livestock, args=(paths, param)))
 
         logger.debug('Starting processes')
         for p in processes:
@@ -97,7 +97,7 @@ def generate_maps_for_scope(paths, param, multiprocessing):
         generate_settlements(paths, param)
         generate_HydroLakes(paths, param)
         generate_HydroRivers(paths, param)
-        generate_livestock(paths,param)
+        # generate_livestock(paths,param)
 
 
 def generate_land(paths, param):
@@ -691,7 +691,6 @@ def generate_landuse(paths, param): #ToDo remove the res_landuse
 
     else:
         logger.info("Start")
-
         Crd_all = param["Crd_all"]
         Ind = sf.ind_global(Crd_all, param["res_landuse"])[0]
         GeoRef = param["GeoRef"]
@@ -704,65 +703,42 @@ def generate_landuse(paths, param): #ToDo remove the res_landuse
         sf.array2raster(paths["LU"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_lu)
         logger.info("files saved: " + paths["LU"])
         ul.create_json(paths["LU"], param, ["region_name", "Crd_all", "res_landuse", "res_desired", "GeoRef"], paths, ["LU_global", "LU"])
-        logger.debug("End")
 
     # Buffer map for snow
+    logger.info("Start-Buffer")
     if os.path.isfile(paths["SNOW_BUFFER"]):
-        logger.info('Skip')    # Skip generation if files are already there
-
+        logger.info('Skip-Snow')    # Skip generation if files are already there
     else:
-        logger.info("Start")
-        buffer_pixel_amount = param["landuse"]["snow_buffer"]
-        GeoRef = param["GeoRef"]
+        logger.info("Start-Snow")
         A_snow = A_lu == 220 # Land use type for snow
-        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
-        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_snow_buffered = scipy.ndimage.maximum_filter(A_snow, footprint=kernel, mode="constant", cval=0)
-        A_notSnow = (~A_snow_buffered).astype(int)
-
-        sf.array2raster(paths["SNOW_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notSnow)
+        sf.create_buffered_raster(A_snow, param["buffer"]["snow"], param["GeoRef"],
+                                  paths["SNOW_BUFFER"])
         logger.info("files saved: " + paths["SNOW_BUFFER"])
         ul.create_json(paths["SNOW_BUFFER"], param, ["region_name", "landuse", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "SNOW_BUFFER"])
-        logger.debug("End")
 
     # Buffer map for wetlands
     if os.path.isfile(paths["WETLAND_BUFFER"]):
-        logger.info('Skip')  # Skip generation if files are already there
-
+        logger.info('Skip-Wetland')  # Skip generation if files are already there
     else:
-        logger.info("Start")
-        buffer_pixel_amount = param["landuse"]["wetland_buffer"]
-        GeoRef = param["GeoRef"]
+        logger.info("Start-Wetland")
         A_wetland = ((A_lu == 160) | (A_lu == 170) | (A_lu == 180))  # Land use type for wetland
-        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
-        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_wetland_buffered = scipy.ndimage.maximum_filter(A_wetland, footprint=kernel, mode="constant", cval=0)
-        A_notWetland = (~A_wetland_buffered).astype(int)
-
-        sf.array2raster(paths["WETLAND_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notWetland)
+        sf.create_buffered_raster(A_wetland, param["buffer"]["wetland"], param["GeoRef"],
+                                  paths["WETLAND_BUFFER"])
         logger.info("files saved: " + paths["WETLAND_BUFFER"])
         ul.create_json(paths["WETLAND_BUFFER"], param, ["region_name", "landuse", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "WETLAND_BUFFER"])
-        logger.debug("End")
 
     # Buffer map for water
     if os.path.isfile(paths["WATER_BUFFER"]):
-        logger.info('Skip')    # Skip generation if files are already there
-
+        logger.info('Skip-Water')    # Skip generation if files are already there
     else:
-        logger.info("Start")
-        buffer_pixel_amount = param["landuse"]["water_buffer"]
-        GeoRef = param["GeoRef"]
-
+        logger.info("Start-Water")
         A_water = A_lu == 210 # Land use type for water
-        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
-        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_water_buffered = scipy.ndimage.maximum_filter(A_water, footprint=kernel, mode="constant", cval=0)
-        A_notWater = (~A_water_buffered).astype(int)
-
-        sf.array2raster(paths["WATER_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notWater)
+        sf.create_buffered_raster(A_water, param["buffer"]["water"], param["GeoRef"],
+                                  paths["WATER_BUFFER"])
         logger.info("files saved: " + paths["WATER_BUFFER"])
         ul.create_json(paths["WATER_BUFFER"], param, ["region_name", "landuse", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "WATER_BUFFER"])
-        logger.debug("End")
+
+    logger.debug("End")
 
 
 def generate_protected_areas(paths, param):
@@ -852,25 +828,18 @@ def generate_protected_areas(paths, param):
         logger.info("files saved: " + paths["PA"])
 
     # Buffer maps for protected areas
-    GeoRef = param["GeoRef"]
+    logger.info("Start-Buffer")
     with rasterio.open(paths["PA"]) as src:
         A_pa = src.read(1)
     A_pa = np.flipud(A_pa).astype(int)
     A_pa = (A_pa > 0) & (A_pa < 6) #All protected areas pixels
 
     if os.path.isfile(paths["PV_PA_BUFFER"]):
-            logger.info('Skip-PV')  # Skip generation if files are already there
-
+        logger.info('Skip-PV')  # Skip generation if files are already there
     else:
         logger.info("Start-PV")
-        buffer_pixel_amount = param["PV"]["mask"]["pa_buffer_pixel_amount"]
-        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
-        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_pa_buffered = scipy.ndimage.maximum_filter(A_pa, footprint=kernel, mode="constant", cval=0)
-        A_notProtected = (~A_pa_buffered).astype(int)
-
-        sf.array2raster(paths["PV_PA_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
-                        A_notProtected)
+        sf.create_buffered_raster(A_pa, param["buffer"]["protected_areas_pv"], param["GeoRef"],
+                                  paths["PV_PA_BUFFER"])
         logger.info("files saved: " + paths["PV_PA_BUFFER"])
         ul.create_json(paths["PV_PA_BUFFER"], param,
                        ["region_name", "protected_areas", "PV", "Crd_all", "res_desired", "GeoRef"], paths,
@@ -879,17 +848,10 @@ def generate_protected_areas(paths, param):
     # if "WindOn" in param["technology"]:
     if os.path.isfile(paths["WINDON_PA_BUFFER"]):
         logger.info('Skip-WindOn')  # Skip generation if files are already there
-
     else:
         logger.info("Start-WindOn")
-        buffer_pixel_amount = param["WindOn"]["mask"]["pa_buffer_pixel_amount"]
-        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
-        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_pa_buffered = scipy.ndimage.maximum_filter(A_pa, footprint=kernel, mode="constant", cval=0)
-        A_notProtected = (~A_pa_buffered).astype(int)
-
-        sf.array2raster(paths["WINDON_PA_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
-                        A_notProtected)
+        sf.create_buffered_raster(A_pa, param["buffer"]["protected_areas_windon"], param["GeoRef"],
+                                  paths["WINDON_PA_BUFFER"])
         logger.info("files saved: " + paths["WINDON_PA_BUFFER"])
         ul.create_json(paths["WINDON_PA_BUFFER"], param,
                        ["region_name", "protected_areas", "WindOn", "Crd_all", "res_desired", "GeoRef"], paths,
@@ -906,7 +868,6 @@ def generate_airports(paths,param):
     else:
         logger.info("Start")
         Crd_all = param["Crd_all"]
-        GeoRef = param["GeoRef"]
         res_desired = param["res_desired"]
         countries_shp = param["regions_land"]
         nCountries = param["nRegions_land"]
@@ -949,16 +910,10 @@ def generate_airports(paths,param):
 
             A_land[tuple(ind)]=100
             airport_raster = A_land == 100
-
-            buffer_pixel_amount = param["WindOn"]["mask"]["airport_buffer_pixel_amount"]
-            kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
-            kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-            airport_raster = scipy.ndimage.maximum_filter(airport_raster, footprint=kernel, mode="constant", cval=0)
-            A_notAirport = (~airport_raster).astype(int)
-
-            sf.array2raster(paths["AIRPORTS"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notAirport)
+            sf.create_buffered_raster(airport_raster, param["buffer"]["airport_windon"], param["GeoRef"],
+                                      paths["AIRPORTS"])
             logger.info("files saved: " + paths["AIRPORTS"])
-            ul.create_json(paths["AIRPORTS"], param, ["region_name", "landuse", "Biomass", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "AIRPORTS"])
+            ul.create_json(paths["AIRPORTS"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["LAND", "AIRPORTS"])
 
         logger.debug("End")
 
@@ -981,7 +936,7 @@ def generate_country_boarders(paths,param):
 
         A_countries_buffered = np.zeros([m_high, n_high]).astype(int)
 
-        buffer_pixel_amount = param["landuse"]["boarder_buffer_pixel_amount"]
+        buffer_pixel_amount = param["buffer"]["boarder"]
         kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
         kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
 
@@ -992,11 +947,8 @@ def generate_country_boarders(paths,param):
                 A_countries_buffered = A_countries_buffered + A_country_buffered
             except:
                 pass
-        # print (np.sum(A_countries_buffered))
         A_countries_buffered = A_countries_buffered > 0
-        # print (np.sum(A_countries_buffered))
         A_notBoarder = (A_countries_buffered).astype(int)
-
 
         sf.array2raster(paths["BOARDERS"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notBoarder)
         logger.info("files saved: " + paths["BOARDERS"])
@@ -1249,109 +1201,80 @@ def generate_osm_areas(paths, param):
         logger.info("files saved: " + paths["OSM_AREAS"])
 
     # Create Buffer osm maps
-    GeoRef = param["GeoRef"]
+    logger.info("Start-Buffer")
     with rasterio.open(paths["OSM_AREAS"]) as src:
         A_osma = src.read(1)
     A_osma = np.flipud(A_osma).astype(int)
 
     # Commercial Areas
     if os.path.isfile(paths["OSM_COM_BUFFER"]):
-        logger.info('Skip')  # Skip generation if files are already there
+        logger.info('Skip-Commercial')  # Skip generation if files are already there
     else:
+        logger.info('Start-Commercial')
         A_com = A_osma == 1
-        buffer_pixel_amount = 2
-        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
-        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_com_buffered = scipy.ndimage.maximum_filter(A_com, footprint=kernel, mode="constant", cval=0)
-        A_notCommercial = (~A_com_buffered).astype(int)
-        sf.array2raster(paths["OSM_COM_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
-                        GeoRef["pixelHeight"],
-                        A_notCommercial)
+        sf.create_buffered_raster(A_com, param["buffer"]["commercial_windon"], param["GeoRef"],
+                                  paths["OSM_COM_BUFFER"])
         logger.info("files saved: " + paths["OSM_COM_BUFFER"])
         ul.create_json(paths["OSM_COM_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
                        ["OSM", "OSM_COM_BUFFER"])
 
     # Industrical Areas
     if os.path.isfile(paths["OSM_IND_BUFFER"]):
-        logger.info('Skip')  # Skip generation if files are already there
+        logger.info('Skip-Industrial')  # Skip generation if files are already there
     else:
+        logger.info('Start-Industrial')
         A_ind = A_osma == 2
-        buffer_pixel_amount = 1
-        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
-        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_ind_buffered = scipy.ndimage.maximum_filter(A_ind, footprint=kernel, mode="constant", cval=0)
-        A_notIndustrial = (~A_ind_buffered).astype(int)
-        sf.array2raster(paths["OSM_IND_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
-                        GeoRef["pixelHeight"],
-                        A_notIndustrial)
+        sf.create_buffered_raster(A_ind, param["buffer"]["industrial_windon"], param["GeoRef"],
+                                  paths["OSM_IND_BUFFER"])
         logger.info("files saved: " + paths["OSM_IND_BUFFER"])
         ul.create_json(paths["OSM_IND_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
                        ["OSM", "OSM_IND_BUFFER"])
 
     # Mining Areas
     if os.path.isfile(paths["OSM_MINE_BUFFER"]):
-        logger.info('Skip')  # Skip generation if files are already there
+        logger.info('Skip-Mining')  # Skip generation if files are already there
     else:
+        logger.info('Start-Mining')
         A_min = A_osma == 3
-        buffer_pixel_amount = 1
-        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
-        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_min_buffered = scipy.ndimage.maximum_filter(A_min, footprint=kernel, mode="constant", cval=0)
-        A_notMine = (~A_min_buffered).astype(int)
-        sf.array2raster(paths["OSM_MINE_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
-                        GeoRef["pixelHeight"],
-                        A_notMine)
+        sf.create_buffered_raster(A_min, param["buffer"]["mining"], param["GeoRef"],
+                                  paths["OSM_MINE_BUFFER"])
         logger.info("files saved: " + paths["OSM_MINE_BUFFER"])
         ul.create_json(paths["OSM_MINE_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
                        ["OSM", "OSM_MINE_BUFFER"])
 
     # Military Areas
     if os.path.isfile(paths["OSM_MIL_BUFFER"]):
-        logger.info('Skip')  # Skip generation if files are already there
+        logger.info('Skip-Military')  # Skip generation if files are already there
     else:
+        logger.info('Start-Military')
         A_mil = A_osma == 4
-        buffer_pixel_amount = 2
-        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
-        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_mil_buffered = scipy.ndimage.maximum_filter(A_mil, footprint=kernel, mode="constant", cval=0)
-        A_notMilitary = (~A_mil_buffered).astype(int)
-        sf.array2raster(paths["OSM_MIL_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
-                        GeoRef["pixelHeight"],
-                        A_notMilitary)
+        sf.create_buffered_raster(A_mil, param["buffer"]["military_windon"], param["GeoRef"],
+                                  paths["OSM_MIL_BUFFER"])
         logger.info("files saved: " + paths["OSM_MIL_BUFFER"])
         ul.create_json(paths["OSM_MIL_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
                        ["OSM", "OSM_MIL_BUFFER"])
 
     # Parks
+    logger.info('Start-Park')
     A_park = A_osma == 5
     # Wind onshore
     if os.path.isfile(paths["WINDON_OSM_PARK_BUFFER"]):
-        logger.info('Skip')  # Skip generation if files are already there
+        logger.info('Skip-WindOn')  # Skip generation if files are already there
     else:
-        buffer_pixel_amount = 2
-        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
-        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_park_buffered = scipy.ndimage.maximum_filter(A_park, footprint=kernel, mode="constant", cval=0)
-        A_notPark = (~A_park_buffered).astype(int)
-        sf.array2raster(paths["WINDON_OSM_PARK_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
-                        GeoRef["pixelHeight"],
-                        A_notPark)
+        logger.info('Start-WindOn')
+        sf.create_buffered_raster(A_park, param["buffer"]["park_windon"], param["GeoRef"],
+                                  paths["WINDON_OSM_PARK_BUFFER"])
         logger.info("files saved: " + paths["WINDON_OSM_PARK_BUFFER"])
         ul.create_json(paths["WINDON_OSM_PARK_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"],
                        paths,
                        ["OSM", "WINDON_OSM_PARK_BUFFER"])
     # PV
     if os.path.isfile(paths["PV_OSM_PARK_BUFFER"]):
-        logger.info('Skip')  # Skip generation if files are already there
+        logger.info('Skip-PV')  # Skip generation if files are already there
     else:
-        buffer_pixel_amount = 1
-        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
-        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_park_buffered = scipy.ndimage.maximum_filter(A_park, footprint=kernel, mode="constant", cval=0)
-        A_notPark = (~A_park_buffered).astype(int)
-        sf.array2raster(paths["PV_OSM_PARK_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
-                        GeoRef["pixelHeight"],
-                        A_notPark)
+        logger.info('Start-PV')
+        sf.create_buffered_raster(A_park, param["buffer"]["park_pv"], param["GeoRef"],
+                                  paths["PV_OSM_PARK_BUFFER"])
         logger.info("files saved: " + paths["PV_OSM_PARK_BUFFER"])
         ul.create_json(paths["PV_OSM_PARK_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"],
                        paths,
@@ -1359,22 +1282,17 @@ def generate_osm_areas(paths, param):
 
     # Recreational Areas
     if os.path.isfile(paths["OSM_REC_BUFFER"]):
-        logger.info('Skip')  # Skip generation if files are already there
+        logger.info('Skip-Recreation')  # Skip generation if files are already there
     else:
+        logger.info('Start-Recreation')
         A_rec = A_osma == 6
-        buffer_pixel_amount = 1
-        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
-        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_rec_buffered = scipy.ndimage.maximum_filter(A_rec, footprint=kernel, mode="constant", cval=0)
-        A_notRecreation = (~A_rec_buffered).astype(int)
-        sf.array2raster(paths["OSM_REC_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
-                        GeoRef["pixelHeight"],
-                        A_notRecreation)
+        sf.create_buffered_raster(A_rec, param["buffer"]["recreation_windon"], param["GeoRef"],
+                                  paths["OSM_REC_BUFFER"])
         logger.info("files saved: " + paths["OSM_REC_BUFFER"])
         ul.create_json(paths["OSM_REC_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
                        ["OSM", "OSM_REC_BUFFER"])
 
-        logger.debug("End")
+    logger.debug("End")
 
 
 def generate_settlements(paths, param):
@@ -1408,33 +1326,24 @@ def generate_settlements(paths, param):
                     ["WSF_global", "WSF"])
 
     # PV buffer
+    logger.info('Start-Buffer')
     if os.path.isfile(paths["PV_WSF_BUFFER"]):
-        logger.info('Skip')  # Skip generation if files are already there
+        logger.info('Skip-PV')  # Skip generation if files are already there
     else:
-        buffer_pixel_amount = 1
-        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
-        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_pv_wsf = scipy.ndimage.maximum_filter(A_wsf, footprint=kernel, mode="constant", cval=0)
-        A_NotSettlement = (~A_pv_wsf).astype(int)
-
-        sf.array2raster(paths["PV_WSF_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
-                     A_NotSettlement)
+        logger.info('Start-PV')
+        sf.create_buffered_raster(A_wsf, param["buffer"]["settlement_pv"], param["GeoRef"],
+                                  paths["PV_WSF_BUFFER"])
         logger.info("files saved: " + paths["PV_WSF_BUFFER"])
         ul.create_json(paths["PV_WSF_BUFFER"], param, ["region_name", "Crd_all", "res_settlements", "res_desired", "GeoRef"],
                     paths, ["WSF_global", "PV_WSF_BUFFER"])
 
     # Onshore wind buffer
     if os.path.isfile(paths["WINDON_WSF_BUFFER"]):
-        logger.info('Skip')  # Skip generation if files are already there
+        logger.info('Skip-WindOn')  # Skip generation if files are already there
     else:
-        buffer_pixel_amount = 4
-        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
-        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_wind_wsf = scipy.ndimage.maximum_filter(A_wsf, footprint=kernel, mode="constant", cval=0)
-        A_NotSettlement = (~A_wind_wsf).astype(int)
-
-        sf.array2raster(paths["WINDON_WSF_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
-                     A_NotSettlement)
+        logger.info('Start-WindOn')
+        sf.create_buffered_raster(A_wsf, param["buffer"]["settlement_windon"], param["GeoRef"],
+                                  paths["WINDON_WSF_BUFFER"])
         logger.info("files saved: " + paths["WINDON_WSF_BUFFER"])
         ul.create_json(paths["WINDON_WSF_BUFFER"], param,
                     ["region_name", "Crd_all", "res_settlements", "res_desired", "GeoRef"], paths,
@@ -1515,24 +1424,17 @@ def generate_HydroLakes(paths, param):
 
     # Create Buffer
     if os.path.isfile(paths["HYDROLAKES_BUFFER"]):
-        logger.info('Skip')  # Skip generation if files are already there
+        logger.info('Skip-Buffer')  # Skip generation if files are already there
     else:
-        GeoRef = param["GeoRef"]
-
+        logger.info('Start-Buffer')
         with rasterio.open(paths["HYDROLAKES"]) as src:
             A_lake = src.read(1).astype(bool)
             A_lake = np.flipud(A_lake)
-        buffer_pixel_amount = 1
-        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
-        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_lake = scipy.ndimage.maximum_filter(A_lake, footprint=kernel, mode="constant", cval=0)
-        A_NotLake = (~A_lake).astype(int)
-
-        sf.array2raster(paths["HYDROLAKES_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
-                     A_NotLake)
+        sf.create_buffered_raster(A_lake, param["buffer"]["hydrolakes"], param["GeoRef"],
+                                  paths["HYDROLAKES_BUFFER"])
         logger.info("files saved: " + paths["HYDROLAKES_BUFFER"])
         ul.create_json(paths["HYDROLAKES_BUFFER"], param,
-                    ["region_name", "Crd_all", "res_settlements", "res_desired", "GeoRef"], paths,
+                    ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
                     ["HYDROLAKES", "HYDROLAKES_BUFFER"])
 
     logger.debug("End")
@@ -1609,24 +1511,16 @@ def generate_HydroRivers(paths, param):
 
     # Create Buffer
     if os.path.isfile(paths["HYDRORIVERS_BUFFER"]):
-        logger.info('Skip')  # Skip generation if files are already there
+        logger.info('Skip-Buffer')  # Skip generation if files are already there
     else:
-        GeoRef = param["GeoRef"]
-
+        logger.info('Start-Buffer')
         with rasterio.open(paths["HYDRORIVERS"]) as src:
             A_Riv = src.read(1).astype(bool)
             A_Riv = np.flipud(A_Riv)
-        buffer_pixel_amount = 1
-        kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
-        kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-        A_Riv = scipy.ndimage.maximum_filter(A_Riv, footprint=kernel, mode="constant", cval=0)
-        A_NotRiver = (~A_Riv).astype(int)
-
-        sf.array2raster(paths["HYDRORIVERS_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
-                     A_NotRiver)
+        sf.create_buffered_raster(A_Riv,param["buffer"]["hydrorivers_pv"],param["GeoRef"],paths["HYDRORIVERS_BUFFER"])
         logger.info("files saved: " + paths["HYDRORIVERS_BUFFER"])
         ul.create_json(paths["HYDRORIVERS_BUFFER"], param,
-                    ["region_name", "Crd_all", "res_settlements", "res_desired", "GeoRef"], paths,
+                    ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
                     ["HYDRORIVERS", "HYDRORIVERS_BUFFER"])
 
     logger.debug("End")

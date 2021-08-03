@@ -5,6 +5,7 @@ import rasterio.mask
 import numpy as np
 import math
 import rasterio
+import scipy.ndimage
 
 
 def define_spatial_scope(scope_shp):
@@ -414,7 +415,8 @@ def recalc_lu_resolution(array, res_data, res_desired, lua):
                 array1[int(i*5/3)+3,int(j*5/3)+3] = array1[int(i*5/3)+4,int(j*5/3)+4]
                 
     return array1
-    
+
+
 def recalc_topo_resolution(array, res_data, res_desired):
     
     array1 = np.zeros([int(array.shape[0]*res_data[0]/res_desired[0]),int(array.shape[1]*res_data[1]/res_desired[1])])
@@ -527,3 +529,12 @@ def recalc_livestock_resolution(array, res_data, res_desired):
             array1[int(i*10/3)+7:int(i*10/3)+10,int(j*10/3)+7:int(j*10/3)+10] = array[i+2,j+2]
     
     return array1
+
+
+def create_buffered_raster(array, buffer_pixel_amount, GeoRef, Outraster):
+    kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
+    kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
+    A_array = scipy.ndimage.maximum_filter(array, footprint=kernel, mode="constant", cval=0)
+    A_NotArray = (~A_array).astype(int)
+    array2raster(Outraster, GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
+                    A_NotArray)

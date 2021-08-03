@@ -22,6 +22,7 @@ def configuration(config_file):
     param = landuse_parameters(param)
     param = protected_areas_parameters(param)
     param = osm_areas(param)
+    param = buffers(param)
     param = pv_parameters(param)
     param = csp_parameters(param)
     param = onshore_wind_parameters(param)
@@ -64,12 +65,12 @@ def general_settings():
     paths = {}
     fs = os.path.sep
     current_folder = os.path.dirname(os.path.abspath(__file__))
-    root = str(Path(current_folder).parent.parent.parent)
+    root = str(Path(current_folder).parent.parent)
     # For use at TUM ENS
     if root[-1] != fs:
-        root = root + fs + "Database_KS" + fs
+        root = root + fs + "pyGRETA" + fs + "Database_KS" + fs
     else:
-        root = root + "Database_KS" + fs
+        root = root + "pyGRETA" + fs + "Database_KS" + fs
 
     return paths, param
 
@@ -364,12 +365,6 @@ def landuse_parameters(param):
     landuse = {
         "type": np.array([0, 10, 11, 12, 20, 30, 40, 50, 60, 61, 62, 70, 71, 72, 80, 81, 82, 90, 100, 110, 120,
                         121, 122, 130, 140, 150, 151, 152, 153, 160, 170, 180, 190, 200, 201, 202, 210, 220]),
-
-
-        "water_buffer": 1,
-        "wetland_buffer": 1,
-        "snow_buffer": 4,
-        "boarder_buffer_pixel_amount": 2,
         "Ross_coeff": np.array(
             [0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208,
              0.0208, 0.0208, 0.0208, 0.0208]
@@ -439,6 +434,37 @@ def osm_areas(param):
     param["osm_areas"] = osm_areas
     return param
 
+def buffers(param):
+
+    buffer = {
+        "snow": 4,
+        "water": 1,
+        "wetland": 1,
+
+        "protected_areas_pv": 1,
+        "protected_areas_windon": 2,
+
+        "airport_windon": 16,
+        "boarder": 2,
+
+        "commercial_windon" : 2,
+        "industrial_windon" : 1,
+        "mining" : 1,
+        "military_windon" : 2,
+        "park_pv" : 1,
+        "park_windon" : 2,
+        "recreation_windon" : 1,
+
+        "settlement_pv": 1,
+        "settlement_windon" : 4,
+
+        "hydrolakes" : 1,
+        "hydrorivers_pv" : 1,
+    }
+
+    param["buffer"] = buffer
+    return param
+
 def pv_parameters(param):
     """
     This function sets the parameters for photovoltaics in the dictionary *pv* inside param:
@@ -494,7 +520,6 @@ def pv_parameters(param):
         "slope": 10,
         "lu_suitability": np.array([0,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,1,1,1,0,0,1,1,1,1,0,0,0,0,1,1,1,0,0]),
         "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
-        "pa_buffer_pixel_amount": 1,
     }
     GCR = {"shadefree_period": 6, "day_north": 79, "day_south": 263}
     pv["weight"] = {
@@ -623,9 +648,7 @@ def onshore_wind_parameters(param):
         "slope": 17,
         "lu_suitability": np.array([0,0,0,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,0,0,0,0,1,1,1,0,0]),
         "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
-        "urban_buffer_pixel_amount": 4,
-        "pa_buffer_pixel_amount": 2,
-        "airport_buffer_pixel_amount": 16
+
     }
     windon["weight"] = {
         "lu_availability": np.array(

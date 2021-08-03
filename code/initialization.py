@@ -4,7 +4,7 @@ from lib.log import logger
 import geopandas as gpd
 import numpy as np
 import shapely
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 
 def initialization(config_file):
@@ -71,9 +71,9 @@ def test(param, paths):
     if "WindOff" in param["technology"]:
         countries = scope_shp['GID_0'].drop_duplicates()
         together = scope_shp.append(eez_shp[eez_shp['ISO_Ter1'].isin(countries)], sort=False)
-    together.plot()
+    # together.plot()
 
-    plt.show()
+    # plt.show()
 
 def read_shapefile_regions(param, regions_shp):
     logger.info("Start")

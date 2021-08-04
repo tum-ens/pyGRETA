@@ -70,7 +70,6 @@ def generate_maps_for_scope(paths, param, multiprocessing):
         processes.append(mp.Process(target=generate_settlements, args=(paths, param)))
         processes.append(mp.Process(target=generate_HydroLakes, args=(paths, param)))
         processes.append(mp.Process(target=generate_HydroRivers, args=(paths, param)))
-        # processes.append(mp.Process(target=generate_livestock, args=(paths, param)))
 
         logger.debug('Starting processes')
         for p in processes:
@@ -97,7 +96,6 @@ def generate_maps_for_scope(paths, param, multiprocessing):
         generate_settlements(paths, param)
         generate_HydroLakes(paths, param)
         generate_HydroRivers(paths, param)
-        # generate_livestock(paths,param)
 
 
 def generate_land(paths, param):
@@ -554,7 +552,6 @@ def generate_topography(paths, param):
 
         A_TOPO = np.flipud(Topo[Ind[0] - 1 : Ind[2], Ind[3] - 1 : Ind[1]])
         A_TOPO = sf.adjust_resolution(A_TOPO, param["res_topography"], param["res_desired"], "mean")
-        #if "WindOn" in param["technology"]:
         A_TOPO = sf.recalc_topo_resolution(A_TOPO, param["res_topography"], param["res_desired"])
         sf.array2raster(paths["TOPO"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_TOPO)
         logger.info("files saved: " + paths["TOPO"])
@@ -694,22 +691,18 @@ def generate_landuse(paths, param): #ToDo remove the res_landuse
         Crd_all = param["Crd_all"]
         Ind = sf.ind_global(Crd_all, param["res_landuse"])[0]
         GeoRef = param["GeoRef"]
-        lu_a = param["WindOn"]["weight"]["lu_availability"]
         with rasterio.open(paths["LU_global"]) as src:
             A_lu = src.read(1, window=rasterio.windows.Window.from_slices(slice(Ind[0] - 1, Ind[2]), slice(Ind[3] - 1, Ind[1])))
             A_lu = np.flipud(A_lu).astype(int)
-        # A_lu = sf.adjust_resolution(A_lu, param["res_landuse"], param["res_desired"], "category")
-        # w = sf.recalc_lu_resolution(w, param["res_landuse"], param["res_desired"], lu_a)
         sf.array2raster(paths["LU"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_lu)
         logger.info("files saved: " + paths["LU"])
         ul.create_json(paths["LU"], param, ["region_name", "Crd_all", "res_landuse", "res_desired", "GeoRef"], paths, ["LU_global", "LU"])
 
     # Buffer map for snow
-    logger.info("Start-Buffer")
     if os.path.isfile(paths["SNOW_BUFFER"]):
-        logger.info('Skip-Snow')    # Skip generation if files are already there
+        logger.info('Skip-SnowBuffer')    # Skip generation if files are already there
     else:
-        logger.info("Start-Snow")
+        logger.info("Start-SnowBuffer")
         A_snow = A_lu == 220 # Land use type for snow
         sf.create_buffered_raster(A_snow, param["buffer"]["snow"], param["GeoRef"],
                                   paths["SNOW_BUFFER"])
@@ -718,9 +711,9 @@ def generate_landuse(paths, param): #ToDo remove the res_landuse
 
     # Buffer map for wetlands
     if os.path.isfile(paths["WETLAND_BUFFER"]):
-        logger.info('Skip-Wetland')  # Skip generation if files are already there
+        logger.info('Skip-WetlandBuffer')  # Skip generation if files are already there
     else:
-        logger.info("Start-Wetland")
+        logger.info("Start-WetlandBuffer")
         A_wetland = ((A_lu == 160) | (A_lu == 170) | (A_lu == 180))  # Land use type for wetland
         sf.create_buffered_raster(A_wetland, param["buffer"]["wetland"], param["GeoRef"],
                                   paths["WETLAND_BUFFER"])
@@ -729,9 +722,9 @@ def generate_landuse(paths, param): #ToDo remove the res_landuse
 
     # Buffer map for water
     if os.path.isfile(paths["WATER_BUFFER"]):
-        logger.info('Skip-Water')    # Skip generation if files are already there
+        logger.info('Skip-WaterBuffer')    # Skip generation if files are already there
     else:
-        logger.info("Start-Water")
+        logger.info("Start-WaterBuffer")
         A_water = A_lu == 210 # Land use type for water
         sf.create_buffered_raster(A_water, param["buffer"]["water"], param["GeoRef"],
                                   paths["WATER_BUFFER"])
@@ -754,85 +747,73 @@ def generate_protected_areas(paths, param):
     :return: The tif file for PA is saved in its respective path, along with its metadata in a JSON file.
     :rtype: None
     """
+
     if os.path.isfile(paths["PA"]):
         logger.info('Skip')    # Skip generation if files are already there
-
     else:
         logger.info("Start")
-
         protected_areas = param["protected_areas"]
         # set up protected areas dictionary
         protection_type = dict(zip(protected_areas["IUCN_Category"], protected_areas["type"]))
-
-        # First we will open our raster image, to understand how we will want to rasterize our vector
-        raster_ds = gdal.Open(paths["LAND"], gdal.GA_ReadOnly)    # ToDo: Adopt data from previous function
-
-        # Fetch number of rows and columns
-        ncol = raster_ds.RasterXSize
-        nrow = raster_ds.RasterYSize
-
-        # Fetch projection and extent
-        proj = raster_ds.GetProjectionRef()
-        ext = raster_ds.GetGeoTransform()
-
-        raster_ds = None
-        shp_path = paths["Protected"]
-        # Open the dataset from the file
-        dataset = ogr.Open(shp_path, 1)
-        layer = dataset.GetLayerByIndex(0)
-
-        # Add a new field
-        if not ul.field_exists("Raster", shp_path):
-            new_field = ogr.FieldDefn("Raster", ogr.OFTInteger)
-            layer.CreateField(new_field)
-
-            for feat in layer:
-                pt = feat.GetField("IUCN_CAT")
-                feat.SetField("Raster", int(protection_type[pt]))
-                layer.SetFeature(feat)
-                feat = None
-
-        # Create a second (modified) layer
-        outdriver = ogr.GetDriverByName("MEMORY")
-        source = outdriver.CreateDataSource("memData")
-
-        # Create the raster dataset
-        memory_driver = gdal.GetDriverByName("GTiff")
-        out_raster_ds = memory_driver.Create(paths["PA"], ncol, nrow, 1, gdal.GDT_Byte)
-
-        # Set the ROI image's projection and extent to our input raster's projection and extent
-        out_raster_ds.SetProjection(proj)
-        out_raster_ds.SetGeoTransform(ext)
-
-        # Fill our output band with the 0 blank, no class label, value
-        b = out_raster_ds.GetRasterBand(1)
-        b.Fill(0)
-
-        # Rasterize the shapefile layer to our new dataset
-        gdal.RasterizeLayer(
-            out_raster_ds,  # output to our new dataset
-            [1],  # output to our new dataset's first band
-            layer,  # rasterize this layer
-            None,
-            None,  # don't worry about transformations ul.since we're in same projection
-            [0],  # burn value 0
-            [
-                "ALL_TOUCHED=FALSE",  # rasterize all pixels touched by polygons
-                "ATTRIBUTE=Raster",
-            ],  # put raster values according to the 'Raster' field values
-        )
+        sf.shape2raster(paths["Protected"],paths["PA"],"IUCN_CAT",protection_type,paths["LAND"])
+        logger.info("files saved: " + paths["PA"])
         ul.create_json(paths["PA"], param, ["region_name", "protected_areas", "Crd_all", "res_desired", "GeoRef"], paths, ["Protected", "PA"])
 
-        # Close dataset
-        out_raster_ds = None
-        logger.info("files saved: " + paths["PA"])
+    # if os.path.isfile(paths["PA"]+"0.tif"):
+    #     logger.info('Skip-PA0')    # Skip generation if files are already there
+    # else:
+    #     logger.info("Start-PA0")
+    #     protected_areas = param["protected_areas"]
+    #     # set up protected areas dictionary
+    #     protection_type = dict(zip(protected_areas["IUCN_Category"], protected_areas["type"]))
+    #     sf.shape2raster(paths["Protected"]+"0.shp",paths["PA"]+"0.tif","IUCN_CAT",protection_type,paths["LAND"])
+    #     logger.info("files saved: " + paths["PA"]+"0.tif")
+    #     ul.create_json(paths["PA"]+"0.tif", param, ["region_name", "protected_areas", "Crd_all", "res_desired", "GeoRef"], paths, ["Protected", "PA"])
+    #
+    # if os.path.isfile(paths["PA"]+"1.tif"):
+    #     logger.info('Skip-PA1')    # Skip generation if files are already there
+    # else:
+    #     logger.info("Start-PA1")
+    #     protected_areas = param["protected_areas"]
+    #     # set up protected areas dictionary
+    #     protection_type = dict(zip(protected_areas["IUCN_Category"], protected_areas["type"]))
+    #     sf.shape2raster(paths["Protected"]+"1.shp",paths["PA"]+"1.tif","IUCN_CAT",protection_type,paths["LAND"])
+    #     logger.info("files saved: " + paths["PA"]+"1.tif")
+    #     ul.create_json(paths["PA"]+"1.tif", param, ["region_name", "protected_areas", "Crd_all", "res_desired", "GeoRef"], paths, ["Protected", "PA"])
+    #
+    # if os.path.isfile(paths["PA"]+"2.tif"):
+    #     logger.info('Skip-PA2')    # Skip generation if files are already there
+    # else:
+    #     logger.info("Start-PA2")
+    #     protected_areas = param["protected_areas"]
+    #     # set up protected areas dictionary
+    #     protection_type = dict(zip(protected_areas["IUCN_Category"], protected_areas["type"]))
+    #     sf.shape2raster(paths["Protected"]+"2.shp",paths["PA"]+"2.tif","IUCN_CAT",protection_type,paths["LAND"])
+    #     logger.info("files saved: " + paths["PA"]+"2.tif")
+    #     ul.create_json(paths["PA"]+"2.tif", param, ["region_name", "protected_areas", "Crd_all", "res_desired", "GeoRef"], paths, ["Protected", "PA"])
 
     # Buffer maps for protected areas
     logger.info("Start-Buffer")
     with rasterio.open(paths["PA"]) as src:
         A_pa = src.read(1)
     A_pa = np.flipud(A_pa).astype(int)
-    A_pa = (A_pa > 0) & (A_pa < 6) #All protected areas pixels
+    A_pa = A_pa > 0 #All protected areas pixels
+    # with rasterio.open(paths["PA"+"0.tif"]) as src:
+    #     A_pa0 = src.read(1)
+    # A_pa0 = np.flipud(A_pa0).astype(bool)
+    # A_pa0 = A_pa0 > 0 #All protected areas pixels
+    #
+    # with rasterio.open(paths["PA"+"1.tif"]) as src:
+    #     A_pa1 = src.read(1)
+    # A_pa1 = np.flipud(A_pa1).astype(bool)
+    # A_pa1 = A_pa1 > 0 #All protected areas pixels
+    #
+    # with rasterio.open(paths["PA"+"2.tif"]) as src:
+    #     A_pa2 = src.read(1)
+    # A_pa2 = np.flipud(A_pa2).astype(bool)
+    # A_pa2 = A_pa2 > 0 #All protected areas pixels
+    #
+    # A_pa = A_pa0 * A_pa1 * A_pa2
 
     if os.path.isfile(paths["PV_PA_BUFFER"]):
         logger.info('Skip-PV')  # Skip generation if files are already there
@@ -943,7 +924,7 @@ def generate_country_boarders(paths,param):
         for reg in range(0, nCountries):
             try:
                 A_country_area = sf.calc_region(countries_shp.loc[reg], Crd_all, res_desired, GeoRef)
-                A_country_buffered = sf.minimum_filter(A_country_area, footprint=kernel, mode="constant", cval=1)
+                A_country_buffered = scipy.ndimage.minimum_filter(A_country_area, footprint=kernel, mode="constant", cval=1)
                 A_countries_buffered = A_countries_buffered + A_country_buffered
             except:
                 pass
@@ -959,74 +940,16 @@ def generate_country_boarders(paths,param):
 
 def generate_roads(paths, param):
     # "fclass" ILIKE 'primary' OR "fclass" ILIKE 'secondary'
-
     if os.path.isfile(paths["ROADS"]):
         logger.info('Skip')  # Skip generation if files are already there
 
     else:
         logger.info("Start")
 
-        # First we will open our raster image, to understand how we will want to rasterize our vector
-        raster_ds = gdal.Open(paths["LAND"], gdal.GA_ReadOnly)
-
-        # Fetch number of rows and columns
-        ncol = raster_ds.RasterXSize
-        nrow = raster_ds.RasterYSize
-
-        # Fetch projection and extent
-        proj = raster_ds.GetProjectionRef()
-        ext = raster_ds.GetGeoTransform()
-
-        raster_ds = None
-        shp_path = paths["OSM"] + "germany-roads.shp"
-        # Open the dataset from the file
-        dataset = ogr.Open(shp_path, 1)
-        layer = dataset.GetLayerByIndex(0)
-
-        # Add a new field
-        if not ul.field_exists("Raster", shp_path):
-            new_field = ogr.FieldDefn("Raster", ogr.OFTInteger)
-            layer.CreateField(new_field)
-
-        for feat in layer:
-            feat.SetField("Raster", 1)
-            layer.SetFeature(feat)
-            feat = None
-
-        # Create a second (modified) layer
-        outdriver = ogr.GetDriverByName("MEMORY")
-        source = outdriver.CreateDataSource("memData")
-
-        # Create the raster dataset
-        memory_driver = gdal.GetDriverByName("GTiff")
-        out_raster_ds = memory_driver.Create(paths["ROADS"], ncol, nrow, 1, gdal.GDT_Byte)
-
-        # Set the ROI image's projection and extent to our input raster's projection and extent
-        out_raster_ds.SetProjection(proj)
-        out_raster_ds.SetGeoTransform(ext)
-
-        # Fill our output band with the 0 blank, no class label, value
-        b = out_raster_ds.GetRasterBand(1)
-        b.Fill(0)
-
-        # Rasterize the shapefile layer to our new dataset
-        gdal.RasterizeLayer(
-            out_raster_ds,  # output to our new dataset
-            [1],  # output to our new dataset's first band
-            layer,  # rasterize this layer
-            None,
-            None,  # don't worry about transformations since we're in same projection
-            [0],  # burn value 0
-            [
-                "ALL_TOUCHED=FALSE",  # rasterize all pixels touched by polygons
-                "ATTRIBUTE=Raster",
-            ],  # put raster values according to the 'Raster' field values
-        )
+        sf.shape2raster(paths["OSM_Roads"], paths["ROADS"], "", [], paths["LAND"])
+        logger.info("files saved: " + paths["ROADS"])
         ul.create_json(paths["ROADS"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["ROADS"])
 
-        # Close dataset
-        out_raster_ds = None
-        logger.info("files saved: " + paths["ROADS"])
         logger.debug("End")
 
 
@@ -1038,67 +961,10 @@ def generate_railways(paths, param):
     else:
         logger.info("Start")
 
-        # First we will open our raster image, to understand how we will want to rasterize our vector
-        raster_ds = gdal.Open(paths["LAND"], gdal.GA_ReadOnly)
-
-        # Fetch number of rows and columns
-        ncol = raster_ds.RasterXSize
-        nrow = raster_ds.RasterYSize
-
-        # Fetch projection and extent
-        proj = raster_ds.GetProjectionRef()
-        ext = raster_ds.GetGeoTransform()
-
-        raster_ds = None
-        shp_path = paths["OSM"] + "germany-railways.shp"
-        # Open the dataset from the file
-        dataset = ogr.Open(shp_path, 1)
-        layer = dataset.GetLayerByIndex(0)
-
-        # Add a new field
-        if not ul.field_exists("Raster", shp_path):
-            new_field = ogr.FieldDefn("Raster", ogr.OFTInteger)
-            layer.CreateField(new_field)
-
-        for feat in layer:
-            feat.SetField("Raster", 1)
-            layer.SetFeature(feat)
-            feat = None
-
-        # Create a second (modified) layer
-        outdriver = ogr.GetDriverByName("MEMORY")
-        source = outdriver.CreateDataSource("memData")
-
-        # Create the raster dataset
-        memory_driver = gdal.GetDriverByName("GTiff")
-        out_raster_ds = memory_driver.Create(paths["RAILS"], ncol, nrow, 1, gdal.GDT_Byte)
-
-        # Set the ROI image's projection and extent to our input raster's projection and extent
-        out_raster_ds.SetProjection(proj)
-        out_raster_ds.SetGeoTransform(ext)
-
-        # Fill our output band with the 0 blank, no class label, value
-        b = out_raster_ds.GetRasterBand(1)
-        b.Fill(0)
-
-        # Rasterize the shapefile layer to our new dataset
-        gdal.RasterizeLayer(
-            out_raster_ds,  # output to our new dataset
-            [1],  # output to our new dataset's first band
-            layer,  # rasterize this layer
-            None,
-            None,  # don't worry about transformations since we're in same projection
-            [0],  # burn value 0
-            [
-                "ALL_TOUCHED=FALSE",  # rasterize all pixels touched by polygons
-                "ATTRIBUTE=Raster",
-            ],  # put raster values according to the 'Raster' field values
-        )
+        sf.shape2raster(paths["OSM_Railways"], paths["RAILS"], "", [], paths["LAND"])
+        logger.info("files saved: " + paths["RAILS"])
         ul.create_json(paths["RAILS"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["RAILS"])
 
-        # Close dataset
-        out_raster_ds = None
-        logger.info("files saved: " + paths["RAILS"])
         logger.debug("End")
 
 
@@ -1122,83 +988,16 @@ def generate_osm_areas(paths, param):
 
     if os.path.isfile(paths["OSM_AREAS"]):
         logger.info('Skip')  # Skip generation if files are already there
-
     else:
         logger.info("Start")
 
         osm_areas = param["osm_areas"]
         # set up osm areas dictionary
         osm_type = dict(zip(osm_areas["Category"], osm_areas["type"]))
-
-        # First we will open our raster image, to understand how we will want to rasterize our vector
-        raster_ds = gdal.Open(paths["LAND"], gdal.GA_ReadOnly)
-
-        # Fetch number of rows and columns
-        ncol = raster_ds.RasterXSize
-        nrow = raster_ds.RasterYSize
-
-        # Fetch projection and extent
-        proj = raster_ds.GetProjectionRef()
-        ext = raster_ds.GetGeoTransform()
-
-        raster_ds = None
-        shp_path = paths["OSM"] + "germany-landuse-all.shp"
-        # Open the dataset from the file
-        dataset = ogr.Open(shp_path, 1)
-        layer = dataset.GetLayerByIndex(0)
-        # layer.SetAttributeFilter("fclass" ILIKE 'commercial' OR "fclass" ILIKE 'industrial' OR "fclass" ILIKE 'quarry' OR "fclass" ILIKE 'military' OR "fclass" ILIKE 'park' OR "fclass" ILIKE 'recreation_ground'")
-
-        # Add a new field
-        if not ul.field_exists("Raster", shp_path):
-            new_field = ogr.FieldDefn("Raster", ogr.OFTInteger)
-            layer.CreateField(new_field)
-
-        # layer = layer.SetAttributeFilter('fclass = "commercial" OR fclass = "industrial" OR fclass = "quarry" OR fclass = "military" OR fclass = "park" OR fclass = "recreation_ground"')
-
-        for feat in layer:
-            pt = feat.GetField("fclass")
-            if pt == "commercial" or pt == "industrial" or pt == "quarry" or pt == "military" or pt == "park" or pt == "recreation_ground":
-                feat.SetField("Raster", int(osm_type[pt]))
-            else:
-                feat.SetField("Raster", int(0))
-            layer.SetFeature(feat)
-            feat = None
-
-        # Create a second (modified) layer
-        outdriver = ogr.GetDriverByName("MEMORY")
-        source = outdriver.CreateDataSource("memData")
-
-        # Create the raster dataset
-        memory_driver = gdal.GetDriverByName("GTiff")
-        out_raster_ds = memory_driver.Create(paths["OSM_AREAS"], ncol, nrow, 1, gdal.GDT_Byte)
-
-        # Set the ROI image's projection and extent to our input raster's projection and extent
-        out_raster_ds.SetProjection(proj)
-        out_raster_ds.SetGeoTransform(ext)
-
-        # Fill our output band with the 0 blank, no class label, value
-        b = out_raster_ds.GetRasterBand(1)
-        b.Fill(0)
-
-        # Rasterize the shapefile layer to our new dataset
-        gdal.RasterizeLayer(
-            out_raster_ds,  # output to our new dataset
-            [1],  # output to our new dataset's first band
-            layer,  # rasterize this layer
-            None,
-            None,  # don't worry about transformations since we're in same projection
-            [0],  # burn value 0
-            [
-                "ALL_TOUCHED=FALSE",  # rasterize all pixels touched by polygons
-                "ATTRIBUTE=Raster",
-            ],  # put raster values according to the 'Raster' field values
-        )
+        sf.shape2raster(paths["OSM_Landuse"], paths["OSM_AREAS"], "fclass", osm_type, paths["LAND"])
+        logger.info("files saved: " + paths["OSM_AREAS"])
         ul.create_json(paths["OSM_AREAS"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
                     ["OSM", "OSM_AREAS"])
-
-        # Close dataset
-        out_raster_ds = None
-        logger.info("files saved: " + paths["OSM_AREAS"])
 
     # Create Buffer osm maps
     logger.info("Start-Buffer")
@@ -1353,74 +1152,13 @@ def generate_settlements(paths, param):
 
 
 def generate_HydroLakes(paths, param):
-
-    logger.info("Start")
-
     if os.path.isfile(paths["HYDROLAKES"]):
         logger.info('Skip')  # Skip generation if files are already there
-
     else:
-        # First we will open our raster image, to understand how we will want to rasterize our vector
-        raster_ds = gdal.Open(paths["LAND"], gdal.GA_ReadOnly)
-
-        # Fetch number of rows and columns
-        ncol = raster_ds.RasterXSize
-        nrow = raster_ds.RasterYSize
-
-        # Fetch projection and extent
-        proj = raster_ds.GetProjectionRef()
-        ext = raster_ds.GetGeoTransform()
-
-        raster_ds = None
-        shp_path = paths["HydroLakes"]
-        # Open the dataset from the file
-        dataset = ogr.Open(shp_path, 1)
-        layer = dataset.GetLayerByIndex(0)
-
-        # Add a new field
-        if not ul.field_exists("Raster", shp_path):
-            new_field = ogr.FieldDefn("Raster", ogr.OFTInteger)
-            layer.CreateField(new_field)
-
-        for feat in layer:
-            feat.SetField("Raster", 1)
-            layer.SetFeature(feat)
-            feat = None
-
-        # Create a second (modified) layer
-        outdriver = ogr.GetDriverByName("MEMORY")
-        source = outdriver.CreateDataSource("memData")
-
-        # Create the raster dataset
-        memory_driver = gdal.GetDriverByName("GTiff")
-        out_raster_ds = memory_driver.Create(paths["HYDROLAKES"], ncol, nrow, 1, gdal.GDT_Byte)
-
-        # Set the ROI image's projection and extent to our input raster's projection and extent
-        out_raster_ds.SetProjection(proj)
-        out_raster_ds.SetGeoTransform(ext)
-
-        # Fill our output band with the 0 blank, no class label, value
-        b = out_raster_ds.GetRasterBand(1)
-        b.Fill(0)
-
-        # Rasterize the shapefile layer to our new dataset
-        gdal.RasterizeLayer(
-            out_raster_ds,  # output to our new dataset
-            [1],  # output to our new dataset's first band
-            layer,  # rasterize this layer
-            None,
-            None,  # don't worry about transformations since we're in same projection
-            [0],  # burn value 0
-            [
-                "ALL_TOUCHED=FALSE",  # rasterize all pixels touched by polygons
-                "ATTRIBUTE=Raster",
-            ],  # put raster values according to the 'Raster' field values
-        )
-        ul.create_json(paths["HYDROLAKES"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["HYDROLAKES"])
-
-        # Close dataset
-        out_raster_ds = None
+        logger.info('Start')
+        sf.shape2raster(paths["HydroLakes"], paths["HYDROLAKES"], "", [], paths["LAND"])
         logger.info("files saved: " + paths["HYDROLAKES"])
+        ul.create_json(paths["HYDROLAKES"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["HYDROLAKES"])
 
     # Create Buffer
     if os.path.isfile(paths["HYDROLAKES_BUFFER"]):
@@ -1441,73 +1179,13 @@ def generate_HydroLakes(paths, param):
 
 
 def generate_HydroRivers(paths, param):
-
-    logger.info("Start")
     if os.path.isfile(paths["HYDRORIVERS"]):
         logger.info('Skip')  # Skip generation if files are already there
-
     else:
-         # First we will open our raster image, to understand how we will want to rasterize our vector
-        raster_ds = gdal.Open(paths["LAND"], gdal.GA_ReadOnly)
-
-        # Fetch number of rows and columns
-        ncol = raster_ds.RasterXSize
-        nrow = raster_ds.RasterYSize
-
-        # Fetch projection and extent
-        proj = raster_ds.GetProjectionRef()
-        ext = raster_ds.GetGeoTransform()
-
-        raster_ds = None
-        shp_path = paths["HydroRivers"]
-        # Open the dataset from the file
-        dataset = ogr.Open(shp_path, 1)
-        layer = dataset.GetLayerByIndex(0)
-
-        # Add a new field
-        if not ul.field_exists("Raster", shp_path):
-            new_field = ogr.FieldDefn("Raster", ogr.OFTInteger)
-            layer.CreateField(new_field)
-
-        for feat in layer:
-            feat.SetField("Raster", 1)
-            layer.SetFeature(feat)
-            feat = None
-
-        # Create a second (modified) layer
-        outdriver = ogr.GetDriverByName("MEMORY")
-        source = outdriver.CreateDataSource("memData")
-
-        # Create the raster dataset
-        memory_driver = gdal.GetDriverByName("GTiff")
-        out_raster_ds = memory_driver.Create(paths["HYDRORIVERS"], ncol, nrow, 1, gdal.GDT_Byte)
-
-        # Set the ROI image's projection and extent to our input raster's projection and extent
-        out_raster_ds.SetProjection(proj)
-        out_raster_ds.SetGeoTransform(ext)
-
-        # Fill our output band with the 0 blank, no class label, value
-        b = out_raster_ds.GetRasterBand(1)
-        b.Fill(0)
-
-        # Rasterize the shapefile layer to our new dataset
-        gdal.RasterizeLayer(
-            out_raster_ds,  # output to our new dataset
-            [1],  # output to our new dataset's first band
-            layer,  # rasterize this layer
-            None,
-            None,  # don't worry about transformations since we're in same projection
-            [0],  # burn value 0
-            [
-                "ALL_TOUCHED=FALSE",  # rasterize all pixels touched by polygons
-                "ATTRIBUTE=Raster",
-            ],  # put raster values according to the 'Raster' field values
-        )
+        logger.info('Start')
+        sf.shape2raster(paths["HydroRivers"], paths["HYDRORIVERS"], "", [], paths["LAND"])
+        logger.info("files saved: " + paths["HYDRORIVERS"])
         ul.create_json(paths["HYDRORIVERS"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["HYDROLAKES"])
-
-    # Close dataset
-    out_raster_ds = None
-    logger.info("files saved: " + paths["HYDRORIVERS"])
 
     # Create Buffer
     if os.path.isfile(paths["HYDRORIVERS_BUFFER"]):
@@ -1539,7 +1217,7 @@ def generate_livestock(paths, param):
     :return: The tif files for *LS* is saved in its respective path, along with its metadata in a JSON file.
     :rtype: None
     """
-    ul.timecheck("Start")
+    logger.info("Start")
     res_desired = param["res_desired"]
     Crd_all = param["Crd_all"]
     Ind = sf.ind_global(Crd_all, param["res_livestock"])[0]
@@ -1562,7 +1240,7 @@ def generate_livestock(paths, param):
         ul.create_json(paths["LS"] + animal + ".tif", param,
                        ["region_name", "Crd_all", "res_livestock", "res_desired", "GeoRef"], paths, ["LS_global", "LS"])
 
-    ul.timecheck("End")
+    logger.debuf("End")
 
 
 # def generate_population(paths, param): #ToDo function Not needed
@@ -1596,40 +1274,3 @@ def generate_livestock(paths, param):
 #     logger.info("files saved: " + paths["POP"])
 #     ul.create_json(paths["POP"], param, ["region_name", "Crd_all", "res_population", "res_desired", "GeoRef"], paths, ["Pop_global", "POP"])
 #     ul.timecheck("End")
-
-
-# def generate_buffered_population(paths, param): #ToDo Not needed anymore
-#     """
-#     This function reads the land use raster, identifies urban areas, and excludes pixels around them based on a
-#     user-defined buffer *buffer_pixel_amount*. It creates a masking raster of boolean values (0 or 1) for the scope.
-#     Zero means the pixel is excluded, one means it is suitable.
-#     The function is useful in case there is a policy to exclude renewable energy projects next to urban settlements.
-#
-#     :param paths: Dictionary including the path to the land use raster for the scope, and to the output path BUFFER.
-#     :type paths: dict
-#     :param param: Dictionary including the user-defined buffer (buffer_pixel_amount), the urban type within the land use map (type_urban), and the georeference dictionary.
-#     :type param: dict
-#
-#     :return: The tif file for BUFFER is saved in its respective path, along with its metadata in a JSON file.
-#     :rtype: None
-#     """
-#     if os.path.isfile(paths["POP_BUFFER"]):
-#         logger.info('Skip')    # Skip generation if files are already there
-#
-#     else:
-#         logger.info("Start")
-#         buffer_pixel_amount = param["WindOn"]["mask"]["urban_buffer_pixel_amount"]
-#         GeoRef = param["GeoRef"]
-#         with rasterio.open(paths["LU"]) as src:
-#             A_lu = src.read(1)
-#         A_lu = np.flipud(A_lu).astype(int)
-#         A_lu = A_lu == 190 # Land use type for Urban and built-up
-#         kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
-#         kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
-#         A_lu_buffered = scipy.ndimage.maximum_filter(A_lu, footprint=kernel, mode="constant", cval=0)
-#         A_notPopulated = (~A_lu_buffered).astype(int)
-#
-#         sf.array2raster(paths["POP_BUFFER"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notPopulated)
-#         logger.info("files saved: " + paths["POP_BUFFER"])
-#         ul.create_json(paths["POP_BUFFER"], param, ["region_name", "landuse", "WindOn", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "POP_BUFFER"])
-#         logger.debug('End')

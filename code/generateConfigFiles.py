@@ -18,7 +18,7 @@ for i in range(len(df)):
         f = open(path + str(int(df['ID'][i])) + "_" + df['Country Name'][i] + ".txt", "w")
         # f.write("spatial_scope:gadm36_" + str(df['Country Code'][i]) + "_0.shp" + "\n")
         f.write("regions:gadm36_" + str(df['Country Code'][i]) + "_0.shp" + "\n")
-        f.write("region_name:" + df['Country Name'][i] + "_gwa" + "\n")
+        f.write("region_name:" + df['Country Name'][i] + "\n")
         f.write("subregions_name:" + df['Country Name'][i] + "_level0" + "\n")
         f.write("country_code:" + str(df['Country Code'][i]) + "\n")
         f.write("year:" + str(year) + "\n")

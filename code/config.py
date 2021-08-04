@@ -313,8 +313,7 @@ def landuse_parameters(param):
       * *Ross_coeff* is a numpy array of Ross coefficients associated to each land use type (relevant for :mod:`physical_models.loss`).
       * *albedo* is a numpy array of albedo coefficients between 0 and 1 associated to each land use type (relevant for reflected irradiation, see :mod:`physical_models.calc_CF_solar`).
       * *hellmann* is a numpy array of Hellmann coefficients associated to each land use type (relevant for :mod:`correction_functions.generate_wind_correction`).
-      * *height* is a numpy array of gradient heights in meter associated to each land use type (relevant for :mod:`correction_functions.generate_wind_correction`).
-    
+
     :param param: Dictionary including the user preferences.
     :type param: dict
 
@@ -361,19 +360,20 @@ def landuse_parameters(param):
         # 210	Water bodies
         # 220	Permanent snow and ice
 
+
     """
     landuse = {
         "type": np.array([0, 10, 11, 12, 20, 30, 40, 50, 60, 61, 62, 70, 71, 72, 80, 81, 82, 90, 100, 110, 120,
                         121, 122, 130, 140, 150, 151, 152, 153, 160, 170, 180, 190, 200, 201, 202, 210, 220]),
-        "Ross_coeff": np.array(
-            [0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208,
-             0.0208, 0.0208, 0.0208, 0.0208]
-        ),
-        "albedo": np.array(
-            [0.00, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.00, 0.20, 0.20, 0.20, 0.00, 0.20]),
-        "hellmann": np.array(
-            [0.10, 0.25, 0.25, 0.25, 0.25, 0.25, 0.20, 0.20, 0.25, 0.25, 0.15, 0.15, 0.20, 0.40, 0.20, 0.15, 0.15]),
-        "height": np.array([213, 366, 366, 366, 366, 366, 320, 320, 366, 366, 274, 274, 320, 457, 320, 274, 274]),
+        "Ross_coeff": np.array([0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208,
+                                0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208,
+                                0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208,
+                                0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208]),
+        "albedo": np.array([0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2,
+                            0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0, 0]),
+        "hellmann": np.array([0.25, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25,
+                              0.25, 0.25, 0.25, 0.2, 0.2, 0.2, 0.2, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.25, 0.25, 0.25,
+                              0.4, 0.15, 0.15, 0.15, 0.1, 0.15])
     }
     param["landuse"] = landuse
     return param
@@ -416,7 +416,7 @@ def protected_areas_parameters(param):
 
 def osm_areas(param):
 
-    #"fclass" ILIKE 'commercial' OR 'industrial' OR 'quarry' OR 'military' OR 'park'
+    #"fclass" ILIKE 'commercial' OR 'industrial' OR 'quarry' OR 'military' OR 'park' OR 'recreation_ground'
     osm_areas = {
         "type": np.array([1, 2, 3, 4, 5, 6]),
         "Category": np.array(
@@ -518,15 +518,12 @@ def pv_parameters(param):
     }
     pv["mask"] = {
         "slope": 10,
-        "lu_suitability": np.array([0,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,1,1,1,0,0,1,1,1,1,0,0,0,0,1,1,1,0,0]),
-        "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
+        "lu_suitability": np.array([1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,1,1,1,1,1,0,0,0,0,1,1,1,0,0]),
+        "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     }
     GCR = {"shadefree_period": 6, "day_north": 79, "day_south": 263}
     pv["weight"] = {
         "GCR": GCR,
-        "lu_availability": np.array(
-            [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.00, 0.00, 0.00, 0.02, 0.02, 0.00, 0.02]),
-        "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
         "power_density": 0.000160,
         "f_performance": 0.75,
     }
@@ -587,13 +584,10 @@ def csp_parameters(param):
     }
     csp["mask"] = {
         "slope": 20,
-        "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
-        "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
+        "lu_suitability": np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0]),
+        "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     }
     csp["weight"] = {
-        "lu_availability": np.array(
-            [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.02, 0.00, 0.02, 0.02, 0.02, 0.00, 0.02]),
-        "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
         "power_density": 0.000160,
         "f_performance": 0.9 * 0.75,
     }
@@ -640,20 +634,14 @@ def onshore_wind_parameters(param):
     :rtype: dict
     """
     windon = {}
-    windon["resource"] = {"res_correction": 0, "topo_correction": 0,
-                          "topo_weight": "capacity"}  # 'none' or 'size' or 'capacity'
     # windon["technical"] = {"w_in": 2, "w_r": 14, "w_off": 25, "P_r": 2.3, "hub_height": 99}
     windon["technical"] = {"w_in": 4, "w_r": 13, "w_off": 25, "P_r": 3, "hub_height": 80}
     windon["mask"] = {
         "slope": 17,
-        "lu_suitability": np.array([0,0,0,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,0,0,0,0,1,1,1,0,0]),
-        "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
-
+        "lu_suitability": np.array([1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,0,0]),
+        "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     }
     windon["weight"] = {
-        "lu_availability": np.array(
-            [0.00, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.10, 0.10, 0.10, 0.00, 0.00, 0.00, 0.00, 0.10, 0.00, 0.10]),
-        "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
         "power_density": 0.000008,
         "f_performance": 0.87,
     }
@@ -697,13 +685,14 @@ def offshore_wind_paramters(param):
     :rtype: dict
     """
     windoff = {}
-    windoff["resource"] = {"res_correction": 0}
+    # windoff["resource"] = {"res_correction": 0}
     windoff["technical"] = {"w_in": 3, "w_r": 16.5, "w_off": 34, "P_r": 7.58, "hub_height": 100}
-    windoff["mask"] = {"depth": -40, "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1])}
+    windoff["mask"] = {
+        "depth": -40,
+        "lu_suitability": np.array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0]),
+         "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    }
     windoff["weight"] = {
-        "lu_availability": np.array(
-            [0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00]),
-        "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
         "power_density": 0.000020,
         "f_performance": 0.87,
     }
@@ -855,38 +844,32 @@ def global_maps_input_paths(paths, param):
     paths["Countries"] = PathTemp + "Countries" + fs + "gadm36_0.shp"
     
     paths["EEZ_global"] = PathTemp + "EEZ" + fs + "eez_v10.shp"
-    
-    paths["LU_global"] = PathTemp + "Landuse" + fs + "CCI-250m.tif"
-    param["res_landuse"] = np.array([1 / 400, 1 / 400]) #resampled in QGIS
+    paths["Topo_tiles"] = PathTemp + "Topography" + fs
+    param["res_topography"] = np.array([1 / 240, 1 / 240])
 
     paths["Bathym_global"] = PathTemp + "Bathymetry" + fs + "ETOPO1_Ice_c_geotiff.tif"
     param["res_bathymetry"] = np.array([1 / 60, 1 / 60])
     
-    paths["Topo_tiles"] = PathTemp + "Topography" + fs
-    param["res_topography"] = np.array([1 / 240, 1 / 240])
-
+    paths["LU_global"] = PathTemp + "Landuse" + fs + "CCI-250m.tif" #[1/400 , 1/400] resampled in QGIS
     paths["Protected"] = PathTemp + "Protected Areas" + fs + "WDPA_Nov2018-shapefile-polygons.shp"
+    paths["Airports"] = PathTemp + "Openflights" + fs + "airports.csv"
+    paths["OSM_Roads"] = PathTemp + "OSM" + fs + param["region_name"] + "-roads.shp"
+    paths["OSM_Railways"] = PathTemp + "OSM" + fs + param["region_name"] + "-railways.shp"
+    paths["OSM_Landuse"] = PathTemp + "OSM" + fs + param["region_name"] + "-landuse.shp"
+    paths["WSF_global"] = PathTemp + "WSF" + fs + "WSF2015_Full.tif" #[1/400 , 1/400] resampled in QGIS
+    paths["HydroLakes"] = PathTemp + "HydroLakes" + fs + "HydroLAKES_polys_v10.shp"
+    paths["HydroRivers"] = PathTemp + "HydroRivers" + fs + "HydroRIVERS_v10.shp"
 
     paths["LS_global"] = PathTemp + "Livestock" + fs + "Glb_"
     param["res_livestock"] = np.array([1 / 120, 1 / 120])
-    
-    paths["WSF_global"] = PathTemp + "WSF" + fs + "WSF2015_Full.tif"
-    param["res_settlements"] = np.array([1/400 , 1/400]) #resampled in QGIS
-    
-    paths["Pop_global"] = PathTemp + "Population" + fs + "gpw_v4_population_count_rev10_2015_30_sec.tif"
-    param["res_population"] = np.array([1 / 120, 1 / 120])
 
-    paths["Airports"] = PathTemp + "Openflights" + fs + "airports.csv"
-
-    paths["GWA"] = PathTemp + "Global Wind Atlas" + fs + fs + "windSpeed.csv"
+    # paths["Pop_global"] = PathTemp + "Population" + fs + "gpw_v4_population_count_rev10_2015_30_sec.tif"
+    # param["res_population"] = np.array([1 / 120, 1 / 120])
 
     paths["Biomass_Crops"] = PathTemp + "FAOSTAT" + fs + "Admin level 2_"
     paths["Biomass_Forestry"] = PathTemp + "FAOSTAT" + fs + "FAOSTAT_Forestry_data_6-2-2021.csv"
 
-    paths["OSM"] = PathTemp + "OSM" + fs # ToDo
 
-    paths["HydroLakes"] = PathTemp + "HydroLakes" + fs + "HydroLAKES_polys_v10.shp"
-    paths["HydroRivers"] = PathTemp + "HydroRivers" + fs + "HydroRIVERS_v10.shp"
 
     return paths, param
 
@@ -1024,29 +1007,26 @@ def local_maps_paths(paths, param):
     PathTemp = paths["local_maps"] + param["region_name"]
     paths["LAND"] = PathTemp + "_Land.tif"  # Land pixels
     paths["EEZ"] = PathTemp + "_EEZ.tif"  # Sea pixels
-    paths["SUB"] = PathTemp + "_Subregions.tif"  # Subregions pixels
     paths["AREA"] = PathTemp + "_Area.mat"  # Area per pixel in m²
-    paths["LU"] = PathTemp + "_Landuse.tif"  # Land use types
-    paths["BATH"] = PathTemp + "_Bathymetry.tif"  # Bathymetry
     paths["TOPO"] = PathTemp + "_Topography.tif"  # Topography
     paths["SLOPE"] = PathTemp + "_Slope.tif"  # Slope
+    paths["BATH"] = PathTemp + "_Bathymetry.tif"  # Bathymetry
+
+    paths["LU"] = PathTemp + "_Landuse.tif"  # Land use types
+    paths["WATER_BUFFER"] = PathTemp + "_Water_Buffered.tif"  # Buffered Water
+    paths["WETLAND_BUFFER"] = PathTemp + "_Wetland_Buffered.tif"  # Buffered Wetlands
+    paths["SNOW_BUFFER"] = PathTemp + "_Snow_Buffered.tif"  # Buffered Snow
+
     paths["PA"] = PathTemp + "_Protected_areas.tif"  # Protected areas
+    paths["PV_PA_BUFFER"] = PathTemp + "_PV_Protected_areas_Buffered.tif"  # Buffered Protected areas for PV
+    paths["WINDON_PA_BUFFER"] = PathTemp + "_WindOn_Protected_areas_Buffered.tif"  # Buffered Protected areas for Wind Onshore
+
+    paths["AIRPORTS"] = PathTemp + "_Airports.tif"  # Buffered Airports
+    paths["BOARDERS"] = PathTemp + "_Boarders.tif"  # Buffered Boarders
+
     paths["ROADS"] = PathTemp + "_Roads.tif"
     paths["RAILS"] = PathTemp + "_Rails.tif"
     paths["OSM_AREAS"] = PathTemp + "_OSM_areas.tif"
-
-    paths["LS"] = PathTemp + "_Livestock_" #Livestock density per animal type
-    paths["POP"] = PathTemp + "_Population.tif"  # Population
-    
-    paths["POP_BUFFER"] = PathTemp + "_Population_Buffered.tif"  # Buffered population
-    paths["WATER_BUFFER"] = PathTemp + "_Water_Buffered.tif" #Buffered Water
-    paths["WETLAND_BUFFER"] = PathTemp + "_Wetland_Buffered.tif" #Buffered Wetlands
-    paths["SNOW_BUFFER"] = PathTemp + "_Snow_Buffered.tif" #Buffered Snow
-    paths["AIRPORTS"] = PathTemp + "_Airports.tif" #Buffered Airports
-    paths["BOARDERS"] = PathTemp + "_Boarders.tif" #Buffered Boarders
-    paths["PV_PA_BUFFER"] = PathTemp + "_PV_Protected_areas_Buffered.tif" #Buffered Protected areas for PV
-    paths["WINDON_PA_BUFFER"] = PathTemp + "_WindOn_Protected_areas_Buffered.tif" #Buffered Protected areas for Wind Onshore
-
     paths["OSM_COM_BUFFER"] = PathTemp + "_OSM_Commercial_Buffered.tif"
     paths["OSM_IND_BUFFER"] = PathTemp + "_OSM_Industrial_Buffered.tif"
     paths["OSM_MINE_BUFFER"] = PathTemp + "_OSM_Mining_Buffered.tif"
@@ -1060,26 +1040,18 @@ def local_maps_paths(paths, param):
     paths["WINDON_WSF_BUFFER"] = PathTemp + "_WindOn_Settlements_Buffered.tif"
 
     paths["HYDROLAKES"] = PathTemp + "_HydroLakes.tif"
-    paths["HYDRORIVERS"] = PathTemp + "_HydroRivers.tif"
-
     paths["HYDROLAKES_BUFFER"] = PathTemp + "_HydroLakes_Buffered.tif"
+    paths["HYDRORIVERS"] = PathTemp + "_HydroRivers.tif"
     paths["HYDRORIVERS_BUFFER"] = PathTemp + "_HydroRivers_Buffered.tif"
 
-    paths["CORR_GWA"] = PathTemp + "_GWA_Correction.mat"  # Correction factors based on the GWA
+    paths["LS"] = PathTemp + "_Livestock_"  # Livestock density per animal type
+    # paths["POP"] = PathTemp + "_Population.tif"  # Population
 
     # Correction factors for wind speeds
     turbine_height_on = str(param["WindOn"]["technical"]["hub_height"])
     turbine_height_off = str(param["WindOff"]["technical"]["hub_height"])
     paths["CORR_ON"] = PathTemp + "_WindOn_Correction_" + turbine_height_on + ".tif"
     paths["CORR_OFF"] = PathTemp + "_WindOff_Correction_" + turbine_height_off + ".tif"
-
-    #To be used only when the country is split and want to club the map for full country
-    # paths["East"] = paths["local_maps"] + "Brazil_East_gwa_Biomass_CO2.tif"
-    # paths["West"] = paths["local_maps"] + "Brazil_West_gwa_Biomass_CO2.tif"
-    # paths["South"] = paths["local_maps"] + "Brazil_South_gwa_Biomass_CO2.tif"
-    # paths["North"] = paths["local_maps"] + "Brazil_North_gwa_Biomass_CO2.tif"
-    # paths["CLUB_ENERGY"] = PathTemp + "_Biomass_Energy_Clubbed.tif"
-    # paths["CLUB_CO2"] = PathTemp + "_Biomass_CO2_Clubbed.tif"
 
     return paths
 

@@ -1,5 +1,5 @@
 from . import util as ul
-from osgeo import gdal, osr
+from osgeo import gdal, osr, ogr
 #from rasterio import MemoryFile
 import rasterio.mask
 import numpy as np
@@ -321,101 +321,6 @@ def adjust_resolution(array, res_data, res_desired, aggfun=None):
     if ((res_desired[0] % res_data[0] < 1e-10) and (res_desired[0] > res_data[0])): # data is too detailed on y dimension
         array = aggregate_y_dim(array, res_data, res_desired, aggfun)
     return array
-    
-# ToDo check if they are needed now
-def recalc_lu_resolution(array, res_data, res_desired, lua):
-    
-    array1 = np.zeros([int(array.shape[0]*res_data[0]/res_desired[0]),int(array.shape[1]*res_data[1]/res_desired[1])])
-    array1[:] = np.NaN
-    for i in range(0,array.shape[0],3):
-        for j in range(0,array.shape[1],3):
-            array1[int(i*5/3),int(j*5/3)] = array[i,j] #first row, first column
-            array1[int(i*5/3),int(j*5/3)+2] = array[i,j+1] 
-            array1[int(i*5/3),int(j*5/3)+4] = array[i,j+2]
-            
-            array1[int(i*5/3)+2,int(j*5/3)] = array[i+1,j] #third row, first column
-            array1[int(i*5/3)+2,int(j*5/3)+2] = array[i+1,j+1] 
-            array1[int(i*5/3)+2,int(j*5/3)+4] = array[i+1,j+2]
-            
-            array1[int(i*5/3)+4,int(j*5/3)] = array[i+2,j] #fifth row, first column
-            array1[int(i*5/3)+4,int(j*5/3)+2] = array[i+2,j+1] 
-            array1[int(i*5/3)+4,int(j*5/3)+4] = array[i+2,j+2]
-
-            if (array1[int(i*5/3),int(j*5/3)]==array1[int(i*5/3),int(j*5/3)+2]) or (lua[int(array1[int(i*5/3),int(j*5/3)])]>=lua[int(array1[int(i*5/3),int(j*5/3)+2])]):
-                array1[int(i*5/3),int(j*5/3)+1] = array1[int(i*5/3),int(j*5/3)+2]
-            else:
-                array1[int(i*5/3),int(j*5/3)+1] = array1[int(i*5/3),int(j*5/3)]
-            if (array1[int(i*5/3),int(j*5/3)+2]==array1[int(i*5/3),int(j*5/3)+4]) or (lua[int(array1[int(i*5/3),int(j*5/3)+2])]>=lua[int(array1[int(i*5/3),int(j*5/3)+4])]):
-                array1[int(i*5/3),int(j*5/3)+3] = array1[int(i*5/3),int(j*5/3)+4]
-            else:
-                array1[int(i*5/3),int(j*5/3)+3] = array1[int(i*5/3),int(j*5/3)+2]
-                
-            if (array1[int(i*5/3),int(j*5/3)]==array1[int(i*5/3)+2,int(j*5/3)]) or (lua[int(array1[int(i*5/3),int(j*5/3)])]>=lua[int(array1[int(i*5/3)+2,int(j*5/3)])]):
-                array1[int(i*5/3)+1,int(j*5/3)] = array1[int(i*5/3)+2,int(j*5/3)]
-            else:
-                array1[int(i*5/3)+1,int(j*5/3)] = array1[int(i*5/3),int(j*5/3)]
-            if array1[int(i*5/3),int(j*5/3)+2]==array1[int(i*5/3)+2,int(j*5/3)+2] or (lua[int(array1[int(i*5/3),int(j*5/3)+2])]>=lua[int(array1[int(i*5/3)+2,int(j*5/3)+2])]):
-                array1[int(i*5/3)+1,int(j*5/3)+2] = array1[int(i*5/3)+2,int(j*5/3)+2]
-            else:
-                array1[int(i*5/3)+1,int(j*5/3)+2] = array1[int(i*5/3),int(j*5/3)+2]
-            if array1[int(i*5/3),int(j*5/3)+4]==array1[int(i*5/3)+2,int(j*5/3)+4] or (lua[int(array1[int(i*5/3),int(j*5/3)+4])]>=lua[int(array1[int(i*5/3)+2,int(j*5/3)+4])]):
-                array1[int(i*5/3)+1,int(j*5/3)+4] = array1[int(i*5/3)+2,int(j*5/3)+4]
-            else:
-                array1[int(i*5/3)+1,int(j*5/3)+4] = array1[int(i*5/3),int(j*5/3)+4]
-                
-            if array1[int(i*5/3)+2,int(j*5/3)]==array1[int(i*5/3)+2,int(j*5/3)+2] or (lua[int(array1[int(i*5/3)+2,int(j*5/3)])]>=lua[int(array1[int(i*5/3)+2,int(j*5/3)+2])]):
-                array1[int(i*5/3)+2,int(j*5/3)+1] = array1[int(i*5/3)+2,int(j*5/3)+2]
-            else:
-                array1[int(i*5/3)+2,int(j*5/3)+1] = array1[int(i*5/3)+2,int(j*5/3)]
-            if array1[int(i*5/3)+2,int(j*5/3)+2]==array1[int(i*5/3)+2,int(j*5/3)+4] or (lua[int(array1[int(i*5/3)+2,int(j*5/3)+2])]>=lua[int(array1[int(i*5/3)+2,int(j*5/3)+4])]):
-                array1[int(i*5/3)+2,int(j*5/3)+3] = array1[int(i*5/3)+2,int(j*5/3)+4]
-            else:
-                array1[int(i*5/3)+2,int(j*5/3)+3] = array1[int(i*5/3)+2,int(j*5/3)+2]
-                
-            if array1[int(i*5/3)+2,int(j*5/3)]==array1[int(i*5/3)+4,int(j*5/3)] or (lua[int(array1[int(i*5/3)+2,int(j*5/3)])]>=lua[int(array1[int(i*5/3)+4,int(j*5/3)])]):
-                array1[int(i*5/3)+3,int(j*5/3)] = array1[int(i*5/3)+4,int(j*5/3)]
-            else:
-                array1[int(i*5/3)+3,int(j*5/3)] = array1[int(i*5/3)+2,int(j*5/3)]
-            if array1[int(i*5/3)+2,int(j*5/3)+2]==array1[int(i*5/3)+4,int(j*5/3)+2] or (lua[int(array1[int(i*5/3)+2,int(j*5/3)+2])]>=lua[int(array1[int(i*5/3)+4,int(j*5/3)+2])]):
-                array1[int(i*5/3)+3,int(j*5/3)+2] = array1[int(i*5/3)+4,int(j*5/3)+2]
-            else:
-                array1[int(i*5/3)+3,int(j*5/3)+2] = array1[int(i*5/3)+2,int(j*5/3)+2]
-            if (array1[int(i*5/3)+2,int(j*5/3)+4]==array1[int(i*5/3)+4,int(j*5/3)+4]) or (lua[int(array1[int(i*5/3)+2,int(j*5/3)+4])]>=lua[int(array1[int(i*5/3)+4,int(j*5/3)+4])]):
-                array1[int(i*5/3)+3,int(j*5/3)+4] = array1[int(i*5/3)+4,int(j*5/3)+4]
-            else:
-                array1[int(i*5/3)+3,int(j*5/3)+4] = array1[int(i*5/3)+2,int(j*5/3)+4]
-                
-            if (array1[int(i*5/3)+4,int(j*5/3)]==array1[int(i*5/3)+4,int(j*5/3)+2]) or (lua[int(array1[int(i*5/3)+4,int(j*5/3)])]>=lua[int(array1[int(i*5/3)+4,int(j*5/3)+2])]):
-                array1[int(i*5/3)+4,int(j*5/3)+1] = array1[int(i*5/3)+4,int(j*5/3)+2]
-            else:
-                array1[int(i*5/3)+4,int(j*5/3)+1] = array1[int(i*5/3)+4,int(j*5/3)]
-            if (array1[int(i*5/3)+4,int(j*5/3)+2]==array1[int(i*5/3)+4,int(j*5/3)+4]) or (lua[int(array1[int(i*5/3)+4,int(j*5/3)+2])]>=lua[int(array1[int(i*5/3)+4,int(j*5/3)+4])]):
-                array1[int(i*5/3)+4,int(j*5/3)+3] = array1[int(i*5/3)+4,int(j*5/3)+4]
-            else:
-                array1[int(i*5/3)+4,int(j*5/3)+3] = array1[int(i*5/3)+4,int(j*5/3)+2]
-                
-                
-            
-            if array1[int(i*5/3)+1,int(j*5/3)]==array1[int(i*5/3)+1,int(j*5/3)+2]==array1[int(i*5/3),int(j*5/3)+1]==array1[int(i*5/3)+2,int(j*5/3)+1]:
-                array1[int(i*5/3)+1,int(j*5/3)+1] = array1[int(i*5/3)+2,int(j*5/3)+1]
-            else:
-                array1[int(i*5/3)+1,int(j*5/3)+1] = array1[int(i*5/3),int(j*5/3)]
-            if array1[int(i*5/3)+1,int(j*5/3)+2]==array1[int(i*5/3)+1,int(j*5/3)+4]==array1[int(i*5/3),int(j*5/3)+3]==array1[int(i*5/3)+2,int(j*5/3)+3]:
-                array1[int(i*5/3)+1,int(j*5/3)+3] = array1[int(i*5/3)+2,int(j*5/3)+3]
-            else:
-                array1[int(i*5/3)+1,int(j*5/3)+3] = array1[int(i*5/3),int(j*5/3)+4]
-            
-            if array1[int(i*5/3)+3,int(j*5/3)]==array1[int(i*5/3)+3,int(j*5/3)+2]==array1[int(i*5/3)+2,int(j*5/3)+1]==array1[int(i*5/3)+4,int(j*5/3)+1]:
-                array1[int(i*5/3)+3,int(j*5/3)+1] = array1[int(i*5/3)+4,int(j*5/3)+1]
-            else:
-                array1[int(i*5/3)+3,int(j*5/3)+1] = array1[int(i*5/3)+4,int(j*5/3)]
-            if array1[int(i*5/3)+3,int(j*5/3)+2]==array1[int(i*5/3)+3,int(j*5/3)+4]==array1[int(i*5/3)+2,int(j*5/3)+3]==array1[int(i*5/3)+4,int(j*5/3)+3]:
-                array1[int(i*5/3)+3,int(j*5/3)+3] = array1[int(i*5/3)+4,int(j*5/3)+3]
-            else:
-                array1[int(i*5/3)+3,int(j*5/3)+3] = array1[int(i*5/3)+4,int(j*5/3)+4]
-                
-    return array1
-
 
 def recalc_topo_resolution(array, res_data, res_desired):
     
@@ -538,3 +443,69 @@ def create_buffered_raster(array, buffer_pixel_amount, GeoRef, Outraster):
     A_NotArray = (~A_array).astype(int)
     array2raster(Outraster, GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
                     A_NotArray)
+
+
+def shape2raster(fileinput, fileoutput, fieldname, dictinput, rastertyp):
+    # First we will open our raster image, to understand how we will want to rasterize our vector
+    raster_ds = gdal.Open(rastertyp, gdal.GA_ReadOnly)
+
+    # Fetch number of rows and columns
+    ncol = raster_ds.RasterXSize
+    nrow = raster_ds.RasterYSize
+
+    # Fetch projection and extent
+    proj = raster_ds.GetProjectionRef()
+    ext = raster_ds.GetGeoTransform()
+
+    raster_ds = None
+    shp_path = fileinput
+    # Open the dataset from the file
+    dataset = ogr.Open(shp_path, 1)
+    layer = dataset.GetLayerByIndex(0)
+
+    # Add a new field
+    if not ul.field_exists("Raster", shp_path):
+        new_field = ogr.FieldDefn("Raster", ogr.OFTInteger)
+        layer.CreateField(new_field)
+
+        for feat in layer:
+            if dictinput == []:
+                feat.Setfield("Raster",1)
+            else:
+                pt = feat.GetField(fieldname)
+                feat.SetField("Raster", int(dictinput[pt]))
+            layer.SetFeature(feat)
+            feat = None
+
+    # Create a second (modified) layer
+    outdriver = ogr.GetDriverByName("MEMORY")
+    source = outdriver.CreateDataSource("memData")
+
+    # Create the raster dataset
+    memory_driver = gdal.GetDriverByName("GTiff")
+    out_raster_ds = memory_driver.Create(fileoutput, ncol, nrow, 1, gdal.GDT_Byte)
+
+    # Set the ROI image's projection and extent to our input raster's projection and extent
+    out_raster_ds.SetProjection(proj)
+    out_raster_ds.SetGeoTransform(ext)
+
+    # Fill our output band with the 0 blank, no class label, value
+    b = out_raster_ds.GetRasterBand(1)
+    b.Fill(0)
+
+    # Rasterize the shapefile layer to our new dataset
+    gdal.RasterizeLayer(
+        out_raster_ds,  # output to our new dataset
+        [1],  # output to our new dataset's first band
+        layer,  # rasterize this layer
+        None,
+        None,  # don't worry about transformations ul.since we're in same projection
+        [0],  # burn value 0
+        [
+            "ALL_TOUCHED=FALSE",  # rasterize all pixels touched by polygons
+            "ATTRIBUTE=Raster",
+        ],  # put raster values according to the 'Raster' field values
+    )
+
+    # Close dataset
+    out_raster_ds = None

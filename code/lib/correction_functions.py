@@ -3,14 +3,12 @@ from . import util as ul
 from .log import logger
 import numpy as np
 import pandas as pd
-import itertools as it
 import hdf5storage
 import os
 import rasterio
 import scipy.ndimage
 
 
-# ToDo Clean entire file
 def clean_weather_data(paths, param):
     """
     This function detects data outliers in the weather input .mat files. An outlier is a data point, for which
@@ -80,64 +78,28 @@ def generate_wind_correction(paths, param):
 
     else:
         logger.info("Start")
-        res_correction_on = param["WindOn"]["resource"]["res_correction"]
-        res_correction_off = param["WindOff"]["resource"]["res_correction"]
-        topo_correction = param["WindOn"]["resource"]["topo_correction"]
         GeoRef = param["GeoRef"]
         landuse = param["landuse"]
         with rasterio.open(paths["LU"]) as src:
             A_lu = np.flipud(src.read(1)).astype(int)
         A_hellmann = ul.changem(A_lu, landuse["hellmann"], landuse["type"]).astype(float)
 
-        # Onshore resolution correction
+        # Onshore height correction
         if "WindOn" in param["technology"]:
             turbine_height_on = param["WindOn"]["technical"]["hub_height"]
-
-            if res_correction_on:
-                m_low = param["m_low"]
-                n_low = param["n_low"]
-                m_high = param["m_high"]
-                n_high = param["n_high"]
-                res_weather = param["res_weather"]
-                res_desired = param["res_desired"]
-                A_gradient_height = ul.changem(A_lu.astype(float), landuse["height"], landuse["type"])
-                Sigma = ul.sumnorm_MERRA2((50 / A_gradient_height) ** A_hellmann, m_low, n_low, res_weather, res_desired)
-                A_cf_on = ((turbine_height_on / 50) * turbine_height_on / A_gradient_height) ** A_hellmann / ul.resizem(Sigma, m_high, n_high)
-                del A_gradient_height, Sigma
-            else:
-                A_cf_on = (turbine_height_on / 50) ** A_hellmann
-
-            # Topographic correction (only onshore)
+            A_cf_on = (turbine_height_on / 50) ** A_hellmann
             with rasterio.open(paths["LAND"]) as src:
                 A_land = np.flipud(src.read(1)).astype(int)
             A_cf_on = A_cf_on * A_land
             del A_land
-            if topo_correction:
-                if not os.path.isfile(paths["CORR_GWA"]):
-                    calc_gwa_correction(paths, param)
-                gwa_correction = hdf5storage.read("correction_" + param["WindOn"]["resource"]["topo_weight"], paths["CORR_GWA"])
-                A_cf_on = A_cf_on * gwa_correction
             sf.array2raster(paths["CORR_ON"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf_on)
             ul.create_json(paths["CORR_ON"], param, ["region_name", "year", "WindOn", "landuse", "res_weather", "res_desired"], paths, ["LAND", "CORR_GWA"])
             logger.info("files saved: " + paths["CORR_ON"])
 
-        # Offshore resolution correction
+        # Offshore height correction
         if "WindOff" in param["technology"]:
             turbine_height_off = param["WindOff"]["technical"]["hub_height"]
-
-            if res_correction_off:
-                m_low = param["m_low"]
-                n_low = param["n_low"]
-                m_high = param["m_high"]
-                n_high = param["n_high"]
-                res_weather = param["res_weather"]
-                res_desired = param["res_desired"]
-                A_gradient_height = ul.changem(A_lu.astype(float), landuse["height"], landuse["type"])
-                Sigma = ul.sumnorm_MERRA2((50 / A_gradient_height) ** A_hellmann, m_low, n_low, res_weather, res_desired)
-                A_cf_off = ((turbine_height_off / 50) * turbine_height_off / A_gradient_height) ** A_hellmann / ul.resizem(Sigma, m_high, n_high)
-                del A_gradient_height, Sigma
-            else:
-                A_cf_off = (turbine_height_off / 50) ** A_hellmann
+            A_cf_off = (turbine_height_off / 50) ** A_hellmann
             del A_hellmann
             with rasterio.open(paths["EEZ"]) as src:
                 A_eez = np.flipud(src.read(1)).astype(int)
@@ -147,135 +109,6 @@ def generate_wind_correction(paths, param):
             ul.create_json(paths["CORR_OFF"], param, ["region_name", "year", "WindOff", "landuse", "res_weather", "res_desired"], paths, ["CORR_GWA"])
             logger.info("files saved: " + paths["CORR_OFF"])
         logger.debug("End")
-
-
-def calc_gwa_correction(paths, param):
-    """
-    This function creates a correction matrix for onshore wind based on the topography and the frequency distribution of wind speed in each country in the Global
-    Wind Atlas.
-    We first read the MERRA-2 data for wind and increase its resolution without editing it. We also read the topographic data for the whole scope.
-    For each country, we filter the two datasets based on valid pixels and obtain *w50m_reg* and *topo_reg*. We correct the wind data based on the following formula:
-    
-        :math:`w50m_{corrected} = w50m_{reg} * min(exp(ai * topo_{reg} + bi), 3.5)`
-        
-    where *ai* and *bi* are two parameters that have to be determined, so that the error (difference to the sorted frequencies of wind speeds from the GWA) is minimalized
-    for the whole scope. Instead of using a nonlinear optimization, we simply iterate over a range of discrete possibilities for *ai* and *bi*, save the errors, then pick
-    the combinations that minimize the error.
-    It is possible to weight the error of each country based on its area or on its installed onshore wind capacity, or to give the same weight to all the countries.
-    Finally, the three possible correction matrices are saved.
-
-    :param paths: Dictionary that contains the paths to wind speed data, topography, IRENA summary, Global Wind Atlass folder, and to the output location.
-    :type paths: dict
-    :param param: Dictionary that contains assumptions about the desired resolution, size of the output, shapefile of countries, and georeference dictionary.
-    :type param: dict
-
-    :return: The correction matrices are saved in the same MAT file, directly in the given path, along with the metadata in the corresponding JSON file.
-    :rtype: None
-    """
-    m_high = param["m_high"]
-    n_high = param["n_high"]
-    res_desired = param["res_desired"]
-    nCountries = param["nRegions_land"]
-    countries_shp = param["regions_land"]
-    Crd_countries = param["Crd_regions"][0:nCountries, :]
-    GeoRef = param["GeoRef"]
-
-    # Obtain wind speed at 50m
-    W50M = hdf5storage.read("W50M", paths["W50M"])
-    W50M = np.mean(W50M, 2)
-    W50M = ul.resizem(W50M, m_high, n_high)
-
-    # Obtain topography
-    with rasterio.open(paths["TOPO"]) as src:
-        w = src.read(1)
-    TOPO = np.flipud(w)
-
-    # Clean IRENA data and filter them for desired scope
-    if not os.path.isfile(paths["IRENA_summary"]):
-        clean_IRENA_summary(paths, param)
-
-    # Get the installed capacities
-    inst_cap = pd.read_csv(paths["IRENA_summary"], sep=";", decimal=",", index_col=0, usecols=[0, 1, 2])
-    inst_cap = inst_cap.loc[inst_cap["Technology"] == "Onshore wind energy"]
-
-    w_size = np.zeros((nCountries, 1))
-    w_cap = np.zeros((nCountries, 1))
-    # Try different combinations of (a, b)
-    combi_list = list(it.product(np.arange(0.00046, 0.00066, 0.00002), np.arange(-0.3, 0, 0.025)))
-    errors = np.zeros((len(combi_list), nCountries))
-    # status = 0
-    for reg in range(0, nCountries):
-        # Show status bar
-        # status = status + 1
-        # display_progress("Finding wind correction factors", (nCountries, status))
-
-        A_region = sf.calc_region(countries_shp.iloc[reg], Crd_countries[reg, :], res_desired, GeoRef)
-        reg_name = countries_shp.iloc[reg]["GID_0"]
-        Ind_reg = np.nonzero(A_region)
-        w_size[reg] = len(Ind_reg[0])
-        try:
-            w_cap[reg] = inst_cap.loc[reg_name, "inst-cap (MW)"]
-        except KeyError:
-            w_cap[reg] = 0
-
-        # Load MERRA data, increase its resolution, and fit it to the extent
-        w50m_reg = W50M[Ind_reg]
-        topo_reg = TOPO[Ind_reg]
-
-        # Get the sampled frequencies from the GWA
-        try:
-            try:
-                w50m_gwa = pd.read_csv(paths["GWA"][:-14] + reg_name + paths["GWA"][-14:], usecols=["gwa_ws"]).to_numpy()[:, 0]
-            except:
-                w50m_gwa = pd.read_csv(paths["GWA"][:-14] + reg_name + paths["GWA"][-14:], usecols=["val"]).to_numpy()[:, 0]
-        except:
-            w50m_gwa = pd.read_csv(paths["GWA"][:-14] + reg_name + paths["GWA"][-14:], usecols=[0]).to_numpy()[:, 0]
-
-        i = 0
-        for combi in combi_list:
-            ai, bi = combi
-            w50m_corrected = w50m_reg * np.minimum(np.exp(ai * topo_reg + bi), 3.5)
-            w50m_sorted = np.sort(w50m_corrected)
-            w50m_sampled = np.flipud(w50m_sorted[:: (len(w50m_sorted) // len(w50m_gwa) + 1)])
-            if len(w50m_sampled) != len(w50m_gwa):
-                len_diff = len(w50m_gwa) - len(w50m_sampled)
-                w50m_sampled = np.append(w50m_sampled, w50m_sorted[:len_diff])
-            try:
-                w50m_diff = w50m_sampled - w50m_gwa
-                errors[i, reg] = np.sqrt((w50m_diff ** 2).sum())
-            except ValueError:
-                errors[i, reg] = 0
-            i = i + 1
-
-    w_size = np.tile(w_size / w_size.sum(), (1, len(combi_list))).transpose()
-    w_cap = np.tile(w_cap / w_cap.sum(), (1, len(combi_list))).transpose()
-
-    ae, be = combi_list[np.argmin(np.sum(errors / nCountries, 1))]
-    correction_none = np.zeros(TOPO.shape)
-    correction_none = np.minimum(np.exp(ae * TOPO + be), 3.5)
-
-    a_size, b_size = combi_list[np.argmin(np.sum(errors * w_size, 1))]
-    correction_size = np.zeros(TOPO.shape)
-    correction_size = np.minimum(np.exp(a_size * TOPO + b_size), 3.5)
-
-    a_cap, b_cap = combi_list[np.argmin(np.sum(errors * w_cap, 1))]
-    correction_capacity = np.zeros(TOPO.shape)
-    correction_capacity = np.minimum(np.exp(a_cap * TOPO + b_cap), 3.5)
-
-    hdf5storage.writes(
-        {"correction_none": correction_none, "correction_size": correction_size, "correction_capacity": correction_capacity},
-        paths["CORR_GWA"],
-        store_python_metadata=True,
-        matlab_compatible=True,
-    )
-    ul.create_json(
-        paths["CORR_GWA"],
-        param,
-        ["author", "comment", "region_name", "subregions_name", "year", "Crd_all", "res_desired", "GeoRef"],
-        paths,
-        ["W50M", "TOPO", "IRENA_summary"],
-    )
-    return
 
 
 def clean_IRENA_summary(paths, param):

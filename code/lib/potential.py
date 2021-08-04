@@ -438,8 +438,6 @@ def calc_FLH_windon(param, tech, rasterData, merraData, GWA_array, b_xmin, b_xma
     logger.info('Done: ' + str(pixles))
 
 
-
-
 def redistribution_array(param, merraData, i, j, xmin, xmax, ymin, ymax, GWA_array, x_gwa, y_gwa):
     """
     What does this function do?
@@ -885,10 +883,12 @@ def weight_potential_maps(paths, param, tech): #ToDo change variable names
     """
     logger.info("Start")
     weight = param[tech]["weight"]
+    mask = param[tech]["mask"]
     Crd_all = param["Crd_all"]
     m_high = param["m_high"]
     n_high = param["n_high"]
     res_desired = param["res_desired"]
+    A_mask = hdf5storage.read("A_mask", paths[tech]["mask"])
     GeoRef = param["GeoRef"]
 
     if tech == "PV":
@@ -902,14 +902,14 @@ def weight_potential_maps(paths, param, tech): #ToDo change variable names
         A_protect = np.flipud(A_protect).astype(int)  # Protection categories 0-10, to be classified
 
     # Calculate availability based on protection categories
-    A_availability_pa = ul.changem(A_protect, weight["pa_suitability"], param["protected_areas"]["type"]).astype(float)
+    A_availability_pa = ul.changem(A_protect, mask["pa_suitability"], param["protected_areas"]["type"]).astype(float)
 
     with rasterio.open(paths["LU"]) as src:
         A_lu = src.read(1)
         A_lu = np.flipud(A_lu).astype(int)  # Landuse classes 0-16, to be reclassified
 
     # Calculate availability based on landuse types
-    A_availability_lu = ul.changem(A_lu, weight["lu_suitability"], param["landuse"]["type"]).astype(float)
+    A_availability_lu = ul.changem(A_lu, mask["lu_suitability"], param["landuse"]["type"]).astype(float)
 
     # Calculate availability
     A_availability = np.minimum(A_availability_pa, A_availability_lu)
@@ -919,7 +919,7 @@ def weight_potential_maps(paths, param, tech): #ToDo change variable names
     A_area = hdf5storage.read("A_area", paths["AREA"])
 
     # Weighting matrix for the power output (technical potential) in MWp
-    A_weight = A_area * A_availability * A_GCR * weight["power_density"] * weight["f_performance"]
+    A_weight = A_area * A_mask * A_GCR * weight["power_density"] * weight["f_performance"]
 
     # Calculate weighted FLH in MWh
     FLH = hdf5storage.read("FLH", paths[tech]["FLH"])
@@ -1117,30 +1117,30 @@ def report_potentials(paths, param, tech):
         power_potential = np.nansum(A_P_potential)
         regions.loc[reg, "Power_Potential_GW"] = power_potential / (10 ** 3)
 
-        # Power Potential after weighting
+        # Power Potential after weighting and masking
         A_P_W_potential = A_region_extended * A_weight
         power_potential_weighted = np.nansum(A_P_W_potential)
         regions.loc[reg, "Power_Potential_Weighted_GW"] = power_potential_weighted / (10 ** 3)
 
         # Power Potential after weighting and masking
-        A_P_W_M_potential = A_P_W_potential * A_masked
-        power_potential_weighted_masked = np.nansum(A_P_W_M_potential)
-        regions.loc[reg, "Power_Potential_Weighted_Masked_GW"] = power_potential_weighted_masked / (10 ** 3)
+        # A_P_W_M_potential = A_P_W_potential * A_masked
+        # power_potential_weighted_masked = np.nansum(A_P_W_M_potential)
+        # regions.loc[reg, "Power_Potential_Weighted_Masked_GW"] = power_potential_weighted_masked / (10 ** 3)
 
         # Energy Potential
         A_E_potential = A_P_potential * FLH_region
         energy_potential = np.nansum(A_E_potential)
         regions.loc[reg, "Energy_Potential_TWh"] = energy_potential / (10 ** 6)
 
-        # Energy Potential after weighting
+        # Energy Potential after weighting and masking
         A_E_W_potential = FLH_region * A_weight
         energy_potential_weighted = np.nansum(A_E_W_potential)
         regions.loc[reg, "Energy_Potential_Weighted_TWh"] = energy_potential_weighted / (10 ** 6)
 
         # Energy Potential After weighting and masking
-        A_E_W_M_potential = A_E_W_potential * A_masked
-        energy_potential_weighted_masked = np.nansum(A_E_W_M_potential)
-        regions.loc[reg, "Energy_Potential_Weighted_Masked_TWh"] = energy_potential_weighted_masked / (10 ** 6)
+        # A_E_W_M_potential = A_E_W_potential * A_masked
+        # energy_potential_weighted_masked = np.nansum(A_E_W_M_potential)
+        # regions.loc[reg, "Energy_Potential_Weighted_Masked_TWh"] = energy_potential_weighted_masked / (10 ** 6)
 
         sort = {}
         # Sorted FLH Sampling
@@ -1385,31 +1385,6 @@ def generate_biomass_production(paths, param, tech): #ToDo update to new LU sour
     logger.debug("End")
 
 
-# def country_region(regions, args):
-#     param = args[0]
-#     paths = args[1]
-#     regions_shp = args[2]
-#     Crd_all = args[3]
-#     res_desired = args[4]
-#     GeoRef = args[5]
-#
-#     m_high = param["m_high"]
-#     n_high = param["n_high"]
-#
-#     A_country_area = np.zeros([m_high, n_high])
-#     status = 0
-#     for reg in regions:
-#         if reg <= param["status_bar_limit"]:
-#             # Show progress of the simulation
-#             status = status + 1
-#             ul.display_progress("Country Area Pixels " + param["region_name"], [len(regions), status])
-#
-#         A_region_extended = sf.calc_region(regions_shp.loc[reg], Crd_all, res_desired, GeoRef)
-#         A_country_area = A_country_area + A_region_extended
-#
-#     return A_country_area
-
-
 def crop_residues_potential(regions, args):
     logger.info("Start")
     param = args[0]
@@ -1587,55 +1562,3 @@ def report_biomass_potentials(paths, param, tech):
     )
     logger.info("files saved: " + paths[tech]["Region_Stats"])
     logger.debug("End")
-
-
-def club_biomass(paths, param):
-    Crd_all = param["Crd_all"]
-    GeoRef = param["GeoRef"]
-    res_desired = param["res_desired"]
-
-    Bioenergy = rasterio.open(paths["BIOMASS_ENERGY"])
-    A_Bioenergy = Bioenergy.read(1)
-    A_Bioenergy_rows, A_Bioenergy_cols = A_Bioenergy.shape
-
-    West = rasterio.open(paths["West"])
-    A_West = West.read(1)
-    A_West_rows, A_West_cols = A_West.shape
-    ind_West = sf.ind_exact_points([West.xy(0, 0, offset='ul')[1], West.xy(0, 0, offset='ul')[0]], Crd_all, res_desired)
-    A_Bioenergy[A_Bioenergy_rows - ind_West[0]:A_Bioenergy_rows - ind_West[0] + A_West_rows,
-    ind_West[1]:ind_West[1] + A_West_cols] = A_Bioenergy[A_Bioenergy_rows - ind_West[0]:A_Bioenergy_rows - ind_West[
-        0] + A_West_rows, ind_West[1]:ind_West[1] + A_West_cols] + A_West
-
-    North = rasterio.open(paths["North"])
-    A_North = North.read(1)
-    A_North_rows, A_North_cols = A_North.shape
-    ind_North = sf.ind_exact_points([North.xy(0, 0, offset='ul')[1], North.xy(0, 0, offset='ul')[0]], Crd_all, res_desired)
-    A_Bioenergy[A_Bioenergy_rows - ind_North[0]:A_Bioenergy_rows - ind_North[0] + A_North_rows,
-    ind_North[1]:ind_North[1] + A_North_cols] = A_Bioenergy[
-                                                A_Bioenergy_rows - ind_North[0]:A_Bioenergy_rows - ind_North[
-                                                    0] + A_North_rows,
-                                                ind_North[1]:ind_North[1] + A_North_cols] + A_North
-
-    East = rasterio.open(paths["East"])
-    A_East = East.read(1)
-    A_East_rows, A_East_cols = A_East.shape
-    ind_East = sf.ind_exact_points([East.xy(0, 0, offset='ul')[1], East.xy(0, 0, offset='ul')[0]], Crd_all, res_desired)
-    A_Bioenergy[A_Bioenergy_rows - ind_East[0]:A_Bioenergy_rows - ind_East[0] + A_East_rows,
-    ind_East[1]:ind_East[1] + A_East_cols] = A_Bioenergy[A_Bioenergy_rows - ind_East[0]:A_Bioenergy_rows - ind_East[
-        0] + A_East_rows, ind_East[1]:ind_East[1] + A_East_cols] + A_East
-
-    South = rasterio.open(paths["South"])
-    A_South = South.read(1)
-    A_South_rows, A_South_cols = A_South.shape
-    ind_South = sf.ind_exact_points([South.xy(0, 0, offset='ul')[1], South.xy(0, 0, offset='ul')[0]], Crd_all, res_desired)
-    A_Bioenergy[A_Bioenergy_rows - ind_South[0]:A_Bioenergy_rows - ind_South[0] + A_South_rows,
-    ind_South[1]:ind_South[1] + A_South_cols] = A_Bioenergy[
-                                                A_Bioenergy_rows - ind_South[0]:A_Bioenergy_rows - ind_South[
-                                                    0] + A_South_rows,
-                                                ind_South[1]:ind_South[1] + A_South_cols] + A_South
-
-    A_Bioenergy = np.flipud(A_Bioenergy)
-    sf.array2raster(paths["CLUB_CO2"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_Bioenergy)
-    logger.info("files saved: " + paths["CLUB_CO2"])
-    ul.create_json(paths["CLUB_CO2"], param, ["region_name", "landuse", "Biomass", "Crd_all", "res_desired", "GeoRef"],
-                paths, ["LU", "BIOMASS_ENERGY"])

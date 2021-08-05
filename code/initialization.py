@@ -71,14 +71,14 @@ def test(param, paths):
     if "WindOff" in param["technology"]:
         countries = scope_shp['GID_0'].drop_duplicates()
         together = scope_shp.append(eez_shp[eez_shp['ISO_Ter1'].isin(countries)], sort=False)
-    together.plot()
+    # together.plot()
 
-    plt.show()
+    # plt.show()
 
 def read_shapefile_regions(param, regions_shp):
     logger.info("Start")
 
-    regions_shp = regions_shp[regions_shp.geometry.area > 0] # ToDo: Keep it?
+    # regions_shp = regions_shp[regions_shp.geometry.area > 0] # ToDo: Keep it?
     # regions_shp.sort_values(by=["NAME_SHORT"], inplace=True)
     regions_shp.sort_values(by=["GID_0"], inplace=True)     # ToDo: Replace 'GID_0' by variable
     regions_shp.reset_index(inplace=True)
@@ -111,7 +111,7 @@ def read_shapefile_EEZ(paths, param, scope_shp):
     # eez_shp.plot()
     # test.plot()
     # plt.show()
-    eez_shp = eez_shp[eez_shp.geometry.area > 0]
+    # eez_shp = eez_shp[eez_shp.geometry.area > 0]
     param["regions_sea"] = eez_shp
     param["nRegions_sea"] = len(eez_shp)
 

@@ -689,14 +689,14 @@ def generate_landuse(paths, param): #ToDo remove the res_landuse
     else:
         logger.info("Start")
         Crd_all = param["Crd_all"]
-        Ind = sf.ind_global(Crd_all, param["res_landuse"])[0]
+        Ind = sf.ind_global(Crd_all, param["res_desired"])[0]
         GeoRef = param["GeoRef"]
         with rasterio.open(paths["LU_global"]) as src:
             A_lu = src.read(1, window=rasterio.windows.Window.from_slices(slice(Ind[0] - 1, Ind[2]), slice(Ind[3] - 1, Ind[1])))
             A_lu = np.flipud(A_lu).astype(int)
         sf.array2raster(paths["LU"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_lu)
         logger.info("files saved: " + paths["LU"])
-        ul.create_json(paths["LU"], param, ["region_name", "Crd_all", "res_landuse", "res_desired", "GeoRef"], paths, ["LU_global", "LU"])
+        ul.create_json(paths["LU"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["LU_global", "LU"])
 
     # Buffer map for snow
     if os.path.isfile(paths["SNOW_BUFFER"]):
@@ -997,7 +997,7 @@ def generate_osm_areas(paths, param):
         sf.shape2raster(paths["OSM_Landuse"], paths["OSM_AREAS"], "fclass", osm_type, paths["LAND"])
         logger.info("files saved: " + paths["OSM_AREAS"])
         ul.create_json(paths["OSM_AREAS"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
-                    ["OSM", "OSM_AREAS"])
+                    ["OSM_AREAS"])
 
     # Create Buffer osm maps
     logger.info("Start-Buffer")
@@ -1015,7 +1015,7 @@ def generate_osm_areas(paths, param):
                                   paths["OSM_COM_BUFFER"])
         logger.info("files saved: " + paths["OSM_COM_BUFFER"])
         ul.create_json(paths["OSM_COM_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
-                       ["OSM", "OSM_COM_BUFFER"])
+                       ["OSM_COM_BUFFER"])
 
     # Industrical Areas
     if os.path.isfile(paths["OSM_IND_BUFFER"]):
@@ -1027,7 +1027,7 @@ def generate_osm_areas(paths, param):
                                   paths["OSM_IND_BUFFER"])
         logger.info("files saved: " + paths["OSM_IND_BUFFER"])
         ul.create_json(paths["OSM_IND_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
-                       ["OSM", "OSM_IND_BUFFER"])
+                       ["OSM_IND_BUFFER"])
 
     # Mining Areas
     if os.path.isfile(paths["OSM_MINE_BUFFER"]):
@@ -1039,7 +1039,7 @@ def generate_osm_areas(paths, param):
                                   paths["OSM_MINE_BUFFER"])
         logger.info("files saved: " + paths["OSM_MINE_BUFFER"])
         ul.create_json(paths["OSM_MINE_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
-                       ["OSM", "OSM_MINE_BUFFER"])
+                       ["OSM_MINE_BUFFER"])
 
     # Military Areas
     if os.path.isfile(paths["OSM_MIL_BUFFER"]):
@@ -1051,7 +1051,7 @@ def generate_osm_areas(paths, param):
                                   paths["OSM_MIL_BUFFER"])
         logger.info("files saved: " + paths["OSM_MIL_BUFFER"])
         ul.create_json(paths["OSM_MIL_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
-                       ["OSM", "OSM_MIL_BUFFER"])
+                       ["OSM_MIL_BUFFER"])
 
     # Parks
     logger.info('Start-Park')
@@ -1066,7 +1066,7 @@ def generate_osm_areas(paths, param):
         logger.info("files saved: " + paths["WINDON_OSM_PARK_BUFFER"])
         ul.create_json(paths["WINDON_OSM_PARK_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"],
                        paths,
-                       ["OSM", "WINDON_OSM_PARK_BUFFER"])
+                       ["WINDON_OSM_PARK_BUFFER"])
     # PV
     if os.path.isfile(paths["PV_OSM_PARK_BUFFER"]):
         logger.info('Skip-PV')  # Skip generation if files are already there
@@ -1077,7 +1077,7 @@ def generate_osm_areas(paths, param):
         logger.info("files saved: " + paths["PV_OSM_PARK_BUFFER"])
         ul.create_json(paths["PV_OSM_PARK_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"],
                        paths,
-                       ["OSM", "PV_OSM_PARK_BUFFER"])
+                       ["PV_OSM_PARK_BUFFER"])
 
     # Recreational Areas
     if os.path.isfile(paths["OSM_REC_BUFFER"]):
@@ -1089,7 +1089,7 @@ def generate_osm_areas(paths, param):
                                   paths["OSM_REC_BUFFER"])
         logger.info("files saved: " + paths["OSM_REC_BUFFER"])
         ul.create_json(paths["OSM_REC_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
-                       ["OSM", "OSM_REC_BUFFER"])
+                       ["OSM_REC_BUFFER"])
 
     logger.debug("End")
 
@@ -1108,7 +1108,7 @@ def generate_settlements(paths, param):
     :rtype: None
     """
     Crd_all = param["Crd_all"]
-    Ind = sf.ind_global(Crd_all, param["res_settlements"])[0]
+    Ind = sf.ind_global(Crd_all, param["res_desired"])[0]
     GeoRef = param["GeoRef"]
     logger.info("Start")
 
@@ -1121,7 +1121,7 @@ def generate_settlements(paths, param):
             A_wsf = np.flipud(A_wsf)
         sf.array2raster(paths["WSF"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_wsf)
         logger.info("files saved: " + paths["WSF"])
-        ul.create_json(paths["WSF"], param, ["region_name", "Crd_all", "res_settlements", "res_desired", "GeoRef"], paths,
+        ul.create_json(paths["WSF"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
                     ["WSF_global", "WSF"])
 
     # PV buffer
@@ -1133,7 +1133,7 @@ def generate_settlements(paths, param):
         sf.create_buffered_raster(A_wsf, param["buffer"]["settlement_pv"], param["GeoRef"],
                                   paths["PV_WSF_BUFFER"])
         logger.info("files saved: " + paths["PV_WSF_BUFFER"])
-        ul.create_json(paths["PV_WSF_BUFFER"], param, ["region_name", "Crd_all", "res_settlements", "res_desired", "GeoRef"],
+        ul.create_json(paths["PV_WSF_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"],
                     paths, ["WSF_global", "PV_WSF_BUFFER"])
 
     # Onshore wind buffer
@@ -1145,7 +1145,7 @@ def generate_settlements(paths, param):
                                   paths["WINDON_WSF_BUFFER"])
         logger.info("files saved: " + paths["WINDON_WSF_BUFFER"])
         ul.create_json(paths["WINDON_WSF_BUFFER"], param,
-                    ["region_name", "Crd_all", "res_settlements", "res_desired", "GeoRef"], paths,
+                    ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
                     ["WSF_global", "WINDON_WSF_BUFFER"])
 
     logger.debug("End")
@@ -1240,7 +1240,7 @@ def generate_livestock(paths, param):
         ul.create_json(paths["LS"] + animal + ".tif", param,
                        ["region_name", "Crd_all", "res_livestock", "res_desired", "GeoRef"], paths, ["LS_global", "LS"])
 
-    logger.debuf("End")
+    logger.debug("End")
 
 
 # def generate_population(paths, param): #ToDo function Not needed

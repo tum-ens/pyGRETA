@@ -437,8 +437,12 @@ def recalc_livestock_resolution(array, res_data, res_desired):
 
 
 def create_buffered_raster(array, buffer_pixel_amount, GeoRef, Outraster):
-    kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
-    kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
+    kernel = np.zeros((2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1))
+    y, x = np.ogrid[-buffer_pixel_amount:buffer_pixel_amount + 1, -buffer_pixel_amount:buffer_pixel_amount + 1]
+    mask = x ** 2 + y ** 2 <= buffer_pixel_amount ** 2
+    kernel[mask] = 1
+    # kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
+    # kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
     A_array = scipy.ndimage.maximum_filter(array, footprint=kernel, mode="constant", cval=0)
     A_NotArray = (~A_array).astype(int)
     array2raster(Outraster, GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],

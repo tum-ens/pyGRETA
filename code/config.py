@@ -452,7 +452,7 @@ def buffers(param):
         "mining" : 1,
         "military_windon" : 2,
         "park_pv" : 1,
-        "park_windon" : 2,
+        "park_windon" : 3,
         "recreation_windon" : 1,
 
         "settlement_pv": 1,
@@ -714,62 +714,141 @@ def biomass_parameters(param):
     biomass["agriculture"] = {
         "crops": np.array(
             [
-                "Rice_Paddy",
+                "Rice, paddy",
                 "Maize",
                 "Sugarcane",
-                # "Oil_Palm",
+                "Oil_Palm",
                 "Cassava",
                 "Coconut",
                 "Coffee_Green",
-                "Groundnut"
+                "Groundnut",
+                "Sugar beet",
+                "Wheat",
+                "Barley",
+                "Rye",
+                "Rapeseed",
+                "Oats"
             ]
         ),
         "residue": {
-            "Rice_Paddy": ["Straw", "Husk"],
+            "Rice, paddy": ["Straw", "Husk"],
             "Maize": ["Stalk", "Cob"],
             "Sugarcane": ["Bagasse", "Top&Leave"],
             "Oil_Palm": ["Shell", "Fiber", "EFB", "POME", "Frond"],
             "Cassava": ["Stalk"],
             "Coconut": ["Husk", "Shell", "Frond"],
             "Coffee_Green": ["Husk"],
-            "Groundnut": ["Shell", "Straw"]
-        }
+            "Groundnut": ["Shell", "Straw"],
+            "Sugar beet": ["Leaves"],
+            "Wheat": ["Straw"],
+            "Barley": ["Straw"],
+            "Rye": ["Straw"],
+            "Rapeseed": ["Straw"],
+            "Oats": ["Straw"]
+        },
+        "rpr": {
+            "Rice, paddy": {"Straw": 1.00, "Husk": 0.27},
+            "Maize": {"Stalk": 1.00, "Cob": 0.25},
+            "Sugarcane": {"Bagasse": 0.25, "Top&Leave": 0.30},
+            "Oil_Palm": {"Shell": 0.07, "Fiber": 0.13, "EFB": 0.23, "POME": 0.67, "Frond": 0.55},
+            "Cassava": {"Stalk": 0.09},
+            "Coconut": {"Husk": 0.36, "Shell": 0.16, "Frond": 0.23},
+            "Coffee_Green": {"Husk": 2.10},
+            "Groundnut": {"Shell": 0.32, "Straw": 2.30},
+            "Sugar beet": {"Leaves": 0.3},
+            "Wheat": {"Straw": 1.2},
+            "Barley": {"Straw": 1.1},
+            "Rye": {"Straw": 1.3},
+            "Rapeseed": {"Straw": 1.7},
+            "Oats": {"Straw": 1.2}
+        },
+        "af": {
+            "Rice, paddy": {"Straw": 0.5, "Husk": 0.47},
+            "Maize": {"Stalk": 0.33, "Cob": 0.67},
+            "Sugarcane": {"Bagasse": 0.21, "Top&Leave": 0.99},
+            "Oil_Palm": {"Shell": 0.04, "Fiber": 0.13, "EFB": 0.58, "POME": 0.65, "Frond": 0.05},
+            "Cassava": {"Stalk": 0.41},
+            "Coconut": {"Husk": 0.60, "Shell": 0.38, "Frond": 0.81},
+            "Coffee_Green": {"Husk": 0.33},
+            "Groundnut": {"Shell": 1.00, "Straw": 0.33},
+            "Sugar beet": {"Leaves": 0.4},
+            "Wheat": {"Straw": 0.4},
+            "Barley": {"Straw": 0.4},
+            "Rye": {"Straw": 0.4},
+            "Rapeseed": {"Straw": 0.5},
+            "Oats": {"Straw": 0.4}
+        },
+        "lhv": {
+            "Rice, paddy": {"Straw": 3.89, "Husk": 3.57},
+            "Maize": {"Stalk": 3.97, "Cob": 4.62},
+            "Sugarcane": {"Bagasse": 1.79, "Top&Leave": 1.89},
+            "Oil_Palm": {"Shell": 4.72, "Fiber": 3.08, "EFB": 1.69, "POME": 0.17, "Frond": 2.21},
+            "Cassava": {"Stalk": 4.72},
+            "Coconut": {"Husk": 4.09, "Shell": 4.58, "Frond": 4.04},
+            "Coffee_Green": {"Husk": 3.44},
+            "Groundnut": {"Shell": 3.12, "Straw": 4.88},
+            "Sugar beet": {"Leaves": 3.7},
+            "Wheat": {"Straw": 4},
+            "Barley": {"Straw": 4},
+            "Rye": {"Straw": 4},
+            "Rapeseed": {"Straw": 4},
+            "Oats": {"Straw": 4}
+        },  # MWh/ton
+        "emission factor" : 1585  # kg/ton of crop residues
     }
-    biomass["agro_rpr"] = {
-        "Rice_Paddy": {"Straw": 1.00, "Husk": 0.27},
-        "Maize": {"Stalk": 1.00, "Cob": 0.25},
-        "Sugarcane": {"Bagasse": 0.25, "Top&Leave": 0.30},
-        "Oil_Palm": {"Shell": 0.07, "Fiber": 0.13, "EFB": 0.23, "POME": 0.67, "Frond": 0.55},
-        "Cassava": {"Stalk": 0.09},
-        "Coconut": {"Husk": 0.36, "Shell": 0.16, "Frond": 0.23},
-        "Coffee_Green": {"Husk": 2.10},
-        "Groundnut": {"Shell": 0.32, "Straw": 2.30}
-    }
-    biomass["agro_af"] = {
-        "Rice_Paddy": {"Straw": 0.5, "Husk": 0.47},
-        "Maize": {"Stalk": 0.33, "Cob": 0.67},
-        "Sugarcane": {"Bagasse": 0.21, "Top&Leave": 0.99},
-        "Oil_Palm": {"Shell": 0.04, "Fiber": 0.13, "EFB": 0.58, "POME": 0.65, "Frond": 0.05},
-        "Cassava": {"Stalk": 0.41},
-        "Coconut": {"Husk": 0.60, "Shell": 0.38, "Frond": 0.81},
-        "Coffee_Green": {"Husk": 0.33},
-        "Groundnut": {"Shell": 1.00, "Straw": 0.33}
-    }
-    biomass["agro_lhv"] = {
-        "Rice_Paddy": {"Straw": 3.89, "Husk": 3.57},
-        "Maize": {"Stalk": 3.97, "Cob": 4.62},
-        "Sugarcane": {"Bagasse": 1.79, "Top&Leave": 1.89},
-        "Oil_Palm": {"Shell": 4.72, "Fiber": 3.08, "EFB": 1.69, "POME": 0.17, "Frond": 2.21},
-        "Cassava": {"Stalk": 4.72},
-        "Coconut": {"Husk": 4.09, "Shell": 4.58, "Frond": 4.04},
-        "Coffee_Green": {"Husk": 3.44},
-        "Groundnut": {"Shell": 3.12, "Straw": 4.88}
-    }  # MWh/ton
-    biomass['agro_emission factor'] = 1585  # kg/ton of crop residues
+    # biomass["agro_rpr"] = {
+    #     "Rice, paddy": {"Straw": 1.00, "Husk": 0.27},
+    #     "Maize": {"Stalk": 1.00, "Cob": 0.25},
+    #     "Sugarcane": {"Bagasse": 0.25, "Top&Leave": 0.30},
+    #     "Oil_Palm": {"Shell": 0.07, "Fiber": 0.13, "EFB": 0.23, "POME": 0.67, "Frond": 0.55},
+    #     "Cassava": {"Stalk": 0.09},
+    #     "Coconut": {"Husk": 0.36, "Shell": 0.16, "Frond": 0.23},
+    #     "Coffee_Green": {"Husk": 2.10},
+    #     "Groundnut": {"Shell": 0.32, "Straw": 2.30},
+    #     "Sugar beet": {"Leaves": 0.3},
+    #     "Wheat": {"Straw": 1.2},
+    #     "Barley": {"Straw": 1.1},
+    #     "Rye": {"Straw": 1.3},
+    #     "Rapeseed": {"Straw": 1.7},
+    #     "Oats": {"Straw": 1.2}
+    # }
+    # biomass["agro_af"] = {
+    #     "Rice, paddy": {"Straw": 0.5, "Husk": 0.47},
+    #     "Maize": {"Stalk": 0.33, "Cob": 0.67},
+    #     "Sugarcane": {"Bagasse": 0.21, "Top&Leave": 0.99},
+    #     "Oil_Palm": {"Shell": 0.04, "Fiber": 0.13, "EFB": 0.58, "POME": 0.65, "Frond": 0.05},
+    #     "Cassava": {"Stalk": 0.41},
+    #     "Coconut": {"Husk": 0.60, "Shell": 0.38, "Frond": 0.81},
+    #     "Coffee_Green": {"Husk": 0.33},
+    #     "Groundnut": {"Shell": 1.00, "Straw": 0.33},
+    #     "Sugar beet": {"Leaves": 0.4},
+    #     "Wheat": {"Straw": 0.4},
+    #     "Barley": {"Straw": 0.4},
+    #     "Rye": {"Straw": 0.4},
+    #     "Rapeseed": {"Straw": 0.5},
+    #     "Oats": {"Straw": 0.4}
+    # }
+    # biomass["agro_lhv"] = {
+    #     "Rice, paddy": {"Straw": 3.89, "Husk": 3.57},
+    #     "Maize": {"Stalk": 3.97, "Cob": 4.62},
+    #     "Sugarcane": {"Bagasse": 1.79, "Top&Leave": 1.89},
+    #     "Oil_Palm": {"Shell": 4.72, "Fiber": 3.08, "EFB": 1.69, "POME": 0.17, "Frond": 2.21},
+    #     "Cassava": {"Stalk": 4.72},
+    #     "Coconut": {"Husk": 4.09, "Shell": 4.58, "Frond": 4.04},
+    #     "Coffee_Green": {"Husk": 3.44},
+    #     "Groundnut": {"Shell": 3.12, "Straw": 4.88},
+    #     "Sugar beet": {"Leaves": 3.7},
+    #     "Wheat": {"Straw": 4},
+    #     "Barley": {"Straw": 4},
+    #     "Rye": {"Straw": 4},
+    #     "Rapeseed": {"Straw": 4},
+    #     "Oats": {"Straw": 4}
+    # }  # MWh/ton
+    # biomass['agro_emission factor'] = 1585  # kg/ton of crop residues
 
     biomass["forest"] = {
-        "density, coniferous": 0.75,  # tons/m3
-        "density, non-coniferous": 0.85,  # tons/m3
+        "woods" : np.array(["Wood fuel, coniferous","Wood fuel, non-coniferous"]),
+        "density" : {"Wood fuel, coniferous": 0.75,"Wood fuel, non-coniferous":  0.85},  # tons/m3
         "rpr": 0.67,
         "af": 0.4,
         "lhv": 4.31,  # MWh/ton
@@ -866,10 +945,8 @@ def global_maps_input_paths(paths, param):
     # paths["Pop_global"] = PathTemp + "Population" + fs + "gpw_v4_population_count_rev10_2015_30_sec.tif"
     # param["res_population"] = np.array([1 / 120, 1 / 120])
 
-    paths["Biomass_Crops"] = PathTemp + "FAOSTAT" + fs + "Admin level 2_"
+    paths["Biomass_Crops"] = PathTemp + "FAOSTAT" + fs + "FAOSTAT_data_7-26-2021.csv"
     paths["Biomass_Forestry"] = PathTemp + "FAOSTAT" + fs + "FAOSTAT_Forestry_data_6-2-2021.csv"
-
-
 
     return paths, param
 

@@ -3,6 +3,8 @@ import lib.input_maps as im
 import lib.potential as pl
 from lib.log import logger
 import initialization as ii
+import lib.time_series as ts
+import lib.regression as rg
 import os
 import psutil
 
@@ -35,23 +37,23 @@ if __name__ == "__main__":
                 pl.generate_biomass_production(paths, param, tech)
                 pl.report_biomass_potentials(paths, param, tech)
 
-            else:
+            # else:
                 # Generate potential maps and reports
-                pl.calculate_full_load_hours(paths, param, tech, multiprocessing)
-                pl.mask_potential_maps(paths, param, tech)
-                pl.weight_potential_maps(paths, param, tech)
-                pl.report_potentials(paths, param, tech)
+                # pl.calculate_full_load_hours(paths, param, tech, multiprocessing)
+                # pl.mask_potential_maps(paths, param, tech)
+                # pl.weight_potential_maps(paths, param, tech)
+                # pl.report_potentials(paths, param, tech)
 
                 # Generate time series
-                #find_representative_locations(paths, param, tech)
-                #generate_time_series_for_representative_locations(paths, param, tech)
-                #generate_time_series_for_specific_locations(paths, param, tech)
+                # ts.find_representative_locations(paths, param, tech)
+                # ts.generate_time_series_for_representative_locations(paths, param, tech)
+                # ts.generate_time_series_for_specific_locations(paths, param, tech)
 
-        #for tech in param["technology"]:
-         #   print("Tech: " + tech)
+        for tech in param["technology"]:
+            logger.info("Tech: " + tech)
 
             # Generate regression coefficients for FLH and TS model matching
-            #get_regression_coefficients(paths, param, tech)
+            rg.get_regression_coefficients(paths, param, tech)
 
             # Generate times series for combinations of technologies and locations
-            #generate_time_series_for_regions(paths, param, tech)
+            ts.generate_time_series_for_regions(paths, param, tech)

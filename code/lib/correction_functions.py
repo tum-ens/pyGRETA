@@ -93,7 +93,7 @@ def generate_wind_correction(paths, param):
             A_cf_on = A_cf_on * A_land
             del A_land
             sf.array2raster(paths["CORR_ON"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf_on)
-            ul.create_json(paths["CORR_ON"], param, ["region_name", "year", "WindOn", "landuse", "res_weather", "res_desired"], paths, ["LAND", "CORR_GWA"])
+            ul.create_json(paths["CORR_ON"], param, ["region_name", "year", "WindOn", "landuse", "res_weather", "res_desired"], paths, ["LAND"])
             logger.info("files saved: " + paths["CORR_ON"])
 
         # Offshore height correction
@@ -106,7 +106,7 @@ def generate_wind_correction(paths, param):
             A_cf_off = A_cf_off * A_eez
 
             sf.array2raster(paths["CORR_OFF"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf_off)
-            ul.create_json(paths["CORR_OFF"], param, ["region_name", "year", "WindOff", "landuse", "res_weather", "res_desired"], paths, ["CORR_GWA"])
+            ul.create_json(paths["CORR_OFF"], param, ["region_name", "year", "WindOff", "landuse", "res_weather", "res_desired"], paths, ["EEZ"])
             logger.info("files saved: " + paths["CORR_OFF"])
         logger.debug("End")
 

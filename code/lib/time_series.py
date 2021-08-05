@@ -7,6 +7,9 @@ import pandas as pd
 import numpy as np
 import multiprocessing as mp
 import fiona
+from shapely.geometry import mapping, Point
+from warnings import warn
+from glob import glob
 
 def find_representative_locations(paths, param, tech):
     """
@@ -33,10 +36,10 @@ def find_representative_locations(paths, param, tech):
     GeoRef = param["GeoRef"]
     # Select only indices in the report
     filter = pd.read_csv(paths[tech]["Region_Stats"], sep=";", decimal=",", index_col=0).index
-    regions_shp = param["regions_sub"].loc[filter]
+    regions_shp = param["regions_land"].loc[filter]
     nRegions = len(regions_shp)
-    Crd_regions = param["Crd_subregions"]
-    Ind = ind_merra(Crd_regions, Crd_all, res_desired)
+    Crd_regions_land = param["Crd_regions_land"]
+    Ind = ind_merra(Crd_regions_land, Crd_all, res_desired)
     
     reg_ind = np.zeros((nRegions, len(quantiles), 2))
     k = 0
@@ -44,7 +47,7 @@ def find_representative_locations(paths, param, tech):
     list_quantiles = []
     for reg in filter:
         # A_region
-        A_region = calc_region(regions_shp.loc[reg], Crd_regions[reg, :], res_desired, GeoRef)
+        A_region = calc_region(regions_shp.loc[reg], Crd_regions_land[reg, :], res_desired, GeoRef)
 
         FLH_reg = A_region * FLH_mask[Ind[reg, 2] - 1 : Ind[reg, 0], Ind[reg, 3] - 1 : Ind[reg, 1]]
         FLH_reg[FLH_reg == 0] = np.nan
@@ -105,7 +108,7 @@ def find_representative_locations(paths, param, tech):
         param,
         ["author", "comment", tech, "region_name", "subregions_name", "quantiles", "Crd_all"],
         paths,
-        ["spatial_scope", "subregions"],
+        ["subregions"],
     )
     print("files saved: " + paths[tech]["Locations"])
     ul.timecheck("End")
@@ -145,22 +148,16 @@ def generate_time_series_for_representative_locations(paths, param, tech):
     param["status_bar_limit"] = list_hours[-1]
     
     param[tech]["Ind_merra_points"] = hdf5storage.read("Ind_points", paths[tech]["Locations"][:-4] + "_Ind.mat")
-    print (param[tech]["Ind_points"][0])
-    print (param[tech]["Ind_points"][1])
-        
+
     for p in range(len(param[tech]["Ind_points"][0])):
         param[tech]["Ind_merra_points"][0][p] = (m_high-param[tech]["Ind_points"][0][p]-1)/200
         param[tech]["Ind_merra_points"][1][p] = (param[tech]["Ind_points"][1][p]+1)/250
 
-    print (param[tech]["Ind_merra_points"][0])
-    print (param[tech]["Ind_merra_points"][1])
-    
     # Obtain weather and correction matrices
     param["Ind_nz"] = param[tech]["Ind_points"]
-    merraData, rasterData = get_merra_raster_data(paths, param, tech)
+    merraData, rasterData = pl.get_merra_raster_data(paths, param, tech)
     
     if tech in ["PV", "CSP"]:
-
         day_filter = np.nonzero(merraData["CLEARNESS"][Ind[2] - 1 : Ind[0], Ind[3] - 1 : Ind[1], :].sum(axis=(0, 1)))
         list_hours = np.arange(0, 8760)
         if nproc == 1:
@@ -169,7 +166,7 @@ def generate_time_series_for_representative_locations(paths, param, tech):
         else:
             list_hours = np.array_split(list_hours[day_filter], nproc)
             param["status_bar_limit"] = list_hours[0][-1]
-            results = mp.Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(
+            results = mp.Pool(processes=nproc, initializer=ul.limit_cpu, initargs=CPU_limit).starmap(
                 calc_TS_solar, it.product(list_hours, [[param, tech, rasterData, merraData]])
             )
         print("\n")    
@@ -185,7 +182,7 @@ def generate_time_series_for_representative_locations(paths, param, tech):
     elif tech in ["WindOff"]:
         list_hours = np.array_split(np.arange(0, 8760), nproc)
         param["status_bar_limit"] = list_hours[0][-1]
-        results = mp.Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(
+        results = mp.Pool(processes=nproc, initializer=ul.limit_cpu, initargs=CPU_limit).starmap(
             calc_TS_windoff, it.product(list_hours, [[param, tech, rasterData, merraData]])
         )
         print("\n")
@@ -208,9 +205,8 @@ def generate_time_series_for_representative_locations(paths, param, tech):
         
         with rasterio.open(paths["GWA_global"]) as src:
             GWA_array = src.read(1)
-        GWA_array = np.power(GWA_array, 3)
-        where_are_NaNs = np.isnan(GWA_array)
-        GWA_array[where_are_NaNs] = 0
+        # GWA_array = np.power(GWA_array, 3)
+        GWA_array[np.isnan(GWA_array)] = 0
 
         x_gwa = hdf5storage.read("GWA_X", paths["GWA_X"])
         y_gwa = hdf5storage.read("GWA_Y", paths["GWA_Y"])
@@ -225,22 +221,16 @@ def generate_time_series_for_representative_locations(paths, param, tech):
         else:
             list_points = np.array_split(list_points,nproc)
             param["status_bar_limit"] = list_points[0][-1]
-            results = mp.Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(
+            results = mp.Pool(processes=nproc, initializer=ul.limit_cpu, initargs=CPU_limit).starmap(
                 calc_TS_windon, it.product(list_points, [[param, tech, paths, rasterData, merraData, b_xmin, b_xmax, b_ymin, b_ymax, GWA_array, x_gwa, y_gwa]])
             )
-            
             for p in range(len(results)):
                 TS = TS + results[p]
-            
-            # for point,result in enumerate(results):
-                # TS[(list_points[sublist][0]+point),:] = result
-
-
     print("\n")
 
     # Restructuring results
     tuples = list(zip(list_names, list_quantiles))
-    column_names = pd.MultiIndex.from_tuples(tuples, names=["NAME_SHORT", "Quantile"])
+    column_names = pd.MultiIndex.from_tuples(tuples, names=["GID_0", "Quantile"])
     results = pd.DataFrame(TS.transpose(), columns=column_names)
     results.to_csv(paths[tech]["TS"], sep=";", decimal=",")
     ul.create_json(
@@ -248,7 +238,7 @@ def generate_time_series_for_representative_locations(paths, param, tech):
         param,
         ["author", "comment", tech, "quantiles", "region_name", "subregions_name", "year", "Crd_all"],
         paths,
-        [tech, "spatial_scope", "subregions"],
+        [tech, "subregions"],
     )
     print("files saved: " + paths[tech]["TS"])
     ul.timecheck("End")
@@ -316,25 +306,14 @@ def generate_time_series_for_specific_locations(paths, param, tech):
         param[tech]["Crd_points"] = (crd[0], crd[1], list_names, list_points)
         param[tech]["Ind_points"] = ind_exact_points(crd, Crd_all, res_desired)
         param[tech]["Ind_merra_points"] = ind
-        
-        ind_gwa_merra_x = hdf5storage.read("IND_GWA_MERRA_X", paths["IND_GWA_MERRA_X"])
-        ind_gwa_merra_y = hdf5storage.read("IND_GWA_MERRA_Y", paths["IND_GWA_MERRA_Y"])
-        ind_gwa_merra_x = np.flipud(ind_gwa_merra_x)
-        ind_gwa_merra_y = np.flipud(ind_gwa_merra_y)
-        
-        print (param[tech]["Ind_points"][0])
-        print (param[tech]["Ind_points"][1])
-        
+
         for p in range(len(crd[0])):
             param[tech]["Ind_merra_points"][0][p] = (m_high-ind[0][p]-1)/200
             param[tech]["Ind_merra_points"][1][p] = (ind[1][p]+1)/250
 
-        print (param[tech]["Ind_merra_points"][0])
-        print (param[tech]["Ind_merra_points"][1])
-
         # Obtain weather and correction matrices
         param["Ind_nz"] = param[tech]["Ind_points"]
-        merraData, rasterData = get_merra_raster_data(paths, param, tech)
+        merraData, rasterData = pl.get_merra_raster_data(paths, param, tech)
         
         for p in range(len(crd[0])):
             print (rasterData["A_cf"][ind[0][p],ind[1][p]])
@@ -352,7 +331,7 @@ def generate_time_series_for_specific_locations(paths, param, tech):
             else:
                 list_hours = np.array_split(list_hours[day_filter], nproc)
                 param["status_bar_limit"] = list_hours[0][-1]
-                results = mp.Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(
+                results = mp.Pool(processes=nproc, initializer=ul.limit_cpu, initargs=CPU_limit).starmap(
                     calc_TS_solar, it.product(list_hours, [[param, tech, rasterData, merraData]])
                 )
             print("\n")
@@ -368,7 +347,7 @@ def generate_time_series_for_specific_locations(paths, param, tech):
         elif tech in ["WindOff"]:
             list_hours = np.array_split(np.arange(0, 8760), nproc)
             param["status_bar_limit"] = list_hours[0][-1]
-            results = mp.Pool(processes=nproc, initializer=limit_cpu, initargs=CPU_limit).starmap(
+            results = mp.Pool(processes=nproc, initializer=ul.limit_cpu, initargs=CPU_limit).starmap(
                 calc_TS_windoff, it.product(list_hours, [[param, tech, rasterData, merraData]])
             )
             print("\n")
@@ -391,9 +370,8 @@ def generate_time_series_for_specific_locations(paths, param, tech):
         
             with rasterio.open(paths["GWA_global"]) as src:
                 GWA_array = src.read(1)
-            GWA_array = np.power(GWA_array, 3)
-            where_are_NaNs = np.isnan(GWA_array)
-            GWA_array[where_are_NaNs] = 0
+            # GWA_array = np.power(GWA_array, 3)
+            GWA_array[np.isnan(GWA_array)] = 0
 
             x_gwa = hdf5storage.read("GWA_X", paths["GWA_X"])
             y_gwa = hdf5storage.read("GWA_Y", paths["GWA_Y"])
@@ -410,7 +388,7 @@ def generate_time_series_for_specific_locations(paths, param, tech):
             param,
             ["author", "comment", tech, "useloc", "region_name", "subregions_name", "year", "Crd_all"],
             paths,
-            [tech, "spatial_scope", "subregions"],
+            [tech, "subregions"],
         )
         print("files saved: " + paths[tech]["TS_discrete"])
     ul.timecheck("End")
@@ -544,40 +522,28 @@ def calc_TS_windon(point, args):
     y_gwa = args[11]
     
     m_high = param["m_high"]
-    n_high = param["n_high"]
-    m_low = param["m_low"]
-    n_low = param["n_low"]
-    #reg_ind = param["Ind_nz"]
-    res_weather = param["res_weather"]
-    res_desired = param["res_desired"]
-    
     turbine = param[tech]["technical"]
     Ind_merra_points = param[tech]["Ind_merra_points"]
     Ind_points = param[tech]["Ind_points"]
 
     TS = np.zeros((len(Ind_points[0]), 8760))
-    
-    #No of pixels from gwa for each pixel from merra
-    Num_pix = (res_weather[0] * res_weather[1]) / (res_desired[0] * res_desired[1])
+
     status = 0
     for p in point:
         if p <= param["status_bar_limit"]:
             # Show progress of the simulation
             status = status + 1
             ul.display_progress(tech + " " + param["subregions_name"] + " ", (len(point), status))
-        #print(str(Ind_merra_points[0][p])+"_"+str(Ind_merra_points[1][p]))
+
         i = Ind_merra_points[0][p]
         j = Ind_merra_points[1][p]
-            
-        reMerra = pl.redistribution_array(param, paths, merraData[i,j,:],i,j,b_xmin[i,j],b_xmax[i,j],b_ymin[i,j],b_ymax[i,j],GWA_array,x_gwa,y_gwa,Num_pix)
+        reMerra = pl.redistribution_array(param, merraData[i,j,:],i,j,b_xmin[i,j],b_xmax[i,j],b_ymin[i,j],b_ymax[i,j],GWA_array,x_gwa,y_gwa)
         reRaster = np.flipud(rasterData["A_cf"])
         if np.sum(reMerra):
-            for hour in range(8760):
-                # Calculate hourly capacity factor
-                CF = pm.calc_CF_windon(hour, turbine, reMerra, reRaster[i*200:((i+1)*200),j*250:((j+1)*250)])
-                #CF[np.isnan(CF)] = 0
-                TS[p, hour] = CF[(m_high-Ind_points[0][p])%200,Ind_points[1][p]%250]
-        #print ("("+str(Ind_merra_points[0][p])+","+str(Ind_merra_points[1][p])+"):"+str(sum(TS[p,:])))
+            hours = np.arange(8760)
+            # Calculate hourly capacity factor
+            CF = pm.calc_CF_windon(hours, turbine, reMerra, reRaster[i*200:((i+1)*200),j*250:((j+1)*250)])
+            TS[p, :] = CF[(m_high-Ind_points[0][p])%200,Ind_points[1][p]%250,:]
     return TS
 
 

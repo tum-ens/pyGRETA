@@ -407,7 +407,7 @@ def calc_FLH_windon(param, tech, rasterData, merraData, GWA_array, b_xmin, b_xma
 
     for pixle in pixles:
         row, column = np.unravel_index(pixle, (m_low, n_low))  # Generate row and column out of the numbered position
-        logger.debug('Pixle (' + str(row) + ',' + str(column) + ')')  # Print the recent computing pixle
+        logger.debug('Pixel (' + str(row) + ',' + str(column) + ')')  # Print the recent computing pixle
         try:
             reMerra = redistribution_array(param, merraData[row, column, :], row, column, b_xmin[row, column], b_xmax[row, column], b_ymin[row, column], b_ymax[row, column], GWA_array, x_gwa, y_gwa)
             logger.debug('reMerra (' + str(row) + ',' + str(column) + ')')
@@ -433,7 +433,7 @@ def calc_FLH_windon(param, tech, rasterData, merraData, GWA_array, b_xmin, b_xma
             logger.debug('Wrote on FLH_np (' + str(row) + ',' + str(column) + ')')
         except:
             traceback.print_exc()
-            logger.error('Error on pixle (' + str(row) + ',' + str(column) + ')')
+            logger.error('Error on pixel (' + str(row) + ',' + str(column) + ')')
 
     logger.info('Done: ' + str(pixles))
 

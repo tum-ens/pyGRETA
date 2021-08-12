@@ -139,7 +139,7 @@ def generate_time_series_for_representative_locations(paths, param, tech):
     list_names = param[tech]["Crd_points"][2]
     list_quantiles = param[tech]["Crd_points"][3]
     m_high = param["m_high"]
-    if tech in ["PV", "CSP"]:
+    if tech in ["OpenFieldPV", "RoofTopPV", "CSP"]:
         res_weather = param["res_weather"]
         Crd_all = param["Crd_all"]
         Ind = ind_merra(Crd_all, Crd_all, res_weather)[0]
@@ -157,7 +157,7 @@ def generate_time_series_for_representative_locations(paths, param, tech):
     param["Ind_nz"] = param[tech]["Ind_points"]
     merraData, rasterData = pl.get_merra_raster_data(paths, param, tech)
     
-    if tech in ["PV", "CSP"]:
+    if tech in ["OpenFieldPV", "RoofTopPV", "CSP"]:
         day_filter = np.nonzero(merraData["CLEARNESS"][Ind[2] - 1 : Ind[0], Ind[3] - 1 : Ind[1], :].sum(axis=(0, 1)))
         list_hours = np.arange(0, 8760)
         if nproc == 1:
@@ -314,11 +314,8 @@ def generate_time_series_for_specific_locations(paths, param, tech):
         # Obtain weather and correction matrices
         param["Ind_nz"] = param[tech]["Ind_points"]
         merraData, rasterData = pl.get_merra_raster_data(paths, param, tech)
-        
-        for p in range(len(crd[0])):
-            print (rasterData["A_cf"][ind[0][p],ind[1][p]])
 
-        if tech in ["PV", "CSP"]:
+        if tech in ["OpenFieldPV", "RoofTopPV", "CSP"]:
             # Set up day_filter
             res_weather = param["res_weather"]
             Ind = ind_merra(Crd_all, Crd_all, res_weather)[0]
@@ -429,10 +426,12 @@ def calc_TS_solar(hours, args):
             status = status + 1
             ul.display_progress(tech + " " + param["subregions_name"] + " ", (len(hours), status))
 
-        if tech == "PV":
+        if tech == "OpenFieldPV":
             CF = pm.calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech)[0]
-        elif tech == "CSP":
+        elif tech == "RoofTopPV":
             CF = pm.calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech)[1]
+        elif tech == "CSP":
+            CF = pm.calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech)[2]
 
         # Aggregates CF to obtain the time series
         CF[np.isnan(CF)] = 0
@@ -645,7 +644,7 @@ def generate_time_series_for_regions(paths, param, tech):
     # Display the combinations of settings to be used
     if tech in ["WindOn", "WindOff"]:
         print("Combinations of hub heights to be used for the stratified time series: ", combinations)
-    elif tech in ["PV"]:
+    elif tech in ["OpenFieldPV", "RoofTopPV"]:
         print("Orientations to be used for the stratified time series: ", combinations)
 
     for tag, combo in param["combo"][tech].items():

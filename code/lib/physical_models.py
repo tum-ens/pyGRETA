@@ -27,23 +27,23 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
     :return (CF_pv, CF_csp): the capacity factors for all the points during that hour for PV and CSP.
     :rtype: tuple (numpy array, numpy array)
     """
-    pv = param["PV"]["technical"]
+    openfieldpv = param["OpenFieldPV"]["technical"]
+    rooftoppv = param["RoofTopPV"]["technical"]
     csp = param["CSP"]["technical"]
+
     m_high = param["m_high"]
     n_high = param["n_high"]
     m_low = param["m_low"]
     n_low = param["n_low"]
-    # res_desired = param["res_desired"]
     res_weather = param["res_weather"]
     Crd_all = param["Crd_all"]
 
     # Load MERRA data, increase its resolution, and fit it to the extent
     CLEARNESS_h = merraData["CLEARNESS"][:, :, hour]
-    #CLEARNESS_h = resizem(CLEARNESS_h, m_high, n_high)
-    # reg_ind_h = np.nonzero(CLEARNESS_h)
+    reg_ind_h = np.nonzero(CLEARNESS_h)
     
-    x = np.ones((m_low,n_low))
-    reg_ind_h = np.nonzero(x)
+    # x = np.ones((m_low,n_low))
+    # reg_ind_h = np.nonzero(x)
     
     # Filter out night hours for every valid point
     filter_lat = np.logical_and(reg_ind[0] >= reg_ind_h[0].min(), reg_ind[0] <= reg_ind_h[0].max())
@@ -51,13 +51,16 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
     filter = np.logical_and(filter_lat, filter_lon)
     reg_ind_h = (reg_ind[0][filter], reg_ind[1][filter])
     if len(reg_ind_h[0]) == 0:
-        CF_pv = np.zeros(reg_ind[0].shape)
+        CF_openfieldpv = np.zeros(reg_ind[0].shape)
+        CF_rooftoppv = np.zeros(reg_ind[0].shape)
         CF_csp = np.zeros(reg_ind[0].shape)
-        return CF_pv, CF_csp
+        return CF_openfieldpv, CF_rooftoppv, CF_csp
 
     # Check orientation parameter
-    if "orientation" in pv.keys():
-        orient = pv["orientation"]
+    if (tech == "OpenFieldPV") and ("orientation" in openfieldpv.keys()):
+        orient = openfieldpv["orientation"]
+    elif (tech == "RoofTopPV") and ("orientation" in rooftoppv.keys()):
+        orient = rooftoppv["orientation"]
     else:
         orient = 0
 
@@ -69,18 +72,23 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
 
     # If all TOA values are zero, return to main function
     if (TOA_h == 0).all():
-        CF_pv = np.zeros(reg_ind[0].shape)
+        CF_openfieldpv = np.zeros(reg_ind[0].shape)
+        CF_rooftoppv = np.zeros(reg_ind[0].shape)
         CF_csp = np.zeros(reg_ind[0].shape)
-        return CF_pv, CF_csp
+        return CF_openfieldpv, CF_rooftoppv, CF_csp
 
     CLEARNESS_h = CLEARNESS_h[reg_ind_h] * param[tech]["resource"]["clearness_correction"]
     TEMP_h = merraData["T2M"][:, :, hour]
-    #TEMP_h = resizem(TEMP_h, m_high, n_high) - 273.15  # Convert to Celsius
-    TEMP_h = TEMP_h[reg_ind_h] - 273.15
+    TEMP_h = TEMP_h[reg_ind_h] - 273.15  # Convert to Celsius
 
     # Other matrices
-    A_albedo = rasterData["A_albedo"][reg_ind_h]
-    A_Ross = rasterData["A_Ross"][reg_ind_h]
+    # A_albedo = rasterData["A_albedo"][reg_ind_h]
+    # A_Ross = rasterData["A_Ross"][reg_ind_h]
+
+    A_albedo = np.full([m_low,n_low],0.2)
+    A_Ross = np.full([m_low,n_low],0.0208)
+    A_albedo = A_albedo[reg_ind_h]
+    A_Ross = A_Ross[reg_ind_h]
 
     # Compute the ratio of diffuse radiation
     RATIO = global2diff(CLEARNESS_h, A_alpha.shape)
@@ -91,11 +99,11 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
     # Currently ignored
     SHADING = 0
 
-    if tech == "PV":
+    if tech == "OpenFieldPV":
         # Tracking
-        if pv["tracking"] == 1:
+        if openfieldpv["tracking"] == 1:
             A_orientation, A_beta = tracking(1, A_phi, A_alpha, A_beta, A_azimuth)
-        elif pv["tracking"] == 2:
+        elif openfieldpv["tracking"] == 2:
             A_orientation, A_beta = tracking(2, A_phi, A_alpha, A_beta, A_azimuth)
 
         aux = np.maximum(
@@ -128,21 +136,70 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
         G_tilt_h = GHI_h * F
 
         # Compute losses due to heating of the PV cells
-        LOSS_TEMP = loss(G_tilt_h, TEMP_h, A_Ross, pv)
+        LOSS_TEMP = loss(G_tilt_h, TEMP_h, A_Ross, openfieldpv)
         
         # Compute the hourly capacity factor
-        CF_pv = G_tilt_h * (1 - LOSS_TEMP) / 1000
+        CF_openfieldpv = G_tilt_h * (1 - LOSS_TEMP) / 1000
 
-        CF_pv[A_alpha <= 0] = 0
+        CF_openfieldpv[A_alpha <= 0] = 0
         # Adjusting the length of the matrices
         aux = np.zeros(len(reg_ind[0]))
-        aux[filter] = CF_pv
-        CF_pv = aux
-        
-        # print (np.sum(CF_pv))
-
+        aux[filter] = CF_openfieldpv
+        CF_openfieldpv = aux
     else:
-        CF_pv = None
+        CF_openfieldpv = None
+
+    if tech == "RoofTopPV":
+        # Tracking
+        if rooftoppv["tracking"] == 1:
+            A_orientation, A_beta = tracking(1, A_phi, A_alpha, A_beta, A_azimuth)
+        elif rooftoppv["tracking"] == 2:
+            A_orientation, A_beta = tracking(2, A_phi, A_alpha, A_beta, A_azimuth)
+
+        aux = np.maximum(
+            np.minimum(
+                (
+                        ul.sind(A_delta) * ul.sind(A_phi) * ul.cosd(A_beta)
+                        - ul.sind(A_delta) * ul.cosd(A_phi) * ul.sind(A_beta) * ul.cosd(A_orientation)
+                        + ul.cosd(A_delta) * ul.cosd(A_phi) * ul.cosd(A_beta) * ul.cosd(A_omega)
+                        + ul.cosd(A_delta) * ul.sind(A_phi) * ul.sind(A_beta) * ul.cosd(A_orientation) * ul.cosd(
+                    A_omega)
+                        + ul.cosd(A_delta) * ul.sind(A_beta) * ul.sind(A_orientation) * ul.sind(A_omega)
+                ),
+                1,
+            ),
+            -1,
+        )
+        A_incidence = ul.arccosd(aux)
+        # Compute the coefficients for the HDKR model
+        R_b = ul.cosd(A_incidence) / ul.sind(A_alpha)
+        R_b[A_alpha <= 5] = ul.cosd(A_incidence[A_alpha <= 5]) / ul.sind(5)
+        R_b[A_alpha <= 0] = 0
+
+        F_direct, F_diffuse, F_reflected = coefficients(A_beta, RATIO, R_b, A_i, f)
+
+        F = F_diffuse + F_direct * (1 - SHADING) + F_reflected * A_albedo
+        F[F > 1] = 1
+
+        # Compute the incident radiation
+        GHI_h = TOA_h * CLEARNESS_h
+        GHI_h[np.isnan(GHI_h)] = 0
+        G_tilt_h = GHI_h * F
+
+        # Compute losses due to heating of the PV cells
+        LOSS_TEMP = loss(G_tilt_h, TEMP_h, A_Ross, rooftoppv)
+
+        # Compute the hourly capacity factor
+        CF_rooftoppv = G_tilt_h * (1 - LOSS_TEMP) / 1000
+
+        CF_rooftoppv[A_alpha <= 0] = 0
+        # Adjusting the length of the matrices
+        aux = np.zeros(len(reg_ind[0]))
+        aux[filter] = CF_rooftoppv
+        CF_rooftoppv = aux
+    else:
+        CF_rooftoppv = None
+
 
     if tech == "CSP":
         # Wind Speed Corrected at 2m
@@ -185,7 +242,7 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
     else:
         CF_csp = None
 
-    return CF_pv, CF_csp
+    return CF_openfieldpv, CF_rooftoppv, CF_csp
 
 
 def angles(hour, reg_ind, Crd_all, res_desired, orient):

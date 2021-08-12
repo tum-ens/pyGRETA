@@ -23,7 +23,8 @@ def configuration(config_file):
     param = protected_areas_parameters(param)
     param = osm_areas(param)
     param = buffers(param)
-    param = pv_parameters(param)
+    param = openfieldpv_parameters(param)
+    param = rooftoppv_parameters(param)
     param = csp_parameters(param)
     param = onshore_wind_parameters(param)
     param = offshore_wind_paramters(param)
@@ -39,7 +40,7 @@ def configuration(config_file):
     for tech in param["technology"]:
         paths[tech] = {}
         paths = regression_paths(paths, param, tech)
-        paths = emhires_input_paths(paths, param, tech)
+        paths = emhires_input_paths(paths, tech)
         paths = potential_output_paths(paths, param, tech)
         paths = regional_analysis_output_paths(paths, param, tech)
         paths = discrete_output_paths(paths, param, tech)
@@ -163,7 +164,7 @@ def computation_parameters(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 50
+    param["nproc"] = 20
     param["CPU_limit"] = True
     return param
 
@@ -287,7 +288,8 @@ def time_series_parameters(param):
         "solver": "gurobi",  # string
         "WindOn": {"all": []},  # dictionary of hub height combinations
         "WindOff": {"80m": []},  # dictionary of hub height combinations
-        "PV": {"all": []},  # list of orientation combinations
+        "OpenFieldPV": {"all": []},  # list of orientation combinations
+        "RoofTopPV": {"all": []},  # list of orientation combinations
         "CSP": {"all": []},
     }
 
@@ -297,7 +299,8 @@ def time_series_parameters(param):
         # dictionary of hub height and orientation combinations
         "WindOn": {"2015": [60, 80, 100], "2030": [80, 100, 120], "2050": [100, 120, 140]},
         "WindOff": {"80m": [80], "100m": [100], "120m": [120]},
-        "PV": {"Solar": [0, 180, -90, 90]},
+        "OpenFieldPV": {"Solar": [0, 180, -90, 90]},
+        "RoofTopPV": {"Solar": [0, 180, -90, 90]},
         "CSP": {"all": []},
     }
 
@@ -465,7 +468,7 @@ def buffers(param):
     param["buffer"] = buffer
     return param
 
-def pv_parameters(param):
+def openfieldpv_parameters(param):
     """
     This function sets the parameters for photovoltaics in the dictionary *pv* inside param:
     
@@ -508,31 +511,105 @@ def pv_parameters(param):
     :raise Tracking Warning: If *tracking* is not set to 0 and *orientation* is given as a value other than 0 or 180 (South or North), the orientation is ignored.
 
     """
-    pv = {}
-    pv["resource"] = {"clearness_correction": 1}
-    pv["technical"] = {
+    openfieldpv = {}
+    openfieldpv["resource"] = {"clearness_correction": 1}
+    openfieldpv["technical"] = {
         "T_r": 25,  # °C
         "loss_coeff": 0.37,
         "tracking": 0,  # 0 for no tracking, 1 for one-axis tracking, 2 for two-axes tracking
         "orientation": 0,  # | 0: Towards equator | 90: West | 180: Away from equator | -90: East |
     }
-    pv["mask"] = {
+    openfieldpv["mask"] = {
         "slope": 10,
         "lu_suitability": np.array([1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,1,1,1,1,1,0,0,0,0,1,1,1,0,0]),
         "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     }
     GCR = {"shadefree_period": 6, "day_north": 79, "day_south": 263}
-    pv["weight"] = {
+    openfieldpv["weight"] = {
         "GCR": GCR,
         "power_density": 0.000160,
         "f_performance": 0.75,
     }
     del GCR
-    if pv["technical"]["tracking"] != 0 and pv["technical"]["orientation"] not in [0, 180]:
-        warn("WARNING: " + str(pv["technical"]["tracking"]) + " axis tracking, overwrites orientation input: " + str(
-            pv["technical"]["orientation"]))
-        pv["technical"]["orientation"] = "track_" + str(pv["technical"]["tracking"])
-    param["PV"] = pv
+    if openfieldpv["technical"]["tracking"] != 0 and openfieldpv["technical"]["orientation"] not in [0, 180]:
+        warn("WARNING: " + str(openfieldpv["technical"]["tracking"]) + " axis tracking, overwrites orientation input: " + str(
+            openfieldpv["technical"]["orientation"]))
+        openfieldpv["technical"]["orientation"] = "track_" + str(openfieldpv["technical"]["tracking"])
+    param["OpenFieldPV"] = openfieldpv
+    return param
+
+
+def rooftoppv_parameters(param):
+    """
+    This function sets the parameters for photovoltaics in the dictionary *pv* inside param:
+
+    * *resource* is a dictionary including the parameters related to the resource potential:
+
+      * *clearness_correction* is a factor that will be multiplied with the clearness index matrix to correct it. If no correction is required, leave it equal to 1.
+
+    * *technical* is a dictionary including the parameters related to the module:
+
+      * *T_r* is the rated temperature in °C.
+      * *loss_coeff* is the loss coefficient (relevant for :mod:`physical_models.loss`).
+      * *tracking* is either 0 for no tracking, 1 for one-axis tracking, or 2 for two-axes tracking.
+      * *orientation* is the azimuth orientation of the module in degrees relative to the equator.
+      * The tilt angle from the horizontal is chosen optimally in the code, see :mod:`physical_models.angles`.
+
+    * *mask* is a dictionary including the parameters related to the masking:
+
+      * *slope* is the threshold slope in percent. Areas with a larger slope are excluded.
+      * *lu_suitability* is a numpy array of values 0 (unsuitable) or 1 (suitable). It has the same size as the array of land use types.
+      * *pa_suitability* is a numpy array of values 0 (unsuitable) or 1 (suitable). It has the same size as the array of protected area categories.
+
+    * *weight* is a dictionary including the parameters related to the weighting:
+
+      * *GCR* is a dictionary of design settings for the ground cover ratio:
+
+        * *shadefree_period* is the number of shadefree hours in the design day.
+        * *day_north* is the design day for the northern hemisphere.
+        * *day_south* is the design day for the southern hemisphere.
+
+      * *lu_availability* is a numpy array of values between 0 (completely not available) and 1 (completely available). It has the same size as the array of land use types.
+      * *pa_availability* is a numpy array of values between 0 (completely not available) and 1 (completely available). It has the same size as the array of protected area categories.
+      * *power_density* is the power density of PV projects, assuming a GCR = 1, in MW/m².
+      * *f_performance* is a number smaller than 1, taking into account all the other losses from the module until the AC substation.
+
+    :param param: Dictionary including the user preferences.
+    :type param: dict
+
+    :return param: The updated dictionary param.
+    :rtype: dict
+    :raise Tracking Warning: If *tracking* is not set to 0 and *orientation* is given as a value other than 0 or 180 (South or North), the orientation is ignored.
+
+    """
+    rooftoppv = {}
+    rooftoppv["resource"] = {"clearness_correction": 1}
+    rooftoppv["technical"] = {
+        "T_r": 25,  # °C
+        "loss_coeff": 0.37,
+        "tracking": 0,  # 0 for no tracking, 1 for one-axis tracking, 2 for two-axes tracking
+        "orientation": 0,  # | 0: Towards equator | 90: West | 180: Away from equator | -90: East |
+    }
+    rooftoppv["mask"] = {
+        "slope": 10,
+        "lu_suitability": np.array(
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1,
+             0, 0]),
+        "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    }
+    GCR = {"shadefree_period": 6, "day_north": 79, "day_south": 263}
+    rooftoppv["weight"] = {
+        "GCR": GCR,
+        "power_density": 0.000160,
+        "f_performance": 0.75,
+    }
+    del GCR
+    if rooftoppv["technical"]["tracking"] != 0 and rooftoppv["technical"]["orientation"] not in [0, 180]:
+        warn("WARNING: " + str(
+            rooftoppv["technical"]["tracking"]) + " axis tracking, overwrites orientation input: " + str(
+            rooftoppv["technical"]["orientation"]))
+        rooftoppv["technical"]["orientation"] = "track_" + str(rooftoppv["technical"]["tracking"])
+    param["RoofTopPV"] = rooftoppv
     return param
 
 
@@ -796,55 +873,6 @@ def biomass_parameters(param):
         },  # MWh/ton
         "emission factor" : 1585  # kg/ton of crop residues
     }
-    # biomass["agro_rpr"] = {
-    #     "Rice, paddy": {"Straw": 1.00, "Husk": 0.27},
-    #     "Maize": {"Stalk": 1.00, "Cob": 0.25},
-    #     "Sugarcane": {"Bagasse": 0.25, "Top&Leave": 0.30},
-    #     "Oil_Palm": {"Shell": 0.07, "Fiber": 0.13, "EFB": 0.23, "POME": 0.67, "Frond": 0.55},
-    #     "Cassava": {"Stalk": 0.09},
-    #     "Coconut": {"Husk": 0.36, "Shell": 0.16, "Frond": 0.23},
-    #     "Coffee_Green": {"Husk": 2.10},
-    #     "Groundnut": {"Shell": 0.32, "Straw": 2.30},
-    #     "Sugar beet": {"Leaves": 0.3},
-    #     "Wheat": {"Straw": 1.2},
-    #     "Barley": {"Straw": 1.1},
-    #     "Rye": {"Straw": 1.3},
-    #     "Rapeseed": {"Straw": 1.7},
-    #     "Oats": {"Straw": 1.2}
-    # }
-    # biomass["agro_af"] = {
-    #     "Rice, paddy": {"Straw": 0.5, "Husk": 0.47},
-    #     "Maize": {"Stalk": 0.33, "Cob": 0.67},
-    #     "Sugarcane": {"Bagasse": 0.21, "Top&Leave": 0.99},
-    #     "Oil_Palm": {"Shell": 0.04, "Fiber": 0.13, "EFB": 0.58, "POME": 0.65, "Frond": 0.05},
-    #     "Cassava": {"Stalk": 0.41},
-    #     "Coconut": {"Husk": 0.60, "Shell": 0.38, "Frond": 0.81},
-    #     "Coffee_Green": {"Husk": 0.33},
-    #     "Groundnut": {"Shell": 1.00, "Straw": 0.33},
-    #     "Sugar beet": {"Leaves": 0.4},
-    #     "Wheat": {"Straw": 0.4},
-    #     "Barley": {"Straw": 0.4},
-    #     "Rye": {"Straw": 0.4},
-    #     "Rapeseed": {"Straw": 0.5},
-    #     "Oats": {"Straw": 0.4}
-    # }
-    # biomass["agro_lhv"] = {
-    #     "Rice, paddy": {"Straw": 3.89, "Husk": 3.57},
-    #     "Maize": {"Stalk": 3.97, "Cob": 4.62},
-    #     "Sugarcane": {"Bagasse": 1.79, "Top&Leave": 1.89},
-    #     "Oil_Palm": {"Shell": 4.72, "Fiber": 3.08, "EFB": 1.69, "POME": 0.17, "Frond": 2.21},
-    #     "Cassava": {"Stalk": 4.72},
-    #     "Coconut": {"Husk": 4.09, "Shell": 4.58, "Frond": 4.04},
-    #     "Coffee_Green": {"Husk": 3.44},
-    #     "Groundnut": {"Shell": 3.12, "Straw": 4.88},
-    #     "Sugar beet": {"Leaves": 3.7},
-    #     "Wheat": {"Straw": 4},
-    #     "Barley": {"Straw": 4},
-    #     "Rye": {"Straw": 4},
-    #     "Rapeseed": {"Straw": 4},
-    #     "Oats": {"Straw": 4}
-    # }  # MWh/ton
-    # biomass['agro_emission factor'] = 1585  # kg/ton of crop residues
 
     biomass["forest"] = {
         "woods" : np.array(["Wood fuel, coniferous","Wood fuel, non-coniferous"]),
@@ -1194,7 +1222,7 @@ def regression_paths(paths, param, tech):
     return paths
 
 
-def emhires_input_paths(paths, param, tech):
+def emhires_input_paths(paths, tech):
     """
     This function defines the path to the EMHIRES input file for each technology (only ``'WindOn'``,
     ``'WindOff'``, and ``'PV'`` are supported by EMHIRES).
@@ -1252,8 +1280,8 @@ def potential_output_paths(paths, param, tech):
     if tech in ["WindOn", "WindOff"]:
         hubheight = str(param[tech]["technical"]["hub_height"])
         PathTemp = paths["potential"] + region + "_" + tech + "_" + hubheight
-    elif tech in ["PV"]:
-        if "orientation" in param["PV"]["technical"].keys():
+    elif tech in ["OpenFieldPV", "RoofTopPV"]:
+        if "orientation" in param[tech]["technical"].keys():
             orientation = str(param[tech]["technical"]["orientation"])
         else:
             orientation = "0"
@@ -1307,8 +1335,8 @@ def regional_analysis_output_paths(paths, param, tech):
     if tech in ["WindOn", "WindOff"]:
         hubheight = str(param[tech]["technical"]["hub_height"])
         PathTemp = paths["regional_analysis"] + subregions + "_" + tech + "_" + hubheight
-    elif tech in ["PV"]:
-        if "orientation" in param["PV"]["technical"].keys():
+    elif tech in ["OpenFieldPV", "RoofTopPV"]:
+        if "orientation" in param[tech]["technical"].keys():
             orientation = str(param[tech]["technical"]["orientation"])
         else:
             orientation = "0"
@@ -1339,8 +1367,8 @@ def discrete_output_paths(paths, param, tech):
     if tech in ["WindOn", "WindOff"]:
         hubheight = str(param[tech]["technical"]["hub_height"])
         PathTemp = paths["discrete_analysis"] + region + "_" + tech + "_" + hubheight
-    elif tech in ["PV"]:
-        if "orientation" in param["PV"]["technical"].keys():
+    elif tech in ["OpenFieldPV", "RoofTopPV"]:
+        if "orientation" in param[tech]["technical"].keys():
             orientation = str(param[tech]["technical"]["orientation"])
         else:
             orientation = "0"

@@ -2,7 +2,6 @@ from . import correction_functions as cf
 from . import spatial_functions as sf
 from . import util as ul
 from .log import logger
-from osgeo import gdal, ogr
 import multiprocessing as mp
 import numpy as np
 import pandas as pd
@@ -13,6 +12,7 @@ import h5netcdf
 import hdf5storage
 import datetime
 import scipy.ndimage
+import sys
 
 
 def downloadGWA(paths, param):
@@ -52,10 +52,10 @@ def generate_maps_for_scope(paths, param, multiprocessing):
     """
 
     generate_land(paths, param)  # Subregions
+    generate_weather_files(paths, param)  # MERRA Weather data
 
     if multiprocessing:
         processes = []
-        processes.append(mp.Process(target=generate_weather_files, args=(paths, param)))
         processes.append(mp.Process(target=generate_sea, args=(paths, param)))
         processes.append(mp.Process(target=generate_area, args=(paths, param)))
         processes.append(mp.Process(target=generate_topography, args=(paths, param)))
@@ -81,7 +81,6 @@ def generate_maps_for_scope(paths, param, multiprocessing):
         logger.info('All processes finished')
 
     else:
-        generate_weather_files(paths, param)  # MERRA Weather data
         generate_sea(paths, param)  # Land and Sea
         generate_area(paths, param)  # Area Gradient
         generate_topography(paths, param)  # Topography
@@ -140,13 +139,6 @@ def generate_land(paths, param):
                 A_land[(Ind[reg, 2] - 1) : Ind[reg, 0], (Ind[reg, 3] - 1) : Ind[reg, 1]] + A_region
             )
 
-        # Fixing pixels on the borders
-        # with rasterio.open(paths["EEZ"]) as src:
-        #     A_sea = np.flipud(src.read(1)).astype(int)
-        # with rasterio.open(paths["LAND"]) as src:
-        #     A_land = np.flipud(src.read(1)).astype(int)
-        # A_sub = A_sub * (A_land + A_sea)
-
         # Saving file
         sf.array2raster(paths["LAND"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_land)
         logger.info("files saved: " + paths["LAND"])
@@ -187,13 +179,21 @@ def generate_weather_files(paths, param):
         T2M = np.array([])
         U50M = np.array([])
         V50M = np.array([])
-        # status = 0
-        # delta = (end - start).days + 1
 
+        status = 0
         start = datetime.date(param["year"], 1, 1)
         end = datetime.date(param["year"], 12, 31)
-        for date in pd.date_range(start, end):
+        delta = (end - start).days + 1
 
+        for date in pd.date_range(start, end):
+            # Show status bar
+            status = status + 1
+            sys.stdout.write("\r")
+            sys.stdout.write(
+                "Reading NetCDF files " + "[%-50s] %d%%" % ("=" * ((status * 50) // delta), (status * 100) // delta))
+            sys.stdout.flush()
+
+            # tomorrow = date + pd.Timedelta("1 day")
             if date.day == 29 and date.month == 2:
                 continue    # Skip additional day of non leap year
 
@@ -235,13 +235,13 @@ def generate_weather_files(paths, param):
                 else:
                     V50M = np.concatenate((V50M, v50m), axis=2)
 
-
+            # if date.year != tomorrow.year:
         # Create the overall wind speed
         W50M = abs(U50M + (1j * V50M))
         # Calculate the clearness index
-        # CLEARNESS = np.zeros(SWGDN.shape)
-        CLEARNESS = np.divide(SWGDN, SWTDN, where=SWTDN != 0)
+        CLEARNESS = np.divide(SWGDN, SWTDN, out=np.zeros_like(SWGDN), where=SWTDN != 0)
 
+        sys.stdout.write("\n")
         logger.info("Writing Files: T2M, W50M, CLEARNESS")
         hdf5storage.writes({"T2M": T2M}, paths["T2M"], store_python_metadata=True, matlab_compatible=True)
         hdf5storage.writes({"W50M": W50M}, paths["W50M"], store_python_metadata=True, matlab_compatible=True)
@@ -372,39 +372,6 @@ def generate_sea(paths, param):
         GeoRef = param["GeoRef"]
         nRegions_sea = param["nRegions_sea"]
 
-        # # ul.timecheck("Start Land")
-        # # Extract land areas
-        # countries_shp = param["regions_land"]
-        # Crd_regions_land = param["Crd_regions"][:nRegions_land]
-        # Ind = ind_merra(Crd_regions_land, Crd_all, res_desired)
-        # A_land = np.zeros((m_high, n_high))
-        # # status = 0
-        # for reg in range(0, param["nRegions_land"]):
-        #     # Show status bar
-        #     # status = status + 1
-        #     # sys.stdout.write("\r")
-        #     # sys.stdout.write("Creating A_land " + "[%-50s] %d%%" % ("=" * ((status * 50) // nRegions_land), (status * 100) // nRegions_land))
-        #     # sys.stdout.flush()
-        #
-        #     # Calculate A_region
-        #     try:
-        #         A_region = sf.calc_region(countries_shp.iloc[reg], Crd_regions_land[reg, :], res_desired, GeoRef)
-        #
-        #         # Include A_region in A_land
-        #         A_land[(Ind[reg, 2] - 1) : Ind[reg, 0], (Ind[reg, 3] - 1) : Ind[reg, 1]] = (
-        #             A_land[(Ind[reg, 2] - 1) : Ind[reg, 0], (Ind[reg, 3] - 1) : Ind[reg, 1]] + A_region)
-        #     except:
-        #         traceback.print_exc()
-        #         logger.error(traceback.print_exc())
-        # # Saving file
-        # ul.sf.array2raster(paths["LAND"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_land)
-        # logger.info("\nfiles saved: " + paths["LAND"])
-        # ul.create_json(
-        #     paths["LAND"], param, ["region_name", "m_high", "n_high", "Crd_all", "res_desired", "GeoRef", "nRegions_land"], paths, ["Countries", "LAND"]
-        # )
-        # logger.debug("Finish Land")
-
-        #logger.info("Start Sea")
         # Extract sea areas
         eez_shp = param["regions_sea"]
         Crd_regions_sea = param["Crd_regions"][-nRegions_sea:]
@@ -422,7 +389,6 @@ def generate_sea(paths, param):
 
         # Fixing pixels on the borders to avoid duplicates
         A_sea[A_sea > 0] = 1
-        #A_sea[A_land > 0] = 0
 
         # Saving file
         sf.array2raster(paths["EEZ"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_sea)
@@ -452,7 +418,6 @@ def generate_area(paths, param):
     else:
         logger.info("Start")
 
-        # ul.timecheck("Start")
         Crd_all = param["Crd_all"]
         n_high = param["n_high"]
         res_desired = param["res_desired"]
@@ -603,13 +568,9 @@ def generate_slope(paths, param, A_TOPO):
         m_per_deg_lat = 111132.954 - 559.822 * ul.cos(np.deg2rad(2 * latMid)) + 1.175 * ul.cos(np.deg2rad(4 * latMid))
         m_per_deg_lon = (np.pi / 180) * 6367449 * ul.cos(np.deg2rad(latMid_2))
 
-        #x_cell = ul.repmat(deltaLon, int(180 / res_desired[1]), 1) * ul.repmat(m_per_deg_lon, int(360 / res_desired[1]), 1).T
-        #x_cell = x_cell[Ind[0] - 1 : Ind[2], Ind[3] - 1 : Ind[1]]
         x_cell = ul.repmat(deltaLon[Ind[3] - 1 : Ind[1]], Ind[2]-Ind[0]+1, 1) * ul.repmat(m_per_deg_lon[Ind[0] - 1 : Ind[2]], Ind[1]-Ind[3]+1, 1).T
         x_cell = np.flipud(x_cell)
 
-        #y_cell = ul.repmat((deltaLat * m_per_deg_lat), int(360 / res_desired[0]), 1).T
-        #y_cell = y_cell[Ind[0] - 1 : Ind[2], Ind[3] - 1 : Ind[1]]
         y_cell = ul.repmat((deltaLat[Ind[0] - 1 : Ind[2]] * m_per_deg_lat[Ind[0] - 1 : Ind[2]]), Ind[1]-Ind[3]+1, 1).T
         y_cell = np.flipud(y_cell)
 
@@ -759,61 +720,12 @@ def generate_protected_areas(paths, param):
         logger.info("files saved: " + paths["PA"])
         ul.create_json(paths["PA"], param, ["region_name", "protected_areas", "Crd_all", "res_desired", "GeoRef"], paths, ["Protected", "PA"])
 
-    # if os.path.isfile(paths["PA"]+"0.tif"):
-    #     logger.info('Skip-PA0')    # Skip generation if files are already there
-    # else:
-    #     logger.info("Start-PA0")
-    #     protected_areas = param["protected_areas"]
-    #     # set up protected areas dictionary
-    #     protection_type = dict(zip(protected_areas["IUCN_Category"], protected_areas["type"]))
-    #     sf.shape2raster(paths["Protected"]+"0.shp",paths["PA"]+"0.tif","IUCN_CAT",protection_type,paths["LAND"])
-    #     logger.info("files saved: " + paths["PA"]+"0.tif")
-    #     ul.create_json(paths["PA"]+"0.tif", param, ["region_name", "protected_areas", "Crd_all", "res_desired", "GeoRef"], paths, ["Protected", "PA"])
-    #
-    # if os.path.isfile(paths["PA"]+"1.tif"):
-    #     logger.info('Skip-PA1')    # Skip generation if files are already there
-    # else:
-    #     logger.info("Start-PA1")
-    #     protected_areas = param["protected_areas"]
-    #     # set up protected areas dictionary
-    #     protection_type = dict(zip(protected_areas["IUCN_Category"], protected_areas["type"]))
-    #     sf.shape2raster(paths["Protected"]+"1.shp",paths["PA"]+"1.tif","IUCN_CAT",protection_type,paths["LAND"])
-    #     logger.info("files saved: " + paths["PA"]+"1.tif")
-    #     ul.create_json(paths["PA"]+"1.tif", param, ["region_name", "protected_areas", "Crd_all", "res_desired", "GeoRef"], paths, ["Protected", "PA"])
-    #
-    # if os.path.isfile(paths["PA"]+"2.tif"):
-    #     logger.info('Skip-PA2')    # Skip generation if files are already there
-    # else:
-    #     logger.info("Start-PA2")
-    #     protected_areas = param["protected_areas"]
-    #     # set up protected areas dictionary
-    #     protection_type = dict(zip(protected_areas["IUCN_Category"], protected_areas["type"]))
-    #     sf.shape2raster(paths["Protected"]+"2.shp",paths["PA"]+"2.tif","IUCN_CAT",protection_type,paths["LAND"])
-    #     logger.info("files saved: " + paths["PA"]+"2.tif")
-    #     ul.create_json(paths["PA"]+"2.tif", param, ["region_name", "protected_areas", "Crd_all", "res_desired", "GeoRef"], paths, ["Protected", "PA"])
-
     # Buffer maps for protected areas
     logger.info("Start-Buffer")
     with rasterio.open(paths["PA"]) as src:
         A_pa = src.read(1)
     A_pa = np.flipud(A_pa).astype(int)
     A_pa = A_pa > 0 #All protected areas pixels
-    # with rasterio.open(paths["PA"+"0.tif"]) as src:
-    #     A_pa0 = src.read(1)
-    # A_pa0 = np.flipud(A_pa0).astype(bool)
-    # A_pa0 = A_pa0 > 0 #All protected areas pixels
-    #
-    # with rasterio.open(paths["PA"+"1.tif"]) as src:
-    #     A_pa1 = src.read(1)
-    # A_pa1 = np.flipud(A_pa1).astype(bool)
-    # A_pa1 = A_pa1 > 0 #All protected areas pixels
-    #
-    # with rasterio.open(paths["PA"+"2.tif"]) as src:
-    #     A_pa2 = src.read(1)
-    # A_pa2 = np.flipud(A_pa2).astype(bool)
-    # A_pa2 = A_pa2 > 0 #All protected areas pixels
-    #
-    # A_pa = A_pa0 * A_pa1 * A_pa2
 
     if os.path.isfile(paths["PV_PA_BUFFER"]):
         logger.info('Skip-PV')  # Skip generation if files are already there
@@ -823,7 +735,7 @@ def generate_protected_areas(paths, param):
                                   paths["PV_PA_BUFFER"])
         logger.info("files saved: " + paths["PV_PA_BUFFER"])
         ul.create_json(paths["PV_PA_BUFFER"], param,
-                       ["region_name", "protected_areas", "PV", "Crd_all", "res_desired", "GeoRef"], paths,
+                       ["region_name", "protected_areas", "Crd_all", "res_desired", "GeoRef"], paths,
                        ["PA", "PV_PA_BUFFER"])
 
     # if "WindOn" in param["technology"]:
@@ -862,12 +774,10 @@ def generate_airports(paths,param):
         airports = []
         for reg in range(0, nCountries):
             alpha2code = IRENA_dict["Countries Alpha-2 code"][countries_shp.iloc[reg]["GID_0"]]
-            #print (alpha2code)
             airports_filtered = airports_list[airports_list.index==alpha2code]
             airports_filtered = airports_filtered[(airports_filtered["type"] == "small_airport")
                                                   | (airports_filtered["type"] == "medium_airport")
                                                   | (airports_filtered["type"] == "large_airport")]
-            #print (airports_filtered)
             airports.append(airports_filtered)
         airports = pd.concat(airports)
         logger.info("Airports are filtered")

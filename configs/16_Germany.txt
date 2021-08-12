@@ -3,4 +3,4 @@ region_name:Germany
 subregions_name:Germany_level0
 country_code:DEU
 year:2019
-technology:PV,WindOn
+technology:OpenFieldPV,RoofTopPV,WindOn

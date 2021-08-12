@@ -18,7 +18,8 @@ def define_spatial_scope(scope_shp):
     :return box: List of the bounding box coordinates.
     :rtype: list
     """
-    scope_shp = scope_shp.to_crs({"init": "epsg:4326"})
+    # scope_shp = scope_shp.to_crs({"init": "epsg:4326"})
+    scope_shp = scope_shp.to_crs(epsg=4326)
     r = scope_shp.total_bounds
     box = r[::-1][np.newaxis]
     return box

@@ -50,7 +50,8 @@ def initialization(config_file):
 def read_shapefiles(paths, param):
     logger.info("Start")
     scope_shp = gpd.read_file(paths["subregions"])      # Read shapefile of region
-    scope_shp = scope_shp.to_crs({"init": "epsg:4326"})     # If it is not already in this format
+    # scope_shp = scope_shp.to_crs({"init": "epsg:4326"})     # If it is not already in this format
+    scope_shp = scope_shp.to_crs(epsg=4326)
 
     param["spatial_scope"] = sf.define_spatial_scope(scope_shp)
 
@@ -104,7 +105,8 @@ def read_shapefile_EEZ(paths, param, scope_shp):
     bounds_box = shapely.geometry.Polygon([(xmin, ymin), (xmin, ymax), (xmax, ymax), (xmax, ymin)])
     eez_shp = gpd.read_file(paths["EEZ_global"], bbox=scope_shp)    # Extract sea areas
 
-    eez_shp = eez_shp.to_crs({"init": "epsg:4326"})
+    # eez_shp = eez_shp.to_crs({"init": "epsg:4326"})
+    eez_shp = eez_shp.to_crs(epsg=4326)
     # test = gpd.overlay(eez_shp, bounds_box, how='intersection')
     eez_shp['geometry'] = eez_shp['geometry'].intersection(bounds_box)  # Crop all polygons and take the part inside the bounding box
 

@@ -27,7 +27,7 @@ if __name__ == "__main__":
         im.downloadGWA(paths, param)    # Download wind speed data from Global Wind Atlas
         im.generate_maps_for_scope(paths, param, multiprocessing)    # Generate input raster maps
 
-        # cf.generate_wind_correction(paths, param)
+        cf.generate_wind_correction(paths, param)
 
 
         for tech in param["technology"]:
@@ -37,12 +37,12 @@ if __name__ == "__main__":
                 pl.generate_biomass_production(paths, param, tech)
                 pl.report_biomass_potentials(paths, param, tech)
 
-            # else:
+            else:
                 # Generate potential maps and reports
-                # pl.calculate_full_load_hours(paths, param, tech, multiprocessing)
-                # pl.mask_potential_maps(paths, param, tech)
-                # pl.weight_potential_maps(paths, param, tech)
-                # pl.report_potentials(paths, param, tech)
+                pl.calculate_full_load_hours(paths, param, tech, multiprocessing)
+                pl.mask_potential_maps(paths, param, tech)
+                pl.weight_potential_maps(paths, param, tech)
+                pl.report_potentials(paths, param, tech)
 
                 # Generate time series
                 # ts.find_representative_locations(paths, param, tech)
@@ -53,7 +53,7 @@ if __name__ == "__main__":
             logger.info("Tech: " + tech)
 
             # Generate regression coefficients for FLH and TS model matching
-            rg.get_regression_coefficients(paths, param, tech)
+            # rg.get_regression_coefficients(paths, param, tech)
 
             # Generate times series for combinations of technologies and locations
-            ts.generate_time_series_for_regions(paths, param, tech)
+            # ts.generate_time_series_for_regions(paths, param, tech)

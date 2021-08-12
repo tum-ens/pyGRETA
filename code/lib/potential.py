@@ -30,8 +30,9 @@ def calculate_full_load_hours(paths, param, tech, multiprocessing):
 
     if tech in ["WindOn", "WindOff"]:
         logger.info(tech + " - HUB_HEIGHTS: " + str(param[tech]["technical"]["hub_height"]))
-    elif tech in ["PV"] and "orientation" in param["PV"]["technical"].keys():
-        logger.info(tech + " - Orientation: " + str(param[tech]["technical"]["orientation"]))
+    elif tech in ["OpenFieldPV","RoofTopPV"]:
+        if "orientation" in param[tech]["technical"].keys():
+            logger.info(tech + " - Orientation: " + str(param[tech]["technical"]["orientation"]))
 
     nproc = param["nproc"]
     m_high = param["m_high"]
@@ -57,7 +58,7 @@ def calculate_full_load_hours(paths, param, tech, multiprocessing):
     # Obtain weather and correction matrices
     merraData, rasterData = get_merra_raster_data(paths, param, tech)
         
-    if tech in ["PV", "CSP"]:
+    if tech in ["OpenFieldPV", "RoofTopPV", "CSP"]:
 
         day_filter = np.nonzero(merraData["CLEARNESS"][Ind[2] - 1 : Ind[0], Ind[3] - 1 : Ind[1], :].sum(axis=(0, 1)))
         list_hours = np.arange(0, 8760)
@@ -76,7 +77,6 @@ def calculate_full_load_hours(paths, param, tech, multiprocessing):
         if nproc > 1:
             for p in range(len(results)):
                 FLH_low = FLH_low + results[p]
-                # print (np.sum(FLH_low))
         else:
             FLH_low = results
         
@@ -192,7 +192,7 @@ def calculate_full_load_hours(paths, param, tech, multiprocessing):
             logger.debug(list_pixles)
             calc_FLH_windon(param, tech, rasterData, merraData, GWA_array, b_xmin, b_xmax, b_ymin, b_ymax, x_gwa,
                             y_gwa, list_pixles, list_results)
-            logger.info('Calculations for all pixles done')
+            logger.info('Calculations for all pixels done')
 
         # ------------------------------------------------------------------------------------
 
@@ -232,7 +232,7 @@ def get_merra_raster_data(paths, param, tech): #ToDo clean up unnecessary things
     rasterData = {}
     # Wind Speed Data
     merraData["W50M"] = hdf5storage.read("W50M", paths["W50M"])
-    if tech in ["PV", "CSP"]:
+    if tech in ["OpenFieldPV", "RoofTopPV", "CSP"]:
 
         # Other weather Data
         # Clearness index - stored variable CLEARNESS
@@ -302,7 +302,7 @@ def calc_FLH_solar(hours, args):
 
     x = np.ones((m_low,n_low))
     ind = np.nonzero(x)
-    
+
     FLH = np.zeros((m_low, n_low))
     status = 0
     for hour in hours:
@@ -311,17 +311,17 @@ def calc_FLH_solar(hours, args):
             status = status + 1
             ul.display_progress(tech + " " + param["region_name"], [len(hours), status])
 
-        if tech == "PV":
+        if tech == "OpenFieldPV":
             CF = pm.calc_CF_solar(hour, ind, param, merraData, rasterData, tech)[0]
-            
-        elif tech == "CSP":
+        elif tech == "RoofTopPV":
             CF = pm.calc_CF_solar(hour, ind, param, merraData, rasterData, tech)[1]
+        elif tech == "CSP":
+            CF = pm.calc_CF_solar(hour, ind, param, merraData, rasterData, tech)[2]
 
         # Aggregates CF to obtain the yearly FLH
         CF[np.isnan(CF)] = 0
         
         FLH[ind] = FLH[ind] + CF
-    
     return FLH
 
 
@@ -544,7 +544,7 @@ def mask_potential_maps(paths, param, tech): #ToDo optimize no. of lines
     logger.info("Start")
     mask = param[tech]["mask"]
 
-    if tech in ["PV", "CSP"]:
+    if tech in ["OpenFieldPV", "CSP"]:
         with rasterio.open(paths["PA"]) as src:
             A_protect = src.read(1)
             A_protect = np.flipud(A_protect).astype(int)  # Protection categories 0-10, to be classified
@@ -611,6 +611,77 @@ def mask_potential_maps(paths, param, tech): #ToDo optimize no. of lines
             # Irrelevant parameters
         A_bathymetry = 1
         A_notAirport = 1
+
+    if tech == "RoofTopPV":
+        with rasterio.open(paths["PA"]) as src:
+            A_protect = src.read(1)
+            A_protect = np.flipud(A_protect).astype(int)  # Protection categories 0-10, to be classified
+        # Exclude protection categories that are not suitable
+        A_suitability_pa = ul.changem(A_protect, mask["pa_suitability"], param["protected_areas"]["type"]).astype(float)
+        A_suitability_pa = (A_suitability_pa > 0).astype(int)
+        with rasterio.open(paths["LU"]) as src:
+            A_lu = src.read(1)
+            A_lu = np.flipud(A_lu).astype(int)  # Landuse classes 0-16, to be reclassified
+        # Exclude landuse types types that are not suitable
+        A_suitability_lu = ul.changem(A_lu, mask["lu_suitability"], param["landuse"]["type"]).astype(float)
+        A_suitability_lu = (A_suitability_lu > 0).astype(int)
+        # with rasterio.open(paths["SLOPE"]) as src:
+        #     A_slope = src.read(1)
+        #     A_slope = np.flipud(A_slope)  # Slope in percentage
+        #     A_slope = (A_slope <= mask["slope"]).astype(int)
+        with rasterio.open(paths["WATER_BUFFER"]) as src:
+            A_notWater = src.read(1)
+            A_notWater = (np.flipud(A_notWater)).astype(int)
+        with rasterio.open(paths["WETLAND_BUFFER"]) as src:
+            A_notWetland = src.read(1)
+            A_notWetland = (np.flipud(A_notWetland)).astype(int)
+        with rasterio.open(paths["SNOW_BUFFER"]) as src:
+            A_notSnow = src.read(1)
+            A_notSnow = (np.flipud(A_notSnow)).astype(int)
+        with rasterio.open(paths["PV_PA_BUFFER"]) as src:
+            A_notProtected = src.read(1)
+            A_notProtected = (np.flipud(A_notProtected)).astype(int)
+        with rasterio.open(paths["BOARDERS"]) as src:
+            A_notBoarder = src.read(1)
+            A_notBoarder = (np.flipud(A_notBoarder)).astype(int)
+        with rasterio.open(paths["ROADS"]) as src:
+            A_Roads = src.read(1)
+            A_notRoads = (np.flipud(~A_Roads.astype(bool))).astype(int)
+        with rasterio.open(paths["RAILS"]) as src:
+            A_Rails = src.read(1)
+            A_notRails = (np.flipud(~A_Rails.astype(bool))).astype(int)
+        with rasterio.open(paths["OSM_AREAS"]) as src:
+            A_osma = src.read(1)
+            A_com = A_osma == 1
+            A_notCommercial = (np.flipud(~A_com.astype(bool))).astype(int)
+            A_ind = A_osma == 2
+            A_notIndustrial = (np.flipud(~A_ind.astype(bool))).astype(int)
+            A_mil = A_osma == 4
+            A_notMilitary = (np.flipud(~A_mil.astype(bool))).astype(int)
+            A_rec = A_osma == 6
+            A_notRecreation = (np.flipud(~A_rec.astype(bool))).astype(int)
+        with rasterio.open(paths["OSM_MINE_BUFFER"]) as src:
+            A_min_buffered = src.read(1)
+            A_min_buffered = (np.flipud(A_min_buffered)).astype(int)
+        with rasterio.open(paths["PV_OSM_PARK_BUFFER"]) as src:
+            A_notPark = src.read(1)
+            A_notPark = (np.flipud(A_notPark)).astype(int)
+        with rasterio.open(paths["WSF"]) as src:
+            A_Settlement = src.read(1).astype(bool)
+            A_Settlement = (np.flipud(A_Settlement)).astype(int)
+            A_notSettlement = A_Settlement # Just for using the same mask equation.
+        with rasterio.open(paths["HYDROLAKES_BUFFER"]) as src:
+            A_NotLake = src.read(1)
+            A_NotLake = (np.flipud(A_NotLake)).astype(int)
+        with rasterio.open(paths["HYDRORIVERS_BUFFER"]) as src:
+            A_NotRiver = src.read(1)
+            A_NotRiver = (np.flipud(A_NotRiver)).astype(int)
+
+            # Irrelevant parameters
+        A_slope = 1
+        A_bathymetry = 1
+        A_notAirport = 1
+
 
     if tech == "WindOn":
         with rasterio.open(paths["PA"]) as src:
@@ -891,7 +962,7 @@ def weight_potential_maps(paths, param, tech): #ToDo change variable names
     A_mask = hdf5storage.read("A_mask", paths[tech]["mask"])
     GeoRef = param["GeoRef"]
 
-    if tech == "PV":
+    if tech in ["OpenFieldPV", "RoofTopPV"]:
         # Ground Cover Ratio - defines spacing between PV arrays
         A_GCR = calc_gcr(Crd_all, m_high, n_high, res_desired, weight["GCR"])
     else:
@@ -1008,7 +1079,7 @@ def report_potentials(paths, param, tech):
     density = param[tech]["weight"]["power_density"]
 
     # Check if land or see
-    if tech in ["PV", "CSP", "WindOn"]:
+    if tech in ["OpenFieldPV", "RoofTopPV", "CSP", "WindOn"]:
         location = "land"
     elif tech in ["WindOff"]:
         location = "sea"
@@ -1046,10 +1117,10 @@ def report_potentials(paths, param, tech):
             "FLH_Std_Masked",
             "Power_Potential_GW",
             "Power_Potential_Weighted_GW",
-            "Power_Potential_Weighted_Masked_GW",
+            # "Power_Potential_Weighted_Masked_GW",
             "Energy_Potential_TWh",
             "Energy_Potential_Weighted_TWh",
-            "Energy_Potential_Weighted_Masked_TWh",
+            # "Energy_Potential_Weighted_Masked_TWh",
         ],
     )
     # Loop over each region

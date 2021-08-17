@@ -6,6 +6,7 @@ import numpy as np
 import math
 import rasterio
 import scipy.ndimage
+import os
 
 
 def define_spatial_scope(scope_shp):
@@ -451,66 +452,71 @@ def create_buffered_raster(array, buffer_pixel_amount, GeoRef, Outraster):
 
 
 def shape2raster(fileinput, fileoutput, fieldname, dictinput, rastertyp):
-    # First we will open our raster image, to understand how we will want to rasterize our vector
-    raster_ds = gdal.Open(rastertyp, gdal.GA_ReadOnly)
 
-    # Fetch number of rows and columns
-    ncol = raster_ds.RasterXSize
-    nrow = raster_ds.RasterYSize
+    if not os.path.isfile(fileinput):
+        raise FileNotFoundError(fileinput)  # Raise error if input file doesn't exist
+    else:
 
-    # Fetch projection and extent
-    proj = raster_ds.GetProjectionRef()
-    ext = raster_ds.GetGeoTransform()
+        # First we will open our raster image, to understand how we will want to rasterize our vector
+        raster_ds = gdal.Open(rastertyp, gdal.GA_ReadOnly)
 
-    raster_ds = None
-    shp_path = fileinput
-    # Open the dataset from the file
-    dataset = ogr.Open(shp_path, 1)
-    layer = dataset.GetLayerByIndex(0)
+        # Fetch number of rows and columns
+        ncol = raster_ds.RasterXSize
+        nrow = raster_ds.RasterYSize
 
-    # Add a new field
-    if not ul.field_exists("Raster", shp_path):
-        new_field = ogr.FieldDefn("Raster", ogr.OFTInteger)
-        layer.CreateField(new_field)
+        # Fetch projection and extent
+        proj = raster_ds.GetProjectionRef()
+        ext = raster_ds.GetGeoTransform()
 
-        for feat in layer:
-            if dictinput == []:
-                feat.Setfield("Raster",1)
-            else:
-                pt = feat.GetField(fieldname)
-                feat.SetField("Raster", int(dictinput[pt]))
-            layer.SetFeature(feat)
-            feat = None
+        raster_ds = None
+        shp_path = fileinput
+        # Open the dataset from the file
+        dataset = ogr.Open(shp_path, 1)
+        layer = dataset.GetLayerByIndex(0)
 
-    # Create a second (modified) layer
-    outdriver = ogr.GetDriverByName("MEMORY")
-    source = outdriver.CreateDataSource("memData")
+        # Add a new field
+        if not ul.field_exists("Raster", shp_path):
+            new_field = ogr.FieldDefn("Raster", ogr.OFTInteger)
+            layer.CreateField(new_field)
 
-    # Create the raster dataset
-    memory_driver = gdal.GetDriverByName("GTiff")
-    out_raster_ds = memory_driver.Create(fileoutput, ncol, nrow, 1, gdal.GDT_Byte)
+            for feat in layer:
+                if dictinput == []:
+                    feat.Setfield("Raster",1)
+                else:
+                    pt = feat.GetField(fieldname)
+                    feat.SetField("Raster", int(dictinput[pt]))
+                layer.SetFeature(feat)
+                feat = None
 
-    # Set the ROI image's projection and extent to our input raster's projection and extent
-    out_raster_ds.SetProjection(proj)
-    out_raster_ds.SetGeoTransform(ext)
+        # Create a second (modified) layer
+        outdriver = ogr.GetDriverByName("MEMORY")
+        source = outdriver.CreateDataSource("memData")
 
-    # Fill our output band with the 0 blank, no class label, value
-    b = out_raster_ds.GetRasterBand(1)
-    b.Fill(0)
+        # Create the raster dataset
+        memory_driver = gdal.GetDriverByName("GTiff")
+        out_raster_ds = memory_driver.Create(fileoutput, ncol, nrow, 1, gdal.GDT_Byte)
 
-    # Rasterize the shapefile layer to our new dataset
-    gdal.RasterizeLayer(
-        out_raster_ds,  # output to our new dataset
-        [1],  # output to our new dataset's first band
-        layer,  # rasterize this layer
-        None,
-        None,  # don't worry about transformations ul.since we're in same projection
-        [0],  # burn value 0
-        [
-            "ALL_TOUCHED=FALSE",  # rasterize all pixels touched by polygons
-            "ATTRIBUTE=Raster",
-        ],  # put raster values according to the 'Raster' field values
-    )
+        # Set the ROI image's projection and extent to our input raster's projection and extent
+        out_raster_ds.SetProjection(proj)
+        out_raster_ds.SetGeoTransform(ext)
 
-    # Close dataset
-    out_raster_ds = None
+        # Fill our output band with the 0 blank, no class label, value
+        b = out_raster_ds.GetRasterBand(1)
+        b.Fill(0)
+
+        # Rasterize the shapefile layer to our new dataset
+        gdal.RasterizeLayer(
+            out_raster_ds,  # output to our new dataset
+            [1],  # output to our new dataset's first band
+            layer,  # rasterize this layer
+            None,
+            None,  # don't worry about transformations ul.since we're in same projection
+            [0],  # burn value 0
+            [
+                "ALL_TOUCHED=FALSE",  # rasterize all pixels touched by polygons
+                "ATTRIBUTE=Raster",
+            ],  # put raster values according to the 'Raster' field values
+        )
+
+        # Close dataset
+        out_raster_ds = None

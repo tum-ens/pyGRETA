@@ -1,4 +1,5 @@
 import lib.correction_functions as cf
+import lib.spatial_functions as sf
 import lib.input_maps as im
 import lib.potential as pl
 from lib.log import logger
@@ -49,8 +50,8 @@ if __name__ == "__main__":
                 # ts.generate_time_series_for_representative_locations(paths, param, tech)
                 # ts.generate_time_series_for_specific_locations(paths, param, tech)
 
-        for tech in param["technology"]:
-            logger.info("Tech: " + tech)
+        # for tech in param["technology"]:
+            # logger.info("Tech: " + tech)
 
             # Generate regression coefficients for FLH and TS model matching
             # rg.get_regression_coefficients(paths, param, tech)

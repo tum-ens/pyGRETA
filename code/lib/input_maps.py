@@ -797,7 +797,7 @@ def generate_airports(paths,param):
         if not airports.empty:
             # Prepare input
             crd = (airports["latitude_deg"].to_numpy(), airports["longitude_deg"].to_numpy())
-            ind = sf.ind_exact_points(crd, Crd_all, res_desired)
+            ind = sf.crd2ind(crd, Crd_all, res_desired)
 
             A_land[tuple(ind)]=100
             airport_raster = A_land == 100

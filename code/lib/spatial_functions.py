@@ -19,11 +19,10 @@ def define_spatial_scope(scope_shp):
     :return box: List of the bounding box coordinates.
     :rtype: list
     """
-    # scope_shp = scope_shp.to_crs({"init": "epsg:4326"})
-    scope_shp = scope_shp.to_crs(epsg=4326)
-    r = scope_shp.total_bounds
-    box = r[::-1][np.newaxis]
-    return box
+
+    lon_min, lat_min, lon_max, lat_max = scope_shp.total_bounds
+
+    return np.array([lat_max, lon_max, lat_min, lon_min])
 
 
 def crd_merra(Crd_regions, res_weather):
@@ -40,19 +39,35 @@ def crd_merra(Crd_regions, res_weather):
     """
     Crd = np.array(
         [
-            np.ceil((Crd_regions[:, 0] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
-            np.ceil(Crd_regions[:, 1] / res_weather[1]) * res_weather[1],
+            np.ceil((Crd_regions[0] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
+            np.ceil(Crd_regions[1] / res_weather[1]) * res_weather[1],
             #np.ceil((Crd_regions[:, 1] + res_weather[1] / 2) / res_weather[1]) * res_weather[1] - res_weather[1] / 2,
-            np.floor((Crd_regions[:, 2] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
-            np.floor(Crd_regions[:, 3] / res_weather[1]) * res_weather[1],
+            np.floor((Crd_regions[2] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
+            np.floor(Crd_regions[3] / res_weather[1]) * res_weather[1],
             #np.floor((Crd_regions[:, 3] + res_weather[1] / 2) / res_weather[1]) * res_weather[1] - res_weather[1] / 2,
         ]
     )
     Crd = Crd.T
+
+    # Todo: New approach because coordinates are not correct (Patrick)
+    # resolution_latitude, resolution_longitude = res_weather
+    # lat_max, lon_max, lat_min, lon_min = bounding_box
+    #
+    #
+    # Crd = np.array(
+    #     [
+    #         # |-x-|....|-x-|,     'x': center coordinate of raster, '|': raster
+    #         resolution_latitude * np.ceil(lat_max / resolution_latitude) - resolution_latitude / 2,
+    #         resolution_longitude * np.ceil(lon_max / resolution_longitude),# - resolution_longitude / 2,
+    #         resolution_latitude * np.floor(lat_min / resolution_latitude) - resolution_latitude / 2,
+    #         resolution_longitude * np.floor(lon_min / resolution_longitude),# + resolution_longitude / 2
+    #     ]
+    # )
+
     return Crd
 
 
-def crd_exact_points(Ind_points, Crd_all, res):
+def ind2crd(Ind_points, Crd_all, resolution):
     """
     This function converts indices of points in high resolution rasters into longitude and latitude coordinates.
 
@@ -60,17 +75,17 @@ def crd_exact_points(Ind_points, Crd_all, res):
     :type Ind_points: tuple of arrays
     :param Crd_all: Array of coordinates of the bounding box of the spatial scope.
     :type Crd_all: numpy array
-    :param res: Data resolution in the vertical and horizontal dimensions.
-    :type res: list
+    :param resolution: Data resolution in the vertical and horizontal dimensions.
+    :type resolution: list
     
     :return Crd_points: Coordinates of the points in the vertical and horizontal dimensions.
     :rtype: list of arrays
     """
-    Crd_points = [Ind_points[0] * res[0] + Crd_all[2] + res[0] / 2, Ind_points[1] * res[1] + Crd_all[3] + res[1] / 2]
+    Crd_points = [Ind_points[0] * resolution[0] + Crd_all[2] + resolution[0] / 2, Ind_points[1] * resolution[1] + Crd_all[3] + resolution[1] / 2]
     return Crd_points
 
 
-def ind_exact_points(Crd_points, Crd_all, res):
+def crd2ind(Crd_points, Crd_all, resolution):
     """
     This function converts latitude and longitude of points in high resolution rasters into indices.
 
@@ -78,13 +93,15 @@ def ind_exact_points(Crd_points, Crd_all, res):
     :type Crd_points: tuple of arrays
     :param Crd_all: Array of coordinates of the bounding box of the spatial scope.
     :type Crd_all: numpy array
-    :param res: Data resolution in the vertical and horizontal dimensions.
-    :type res: list
+    :param resolution: Data resolution in the vertical and horizontal dimensions.
+    :type resolution: list
 
     :return Ind_points: Tuple of arrays of indices in the vertical and horizontal axes.
     :rtype: list of arrays
     """
-    Ind_points = [np.around((Crd_points[0] - Crd_all[2]) / res[0]).astype(int), np.around((Crd_points[1] - Crd_all[3]) / res[1]).astype(int)]
+
+    Ind_points = [np.around((Crd_points[0] - Crd_all[2]) / resolution[0]).astype(int),
+                  np.around((Crd_points[1] - Crd_all[3]) / resolution[1]).astype(int)]
     return Ind_points
 
 

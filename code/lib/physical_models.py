@@ -266,7 +266,7 @@ def angles(hour, reg_ind, Crd_all, res_desired, orient):
     :rtype: tuple of arrays
     """
     # Initialization
-    Crd_points = sf.crd_exact_points(reg_ind, Crd_all, res_desired)
+    Crd_points = sf.ind2crd(reg_ind, Crd_all, res_desired)
     lat = Crd_points[0]
     lon = Crd_points[1]
     k = len(lat)  # number of points

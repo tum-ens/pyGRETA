@@ -81,7 +81,7 @@ def find_representative_locations(paths, param, tech):
     reg_ind = (reg_ind[:, 0], reg_ind[:, 1])
 
     param[tech]["Ind_points"] = reg_ind
-    param[tech]["Crd_points"] = crd_exact_points(reg_ind, Crd_all, res_desired)
+    param[tech]["Crd_points"] = ind2crd(reg_ind, Crd_all, res_desired)
     param[tech]["Crd_points"] = (param[tech]["Crd_points"][0], param[tech]["Crd_points"][1], list_names, list_quantiles)
 
 
@@ -299,12 +299,12 @@ def generate_time_series_for_specific_locations(paths, param, tech):
     if not points_df.empty:
         # Prepare input for calc_TS functions
         crd = (points_df["lat"].to_numpy(), points_df["lon"].to_numpy())
-        ind = ind_exact_points(crd, Crd_all, res_desired)
+        ind = crd2ind(crd, Crd_all, res_desired)
         list_names = ["UD"] * len(crd[0])
         list_points = list(points_df.index)
 
         param[tech]["Crd_points"] = (crd[0], crd[1], list_names, list_points)
-        param[tech]["Ind_points"] = ind_exact_points(crd, Crd_all, res_desired)
+        param[tech]["Ind_points"] = crd2ind(crd, Crd_all, res_desired)
         param[tech]["Ind_merra_points"] = ind
 
         for p in range(len(crd[0])):

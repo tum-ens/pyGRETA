@@ -7,14 +7,12 @@ technology = "OpenFieldPV,RoofTopPV,WindOn"
 path = "../configs/"
 
 df = pd.read_excel('World-Timeplan.xlsx', sheet_name='Time Plan', engine='openpyxl')
-# print(df)
-# print(df['Country Code'])
 
 for f in os.listdir(path):
     os.remove(os.path.join(path, f))    # Remove all old files
 
 for i in range(len(df)):
-    if (not np.isnan(df['ID'][i]) and str(df['Country Name'][i])!='nan'):
+    if (not np.isnan(df['ID'][i]) and str(df['Country Name'][i])!='nan'):       # detect connected cells
         f = open(path + str(int(df['ID'][i])) + "_" + df['Country Name'][i] + ".txt", "w")
         # f.write("spatial_scope:gadm36_" + str(df['Country Code'][i]) + "_0.shp" + "\n")
         f.write("regions:gadm36_" + str(df['Country Code'][i]) + "_0.shp" + "\n")

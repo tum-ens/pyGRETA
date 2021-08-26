@@ -62,16 +62,14 @@ def general_settings():
     param = {}
     param["author"] = "Thushara Addanki"  # the name of the person running the script
     param["comment"] = "Potential Analysis"
+    param["path_database"] = r"..\..\..\Database_KS"    # specify the relative (from the runme.py file) or the absolute path to the database folder
+
+    root = param["path_database"]
+    fs = os.path.sep
+    if root[-1] != fs:
+        root += fs      # add final slash('\') if not already there
 
     paths = {}
-    fs = os.path.sep
-    current_folder = os.path.dirname(os.path.abspath(__file__))
-    root = str(Path(current_folder).parent.parent)
-    # For use at TUM ENS
-    if root[-1] != fs:
-        root = root + fs + "pyGRETA" + fs + "Database_KS" + fs
-    else:
-        root = root + "pyGRETA" + fs + "Database_KS" + fs
 
     return paths, param
 
@@ -117,7 +115,6 @@ def scope_paths_and_parameters(paths, param, config_file):
                            skip_blank_lines=True, )  # Import parameters from config_files in folder 'configs'
     input_dict = input_df[1].to_dict()  # Convert dataframe to dict with values from the first column
 
-    #paths["spatial_scope"] = PathTemp + input_dict["spatial_scope"]
     paths["subregions"] = PathTemp + input_dict["regions"].replace(" ", "")
     param["region_name"] = input_dict["region_name"].replace(" ", "")  # Name tag of the spatial scope
     param["subregions_name"] = input_dict["subregions_name"] .replace(" ", "") # Name tag of the subregions
@@ -126,28 +123,6 @@ def scope_paths_and_parameters(paths, param, config_file):
     param["technology"] = input_dict["technology"].replace(" ", "").split(',')  # Creat array by comma separated string
 
     return paths, param
-
-    # ----- old ----------------
-    # # Paths to the shapefiles
-    #
-    # PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
-    #
-    # paths["spatial_scope"] = PathTemp + "Germany_with_EEZ.shp"
-    # paths["subregions"] = PathTemp + "gadm36_DEU_0.shp"
-    #
-    # # Name tags for the scope and the subregions
-    # param["region_name"] = "Germany_gwa"  # Name tag of the spatial scope
-    # param["subregions_name"] = "Germany_level0"  # Name tag of the subregions
-    # param["country_code"] = "DEU"  # used for reading GWA tiff file while redistribution
-    #
-    # # Year
-    # param["year"] = 2019
-    #
-    # # Technologies
-    # param["technology"] = ["WindOn"]  # ["PV", "CSP", "WindOn", "WindOff", "Biomass"]
-    #
-    # return paths, param
-
 
 def computation_parameters(param):
     """
@@ -164,7 +139,7 @@ def computation_parameters(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 20
+    param["nproc"] = 40
     param["CPU_limit"] = True
     return param
 

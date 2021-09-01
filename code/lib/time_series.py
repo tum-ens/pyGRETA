@@ -283,14 +283,14 @@ def generate_time_series_for_specific_locations(paths, param, tech):
     points_df = pd.DataFrame.from_dict(param["useloc"], orient="index", columns=["lat", "lon"])
 
     # Filter points outside spatial scope
-    lat_max, lon_max, lat_min, lon_min = param["spatial_scope"][0]
+    lat_max, lon_max, lat_min, lon_min = param["spatial_scope"]
     # Points outside the scope bound
     out_scope_df = points_df.loc[
         (lat_min > points_df["lat"]) | (lat_max < points_df["lat"]) | (lon_min > points_df["lon"]) | (lon_max < points_df["lon"])
     ].copy()
     if not out_scope_df.empty:
         out_points = list(out_scope_df.index)
-        print("WARNING: The following points are located outside of the spatial scope " + str(param["spatial_scope"][0]) + ": \n" + str(out_scope_df))
+        print("WARNING: The following points are located outside of the spatial scope " + str(param["spatial_scope"]) + ": \n" + str(out_scope_df))
         warn("Points located outside spatial scope", UserWarning)
     # Points inside the scope bounds
     points_df = points_df.loc[

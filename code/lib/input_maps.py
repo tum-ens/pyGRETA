@@ -56,7 +56,7 @@ def generate_maps_for_scope(paths, param, multiprocessing):
 
     if multiprocessing:
         processes = []
-        processes.append(mp.Process(target=generate_sea, args=(paths, param)))
+        # processes.append(mp.Process(target=generate_sea, args=(paths, param)))
         processes.append(mp.Process(target=generate_area, args=(paths, param)))
         processes.append(mp.Process(target=generate_topography, args=(paths, param)))
         # processes.append(mp.Process(target=generate_bathymetry, args=(paths, param))) # ToDo: not tested
@@ -81,7 +81,7 @@ def generate_maps_for_scope(paths, param, multiprocessing):
         logger.info('All processes finished')
 
     else:
-        generate_sea(paths, param)  # Land and Sea
+        # generate_sea(paths, param)  # Land and Sea
         generate_area(paths, param)  # Area Gradient
         generate_topography(paths, param)  # Topography
         # generate_bathymetry(paths, param)  # Bathymetry # ToDo: not tested
@@ -480,47 +480,54 @@ def generate_topography(paths, param):
 
     else:
         logger.info("Start")
-
         Crd_all = param["Crd_all"]
-        Ind = sf.ind_global(Crd_all, param["res_topography"])[0]
+        # Ind = sf.ind_global(Crd_all, param["res_topography"])[0]
+        Ind = sf.ind_global(Crd_all, param["res_desired"])[0]
         GeoRef = param["GeoRef"]
-        Topo = np.zeros((int(180 / param["res_topography"][0]), int(360 / param["res_topography"][1])))
-        tile_extents = np.zeros((24, 4), dtype=int)
-        i = 1
-        j = 1
-        for letter in ul.char_range("A", "X"):
-            north = (i - 1) * 45 / param["res_topography"][0] + 1
-            east = j * 60 / param["res_topography"][1]
-            south = i * 45 / param["res_topography"][0]
-            west = (j - 1) * 60 / param["res_topography"][1] + 1
-            tile_extents[ord(letter) - ord("A"), :] = [north, east, south, west]
-            j = j + 1
-            if j == 7:
-                i = i + 1
-                j = 1
-        n_min = (Ind[0] // (45 * 240)) * 45 / param["res_topography"][0] + 1
-        e_max = (Ind[1] // (60 * 240) + 1) * 60 / param["res_topography"][1]
-        s_max = (Ind[2] // (45 * 240) + 1) * 45 / param["res_topography"][0]
-        w_min = (Ind[3] // (60 * 240)) * 60 / param["res_topography"][1] + 1
+        # Topo = np.zeros((int(180 / param["res_topography"][0]), int(360 / param["res_topography"][1])))
+        # tile_extents = np.zeros((24, 4), dtype=int)
+        # i = 1
+        # j = 1
+        # for letter in ul.char_range("A", "X"):
+        #     north = (i - 1) * 45 / param["res_topography"][0] + 1
+        #     east = j * 60 / param["res_topography"][1]
+        #     south = i * 45 / param["res_topography"][0]
+        #     west = (j - 1) * 60 / param["res_topography"][1] + 1
+        #     tile_extents[ord(letter) - ord("A"), :] = [north, east, south, west]
+        #     j = j + 1
+        #     if j == 7:
+        #         i = i + 1
+        #         j = 1
+        # n_min = (Ind[0] // (45 * 240)) * 45 / param["res_topography"][0] + 1
+        # e_max = (Ind[1] // (60 * 240) + 1) * 60 / param["res_topography"][1]
+        # s_max = (Ind[2] // (45 * 240) + 1) * 45 / param["res_topography"][0]
+        # w_min = (Ind[3] // (60 * 240)) * 60 / param["res_topography"][1] + 1
+        #
+        # need = np.logical_and(
+        #     (np.logical_and((tile_extents[:, 0] >= n_min), (tile_extents[:, 1] <= e_max))),
+        #     np.logical_and((tile_extents[:, 2] <= s_max), (tile_extents[:, 3] >= w_min)),
+        # )
+        #
+        # for letter in ul.char_range("A", "X"):
+        #     index = ord(letter) - ord("A")
+        #     if need[index]:
+        #         with rasterio.open(paths["Topo_tiles"] + "15-" + letter + ".tif") as src:
+        #             tile = src.read()
+        #         Topo[tile_extents[index, 0] - 1 : tile_extents[index, 2], tile_extents[index, 3] - 1 : tile_extents[index, 1]] = tile[0, 0:-1, 0:-1]
+        #
+        # A_TOPO = np.flipud(Topo[Ind[0] - 1 : Ind[2], Ind[3] - 1 : Ind[1]])
+        # A_TOPO = sf.adjust_resolution(A_TOPO, param["res_topography"], param["res_desired"], "mean")
+        # A_TOPO = sf.recalc_topo_resolution(A_TOPO, param["res_topography"], param["res_desired"])
 
-        need = np.logical_and(
-            (np.logical_and((tile_extents[:, 0] >= n_min), (tile_extents[:, 1] <= e_max))),
-            np.logical_and((tile_extents[:, 2] <= s_max), (tile_extents[:, 3] >= w_min)),
-        )
-
-        for letter in ul.char_range("A", "X"):
-            index = ord(letter) - ord("A")
-            if need[index]:
-                with rasterio.open(paths["Topo_tiles"] + "15-" + letter + ".tif") as src:
-                    tile = src.read()
-                Topo[tile_extents[index, 0] - 1 : tile_extents[index, 2], tile_extents[index, 3] - 1 : tile_extents[index, 1]] = tile[0, 0:-1, 0:-1]
-
-        A_TOPO = np.flipud(Topo[Ind[0] - 1 : Ind[2], Ind[3] - 1 : Ind[1]])
-        A_TOPO = sf.adjust_resolution(A_TOPO, param["res_topography"], param["res_desired"], "mean")
-        A_TOPO = sf.recalc_topo_resolution(A_TOPO, param["res_topography"], param["res_desired"])
+        with rasterio.open(paths["Topo_global"]) as src:
+            A_TOPO = src.read(1, window=rasterio.windows.Window.from_slices(slice(Ind[0] - 1, Ind[2]),
+                                                                            slice(Ind[3] - 1, Ind[1])))
+            A_TOPO = np.flipud(A_TOPO)
         sf.array2raster(paths["TOPO"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_TOPO)
         logger.info("files saved: " + paths["TOPO"])
-        ul.create_json(paths["TOPO"], param, ["region_name", "Crd_all", "res_topography", "res_desired", "GeoRef"], paths, ["Topo_tiles", "TOPO"])
+        # ul.create_json(paths["TOPO"], param, ["region_name", "Crd_all", "res_topography", "res_desired", "GeoRef"], paths, ["Topo_tiles", "TOPO"])
+        ul.create_json(paths["TOPO"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"],
+                       paths, ["Topo_global", "TOPO"])
 
         logger.debug("End")
 
@@ -588,7 +595,7 @@ def generate_slope(paths, param, A_TOPO):
         A_SLP = np.flipud(slope_pc)
         sf.array2raster(paths["SLOPE"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_SLP)
         logger.info("files saved: " + paths["SLOPE"])
-        ul.create_json(paths["SLOPE"], param, ["region_name", "Crd_all", "res_topography", "res_desired", "GeoRef"], paths, ["TOPO", "SLOPE"])
+        ul.create_json(paths["SLOPE"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["TOPO", "SLOPE"])
         logger.debug("End")
 
 
@@ -783,7 +790,10 @@ def generate_airports(paths,param):
         logger.info("Airports are filtered")
 
         # Filter points outside spatial scope
-        lat_max, lon_max, lat_min, lon_min = param["spatial_scope"][0]
+        lat_max, lon_max, lat_min, lon_min = param["spatial_scope"]
+        print (param["spatial_scope"])
+        print(lat_max)
+        print(lon_max)
 
         # Points inside the scope bounds
         airports = airports.loc[

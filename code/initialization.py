@@ -4,7 +4,7 @@ from lib.log import logger
 import geopandas as gpd
 import numpy as np
 import shapely
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 
 def initialization(config_file):

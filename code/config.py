@@ -58,14 +58,16 @@ def general_settings():
     # These variables will be initialized here, then read in other modules without modifying them.
     global fs
     global root
+    fs = os.path.sep
+
 
     param = {}
     param["author"] = "Thushara Addanki"  # the name of the person running the script
     param["comment"] = "Potential Analysis"
-    param["path_database"] = r"..\..\..\Database_KS"    # specify the relative (from the runme.py file) or the absolute path to the database folder
+    param["path_database"] = fs + "home" + fs + "taddanki" + fs + "nas"+ fs + "pyGRETA" + fs + "Database_KS"    # specify the relative (from the runme.py file) or the absolute path to the database folder
 
     root = param["path_database"]
-    fs = os.path.sep
+
     if root[-1] != fs:
         root += fs      # add final slash('\') if not already there
 
@@ -575,6 +577,7 @@ def rooftoppv_parameters(param):
     GCR = {"shadefree_period": 6, "day_north": 79, "day_south": 263}
     rooftoppv["weight"] = {
         "GCR": GCR,
+        "suitable_roofs": 0.4,  # Percentage of south faced roofs. 40% should work for Europe!
         "power_density": 0.000160,
         "f_performance": 0.75,
     }
@@ -926,8 +929,9 @@ def global_maps_input_paths(paths, param):
     paths["Countries"] = PathTemp + "Countries" + fs + "gadm36_0.shp"
     
     paths["EEZ_global"] = PathTemp + "EEZ" + fs + "eez_v10.shp"
-    paths["Topo_tiles"] = PathTemp + "Topography" + fs
-    param["res_topography"] = np.array([1 / 240, 1 / 240])
+    # paths["Topo_tiles"] = PathTemp + "Topography" + fs
+    # param["res_topography"] = np.array([1 / 240, 1 / 240])
+    paths["Topo_global"] = PathTemp + "Topography" + fs + "Topography_250m.tif"  # [1/400 , 1/400] resampled in QGIS
 
     paths["Bathym_global"] = PathTemp + "Bathymetry" + fs + "ETOPO1_Ice_c_geotiff.tif"
     param["res_bathymetry"] = np.array([1 / 60, 1 / 60])

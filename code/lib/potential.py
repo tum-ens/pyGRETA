@@ -60,25 +60,28 @@ def calculate_full_load_hours(paths, param, tech, multiprocessing):
         
     if tech in ["OpenFieldPV", "RoofTopPV", "CSP"]:
 
-        day_filter = np.nonzero(merraData["CLEARNESS"][Ind[2] - 1 : Ind[0], Ind[3] - 1 : Ind[1], :].sum(axis=(0, 1)))
+        day_filter = np.nonzero(merraData["CLEARNESS"][Ind[2] - 1: Ind[0], Ind[3] - 1: Ind[1], :].sum(axis=(0, 1)))
         list_hours = np.arange(0, 8760)
-        if nproc == 1:
-            param["status_bar_limit"] = list_hours[-1]
-            results = calc_FLH_solar(list_hours[day_filter], [param, tech, rasterData, merraData])
-        else:
-            list_hours = np.array_split(list_hours[day_filter], nproc)
-            param["status_bar_limit"] = list_hours[0][-1]
-            results = mp.Pool(processes=nproc, initializer=ul.limit_cpu, initargs=CPU_limit).starmap(
-                calc_FLH_solar, it.product(list_hours, [[param, tech, rasterData, merraData]])
-            )
-         # Collecting results
-        FLH_low = np.zeros((m_low, n_low))
-        
-        if nproc > 1:
-            for p in range(len(results)):
-                FLH_low = FLH_low + results[p]
-        else:
-            FLH_low = results
+        # if nproc == 1:
+        #     param["status_bar_limit"] = list_hours[-1]
+        #     results = calc_FLH_solar(list_hours[day_filter], [param, tech, rasterData, merraData])
+        # else:
+        #     list_hours = np.array_split(list_hours[day_filter], nproc)
+        #     param["status_bar_limit"] = list_hours[0][-1]
+        #     results = mp.Pool(processes=nproc, initializer=ul.limit_cpu, initargs=CPU_limit).starmap(
+        #         calc_FLH_solar, it.product(list_hours, [[param, tech, rasterData, merraData]])
+        #     )
+        #  # Collecting results
+        # FLH_low = np.zeros((m_low, n_low))
+        #
+        # if nproc > 1:
+        #     for p in range(len(results)):
+        #         FLH_low = FLH_low + results[p]
+        # else:
+        #     FLH_low = results
+
+        param["status_bar_limit"] = list_hours[-1]
+        FLH_low = calc_FLH_solar(list_hours[day_filter], [param, tech, rasterData, merraData])
         
         FLH_high = ul.resizem(FLH_low, m_high, n_high)
         FLH = np.full((m_high, n_high),np.nan)
@@ -991,6 +994,8 @@ def weight_potential_maps(paths, param, tech): #ToDo change variable names
 
     # Weighting matrix for the power output (technical potential) in MWp
     A_weight = A_area * A_mask * A_GCR * weight["power_density"] * weight["f_performance"]
+    if tech == "RoofTopPV":
+        A_weight = A_weight * weight["suitable_roofs"]
 
     # Calculate weighted FLH in MWh
     FLH = hdf5storage.read("FLH", paths[tech]["FLH"])
@@ -1185,6 +1190,8 @@ def report_potentials(paths, param, tech):
 
         # Power Potential
         A_P_potential = A_area_region * density
+        if tech == "RoofTopPV":
+            A_P_potential = A_P_potential * param[tech]["weight"]["suitable_roofs"]
         power_potential = np.nansum(A_P_potential)
         regions.loc[reg, "Power_Potential_GW"] = power_potential / (10 ** 3)
 

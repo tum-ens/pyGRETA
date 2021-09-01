@@ -496,12 +496,14 @@ def shape2raster(fileinput, fileoutput, fieldname, dictinput, rastertyp):
             new_field = ogr.FieldDefn("Raster", ogr.OFTInteger)
             layer.CreateField(new_field)
 
-            for feat in layer:
-                if dictinput == []:
-                    feat.Setfield("Raster",1)
-                else:
-                    pt = feat.GetField(fieldname)
-                    feat.SetField("Raster", int(dictinput[pt]))
+        for feat in layer:
+           if dictinput == []:
+                feat.SetField("Raster", 1)
+                layer.SetFeature(feat)
+                feat = None
+           else:
+                pt = feat.GetField(fieldname)
+                feat.SetField("Raster", int(dictinput[pt]))
                 layer.SetFeature(feat)
                 feat = None
 

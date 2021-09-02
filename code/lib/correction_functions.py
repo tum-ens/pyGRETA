@@ -80,8 +80,9 @@ def generate_wind_correction(paths, param):
         logger.info("Start")
         GeoRef = param["GeoRef"]
         landuse = param["landuse"]
-        with rasterio.open(paths["LU"]) as src:
-            A_lu = np.flipud(src.read(1)).astype(int)
+        A_lu = hdf5storage.read("LU", paths["LU"]).astype(int)
+        # with rasterio.open(paths["LU"]) as src:
+        #     A_lu = np.flipud(src.read(1)).astype(int)
         A_hellmann = ul.changem(A_lu, landuse["hellmann"], landuse["type"]).astype(float)
 
         # Onshore height correction
@@ -101,8 +102,9 @@ def generate_wind_correction(paths, param):
             turbine_height_off = param["WindOff"]["technical"]["hub_height"]
             A_cf_off = (turbine_height_off / 50) ** A_hellmann
             del A_hellmann
-            with rasterio.open(paths["EEZ"]) as src:
-                A_eez = np.flipud(src.read(1)).astype(int)
+            A_eez = hdf5storage.read("EEZ", paths["EEZ"]).astype(int)
+            # with rasterio.open(paths["EEZ"]) as src:
+            #     A_eez = np.flipud(src.read(1)).astype(int)
             A_cf_off = A_cf_off * A_eez
 
             sf.array2raster(paths["CORR_OFF"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf_off)

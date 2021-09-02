@@ -7,6 +7,7 @@ import math
 import rasterio
 import scipy.ndimage
 import os
+import hdf5storage
 
 
 def define_spatial_scope(scope_shp):
@@ -455,7 +456,7 @@ def recalc_livestock_resolution(array, res_data, res_desired):
     return array1
 
 
-def create_buffered_raster(array, buffer_pixel_amount, GeoRef, Outraster):
+def create_buffer(param, array, buffer_pixel_amount, GeoRef, Outraster):
     kernel = np.zeros((2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1))
     y, x = np.ogrid[-buffer_pixel_amount:buffer_pixel_amount + 1, -buffer_pixel_amount:buffer_pixel_amount + 1]
     mask = x ** 2 + y ** 2 <= buffer_pixel_amount ** 2
@@ -464,7 +465,11 @@ def create_buffered_raster(array, buffer_pixel_amount, GeoRef, Outraster):
     # kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
     A_array = scipy.ndimage.maximum_filter(array, footprint=kernel, mode="constant", cval=0)
     A_NotArray = (~A_array).astype(int)
-    array2raster(Outraster, GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
+
+    #saving file
+    hdf5storage.writes({"BUFFER": A_NotArray}, Outraster, store_python_metadata=True, matlab_compatible=True)
+    if param["savetiff_inputmaps"]:
+        array2raster(Outraster, GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
                     A_NotArray)
 
 
@@ -496,16 +501,16 @@ def shape2raster(fileinput, fileoutput, fieldname, dictinput, rastertyp):
             new_field = ogr.FieldDefn("Raster", ogr.OFTInteger)
             layer.CreateField(new_field)
 
-        for feat in layer:
-           if dictinput == []:
-                feat.SetField("Raster", 1)
-                layer.SetFeature(feat)
-                feat = None
-           else:
-                pt = feat.GetField(fieldname)
-                feat.SetField("Raster", int(dictinput[pt]))
-                layer.SetFeature(feat)
-                feat = None
+            for feat in layer:
+               if dictinput == []:
+                    feat.SetField("Raster", 1)
+                    layer.SetFeature(feat)
+                    feat = None
+               else:
+                    pt = feat.GetField(fieldname)
+                    feat.SetField("Raster", int(dictinput[pt]))
+                    layer.SetFeature(feat)
+                    feat = None
 
         # Create a second (modified) layer
         outdriver = ogr.GetDriverByName("MEMORY")

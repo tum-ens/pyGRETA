@@ -45,8 +45,9 @@ def calculate_full_load_hours(paths, param, tech, multiprocessing):
     Ind = sf.ind_merra(Crd_all, Crd_all, res_weather)[0]
     
     if tech == "WindOff":
-        with rasterio.open(paths["EEZ"]) as src:
-            w = src.read(1)
+        w = np.flipud(hdf5storage.read("EEZ", paths["EEZ"]))
+        # with rasterio.open(paths["EEZ"]) as src:
+        #     w = src.read(1)
     else:
         with rasterio.open(paths["LAND"]) as src:
             w = src.read(1)
@@ -98,7 +99,7 @@ def calculate_full_load_hours(paths, param, tech, multiprocessing):
         logger.info("files saved: " + paths[tech]["FLH"])
 
         # Save GEOTIFF files
-        if param["savetiff"]:
+        if param["savetiff_potentials"]:
             GeoRef = param["GeoRef"]
             sf.array2raster(ul.changeExt2tif(paths[tech]["FLH"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], FLH)
             logger.info("files saved:" + ul.changeExt2tif(paths[tech]["FLH"]))
@@ -129,7 +130,7 @@ def calculate_full_load_hours(paths, param, tech, multiprocessing):
         logger.info("files saved: " + paths[tech]["FLH"])
 
         # Save GEOTIFF files
-        if param["savetiff"]:
+        if param["savetiff_potentials"]:
             GeoRef = param["GeoRef"]
             sf.array2raster(ul.changeExt2tif(paths[tech]["FLH"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], FLH)
             logger.info("files saved:" + ul.changeExt2tif(paths[tech]["FLH"]))
@@ -205,13 +206,13 @@ def calculate_full_load_hours(paths, param, tech, multiprocessing):
         FLH_scope[param["Ind_nz"]] = FLH[param["Ind_nz"]]
 
         hdf5storage.writes({"FLH": FLH}, paths[tech]["FLH"], store_python_metadata=True, matlab_compatible=True)
-
         logger.info("\nfiles saved: " + paths[tech]["FLH"])
 
-        GeoRef = param["GeoRef"]
-        sf.array2raster(ul.changeExt2tif(paths[tech]["FLH"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
-                     GeoRef["pixelHeight"], FLH)
-        logger.info("files saved:" +ul.changeExt2tif(paths[tech]["FLH"]))
+        if param["savetiff_potentials"]:
+            GeoRef = param["GeoRef"]
+            sf.array2raster(ul.changeExt2tif(paths[tech]["FLH"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
+                         GeoRef["pixelHeight"], FLH)
+            logger.info("files saved:" +ul.changeExt2tif(paths[tech]["FLH"]))
 
     logger.debug("End")
 
@@ -245,8 +246,9 @@ def get_merra_raster_data(paths, param, tech): #ToDo clean up unnecessary things
 
         # Calculate A matrices correction
         # A_lu
-        with rasterio.open(paths["LU"]) as src:
-            w = src.read(1)
+        w = np.flipud(hdf5storage.read("LU", paths["LU"]))
+        # with rasterio.open(paths["LU"]) as src:
+        #     w = src.read(1)
         rasterData["A_lu"] = np.flipud(w)
         # A_Ross (Temperature coefficients for heating losses)
         rasterData["A_Ross"] = ul.changem(rasterData["A_lu"], param["landuse"]["Ross_coeff"],
@@ -547,44 +549,34 @@ def mask_potential_maps(paths, param, tech): #ToDo optimize no. of lines
     logger.info("Start")
     mask = param[tech]["mask"]
 
-    if tech in ["OpenFieldPV", "CSP"]:
+    if tech in ["OpenFieldPV", "RoofTopPV", "CSP", "WindOn"]:
         with rasterio.open(paths["PA"]) as src:
             A_protect = src.read(1)
             A_protect = np.flipud(A_protect).astype(int)  # Protection categories 0-10, to be classified
         # Exclude protection categories that are not suitable
         A_suitability_pa = ul.changem(A_protect, mask["pa_suitability"], param["protected_areas"]["type"]).astype(float)
         A_suitability_pa = (A_suitability_pa > 0).astype(int)
-        with rasterio.open(paths["LU"]) as src:
-            A_lu = src.read(1)
-            A_lu = np.flipud(A_lu).astype(int)  # Landuse classes 0-16, to be reclassified
+        A_lu = hdf5storage.read("LU", paths["LU"]).astype(int) # Landuse classes 0-16, to be reclassified
         # Exclude landuse types types that are not suitable
         A_suitability_lu = ul.changem(A_lu, mask["lu_suitability"], param["landuse"]["type"]).astype(float)
         A_suitability_lu = (A_suitability_lu > 0).astype(int)
-        with rasterio.open(paths["SLOPE"]) as src:
-            A_slope = src.read(1)
-            A_slope = np.flipud(A_slope)  # Slope in percentage
-            A_slope = (A_slope <= mask["slope"]).astype(int)
-        with rasterio.open(paths["WATER_BUFFER"]) as src:
-            A_notWater = src.read(1)
-            A_notWater = (np.flipud(A_notWater)).astype(int)
-        with rasterio.open(paths["WETLAND_BUFFER"]) as src:
-            A_notWetland = src.read(1)
-            A_notWetland = (np.flipud(A_notWetland)).astype(int)
-        with rasterio.open(paths["SNOW_BUFFER"]) as src:
-            A_notSnow = src.read(1)
-            A_notSnow = (np.flipud(A_notSnow)).astype(int)
-        with rasterio.open(paths["PV_PA_BUFFER"]) as src:
-            A_notProtected = src.read(1)
-            A_notProtected = (np.flipud(A_notProtected)).astype(int)
-        with rasterio.open(paths["BOARDERS"]) as src:
-            A_notBoarder = src.read(1)
-            A_notBoarder = (np.flipud(A_notBoarder)).astype(int)
+        A_notWater = hdf5storage.read("BUFFER", paths["WATER_BUFFER"]).astype(int)
+        A_notWetland = hdf5storage.read("BUFFER", paths["WETLAND_BUFFER"]).astype(int)
+        A_notSnow = hdf5storage.read("BUFFER", paths["SNOW_BUFFER"]).astype(int)
+        A_notBoarder = hdf5storage.read("BOARDERS", paths["BOARDERS"]).astype(int)
         with rasterio.open(paths["ROADS"]) as src:
             A_Roads = src.read(1)
             A_notRoads = (np.flipud(~A_Roads.astype(bool))).astype(int)
         with rasterio.open(paths["RAILS"]) as src:
             A_Rails = src.read(1)
             A_notRails = (np.flipud(~A_Rails.astype(bool))).astype(int)
+        A_notMine = hdf5storage.read("BUFFER", paths["OSM_MINE_BUFFER"]).astype(int)
+        A_NotLake = hdf5storage.read("BUFFER", paths["HYDROLAKES_BUFFER"]).astype(int)
+        # Irrelevant parameters
+        A_bathymetry = 1
+
+    if tech in ["OpenFieldPV", "RoofTopPV", "CSP"]:
+        A_notProtected = hdf5storage.read("BUFFER", paths["PV_PA_BUFFER"]).astype(int)
         with rasterio.open(paths["OSM_AREAS"]) as src:
             A_osma = src.read(1)
             A_com = A_osma == 1
@@ -595,186 +587,49 @@ def mask_potential_maps(paths, param, tech): #ToDo optimize no. of lines
             A_notMilitary = (np.flipud(~A_mil.astype(bool))).astype(int)
             A_rec = A_osma == 6
             A_notRecreation = (np.flipud(~A_rec.astype(bool))).astype(int)
-        with rasterio.open(paths["OSM_MINE_BUFFER"]) as src:
-            A_min_buffered = src.read(1)
-            A_min_buffered = (np.flipud(A_min_buffered)).astype(int)
-        with rasterio.open(paths["PV_OSM_PARK_BUFFER"]) as src:
-            A_notPark = src.read(1)
-            A_notPark = (np.flipud(A_notPark)).astype(int)
-        with rasterio.open(paths["PV_WSF_BUFFER"]) as src:
-            A_notSettlement = src.read(1)
-            A_notSettlement = (np.flipud(A_notSettlement)).astype(int)
-        with rasterio.open(paths["HYDROLAKES_BUFFER"]) as src:
-            A_NotLake = src.read(1)
-            A_NotLake = (np.flipud(A_NotLake)).astype(int)
-        with rasterio.open(paths["HYDRORIVERS_BUFFER"]) as src:
-            A_NotRiver = src.read(1)
-            A_NotRiver = (np.flipud(A_NotRiver)).astype(int)
-
-            # Irrelevant parameters
-        A_bathymetry = 1
+        A_notPark = hdf5storage.read("BUFFER", paths["PV_OSM_PARK_BUFFER"]).astype(int)
+        A_notSettlement = hdf5storage.read("BUFFER", paths["PV_WSF_BUFFER"]).astype(int)
+        A_NotRiver = hdf5storage.read("BUFFER", paths["HYDRORIVERS_BUFFER"]).astype(int)
         A_notAirport = 1
+
+    if tech in ["OpenFieldPV", "CSP"]:
+        A_slope = hdf5storage.read("SLOPE", paths["SLOPE"])
+        A_slope = (A_slope <= mask["slope"]).astype(int)
 
     if tech == "RoofTopPV":
-        with rasterio.open(paths["PA"]) as src:
-            A_protect = src.read(1)
-            A_protect = np.flipud(A_protect).astype(int)  # Protection categories 0-10, to be classified
-        # Exclude protection categories that are not suitable
-        A_suitability_pa = ul.changem(A_protect, mask["pa_suitability"], param["protected_areas"]["type"]).astype(float)
-        A_suitability_pa = (A_suitability_pa > 0).astype(int)
-        with rasterio.open(paths["LU"]) as src:
-            A_lu = src.read(1)
-            A_lu = np.flipud(A_lu).astype(int)  # Landuse classes 0-16, to be reclassified
-        # Exclude landuse types types that are not suitable
-        A_suitability_lu = ul.changem(A_lu, mask["lu_suitability"], param["landuse"]["type"]).astype(float)
-        A_suitability_lu = (A_suitability_lu > 0).astype(int)
-        # with rasterio.open(paths["SLOPE"]) as src:
-        #     A_slope = src.read(1)
-        #     A_slope = np.flipud(A_slope)  # Slope in percentage
-        #     A_slope = (A_slope <= mask["slope"]).astype(int)
-        with rasterio.open(paths["WATER_BUFFER"]) as src:
-            A_notWater = src.read(1)
-            A_notWater = (np.flipud(A_notWater)).astype(int)
-        with rasterio.open(paths["WETLAND_BUFFER"]) as src:
-            A_notWetland = src.read(1)
-            A_notWetland = (np.flipud(A_notWetland)).astype(int)
-        with rasterio.open(paths["SNOW_BUFFER"]) as src:
-            A_notSnow = src.read(1)
-            A_notSnow = (np.flipud(A_notSnow)).astype(int)
-        with rasterio.open(paths["PV_PA_BUFFER"]) as src:
-            A_notProtected = src.read(1)
-            A_notProtected = (np.flipud(A_notProtected)).astype(int)
-        with rasterio.open(paths["BOARDERS"]) as src:
-            A_notBoarder = src.read(1)
-            A_notBoarder = (np.flipud(A_notBoarder)).astype(int)
-        with rasterio.open(paths["ROADS"]) as src:
-            A_Roads = src.read(1)
-            A_notRoads = (np.flipud(~A_Roads.astype(bool))).astype(int)
-        with rasterio.open(paths["RAILS"]) as src:
-            A_Rails = src.read(1)
-            A_notRails = (np.flipud(~A_Rails.astype(bool))).astype(int)
-        with rasterio.open(paths["OSM_AREAS"]) as src:
-            A_osma = src.read(1)
-            A_com = A_osma == 1
-            A_notCommercial = (np.flipud(~A_com.astype(bool))).astype(int)
-            A_ind = A_osma == 2
-            A_notIndustrial = (np.flipud(~A_ind.astype(bool))).astype(int)
-            A_mil = A_osma == 4
-            A_notMilitary = (np.flipud(~A_mil.astype(bool))).astype(int)
-            A_rec = A_osma == 6
-            A_notRecreation = (np.flipud(~A_rec.astype(bool))).astype(int)
-        with rasterio.open(paths["OSM_MINE_BUFFER"]) as src:
-            A_min_buffered = src.read(1)
-            A_min_buffered = (np.flipud(A_min_buffered)).astype(int)
-        with rasterio.open(paths["PV_OSM_PARK_BUFFER"]) as src:
-            A_notPark = src.read(1)
-            A_notPark = (np.flipud(A_notPark)).astype(int)
-        with rasterio.open(paths["WSF"]) as src:
-            A_Settlement = src.read(1).astype(bool)
-            A_Settlement = (np.flipud(A_Settlement)).astype(int)
-            A_notSettlement = A_Settlement # Just for using the same mask equation.
-        with rasterio.open(paths["HYDROLAKES_BUFFER"]) as src:
-            A_NotLake = src.read(1)
-            A_NotLake = (np.flipud(A_NotLake)).astype(int)
-        with rasterio.open(paths["HYDRORIVERS_BUFFER"]) as src:
-            A_NotRiver = src.read(1)
-            A_NotRiver = (np.flipud(A_NotRiver)).astype(int)
-
-            # Irrelevant parameters
+        A_Settlement = hdf5storage.read("WSF", paths["WSF"]).astype(bool)
+        A_Settlement = (np.flipud(A_Settlement)).astype(int)
+        A_notSettlement = A_Settlement  # Just for using the same mask equation.
+        # Irrelevant parameters
         A_slope = 1
-        A_bathymetry = 1
-        A_notAirport = 1
-
 
     if tech == "WindOn":
-        with rasterio.open(paths["PA"]) as src:
-            A_protect = src.read(1)
-            A_protect = np.flipud(A_protect).astype(int)  # Protection categories 0-10, to be classified
-        # Exclude protection categories that are not suitable
-        A_suitability_pa = ul.changem(A_protect, mask["pa_suitability"], param["protected_areas"]["type"]).astype(float)
-        A_suitability_pa = (A_suitability_pa > 0).astype(int)
-        with rasterio.open(paths["LU"]) as src:
-            A_lu = src.read(1)
-            A_lu = np.flipud(A_lu).astype(int)  # Landuse classes 0-16, to be reclassified
-        # Exclude landuse types types that are not suitable
-        A_suitability_lu = ul.changem(A_lu, mask["lu_suitability"], param["landuse"]["type"]).astype(float)
-        A_suitability_lu = (A_suitability_lu > 0).astype(int)
-        with rasterio.open(paths["SLOPE"]) as src:
-            A_slope = src.read(1)
-            A_slope = np.flipud(A_slope)  # Slope in percentage
-            A_slope = (A_slope <= mask["slope"]).astype(int)
-        # with rasterio.open(paths["POP_BUFFER"]) as src:
-        #     A_notPopulated = src.read(1)
-        #     A_notPopulated = (np.flipud(A_notPopulated)).astype(int)  # Is 1 for not populated areas
-        with rasterio.open(paths["WATER_BUFFER"]) as src:
-            A_notWater = src.read(1)
-            A_notWater = (np.flipud(A_notWater)).astype(int)
-        with rasterio.open(paths["WETLAND_BUFFER"]) as src:
-            A_notWetland = src.read(1)
-            A_notWetland = (np.flipud(A_notWetland)).astype(int)
-        with rasterio.open(paths["SNOW_BUFFER"]) as src:
-            A_notSnow = src.read(1)
-            A_notSnow = (np.flipud(A_notSnow)).astype(int)
-        with rasterio.open(paths["WINDON_PA_BUFFER"]) as src:
-            A_notProtected = src.read(1)
-            A_notProtected = (np.flipud(A_notProtected)).astype(int)
-        with rasterio.open(paths["AIRPORTS"]) as src:
-            A_notAirport = src.read(1)
-            A_notAirport = (np.flipud(A_notAirport)).astype(int)
-        with rasterio.open(paths["BOARDERS"]) as src:
-            A_notBoarder = src.read(1)
-            A_notBoarder = (np.flipud(A_notBoarder)).astype(int)
-        with rasterio.open(paths["ROADS"]) as src:
-            A_Roads = src.read(1)
-            A_notRoads = (np.flipud(~A_Roads.astype(bool))).astype(int)
-        with rasterio.open(paths["RAILS"]) as src:
-            A_Rails = src.read(1)
-            A_notRails = (np.flipud(~A_Rails.astype(bool))).astype(int)
-        with rasterio.open(paths["OSM_COM_BUFFER"]) as src:
-            A_notCommercial = src.read(1)
-            A_notCommercial = (np.flipud(A_notCommercial)).astype(int)
-        with rasterio.open(paths["OSM_IND_BUFFER"]) as src:
-            A_notIndustrial = src.read(1)
-            A_notIndustrial = (np.flipud(A_notIndustrial)).astype(int)
-        with rasterio.open(paths["OSM_MINE_BUFFER"]) as src:
-            A_min_buffered = src.read(1)
-            A_min_buffered = (np.flipud(A_min_buffered)).astype(int)
-        with rasterio.open(paths["OSM_MIL_BUFFER"]) as src:
-            A_notMilitary = src.read(1)
-            A_notMilitary = (np.flipud(A_notMilitary)).astype(int)
-        with rasterio.open(paths["WINDON_OSM_PARK_BUFFER"]) as src:
-            A_notPark = src.read(1)
-            A_notPark = (np.flipud(A_notPark)).astype(int)
-        with rasterio.open(paths["OSM_REC_BUFFER"]) as src:
-            A_notRecreation = src.read(1)
-            A_notRecreation = (np.flipud(A_notRecreation)).astype(int)
-        with rasterio.open(paths["WINDON_WSF_BUFFER"]) as src:
-            A_notSettlement = src.read(1)
-            A_notSettlement = (np.flipud(A_notSettlement)).astype(int)
-        with rasterio.open(paths["HYDROLAKES_BUFFER"]) as src:
-            A_NotLake = src.read(1)
-            A_NotLake = (np.flipud(A_NotLake)).astype(int)
+        A_slope = hdf5storage.read("SLOPE", paths["SLOPE"])
+        A_slope = (A_slope <= mask["slope"]).astype(int)
+        A_notProtected = hdf5storage.read("BUFFER", paths["WINDON_PA_BUFFER"]).astype(int)
+        A_notAirport = hdf5storage.read("BUFFER", paths["AIRPORTS"]).astype(int)
+        A_notCommercial = hdf5storage.read("BUFFER", paths["OSM_COM_BUFFER"]).astype(int)
+        A_notIndustrial = hdf5storage.read("BUFFER", paths["OSM_IND_BUFFER"]).astype(int)
+        A_notMilitary = hdf5storage.read("BUFFER", paths["OSM_MIL_BUFFER"]).astype(int)
+        A_notPark = hdf5storage.read("BUFFER", paths["WINDON_OSM_PARK_BUFFER"]).astype(int)
+        A_notRecreation = hdf5storage.read("BUFFER", paths["OSM_REC_BUFFER"]).astype(int)
+        A_notSettlement = hdf5storage.read("BUFFER", paths["WINDON_WSF_BUFFER"]).astype(int)
         with rasterio.open(paths["HYDRORIVERS"]) as src:
             A_Riv = src.read(1)
             A_NotRiver = (np.flipud(~A_Riv.astype(bool))).astype(int)
-
         # Irrelevant parameters
         A_bathymetry = 1
 
     if tech == "WindOff":
-        with rasterio.open(paths["EEZ"]) as src:
-            A_suitability_lu = src.read(1)
-            A_suitability_lu = np.flipud(A_suitability_lu).astype(int)
+        A_suitability_lu = hdf5storage.read("EEZ", paths["EEZ"]).astype(int)
         with rasterio.open(paths["PA"]) as src:
             A_protect = src.read(1)
             A_protect = np.flipud(A_protect).astype(int)  # Protection categories 0-10, to be classified
         # Exclude protection categories that are not suitable
         A_suitability_pa = ul.changem(A_protect, mask["pa_suitability"], param["protected_areas"]["type"]).astype(float)
         A_suitability_pa = (A_suitability_pa > 0).astype(int)
-        with rasterio.open(paths["BATH"]) as src:
-            A_bathymetry = src.read(1)
-            A_bathymetry = np.flipud(A_bathymetry)  # Bathymetry (depth) in meter
-            A_bathymetry = (A_bathymetry >= mask["depth"]).astype(int)  # (boolean)
+        A_bathymetry = hdf5storage.read("BATH", paths["BATH"]) # Bathymetry (depth) in meter
+        A_bathymetry = (A_bathymetry >= mask["depth"]).astype(int) # (boolean)
         # Irrelevant parameters
         A_slope = 1
         A_notSettlement= 1
@@ -787,7 +642,7 @@ def mask_potential_maps(paths, param, tech): #ToDo optimize no. of lines
         A_notRoads = 1
         A_notCommercial = 1
         A_notIndustrial = 1
-        A_min_buffered = 1
+        A_notMine = 1
         A_notMilitary = 1
         A_notPark = 1
         A_notRecreation = 1
@@ -798,7 +653,7 @@ def mask_potential_maps(paths, param, tech): #ToDo optimize no. of lines
             * A_notProtected * A_notAirport * A_notBoarder
             * A_notWater * A_notWetland * A_notSnow
             * A_notRoads * A_notRails * A_notCommercial * A_notIndustrial
-            * A_min_buffered * A_notMilitary * A_notPark * A_notRecreation
+            * A_notMine * A_notMilitary * A_notPark * A_notRecreation
             * A_notSettlement * A_NotLake * A_NotRiver
     ).astype(float)
 
@@ -806,7 +661,7 @@ def mask_potential_maps(paths, param, tech): #ToDo optimize no. of lines
     del A_notProtected, A_notAirport, A_notBoarder
     del A_notWater, A_notWetland, A_notSnow
     del A_notRoads, A_notRails, A_notCommercial, A_notIndustrial
-    del A_min_buffered, A_notMilitary, A_notPark, A_notRecreation
+    del A_notMine, A_notMilitary, A_notPark, A_notRecreation
     del A_notSettlement, A_NotLake, A_NotRiver
 
     # Calculate masked FLH
@@ -830,7 +685,7 @@ def mask_potential_maps(paths, param, tech): #ToDo optimize no. of lines
     )
 
     # Save GEOTIFF files
-    if param["savetiff"]:
+    if param["savetiff_potentials"]:
         GeoRef = param["GeoRef"]
         sf.array2raster(ul.changeExt2tif(paths[tech]["mask"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
                      GeoRef["pixelHeight"], A_mask)
@@ -978,9 +833,10 @@ def weight_potential_maps(paths, param, tech): #ToDo change variable names
     # Calculate availability based on protection categories
     A_availability_pa = ul.changem(A_protect, mask["pa_suitability"], param["protected_areas"]["type"]).astype(float)
 
-    with rasterio.open(paths["LU"]) as src:
-        A_lu = src.read(1)
-        A_lu = np.flipud(A_lu).astype(int)  # Landuse classes 0-16, to be reclassified
+    A_lu = hdf5storage.read("LU", paths["LU"]).astype(int)
+    # with rasterio.open(paths["LU"]) as src:
+    #     A_lu = src.read(1)
+    #     A_lu = np.flipud(A_lu).astype(int)  # Landuse classes 0-16, to be reclassified
 
     # Calculate availability based on landuse types
     A_availability_lu = ul.changem(A_lu, mask["lu_suitability"], param["landuse"]["type"]).astype(float)
@@ -1017,7 +873,7 @@ def weight_potential_maps(paths, param, tech): #ToDo change variable names
     )
 
     # Save GEOTIFF files
-    if param["savetiff"]:
+    if param["savetiff_potentials"]:
         sf.array2raster(ul.changeExt2tif(paths[tech]["weight"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
                      GeoRef["pixelHeight"], A_weight)
         logger.info("files saved: " + ul.changeExt2tif(paths[tech]["weight"]))
@@ -1277,7 +1133,7 @@ def report_potentials(paths, param, tech):
     logger.debug("End")
 
 
-def generate_biomass_production(paths, param, tech):
+def generate_biomass_production(paths, param, tech): #ToDo update to .mat files
     logger.info("Start")
     Crd_all = param["Crd_all"]
     GeoRef = param["GeoRef"]
@@ -1289,9 +1145,10 @@ def generate_biomass_production(paths, param, tech):
     biomass = param["Biomass"]
 
     # open land use raster to read the land type
-    with rasterio.open(paths["LU"]) as src:
-        A_lu = src.read(1)
-    A_lu = np.flipud(A_lu).astype(int)
+    A_lu = hdf5storage.read("LU", paths["LU"]).astype(int)
+    # with rasterio.open(paths["LU"]) as src:
+    #     A_lu = src.read(1)
+    # A_lu = np.flipud(A_lu).astype(int)
     A_lu_crop = (A_lu == 10) | (A_lu == 11) | (A_lu == 12) | (A_lu == 20) | (A_lu == 30)  # Agriculture pixels
     A_lu_veg = (A_lu == 40)  # Natural vegetation mosaic pixels
     A_lu_forest = (A_lu >= 50) | (A_lu <= 90)  # Forest pixels
@@ -1333,16 +1190,6 @@ def generate_biomass_production(paths, param, tech):
                     production_country_crop = production_country[production_country["Item"] == crop]
                     if not production_country_crop.empty:
                         for residue in biomass["agriculture"]["residue"][crop]:
-                            # bio_energy = bio_energy\
-                            #              + (float(production_country_crop["Value"].iloc[0])
-                            #                 * biomass["agro_rpr"][crop][residue]
-                            #                 * biomass["agro_af"][crop][residue]
-                            #                 * biomass["agro_lhv"][crop][residue])
-                            # bio_co2 = bio_co2\
-                            #           + (float(production_country_crop["Value"].iloc[0])
-                            #              * biomass["agro_rpr"][crop][residue]
-                            #              * biomass["agro_af"][crop][residue]
-                            #              * biomass["agro_emission factor"])
                             bio_energy = bio_energy \
                                          + (float(production_country_crop["Value"].iloc[0])
                                             * biomass["agriculture"]["rpr"][crop][residue]
@@ -1430,14 +1277,14 @@ def generate_biomass_production(paths, param, tech):
         paths,
         ["LS","LU","PA"],
     )
-    print("\nfiles saved: " + paths[tech]["BIOMASS_ENERGY"])
+    logger.info("\nfiles saved: " + paths[tech]["BIOMASS_ENERGY"])
 
     # Save GEOTIFF files
-    if param["savetiff"]:
+    if param["savetiff_potentials"]:
         GeoRef = param["GeoRef"]
         sf.array2raster(ul.changeExt2tif(paths[tech]["BIOMASS_ENERGY"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
                      GeoRef["pixelHeight"], energy_map)
-        print("files saved:" + ul.changeExt2tif(paths[tech]["BIOMASS_ENERGY"]))
+        logger.info("files saved:" + ul.changeExt2tif(paths[tech]["BIOMASS_ENERGY"]))
 
     hdf5storage.writes({"BIOMASS_CO2": co2_map}, paths[tech]["BIOMASS_CO2"], store_python_metadata=True,
                        matlab_compatible=True)
@@ -1448,10 +1295,10 @@ def generate_biomass_production(paths, param, tech):
         paths,
         ["LS","LU","PA"],
     )
-    print("\nfiles saved: " + paths[tech]["BIOMASS_CO2"])
+    logger.info("\nfiles saved: " + paths[tech]["BIOMASS_CO2"])
 
     # Save GEOTIFF files
-    if param["savetiff"]:
+    if param["savetiff_potentials"]:
         GeoRef = param["GeoRef"]
         sf.array2raster(ul.changeExt2tif(paths[tech]["BIOMASS_CO2"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
                      GeoRef["pixelHeight"], co2_map)

@@ -142,9 +142,9 @@ def generate_land(paths, param):
         # Saving file
         sf.array2raster(paths["LAND"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_land)
         logger.info("files saved: " + paths["LAND"])
-        ul.create_json(
-            paths["LAND"], param, ["subregions_name", "m_high", "n_high", "Crd_all", "res_desired", "GeoRef", "nRegions_sea"], paths, ["Countries", "LAND"] # FIXME: replaced regions by Countries
-        )
+        ul.create_json(paths["LAND"], param,
+                       ["subregions_name", "m_high", "n_high", "Crd_all", "res_desired", "GeoRef", "nRegions_sea"],
+                       paths, ["Countries", "LAND"])
 
         logger.debug("End")
 
@@ -391,11 +391,15 @@ def generate_sea(paths, param):
         A_sea[A_sea > 0] = 1
 
         # Saving file
-        sf.array2raster(paths["EEZ"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_sea)
+        hdf5storage.writes({"EEZ": A_sea}, paths["EEZ"], store_python_metadata=True, matlab_compatible=True)
         logger.info("files saved: " + paths["EEZ"])
         ul.create_json(
             paths["EEZ"], param, ["region_name", "m_high", "n_high", "Crd_all", "res_desired", "GeoRef", "nRegions_sea"], paths, ["EEZ_global", "EEZ"]
         )
+        if param["savetiff_inputmaps"]:
+            sf.array2raster(ul.changeExt2tif(paths["EEZ"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_sea)
+            logger.info("files saved: " + ul.changeExt2tif(paths["EEZ"]))
+
         logger.debug("End")
 
 
@@ -523,11 +527,16 @@ def generate_topography(paths, param):
             A_TOPO = src.read(1, window=rasterio.windows.Window.from_slices(slice(Ind[0] - 1, Ind[2]),
                                                                             slice(Ind[3] - 1, Ind[1])))
             A_TOPO = np.flipud(A_TOPO)
-        sf.array2raster(paths["TOPO"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_TOPO)
+
+
+        hdf5storage.writes({"TOPO": A_TOPO}, paths["TOPO"], store_python_metadata=True, matlab_compatible=True)
         logger.info("files saved: " + paths["TOPO"])
         # ul.create_json(paths["TOPO"], param, ["region_name", "Crd_all", "res_topography", "res_desired", "GeoRef"], paths, ["Topo_tiles", "TOPO"])
         ul.create_json(paths["TOPO"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"],
                        paths, ["Topo_global", "TOPO"])
+        if param["savetiff_inputmaps"]:
+            sf.array2raster(ul.changeExt2tif(paths["TOPO"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_TOPO)
+            logger.info("files saved: " + ul.changeExt2tif(paths["TOPO"]))
 
         logger.debug("End")
 
@@ -593,9 +602,15 @@ def generate_slope(paths, param, A_TOPO):
         slope_pc = ul.tan(np.deg2rad(slope_deg)) * 100
 
         A_SLP = np.flipud(slope_pc)
-        sf.array2raster(paths["SLOPE"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_SLP)
+
+        #saving file
+        hdf5storage.writes({"SLOPE": A_SLP}, paths["SLOPE"], store_python_metadata=True, matlab_compatible=True)
         logger.info("files saved: " + paths["SLOPE"])
         ul.create_json(paths["SLOPE"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["TOPO", "SLOPE"])
+        if param["savetiff_inputmaps"]:
+            sf.array2raster(ul.changeExt2tif(paths["SLOPE"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_SLP)
+            logger.info("files saved: " + ul.changeExt2tif(paths["SLOPE"]))
+
         logger.debug("End")
 
 
@@ -629,9 +644,13 @@ def generate_bathymetry(paths, param): #ToDo Adapt to new resolution
         print (A_BATH.shape)
         A_BATH = sf.recalc_topo_resolution(A_BATH, param["res_topography"], param["res_desired"])
 
-        sf.array2raster(paths["BATH"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_BATH)
-        ul.create_json(paths["BATH"], param, ["region_name", "Crd_all", "res_bathymetry", "res_desired", "GeoRef"], paths, ["Bathym_global", "BATH"])
+        #saving file
+        hdf5storage.writes({"BATH": A_BATH}, paths["BATH"], store_python_metadata=True, matlab_compatible=True)
         logger.info("files saved: " + paths["BATH"])
+        ul.create_json(paths["BATH"], param, ["region_name", "Crd_all", "res_bathymetry", "res_desired", "GeoRef"], paths, ["Bathym_global", "BATH"])
+        if param["savetiff_inputmaps"]:
+            sf.array2raster(ul.changeExt2tif(paths["BATH"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_BATH)
+            logger.info("files saved: " + ul.changeExt2tif(paths["BATH"]))
 
         logger.debug("End")
 
@@ -662,9 +681,14 @@ def generate_landuse(paths, param): #ToDo remove the res_landuse
         with rasterio.open(paths["LU_global"]) as src:
             A_lu = src.read(1, window=rasterio.windows.Window.from_slices(slice(Ind[0] - 1, Ind[2]), slice(Ind[3] - 1, Ind[1])))
             A_lu = np.flipud(A_lu).astype(int)
-        sf.array2raster(paths["LU"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_lu)
+
+        #saving file
+        hdf5storage.writes({"LU": A_lu}, paths["LU"], store_python_metadata=True, matlab_compatible=True)
         logger.info("files saved: " + paths["LU"])
         ul.create_json(paths["LU"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["LU_global", "LU"])
+        if param["savetiff_inputmaps"]:
+            sf.array2raster(ul.changeExt2tif(paths["LU"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_lu)
+            logger.info("files saved: " + ul.changeExt2tif(paths["LU"]))
 
     # Buffer map for snow
     if os.path.isfile(paths["SNOW_BUFFER"]):
@@ -672,10 +696,12 @@ def generate_landuse(paths, param): #ToDo remove the res_landuse
     else:
         logger.info("Start-SnowBuffer")
         A_snow = A_lu == 220 # Land use type for snow
-        sf.create_buffered_raster(A_snow, param["buffer"]["snow"], param["GeoRef"],
+        sf.create_buffer(param, A_snow, param["buffer"]["snow"], param["GeoRef"],
                                   paths["SNOW_BUFFER"])
         logger.info("files saved: " + paths["SNOW_BUFFER"])
         ul.create_json(paths["SNOW_BUFFER"], param, ["region_name", "landuse", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "SNOW_BUFFER"])
+        if param["savetiff_inputmaps"]:
+            logger.info("files saved: " + ul.changeExt2tif(paths["SNOW_BUFFER"]))
 
     # Buffer map for wetlands
     if os.path.isfile(paths["WETLAND_BUFFER"]):
@@ -683,10 +709,12 @@ def generate_landuse(paths, param): #ToDo remove the res_landuse
     else:
         logger.info("Start-WetlandBuffer")
         A_wetland = ((A_lu == 160) | (A_lu == 170) | (A_lu == 180))  # Land use type for wetland
-        sf.create_buffered_raster(A_wetland, param["buffer"]["wetland"], param["GeoRef"],
+        sf.create_buffer(param, A_wetland, param["buffer"]["wetland"], param["GeoRef"],
                                   paths["WETLAND_BUFFER"])
         logger.info("files saved: " + paths["WETLAND_BUFFER"])
         ul.create_json(paths["WETLAND_BUFFER"], param, ["region_name", "landuse", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "WETLAND_BUFFER"])
+        if param["savetiff_inputmaps"]:
+            logger.info("files saved: " + ul.changeExt2tif(paths["WETLAND_BUFFER"]))
 
     # Buffer map for water
     if os.path.isfile(paths["WATER_BUFFER"]):
@@ -694,10 +722,12 @@ def generate_landuse(paths, param): #ToDo remove the res_landuse
     else:
         logger.info("Start-WaterBuffer")
         A_water = A_lu == 210 # Land use type for water
-        sf.create_buffered_raster(A_water, param["buffer"]["water"], param["GeoRef"],
+        sf.create_buffer(param, A_water, param["buffer"]["water"], param["GeoRef"],
                                   paths["WATER_BUFFER"])
         logger.info("files saved: " + paths["WATER_BUFFER"])
         ul.create_json(paths["WATER_BUFFER"], param, ["region_name", "landuse", "Crd_all", "res_desired", "GeoRef"], paths, ["LU", "WATER_BUFFER"])
+        if param["savetiff_inputmaps"]:
+            logger.info("files saved: " + ul.changeExt2tif(paths["WATER_BUFFER"]))
 
     logger.debug("End")
 
@@ -738,24 +768,28 @@ def generate_protected_areas(paths, param):
         logger.info('Skip-PV')  # Skip generation if files are already there
     else:
         logger.info("Start-PV")
-        sf.create_buffered_raster(A_pa, param["buffer"]["protected_areas_pv"], param["GeoRef"],
+        sf.create_buffer(param, A_pa, param["buffer"]["protected_areas_pv"], param["GeoRef"],
                                   paths["PV_PA_BUFFER"])
         logger.info("files saved: " + paths["PV_PA_BUFFER"])
         ul.create_json(paths["PV_PA_BUFFER"], param,
                        ["region_name", "protected_areas", "Crd_all", "res_desired", "GeoRef"], paths,
                        ["PA", "PV_PA_BUFFER"])
+        if param["savetiff_inputmaps"]:
+            logger.info("files saved: " + ul.changeExt2tif(paths["PV_PA_BUFFER"]))
 
     # if "WindOn" in param["technology"]:
     if os.path.isfile(paths["WINDON_PA_BUFFER"]):
         logger.info('Skip-WindOn')  # Skip generation if files are already there
     else:
         logger.info("Start-WindOn")
-        sf.create_buffered_raster(A_pa, param["buffer"]["protected_areas_windon"], param["GeoRef"],
+        sf.create_buffer(param, A_pa, param["buffer"]["protected_areas_windon"], param["GeoRef"],
                                   paths["WINDON_PA_BUFFER"])
         logger.info("files saved: " + paths["WINDON_PA_BUFFER"])
         ul.create_json(paths["WINDON_PA_BUFFER"], param,
                        ["region_name", "protected_areas", "WindOn", "Crd_all", "res_desired", "GeoRef"], paths,
                        ["PA", "WINDON_PA_BUFFER"])
+        if param["savetiff_inputmaps"]:
+            logger.info("files saved: " + ul.changeExt2tif(paths["WINDON_PA_BUFFER"]))
 
     logger.debug("End")
 
@@ -791,9 +825,6 @@ def generate_airports(paths,param):
 
         # Filter points outside spatial scope
         lat_max, lon_max, lat_min, lon_min = param["spatial_scope"]
-        print (param["spatial_scope"])
-        print(lat_max)
-        print(lon_max)
 
         # Points inside the scope bounds
         airports = airports.loc[
@@ -811,10 +842,12 @@ def generate_airports(paths,param):
 
             A_land[tuple(ind)]=100
             airport_raster = A_land == 100
-            sf.create_buffered_raster(airport_raster, param["buffer"]["airport_windon"], param["GeoRef"],
+            sf.create_buffer(param, airport_raster, param["buffer"]["airport_windon"], param["GeoRef"],
                                       paths["AIRPORTS"])
             logger.info("files saved: " + paths["AIRPORTS"])
             ul.create_json(paths["AIRPORTS"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths, ["LAND", "AIRPORTS"])
+            if param["savetiff_inputmaps"]:
+                logger.info("files saved: " + ul.changeExt2tif(paths["AIRPORTS"]))
 
         logger.debug("End")
 
@@ -851,9 +884,15 @@ def generate_country_boarders(paths,param):
         A_countries_buffered = A_countries_buffered > 0
         A_notBoarder = (A_countries_buffered).astype(int)
 
-        sf.array2raster(paths["BOARDERS"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_notBoarder)
+
+        # saving file
+        hdf5storage.writes({"BOARDERS": A_notBoarder}, paths["BOARDERS"], store_python_metadata=True, matlab_compatible=True)
         logger.info("files saved: " + paths["BOARDERS"])
         ul.create_json(paths["BOARDERS"], param, ["region_name", "landuse", "Crd_all", "res_desired", "GeoRef"], paths, ["LAND", "BOARDERS"])
+        if param["savetiff_inputmaps"]:
+            sf.array2raster(ul.changeExt2tif(paths["BOARDERS"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
+                            A_notBoarder)
+            logger.info("files saved: " + ul.changeExt2tif(paths["BOARDERS"]))
 
         logger.debug("End")
 
@@ -931,11 +970,13 @@ def generate_osm_areas(paths, param):
     else:
         logger.info('Start-Commercial')
         A_com = A_osma == 1
-        sf.create_buffered_raster(A_com, param["buffer"]["commercial_windon"], param["GeoRef"],
+        sf.create_buffer(param, A_com, param["buffer"]["commercial_windon"], param["GeoRef"],
                                   paths["OSM_COM_BUFFER"])
         logger.info("files saved: " + paths["OSM_COM_BUFFER"])
         ul.create_json(paths["OSM_COM_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
                        ["OSM_COM_BUFFER"])
+        if param["savetiff_inputmaps"]:
+            logger.info("files saved: " + ul.changeExt2tif(paths["OSM_COM_BUFFER"]))
 
     # Industrical Areas
     if os.path.isfile(paths["OSM_IND_BUFFER"]):
@@ -943,11 +984,13 @@ def generate_osm_areas(paths, param):
     else:
         logger.info('Start-Industrial')
         A_ind = A_osma == 2
-        sf.create_buffered_raster(A_ind, param["buffer"]["industrial_windon"], param["GeoRef"],
+        sf.create_buffer(param, A_ind, param["buffer"]["industrial_windon"], param["GeoRef"],
                                   paths["OSM_IND_BUFFER"])
         logger.info("files saved: " + paths["OSM_IND_BUFFER"])
         ul.create_json(paths["OSM_IND_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
                        ["OSM_IND_BUFFER"])
+        if param["savetiff_inputmaps"]:
+            logger.info("files saved: " + ul.changeExt2tif(paths["OSM_IND_BUFFER"]))
 
     # Mining Areas
     if os.path.isfile(paths["OSM_MINE_BUFFER"]):
@@ -955,11 +998,13 @@ def generate_osm_areas(paths, param):
     else:
         logger.info('Start-Mining')
         A_min = A_osma == 3
-        sf.create_buffered_raster(A_min, param["buffer"]["mining"], param["GeoRef"],
+        sf.create_buffer(param, A_min, param["buffer"]["mining"], param["GeoRef"],
                                   paths["OSM_MINE_BUFFER"])
         logger.info("files saved: " + paths["OSM_MINE_BUFFER"])
         ul.create_json(paths["OSM_MINE_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
                        ["OSM_MINE_BUFFER"])
+        if param["savetiff_inputmaps"]:
+            logger.info("files saved: " + ul.changeExt2tif(paths["OSM_MINE_BUFFER"]))
 
     # Military Areas
     if os.path.isfile(paths["OSM_MIL_BUFFER"]):
@@ -967,11 +1012,13 @@ def generate_osm_areas(paths, param):
     else:
         logger.info('Start-Military')
         A_mil = A_osma == 4
-        sf.create_buffered_raster(A_mil, param["buffer"]["military_windon"], param["GeoRef"],
+        sf.create_buffer(param, A_mil, param["buffer"]["military_windon"], param["GeoRef"],
                                   paths["OSM_MIL_BUFFER"])
         logger.info("files saved: " + paths["OSM_MIL_BUFFER"])
         ul.create_json(paths["OSM_MIL_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
                        ["OSM_MIL_BUFFER"])
+        if param["savetiff_inputmaps"]:
+            logger.info("files saved: " + ul.changeExt2tif(paths["OSM_MIL_BUFFER"]))
 
     # Parks
     logger.info('Start-Park')
@@ -981,23 +1028,28 @@ def generate_osm_areas(paths, param):
         logger.info('Skip-WindOn')  # Skip generation if files are already there
     else:
         logger.info('Start-WindOn')
-        sf.create_buffered_raster(A_park, param["buffer"]["park_windon"], param["GeoRef"],
+        sf.create_buffer(param, A_park, param["buffer"]["park_windon"], param["GeoRef"],
                                   paths["WINDON_OSM_PARK_BUFFER"])
         logger.info("files saved: " + paths["WINDON_OSM_PARK_BUFFER"])
         ul.create_json(paths["WINDON_OSM_PARK_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"],
                        paths,
                        ["WINDON_OSM_PARK_BUFFER"])
+        if param["savetiff_inputmaps"]:
+            logger.info("files saved: " + ul.changeExt2tif(paths["WINDON_OSM_PARK_BUFFER"]))
+
     # PV
     if os.path.isfile(paths["PV_OSM_PARK_BUFFER"]):
         logger.info('Skip-PV')  # Skip generation if files are already there
     else:
         logger.info('Start-PV')
-        sf.create_buffered_raster(A_park, param["buffer"]["park_pv"], param["GeoRef"],
+        sf.create_buffer(param, A_park, param["buffer"]["park_pv"], param["GeoRef"],
                                   paths["PV_OSM_PARK_BUFFER"])
         logger.info("files saved: " + paths["PV_OSM_PARK_BUFFER"])
         ul.create_json(paths["PV_OSM_PARK_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"],
                        paths,
                        ["PV_OSM_PARK_BUFFER"])
+        if param["savetiff_inputmaps"]:
+            logger.info("files saved: " + ul.changeExt2tif(paths["PV_OSM_PARK_BUFFER"]))
 
     # Recreational Areas
     if os.path.isfile(paths["OSM_REC_BUFFER"]):
@@ -1005,11 +1057,13 @@ def generate_osm_areas(paths, param):
     else:
         logger.info('Start-Recreation')
         A_rec = A_osma == 6
-        sf.create_buffered_raster(A_rec, param["buffer"]["recreation_windon"], param["GeoRef"],
+        sf.create_buffer(param, A_rec, param["buffer"]["recreation_windon"], param["GeoRef"],
                                   paths["OSM_REC_BUFFER"])
         logger.info("files saved: " + paths["OSM_REC_BUFFER"])
         ul.create_json(paths["OSM_REC_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
                        ["OSM_REC_BUFFER"])
+        if param["savetiff_inputmaps"]:
+            logger.info("files saved: " + ul.changeExt2tif(paths["OSM_REC_BUFFER"]))
 
     logger.debug("End")
 
@@ -1039,10 +1093,15 @@ def generate_settlements(paths, param):
             A_wsf = src.read(1, window=rasterio.windows.Window.from_slices(slice(Ind[0] - 1, Ind[2]),
                                                                   slice(Ind[3] - 1, Ind[1]))).astype(bool)
             A_wsf = np.flipud(A_wsf)
-        sf.array2raster(paths["WSF"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_wsf)
+
+        # saving file
+        hdf5storage.writes({"WSF": A_wsf}, paths["WSF"], store_python_metadata=True, matlab_compatible=True)
         logger.info("files saved: " + paths["WSF"])
         ul.create_json(paths["WSF"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
                     ["WSF_global", "WSF"])
+        if param["savetiff_inputmaps"]:
+            sf.array2raster(ul.changeExt2tif(paths["WSF"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_wsf)
+            logger.info("files saved: " + ul.changeExt2tif(paths["WSF"]))
 
     # PV buffer
     logger.info('Start-Buffer')
@@ -1050,23 +1109,27 @@ def generate_settlements(paths, param):
         logger.info('Skip-PV')  # Skip generation if files are already there
     else:
         logger.info('Start-PV')
-        sf.create_buffered_raster(A_wsf, param["buffer"]["settlement_pv"], param["GeoRef"],
+        sf.create_buffer(param, A_wsf, param["buffer"]["settlement_pv"], param["GeoRef"],
                                   paths["PV_WSF_BUFFER"])
         logger.info("files saved: " + paths["PV_WSF_BUFFER"])
         ul.create_json(paths["PV_WSF_BUFFER"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"],
                     paths, ["WSF_global", "PV_WSF_BUFFER"])
+        if param["savetiff_inputmaps"]:
+            logger.info("files saved: " + ul.changeExt2tif(paths["PV_WSF_BUFFER"]))
 
     # Onshore wind buffer
     if os.path.isfile(paths["WINDON_WSF_BUFFER"]):
         logger.info('Skip-WindOn')  # Skip generation if files are already there
     else:
         logger.info('Start-WindOn')
-        sf.create_buffered_raster(A_wsf, param["buffer"]["settlement_windon"], param["GeoRef"],
+        sf.create_buffer(param, A_wsf, param["buffer"]["settlement_windon"], param["GeoRef"],
                                   paths["WINDON_WSF_BUFFER"])
         logger.info("files saved: " + paths["WINDON_WSF_BUFFER"])
         ul.create_json(paths["WINDON_WSF_BUFFER"], param,
                     ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
                     ["WSF_global", "WINDON_WSF_BUFFER"])
+        if param["savetiff_inputmaps"]:
+            logger.info("files saved: " + ul.changeExt2tif(paths["WINDON_WSF_BUFFER"]))
 
     logger.debug("End")
 
@@ -1088,12 +1151,14 @@ def generate_HydroLakes(paths, param):
         with rasterio.open(paths["HYDROLAKES"]) as src:
             A_lake = src.read(1).astype(bool)
             A_lake = np.flipud(A_lake)
-        sf.create_buffered_raster(A_lake, param["buffer"]["hydrolakes"], param["GeoRef"],
+        sf.create_buffer(param, A_lake, param["buffer"]["hydrolakes"], param["GeoRef"],
                                   paths["HYDROLAKES_BUFFER"])
         logger.info("files saved: " + paths["HYDROLAKES_BUFFER"])
         ul.create_json(paths["HYDROLAKES_BUFFER"], param,
                     ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
                     ["HYDROLAKES", "HYDROLAKES_BUFFER"])
+        if param["savetiff_inputmaps"]:
+            logger.info("files saved: " + ul.changeExt2tif(paths["HYDROLAKES_BUFFER"]))
 
     logger.debug("End")
 
@@ -1115,11 +1180,14 @@ def generate_HydroRivers(paths, param):
         with rasterio.open(paths["HYDRORIVERS"]) as src:
             A_Riv = src.read(1).astype(bool)
             A_Riv = np.flipud(A_Riv)
-        sf.create_buffered_raster(A_Riv,param["buffer"]["hydrorivers_pv"],param["GeoRef"],paths["HYDRORIVERS_BUFFER"])
+        sf.create_buffer(param, A_Riv,param["buffer"]["hydrorivers_pv"],param["GeoRef"],paths["HYDRORIVERS_BUFFER"])
         logger.info("files saved: " + paths["HYDRORIVERS_BUFFER"])
         ul.create_json(paths["HYDRORIVERS_BUFFER"], param,
                     ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
                     ["HYDRORIVERS", "HYDRORIVERS_BUFFER"])
+        if param["savetiff_inputmaps"]:
+            logger.info("files saved: " + ul.changeExt2tif(paths["HYDRORIVERS_BUFFER"]))
+
 
     logger.debug("End")
 

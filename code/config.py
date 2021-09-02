@@ -141,7 +141,7 @@ def computation_parameters(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 40
+    param["nproc"] = 36
     param["CPU_limit"] = True
     return param
 
@@ -201,8 +201,11 @@ def file_saving_options(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
+    # imput maps
+    param["savetiff_inputmaps"] = False
+
     # Mask / Weight
-    param["savetiff"] = True  # Save geotiff files of mask and weight rasters
+    param["savetiff_potentials"] = False  # Save geotiff files of mask and weight rasters
 
     # Reporting
     param["report_sampling"] = 100
@@ -1090,43 +1093,43 @@ def local_maps_paths(paths, param):
     # Local maps
     PathTemp = paths["local_maps"] + param["region_name"]
     paths["LAND"] = PathTemp + "_Land.tif"  # Land pixels
-    paths["EEZ"] = PathTemp + "_EEZ.tif"  # Sea pixels
+    paths["EEZ"] = PathTemp + "_EEZ.mat"  # Sea pixels
     paths["AREA"] = PathTemp + "_Area.mat"  # Area per pixel in m²
-    paths["TOPO"] = PathTemp + "_Topography.tif"  # Topography
-    paths["SLOPE"] = PathTemp + "_Slope.tif"  # Slope
-    paths["BATH"] = PathTemp + "_Bathymetry.tif"  # Bathymetry
+    paths["TOPO"] = PathTemp + "_Topography.mat"  # Topography
+    paths["SLOPE"] = PathTemp + "_Slope.mat"  # Slope
+    paths["BATH"] = PathTemp + "_Bathymetry.mat"  # Bathymetry
 
-    paths["LU"] = PathTemp + "_Landuse.tif"  # Land use types
-    paths["WATER_BUFFER"] = PathTemp + "_Water_Buffered.tif"  # Buffered Water
-    paths["WETLAND_BUFFER"] = PathTemp + "_Wetland_Buffered.tif"  # Buffered Wetlands
-    paths["SNOW_BUFFER"] = PathTemp + "_Snow_Buffered.tif"  # Buffered Snow
+    paths["LU"] = PathTemp + "_Landuse.mat"  # Land use types
+    paths["WATER_BUFFER"] = PathTemp + "_Water_Buffered.mat"  # Buffered Water
+    paths["WETLAND_BUFFER"] = PathTemp + "_Wetland_Buffered.mat"  # Buffered Wetlands
+    paths["SNOW_BUFFER"] = PathTemp + "_Snow_Buffered.mat"  # Buffered Snow
 
     paths["PA"] = PathTemp + "_Protected_areas.tif"  # Protected areas
-    paths["PV_PA_BUFFER"] = PathTemp + "_PV_Protected_areas_Buffered.tif"  # Buffered Protected areas for PV
-    paths["WINDON_PA_BUFFER"] = PathTemp + "_WindOn_Protected_areas_Buffered.tif"  # Buffered Protected areas for Wind Onshore
+    paths["PV_PA_BUFFER"] = PathTemp + "_PV_Protected_areas_Buffered.mat"  # Buffered Protected areas for PV
+    paths["WINDON_PA_BUFFER"] = PathTemp + "_WindOn_Protected_areas_Buffered.mat"  # Buffered Protected areas for Wind Onshore
 
-    paths["AIRPORTS"] = PathTemp + "_Airports.tif"  # Buffered Airports
-    paths["BOARDERS"] = PathTemp + "_Boarders.tif"  # Buffered Boarders
+    paths["AIRPORTS"] = PathTemp + "_Airports.mat"  # Buffered Airports
+    paths["BOARDERS"] = PathTemp + "_Boarders.mat"  # Buffered Boarders
 
     paths["ROADS"] = PathTemp + "_Roads.tif"
     paths["RAILS"] = PathTemp + "_Rails.tif"
     paths["OSM_AREAS"] = PathTemp + "_OSM_areas.tif"
-    paths["OSM_COM_BUFFER"] = PathTemp + "_OSM_Commercial_Buffered.tif"
-    paths["OSM_IND_BUFFER"] = PathTemp + "_OSM_Industrial_Buffered.tif"
-    paths["OSM_MINE_BUFFER"] = PathTemp + "_OSM_Mining_Buffered.tif"
-    paths["OSM_MIL_BUFFER"] = PathTemp + "_OSM_Military_Buffered.tif"
-    paths["PV_OSM_PARK_BUFFER"] = PathTemp + "_PV_OSM_Parks_Buffered.tif"
-    paths["WINDON_OSM_PARK_BUFFER"] = PathTemp + "_WindOn_OSM_Parks_Buffered.tif"
-    paths["OSM_REC_BUFFER"] = PathTemp + "_OSM_Recreation_Buffered.tif"
+    paths["OSM_COM_BUFFER"] = PathTemp + "_OSM_Commercial_Buffered.mat"
+    paths["OSM_IND_BUFFER"] = PathTemp + "_OSM_Industrial_Buffered.mat"
+    paths["OSM_MINE_BUFFER"] = PathTemp + "_OSM_Mining_Buffered.mat"
+    paths["OSM_MIL_BUFFER"] = PathTemp + "_OSM_Military_Buffered.mat"
+    paths["PV_OSM_PARK_BUFFER"] = PathTemp + "_PV_OSM_Parks_Buffered.mat"
+    paths["WINDON_OSM_PARK_BUFFER"] = PathTemp + "_WindOn_OSM_Parks_Buffered.mat"
+    paths["OSM_REC_BUFFER"] = PathTemp + "_OSM_Recreation_Buffered.mat"
 
-    paths["WSF"] = PathTemp + "_Settlements.tif"
-    paths["PV_WSF_BUFFER"] = PathTemp + "_PV_Settlements_Buffered.tif"
-    paths["WINDON_WSF_BUFFER"] = PathTemp + "_WindOn_Settlements_Buffered.tif"
+    paths["WSF"] = PathTemp + "_Settlements.mat"
+    paths["PV_WSF_BUFFER"] = PathTemp + "_PV_Settlements_Buffered.mat"
+    paths["WINDON_WSF_BUFFER"] = PathTemp + "_WindOn_Settlements_Buffered.mat"
 
     paths["HYDROLAKES"] = PathTemp + "_HydroLakes.tif"
-    paths["HYDROLAKES_BUFFER"] = PathTemp + "_HydroLakes_Buffered.tif"
+    paths["HYDROLAKES_BUFFER"] = PathTemp + "_HydroLakes_Buffered.mat"
     paths["HYDRORIVERS"] = PathTemp + "_HydroRivers.tif"
-    paths["HYDRORIVERS_BUFFER"] = PathTemp + "_HydroRivers_Buffered.tif"
+    paths["HYDRORIVERS_BUFFER"] = PathTemp + "_HydroRivers_Buffered.mat"
 
     paths["LS"] = PathTemp + "_Livestock_"  # Livestock density per animal type
     # paths["POP"] = PathTemp + "_Population.tif"  # Population

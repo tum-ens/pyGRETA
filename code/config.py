@@ -3,6 +3,7 @@ from warnings import warn
 import pandas as pd
 import numpy as np
 import os
+import sys
 
 def configuration(config_file):
     """
@@ -60,18 +61,23 @@ def general_settings():
     global root
     fs = os.path.sep
 
+    paths = {}
 
     param = {}
     param["author"] = "Thushara Addanki"  # the name of the person running the script
     param["comment"] = "Potential Analysis"
-    param["path_database"] = fs + "home" + fs + "taddanki" + fs + "nas"+ fs + "pyGRETA" + fs + "Database_KS"    # specify the relative (from the runme.py file) or the absolute path to the database folder
+    param["path_database_windows"] = "..\..\..\Database_KS"    # specify the relative (from the runme.py file) or the absolute path to the database folder
+    param["path_database_linux"] = os.path.expanduser("~") + fs + "database_ks"  # specify path to database on linux
 
-    root = param["path_database"]
+    if sys.platform.startswith("win"):
+        root = param["path_database_windows"]       # use windows location of database folder
+        # print('Working on windows')
+    elif sys.platform.startswith("linux"):
+        root = param["path_database_linux"]         # use linux location of database folder
+        # print('Working on linux')
 
-    if root[-1] != fs:
-        root += fs      # add final slash('\') if not already there
-
-    paths = {}
+    if not root.endswith(fs):
+        root += fs      # add final slash('\' or '/') if not already there
 
     return paths, param
 

@@ -78,7 +78,7 @@ def find_representative_locations(paths, param, tech):
 
     reg_ind = np.reshape(reg_ind, (-1, 2), "C").astype(int)
 
-    reg_ind = (reg_ind[:, 0], reg_ind[:, 1])
+    reg_ind = (reg_ind[:, 0]-1, reg_ind[:, 1]-1)
 
     param[tech]["Ind_points"] = reg_ind
     param[tech]["Crd_points"] = ind2crd(reg_ind, Crd_all, res_desired)
@@ -146,12 +146,6 @@ def generate_time_series_for_representative_locations(paths, param, tech):
 
     list_hours = np.arange(0, 8760)
     param["status_bar_limit"] = list_hours[-1]
-    
-    param[tech]["Ind_merra_points"] = hdf5storage.read("Ind_points", paths[tech]["Locations"][:-4] + "_Ind.mat")
-
-    for p in range(len(param[tech]["Ind_points"][0])):
-        param[tech]["Ind_merra_points"][0][p] = (m_high-param[tech]["Ind_points"][0][p]-1)/200
-        param[tech]["Ind_merra_points"][1][p] = (param[tech]["Ind_points"][1][p]+1)/250
 
     # Obtain weather and correction matrices
     param["Ind_nz"] = param[tech]["Ind_points"]
@@ -195,7 +189,14 @@ def generate_time_series_for_representative_locations(paths, param, tech):
         else:
             TS = results        
     
-    elif tech in ["WindOn"]:    
+    elif tech in ["WindOn"]:
+
+        param[tech]["Ind_merra_points"] = hdf5storage.read("Ind_points", paths[tech]["Locations"][:-4] + "_Ind.mat")
+
+        for p in range(len(param[tech]["Ind_points"][0])):
+            param[tech]["Ind_merra_points"][0][p] = (m_high - param[tech]["Ind_points"][0][p] - 1) / 200
+            param[tech]["Ind_merra_points"][1][p] = (param[tech]["Ind_points"][1][p] + 1) / 250
+
         merraData = merraData["W50M"][::-1,:,:]
         
         b_xmin = hdf5storage.read("MERRA_XMIN", paths["MERRA_XMIN"])
@@ -416,8 +417,14 @@ def calc_TS_solar(hours, args):
     tech = args[1]
     rasterData = args[2]
     merraData = args[3]
-    reg_ind = param[tech]["Ind_points"]
+    m_high = param["m_high"]
+    n_high = param["n_high"]
+    m_low = param["m_low"]
+    n_low = param["n_low"]
+    x = np.ones((m_low, n_low))
+    ind = np.nonzero(x)
 
+    reg_ind = param[tech]["Ind_points"]
     TS = np.zeros((len(reg_ind[0]), 8760))
     status = 0
     for hour in hours:
@@ -427,15 +434,20 @@ def calc_TS_solar(hours, args):
             ul.display_progress(tech + " " + param["subregions_name"] + " ", (len(hours), status))
 
         if tech == "OpenFieldPV":
-            CF = pm.calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech)[0]
+            CF = pm.calc_CF_solar(hour, ind, param, merraData, rasterData, tech)[0]
         elif tech == "RoofTopPV":
-            CF = pm.calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech)[1]
+            CF = pm.calc_CF_solar(hour, ind, param, merraData, rasterData, tech)[1]
         elif tech == "CSP":
-            CF = pm.calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech)[2]
+            CF = pm.calc_CF_solar(hour, ind, param, merraData, rasterData, tech)[2]
 
         # Aggregates CF to obtain the time series
         CF[np.isnan(CF)] = 0
-        TS[:, hour] = CF
+
+        CF_low = np.zeros((m_low, n_low))
+        CF_low[ind] = CF_low[ind] + CF
+        CF_high = ul.resizem(CF_low, m_high, n_high)
+        CF_reg = CF_high[reg_ind]
+        TS[:, hour] = CF_reg
     return TS
 
 
@@ -542,7 +554,7 @@ def calc_TS_windon(point, args):
             hours = np.arange(8760)
             # Calculate hourly capacity factor
             CF = pm.calc_CF_windon(hours, turbine, reMerra, reRaster[i*200:((i+1)*200),j*250:((j+1)*250)])
-            TS[p, :] = CF[(m_high-Ind_points[0][p])%200,Ind_points[1][p]%250,:]
+            TS[p, :] = CF[(m_high-Ind_points[0][p]-1)%200,Ind_points[1][p]%250,:]
     return TS
 
 

@@ -30,7 +30,7 @@ def downloadGWA(paths, param):
     if os.path.isfile(paths["GWA_global"]):
         logger.info('Skip')
     else:
-        logger.info('Downlad GWA:' + paths["GWA_global"])
+        logger.info('Download GWA:' + paths["GWA_global"])
 
         remote_url = 'https://globalwindatlas.info/api/gis/country/' + param["country_code"] + '/wind-speed/50'
         urllib.request.urlretrieve(remote_url, paths["GWA_global"])
@@ -56,10 +56,10 @@ def generate_maps_for_scope(paths, param, multiprocessing):
 
     if multiprocessing:
         processes = []
-        # processes.append(mp.Process(target=generate_sea, args=(paths, param)))
+        processes.append(mp.Process(target=generate_sea, args=(paths, param)))
         processes.append(mp.Process(target=generate_area, args=(paths, param)))
         processes.append(mp.Process(target=generate_topography, args=(paths, param)))
-        # processes.append(mp.Process(target=generate_bathymetry, args=(paths, param))) # ToDo: not tested
+        processes.append(mp.Process(target=generate_bathymetry, args=(paths, param))) # ToDo: not tested
         processes.append(mp.Process(target=generate_landuse, args=(paths, param)))
         processes.append(mp.Process(target=generate_protected_areas, args=(paths, param)))
         processes.append(mp.Process(target=generate_airports, args=(paths, param)))
@@ -143,7 +143,7 @@ def generate_land(paths, param):
         sf.array2raster(paths["LAND"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_land)
         logger.info("files saved: " + paths["LAND"])
         ul.create_json(paths["LAND"], param,
-                       ["subregions_name", "m_high", "n_high", "Crd_all", "res_desired", "GeoRef", "nRegions_sea"],
+                       ["subregions_name", "m_high", "n_high", "Crd_all", "res_desired", "GeoRef", "nRegions_land"],
                        paths, ["Countries", "LAND"])
 
         logger.debug("End")
@@ -813,13 +813,12 @@ def generate_airports(paths,param):
         IRENA_dict = pd.read_csv(paths["IRENA_dict"], sep=";",index_col = ["Countries shapefile"],usecols=["Countries shapefile","Countries Alpha-2 code"])
 
         airports = []
-        for reg in range(0, nCountries):
-            alpha2code = IRENA_dict["Countries Alpha-2 code"][countries_shp.iloc[reg]["GID_0"]]
-            airports_filtered = airports_list[airports_list.index==alpha2code]
-            airports_filtered = airports_filtered[(airports_filtered["type"] == "small_airport")
+        alpha2code = IRENA_dict["Countries Alpha-2 code"][param["country_code"]]
+        airports_filtered = airports_list[airports_list.index==alpha2code]
+        airports_filtered = airports_filtered[(airports_filtered["type"] == "small_airport")
                                                   | (airports_filtered["type"] == "medium_airport")
                                                   | (airports_filtered["type"] == "large_airport")]
-            airports.append(airports_filtered)
+        airports.append(airports_filtered)
         airports = pd.concat(airports)
         logger.info("Airports are filtered")
 
@@ -913,7 +912,6 @@ def generate_roads(paths, param):
 
 
 def generate_railways(paths, param):
-    # "fclass" ILIKE 'primary' OR "fclass" ILIKE 'secondary'
     if os.path.isfile(paths["RAILS"]):
         logger.info('Skip')  # Skip generation if files are already there
 

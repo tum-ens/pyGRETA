@@ -247,7 +247,7 @@ def get_merra_raster_data(paths, param, tech): #ToDo clean up unnecessary things
         # Calculate A matrices correction
         # A_lu
         w = np.flipud(hdf5storage.read("LU", paths["LU"]))
-        # with rasterio.open(paths["LU"]) as src:
+        # with rasterio.open(ul.changeExt2tif(paths["LU"])) as src:
         #     w = src.read(1)
         rasterData["A_lu"] = np.flipud(w)
         # A_Ross (Temperature coefficients for heating losses)
@@ -496,7 +496,8 @@ def redistribution_array(param, merraData, i, j, xmin, xmax, ymin, ymax, GWA_arr
     GWA_array_copy[np.invert(selection_index)] = 0  # Set pixel not covered by the shapfile to zero
     value_num_cells = np.count_nonzero(GWA_array_copy)  # Number of non-zero pixels
 
-    coordinates_nonzero_pixels_x, coordinates_nonzero_pixels_y = selection_index.nonzero()  # Determine the coordinates of non-zero pixels in order to determine the outer rows and columns. Tuple(x,y)
+    coordinates_nonzero_pixels_x, coordinates_nonzero_pixels_y = selection_index.nonzero()
+    # Determine the coordinates of non-zero pixels in order to determine the outer rows and columns. Tuple(x,y)
     K_first = coordinates_nonzero_pixels_x[0]  # First x-coordinate of non-zero pixels
     L_first = coordinates_nonzero_pixels_y[0]  # First y-coordinate of non-zero pixels
     K_last = coordinates_nonzero_pixels_x[-1]  # Last x-coordinate of non-zero pixels
@@ -563,7 +564,8 @@ def mask_potential_maps(paths, param, tech): #ToDo optimize no. of lines
         A_notWater = hdf5storage.read("BUFFER", paths["WATER_BUFFER"]).astype(int)
         A_notWetland = hdf5storage.read("BUFFER", paths["WETLAND_BUFFER"]).astype(int)
         A_notSnow = hdf5storage.read("BUFFER", paths["SNOW_BUFFER"]).astype(int)
-        A_notBoarder = hdf5storage.read("BOARDERS", paths["BOARDERS"]).astype(int)
+        A_Boarder = hdf5storage.read("BOARDERS", paths["BOARDERS"]).astype(int)
+        A_notBoarder = (np.flipud(~A_Boarder.astype(bool))).astype(int)
         with rasterio.open(paths["ROADS"]) as src:
             A_Roads = src.read(1)
             A_notRoads = (np.flipud(~A_Roads.astype(bool))).astype(int)
@@ -990,8 +992,8 @@ def report_potentials(paths, param, tech):
     ul.display_progress("Reporting ", (nRegions, status))
     for reg in range(0, nRegions):
         # Get name of region
-        #regions.loc[reg, "Region"] = regions_shp.loc[reg]["NAME_SHORT"] + "_" + location
-        regions.loc[reg, "Region"] = regions_shp.loc[reg]["GID_0"] + "_" + location
+        regions.loc[reg, "Region"] = regions_shp.loc[reg]["NAME_SHORT"] + "_" + location
+        # regions.loc[reg, "Region"] = regions_shp.loc[reg]["GID_0"] + "_" + location
 
         # Compute region_mask
         A_region_extended = sf.calc_region(regions_shp.loc[reg], Crd_all, res_desired, GeoRef)
@@ -1135,11 +1137,11 @@ def report_potentials(paths, param, tech):
 
 def generate_biomass_production(paths, param, tech): #ToDo update to .mat files
     logger.info("Start")
-    Crd_all = param["Crd_all"]
-    GeoRef = param["GeoRef"]
-    res_desired = param["res_desired"]
+    # Crd_all = param["Crd_all"]
+    # GeoRef = param["GeoRef"]
+    # res_desired = param["res_desired"]
     nRegions_land = param["nRegions_land"]
-    countries_shp = param["regions_land"]
+    # countries_shp = param["regions_land"]
     m_high = param["m_high"]
     n_high = param["n_high"]
     biomass = param["Biomass"]
@@ -1168,70 +1170,73 @@ def generate_biomass_production(paths, param, tech): #ToDo update to .mat files
     A_Bioco2 = np.zeros(A_lu.shape)
 
     # for each country in the scope
-    for country in range(0, nRegions_land):
-        A_country_area = sf.calc_region(countries_shp.loc[country], Crd_all, res_desired, GeoRef) # Country pixels
-        country_name = IRENA_dict["IRENA"][countries_shp.loc[country]["GID_0"]]
+    # for country in range(0, nRegions_land):
+    with rasterio.open(paths["LAND"]) as src:
+        A_country_area = src.read(1)
+    A_country_area = np.flipud(A_country_area).astype(int)
+        # A_country_area = sf.calc_region(countries_shp.loc[country], Crd_all, res_desired, GeoRef) # Country pixels
+    country_name = IRENA_dict["IRENA"][param["country_code"]]
 
-        # ==========Crop Residues Biomass potential==========#
-        logger.info("Crop Residues Start")
-        A_crop_country = np.multiply(A_lu_crop, A_country_area)
-        n_crop_country = np.sum(A_crop_country)
-        A_veg_country = np.multiply(A_lu_veg, A_country_area)
-        n_veg_country = np.sum(A_veg_country)
+    # ==========Crop Residues Biomass potential==========#
+    logger.info("Crop Residues Start")
+    A_crop_country = np.multiply(A_lu_crop, A_country_area)
+    n_crop_country = np.sum(A_crop_country)
+    A_veg_country = np.multiply(A_lu_veg, A_country_area)
+    n_veg_country = np.sum(A_veg_country)
 
         # if there are agriculture or vegetation mosaic pixels within country, read the annual crop production values from FAO database
-        if n_crop_country or n_veg_country:
-            production = pd.read_csv(paths["Biomass_Crops"], index_col=["Area"], usecols=["Area", "Item", "Value"])
-            bio_energy = 0
-            bio_co2 = 0
-            if country_name in production.index:
-                production_country = production[production.index == country_name]
-                for crop in biomass["agriculture"]["crops"]:
-                    production_country_crop = production_country[production_country["Item"] == crop]
-                    if not production_country_crop.empty:
-                        for residue in biomass["agriculture"]["residue"][crop]:
-                            bio_energy = bio_energy \
+    if n_crop_country or n_veg_country:
+        production = pd.read_csv(paths["Biomass_Crops"], index_col=["Area"], usecols=["Area", "Item", "Value"])
+        bio_energy = 0
+        bio_co2 = 0
+        if country_name in production.index:
+            production_country = production[production.index == country_name]
+            for crop in biomass["agriculture"]["crops"]:
+                production_country_crop = production_country[production_country["Item"] == crop]
+                if not production_country_crop.empty:
+                    for residue in biomass["agriculture"]["residue"][crop]:
+                        bio_energy = bio_energy \
                                          + (float(production_country_crop["Value"].iloc[0])
                                             * biomass["agriculture"]["rpr"][crop][residue]
                                             * biomass["agriculture"]["af"][crop][residue]
                                             * biomass["agriculture"]["lhv"][crop][residue])
-                            bio_co2 = bio_co2 \
+                        bio_co2 = bio_co2 \
                                       + (float(production_country_crop["Value"].iloc[0])
                                          * biomass["agriculture"]["rpr"][crop][residue]
                                          * biomass["agriculture"]["af"][crop][residue]
                                          * biomass["agriculture"]["emission factor"])
-            A_Bioenergy = A_Bioenergy\
+        A_Bioenergy = A_Bioenergy\
                           + (A_crop_country * 2 * bio_energy / (2 * n_crop_country + n_veg_country))\
                           + (A_veg_country * bio_energy / (2 * n_crop_country + n_veg_country))
-            A_Bioco2 = A_Bioco2\
+        A_Bioco2 = A_Bioco2\
                        + (A_crop_country * 2 * bio_co2 / (2 * n_crop_country + n_veg_country))\
                        + (A_veg_country * bio_co2 / (2 * n_crop_country + n_veg_country))
-        logger.info("Crop Residues End")
+    logger.info("Crop Residues End")
 
         # ==========Forest wood Biomass potential==========#
-        logger.info("Forest Wood Start")
-        A_forest_country = np.multiply(A_lu_forest, A_country_area)
-        A_forest_country = np.multiply(A_forest_country, A_Notprotected) # Only unprotected forest pixels
-        n_forest_country = np.sum(A_forest_country)
+    logger.info("Forest Wood Start")
+    A_forest_country = np.multiply(A_lu_forest, A_country_area)
+    A_forest_country = np.multiply(A_forest_country, A_Notprotected) # Only unprotected forest pixels
+    n_forest_country = np.sum(A_forest_country)
 
-        # if there are forest pixels within country, read the annual wood production values from FAO database
-        if n_forest_country:
-            production = pd.read_csv(paths["Biomass_Forestry"], index_col=["Area"], usecols=["Area", "Item", "Value"])
-            if country_name in production.index:
-                production_country = production[production.index == country_name]
-                for wood in biomass["forest"]["woods"]:
-                    production_country_wood = production_country[production_country["Item"] == wood]
-                    if not production_country_wood.empty:
-                        A_Bioenergy = A_Bioenergy \
+    # if there are forest pixels within country, read the annual wood production values from FAO database
+    if n_forest_country:
+        production = pd.read_csv(paths["Biomass_Forestry"], index_col=["Area"], usecols=["Area", "Item", "Value"])
+        if country_name in production.index:
+            production_country = production[production.index == country_name]
+            for wood in biomass["forest"]["woods"]:
+                production_country_wood = production_country[production_country["Item"] == wood]
+                if not production_country_wood.empty:
+                    A_Bioenergy = A_Bioenergy \
                                       + (A_forest_country / n_forest_country
                                          * float(production_country_wood["Value"].iloc[0]) * biomass["forest"]["density"][wood]
                                          * biomass["forest"]["rpr"] * biomass["forest"]["af"] * biomass["forest"]["lhv"])
 
-                        A_Bioco2 = A_Bioco2 \
+                    A_Bioco2 = A_Bioco2 \
                                    + (A_forest_country / n_forest_country
                                       * float(production_country_wood["Value"].iloc[0]) * biomass["forest"]["density"][wood]
                                       * biomass["forest"]["rpr"] * biomass["forest"]["af"] * biomass["forest"]["emission factor"])
-        logger.info("Forest Wood End")
+    logger.info("Forest Wood End")
 
     # ==========Livestock Biomass potential==========#
     logger.info("Livestock Start")
@@ -1295,14 +1300,14 @@ def generate_biomass_production(paths, param, tech): #ToDo update to .mat files
         paths,
         ["LS","LU","PA"],
     )
-    logger.info("\nfiles saved: " + paths[tech]["BIOMASS_CO2"])
+    logger.info("files saved: " + paths[tech]["BIOMASS_CO2"])
 
     # Save GEOTIFF files
     if param["savetiff_potentials"]:
         GeoRef = param["GeoRef"]
         sf.array2raster(ul.changeExt2tif(paths[tech]["BIOMASS_CO2"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
                      GeoRef["pixelHeight"], co2_map)
-        print("files saved:" + ul.changeExt2tif(paths[tech]["BIOMASS_CO2"]))
+        loggerinfo("files saved:" + ul.changeExt2tif(paths[tech]["BIOMASS_CO2"]))
 
     logger.debug("End")
 
@@ -1336,7 +1341,8 @@ def report_biomass_potentials(paths, param, tech):
     ul.display_progress("Reporting ", (nRegions_land, status))
     for reg in range(0, nRegions_land):
         # Get name of Country
-        countries.loc[reg, "Region"] = countries_shp.loc[reg]["GID_0"]
+        countries.loc[reg, "Region"] = countries_shp.loc[reg]["NAME_SHORT"]
+        # countries.loc[reg, "Region"] = countries_shp.loc[reg]["GID_0"]
 
         # Compute region_mask
         A_country_extended = sf.calc_region(countries_shp.loc[reg], Crd_all, res_desired, GeoRef)
@@ -1376,5 +1382,5 @@ def report_biomass_potentials(paths, param, tech):
         paths,
         ["AREA", tech],
     )
-    print("files saved: " + paths[tech]["Region_Stats"])
+    logger.info("files saved: " + paths[tech]["Region_Stats"])
     logger.debug("End")

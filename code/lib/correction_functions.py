@@ -73,7 +73,7 @@ def generate_wind_correction(paths, param):
     :return: The rasters for wind correction CORR_ON and/or CORR_OFF are saved directly in the user-defined paths, along with their metadata in JSON files.
     :rtype: None
     """
-    if os.path.isfile(paths["CORR_ON"]) and os.path.isfile(paths["CORR_OFF"]):
+    if os.path.isfile(paths["CORR_ON"]) or os.path.isfile(paths["CORR_OFF"]): #ToDo more realistic skipping, seperate for wind offshore and onshore
         logger.info('Skip')    # Skip generation if files are already there
 
     else:

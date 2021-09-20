@@ -61,8 +61,8 @@ def find_representative_locations(paths, param, tech):
 
         q_rank = 0
         for q in quantiles:
-
             list_names.append(regions_shp["NAME_SHORT"].loc[reg])
+            # list_names.append(regions_shp["GID_0"].loc[reg])
             list_quantiles.append("q" + str(q))
             if q == 100:
                 I = I_old[(len(X) - 1) - sum(np.isnan(X).astype(int))]
@@ -139,19 +139,16 @@ def generate_time_series_for_representative_locations(paths, param, tech):
     list_names = param[tech]["Crd_points"][2]
     list_quantiles = param[tech]["Crd_points"][3]
     m_high = param["m_high"]
+
+    # Obtain weather and correction matrices
+    param["Ind_nz"] = param[tech]["Ind_points"]
+    merraData, rasterData = pl.get_merra_raster_data(paths, param, tech)
+
     if tech in ["OpenFieldPV", "RoofTopPV", "CSP"]:
         res_weather = param["res_weather"]
         Crd_all = param["Crd_all"]
         Ind = ind_merra(Crd_all, Crd_all, res_weather)[0]
 
-    list_hours = np.arange(0, 8760)
-    param["status_bar_limit"] = list_hours[-1]
-
-    # Obtain weather and correction matrices
-    param["Ind_nz"] = param[tech]["Ind_points"]
-    merraData, rasterData = pl.get_merra_raster_data(paths, param, tech)
-    
-    if tech in ["OpenFieldPV", "RoofTopPV", "CSP"]:
         day_filter = np.nonzero(merraData["CLEARNESS"][Ind[2] - 1 : Ind[0], Ind[3] - 1 : Ind[1], :].sum(axis=(0, 1)))
         list_hours = np.arange(0, 8760)
         if nproc == 1:
@@ -190,34 +187,31 @@ def generate_time_series_for_representative_locations(paths, param, tech):
             TS = results        
     
     elif tech in ["WindOn"]:
-
+        # indices with merra resolution intitialization of array
         param[tech]["Ind_merra_points"] = hdf5storage.read("Ind_points", paths[tech]["Locations"][:-4] + "_Ind.mat")
-
+        # calculation of merra resolution indices for points
         for p in range(len(param[tech]["Ind_points"][0])):
             param[tech]["Ind_merra_points"][0][p] = (m_high - param[tech]["Ind_points"][0][p] - 1) / 200
             param[tech]["Ind_merra_points"][1][p] = (param[tech]["Ind_points"][1][p] + 1) / 250
-
+        # read wind speed merra data and the box coordinates
         merraData = merraData["W50M"][::-1,:,:]
-        
         b_xmin = hdf5storage.read("MERRA_XMIN", paths["MERRA_XMIN"])
         b_xmax = hdf5storage.read("MERRA_XMAX", paths["MERRA_XMAX"])
         b_ymin = hdf5storage.read("MERRA_YMIN", paths["MERRA_YMIN"])
         b_ymax = hdf5storage.read("MERRA_YMAX", paths["MERRA_YMAX"])        
-        
+        # read global wind atlas data and coordinates
         with rasterio.open(paths["GWA_global"]) as src:
             GWA_array = src.read(1)
         # GWA_array = np.power(GWA_array, 3)
         GWA_array[np.isnan(GWA_array)] = 0
-
         x_gwa = hdf5storage.read("GWA_X", paths["GWA_X"])
         y_gwa = hdf5storage.read("GWA_Y", paths["GWA_Y"])
-        
-        list_points = np.arange(0,len(param[tech]["Ind_points"][0])) 
-        
-        TS = np.zeros((len(param[tech]["Ind_points"][0]),8760))
+
+        TS = np.zeros((len(param[tech]["Ind_points"][0]), 8760))
+        list_points = np.arange(0,len(param[tech]["Ind_points"][0]))
         if nproc == 1:
             param["status_bar_limit"] = list_points[-1]
-            results = calc_TS_windon(list_points, [param, tech, paths, rasterData, merraData, b_xmin, b_xmax, b_ymin, b_ymax, GWA_array, x_gwa, y_gwa])  
+            results = calc_TS_windon(list_points, [param, tech, paths, rasterData, merraData, b_xmin, b_xmax, b_ymin, b_ymax, GWA_array, x_gwa, y_gwa])
             TS = results
         else:
             list_points = np.array_split(list_points,nproc)
@@ -231,7 +225,8 @@ def generate_time_series_for_representative_locations(paths, param, tech):
 
     # Restructuring results
     tuples = list(zip(list_names, list_quantiles))
-    column_names = pd.MultiIndex.from_tuples(tuples, names=["GID_0", "Quantile"])
+    column_names = pd.MultiIndex.from_tuples(tuples, names=["NAME_SHORT", "Quantile"])
+    # column_names = pd.MultiIndex.from_tuples(tuples, names=["GID_0", "Quantile"])
     results = pd.DataFrame(TS.transpose(), columns=column_names)
     results.to_csv(paths[tech]["TS"], sep=";", decimal=",")
     ul.create_json(
@@ -246,8 +241,6 @@ def generate_time_series_for_representative_locations(paths, param, tech):
 
 
 def generate_time_series_for_specific_locations(paths, param, tech):
-
-
     """
     This function generates yearly capacity factor time-series for the technology of choice at user defined locations.
     The timeseries are saved in CSV files.
@@ -266,7 +259,6 @@ def generate_time_series_for_specific_locations(paths, param, tech):
     :raise Points outside spatial scope: Some points are not located inside of the spatial scope, therefore no input maps are available for the calculations
     """
     ul.timecheck("Start")
-
     nproc = param["nproc"]
     CPU_limit = np.full((1, nproc), param["CPU_limit"])
     res_desired = param["res_desired"]
@@ -306,11 +298,6 @@ def generate_time_series_for_specific_locations(paths, param, tech):
 
         param[tech]["Crd_points"] = (crd[0], crd[1], list_names, list_points)
         param[tech]["Ind_points"] = crd2ind(crd, Crd_all, res_desired)
-        param[tech]["Ind_merra_points"] = ind
-
-        for p in range(len(crd[0])):
-            param[tech]["Ind_merra_points"][0][p] = (m_high-ind[0][p]-1)/200
-            param[tech]["Ind_merra_points"][1][p] = (ind[1][p]+1)/250
 
         # Obtain weather and correction matrices
         param["Ind_nz"] = param[tech]["Ind_points"]
@@ -359,22 +346,46 @@ def generate_time_series_for_specific_locations(paths, param, tech):
                 TS = results
         
         elif tech in ["WindOn"]:
+            # indices with merra resolution intitialization of array
+            param[tech]["Ind_merra_points"] = ind
+            # calculation of merra resolution indices for points
+            for p in range(len(param[tech]["Ind_points"][0])):
+                param[tech]["Ind_merra_points"][0][p] = (m_high - ind[0][p] - 1) / 200
+                param[tech]["Ind_merra_points"][1][p] = (ind[1][p] + 1) / 250
+            # read wind speed merra data and the box coordinates
             merraData = merraData["W50M"][::-1,:,:]
-        
             b_xmin = hdf5storage.read("MERRA_XMIN", paths["MERRA_XMIN"])
             b_xmax = hdf5storage.read("MERRA_XMAX", paths["MERRA_XMAX"])
             b_ymin = hdf5storage.read("MERRA_YMIN", paths["MERRA_YMIN"])
-            b_ymax = hdf5storage.read("MERRA_YMAX", paths["MERRA_YMAX"])        
-        
+            b_ymax = hdf5storage.read("MERRA_YMAX", paths["MERRA_YMAX"])
+            # read global wind atlas data and coordinates
             with rasterio.open(paths["GWA_global"]) as src:
                 GWA_array = src.read(1)
             # GWA_array = np.power(GWA_array, 3)
             GWA_array[np.isnan(GWA_array)] = 0
-
             x_gwa = hdf5storage.read("GWA_X", paths["GWA_X"])
             y_gwa = hdf5storage.read("GWA_Y", paths["GWA_Y"])
 
-            TS = calc_TS_windon(param, paths, tech, rasterData, merraData, b_xmin, b_xmax, b_ymin, b_ymax, GWA_array, x_gwa, y_gwa)
+            TS = np.zeros((len(param[tech]["Ind_points"][0]), 8760))
+            list_locations = np.arange(0, len(param[tech]["Ind_points"][0]))
+            if nproc == 1:
+                param["status_bar_limit"] = list_points[-1]
+                results = calc_TS_windon(list_locations,
+                                         [param, tech, paths, rasterData, merraData, b_xmin, b_xmax, b_ymin, b_ymax,
+                                          GWA_array, x_gwa, y_gwa])
+                TS = results
+            else:
+                list_locations = np.array_split(list_locations, nproc)
+                param["status_bar_limit"] = list_locations[0][-1]
+                results = mp.Pool(processes=nproc, initializer=ul.limit_cpu, initargs=CPU_limit).starmap(
+                    calc_TS_windon, it.product(list_locations, [
+                        [param, tech, paths, rasterData, merraData, b_xmin, b_xmax, b_ymin, b_ymax, GWA_array, x_gwa,
+                         y_gwa]])
+                )
+                for p in range(len(results)):
+                    TS = TS + results[p]
+
+            # TS = calc_TS_windon(param, paths, tech, rasterData, merraData, b_xmin, b_xmax, b_ymin, b_ymax, GWA_array, x_gwa, y_gwa)
 
         print("\n")
 
@@ -537,7 +548,7 @@ def calc_TS_windon(point, args):
     Ind_merra_points = param[tech]["Ind_merra_points"]
     Ind_points = param[tech]["Ind_points"]
 
-    TS = np.zeros((len(Ind_points[0]), 8760))
+    TS = np.zeros((len(param[tech]["Ind_merra_points"][0]), 8760))
 
     status = 0
     for p in point:

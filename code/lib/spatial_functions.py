@@ -513,8 +513,8 @@ def shape2raster(fileinput, fileoutput, fieldname, dictinput, rastertyp):
                     feat = None
 
         # Create a second (modified) layer
-        outdriver = ogr.GetDriverByName("MEMORY")
-        source = outdriver.CreateDataSource("memData")
+        # outdriver = ogr.GetDriverByName("MEMORY")
+        # source = outdriver.CreateDataSource("memData")
 
         # Create the raster dataset
         memory_driver = gdal.GetDriverByName("GTiff")

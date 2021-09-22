@@ -693,9 +693,9 @@ def mask_potential_maps(paths, param, tech): #ToDo optimize no. of lines
                      GeoRef["pixelHeight"], A_mask)
         logger.info("files saved: " + ul.changeExt2tif(paths[tech]["mask"]))
 
-        sf.array2raster(ul.changeExt2tif(paths[tech]["FLH_mask"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
-                     GeoRef["pixelHeight"], FLH_mask)
-        logger.info("files saved: " + ul.changeExt2tif(paths[tech]["FLH_mask"]))
+        # sf.array2raster(ul.changeExt2tif(paths[tech]["FLH_mask"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
+        #              GeoRef["pixelHeight"], FLH_mask)
+        # logger.info("files saved: " + ul.changeExt2tif(paths[tech]["FLH_mask"]))
 
     logger.debug("End")
 
@@ -875,14 +875,14 @@ def weight_potential_maps(paths, param, tech): #ToDo change variable names
     )
 
     # Save GEOTIFF files
-    if param["savetiff_potentials"]:
-        sf.array2raster(ul.changeExt2tif(paths[tech]["weight"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
-                     GeoRef["pixelHeight"], A_weight)
-        logger.info("files saved: " + ul.changeExt2tif(paths[tech]["weight"]))
-
-        sf.array2raster(ul.changeExt2tif(paths[tech]["FLH_weight"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
-                     GeoRef["pixelHeight"], FLH_weight)
-        logger.info("files saved: " + ul.changeExt2tif(paths[tech]["FLH_weight"]))
+    # if param["savetiff_potentials"]:
+    #     sf.array2raster(ul.changeExt2tif(paths[tech]["weight"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
+    #                  GeoRef["pixelHeight"], A_weight)
+    #     logger.info("files saved: " + ul.changeExt2tif(paths[tech]["weight"]))
+    #
+    #     sf.array2raster(ul.changeExt2tif(paths[tech]["FLH_weight"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
+    #                  GeoRef["pixelHeight"], FLH_weight)
+    #     logger.info("files saved: " + ul.changeExt2tif(paths[tech]["FLH_weight"]))
     logger.debug("End")
 
 
@@ -992,8 +992,8 @@ def report_potentials(paths, param, tech):
     ul.display_progress("Reporting ", (nRegions, status))
     for reg in range(0, nRegions):
         # Get name of region
-        regions.loc[reg, "Region"] = regions_shp.loc[reg]["NAME_SHORT"] + "_" + location
-        # regions.loc[reg, "Region"] = regions_shp.loc[reg]["GID_0"] + "_" + location
+        # regions.loc[reg, "Region"] = regions_shp.loc[reg]["NAME_SHORT"] + "_" + location
+        regions.loc[reg, "Region"] = regions_shp.loc[reg]["GID_0"] + "_" + location
 
         # Compute region_mask
         A_region_extended = sf.calc_region(regions_shp.loc[reg], Crd_all, res_desired, GeoRef)
@@ -1250,9 +1250,10 @@ def generate_biomass_production(paths, param, tech): #ToDo update to .mat files
     n_animal = 0  # number of animals
     for animal in param["Biomass"]["livestock"]["animal"]:
         # Extract Livestock density numbers
-        with rasterio.open(paths["LS"] + animal + ".tif") as src:
-            A_LS_animal = src.read(1)
-        A_LS_animal = np.flipud(A_LS_animal)
+        # with rasterio.open(paths["LS"] + animal + ".tif") as src:
+        #     A_LS_animal = src.read(1)
+        # A_LS_animal = np.flipud(A_LS_animal)
+        A_LS_animal = hdf5storage.read("LS", paths["LS"] + animal + ".mat")
         A_LS_animal = np.multiply(A_LS_animal, A_Notprotected)
         A_LS_animal = np.multiply(A_LS_animal, A_scope_area)
 
@@ -1303,11 +1304,11 @@ def generate_biomass_production(paths, param, tech): #ToDo update to .mat files
     logger.info("files saved: " + paths[tech]["BIOMASS_CO2"])
 
     # Save GEOTIFF files
-    if param["savetiff_potentials"]:
-        GeoRef = param["GeoRef"]
-        sf.array2raster(ul.changeExt2tif(paths[tech]["BIOMASS_CO2"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
-                     GeoRef["pixelHeight"], co2_map)
-        loggerinfo("files saved:" + ul.changeExt2tif(paths[tech]["BIOMASS_CO2"]))
+    # if param["savetiff_potentials"]:
+    #     GeoRef = param["GeoRef"]
+    #     sf.array2raster(ul.changeExt2tif(paths[tech]["BIOMASS_CO2"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
+    #                  GeoRef["pixelHeight"], co2_map)
+    #     logger.info("files saved:" + ul.changeExt2tif(paths[tech]["BIOMASS_CO2"]))
 
     logger.debug("End")
 
@@ -1341,8 +1342,8 @@ def report_biomass_potentials(paths, param, tech):
     ul.display_progress("Reporting ", (nRegions_land, status))
     for reg in range(0, nRegions_land):
         # Get name of Country
-        countries.loc[reg, "Region"] = countries_shp.loc[reg]["NAME_SHORT"]
-        # countries.loc[reg, "Region"] = countries_shp.loc[reg]["GID_0"]
+        # countries.loc[reg, "Region"] = countries_shp.loc[reg]["NAME_SHORT"]
+        countries.loc[reg, "Region"] = countries_shp.loc[reg]["GID_0"]
 
         # Compute region_mask
         A_country_extended = sf.calc_region(countries_shp.loc[reg], Crd_all, res_desired, GeoRef)

@@ -147,7 +147,7 @@ def computation_parameters(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 36
+    param["nproc"] = 18
     param["CPU_limit"] = True
     return param
 
@@ -211,7 +211,7 @@ def file_saving_options(param):
     param["savetiff_inputmaps"] = False
 
     # Mask / Weight
-    param["savetiff_potentials"] = False  # Save geotiff files of mask and weight rasters
+    param["savetiff_potentials"] = True  # Save geotiff files of mask and weight rasters
 
     # Reporting
     param["report_sampling"] = 100
@@ -257,16 +257,15 @@ def time_series_parameters(param):
     :rtype: dict
     """
     # Quantiles for time series
-    param["quantiles"] = [95, 70, 25]
+    param["quantiles"] = [95,70,25]
 
     # User defined locations
     param["useloc"] = {
-        "Aachen_Orsbach": (50.7983, 6.0244), "Braunschweig": (52.2915, 10.4464),
-        "Cottbus": (51.7760, 14.3168), "Emden": (53.3881, 7.2287),
-        "Flensburg": (54.7737, 9.3752), "Frankfurt_Main": (50.0259, 8.5213),
-        "Freiburg": (48.0232, 7.8343), "Greifswald": (54.0967, 13.4056),
-        "Hof": (50.3123, 11.8760), "Ingolstadt": (48.7112, 11.5362),
-        "Oberstdorf": (47.3984, 10.2759)
+        "Augsburg": (48.370, 10.898), "Forchheim": (49.720, 11.059),
+        "Kempten": (47.725, 10.315), "München": (48.144, 11.571),
+        "Neuburg": (48.736, 11.181), "Nürnberg": (49.453, 11.077),
+        "Rosenheim": (47.855, 12.125), "Straubing": (48.882, 12.570),
+        "Waldmünchen": (49.378, 12.706)
     }  # {"point name": (latitude, longitude),...}
 
     # Regression
@@ -700,6 +699,7 @@ def onshore_wind_parameters(param):
     windon = {}
     # windon["technical"] = {"w_in": 2, "w_r": 14, "w_off": 25, "P_r": 2.3, "hub_height": 99}
     windon["technical"] = {"w_in": 4, "w_r": 13, "w_off": 25, "P_r": 3, "hub_height": 80}
+    # windon["technical"] = {"w_in": 3, "w_r": 10.7, "w_off": 22, "P_r": 3.5, "hub_height": 100}
     windon["mask"] = {
         "slope": 17,
         "lu_suitability": np.array([1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,0,0]),
@@ -948,9 +948,9 @@ def global_maps_input_paths(paths, param):
     paths["LU_global"] = PathTemp + "Landuse" + fs + "CCI-250m.tif" #[1/400 , 1/400] resampled in QGIS
     paths["Protected"] = PathTemp + "Protected Areas" + fs + "WDPA_Nov2018-shapefile-polygons.shp"
     paths["Airports"] = PathTemp + "Openflights" + fs + "airports.csv"
-    paths["OSM_Roads"] = PathTemp + "OSM" + fs + param["region_name"] + "-roads.shp"
-    paths["OSM_Railways"] = PathTemp + "OSM" + fs + param["region_name"] + "-railways.shp"
-    paths["OSM_Landuse"] = PathTemp + "OSM" + fs + param["region_name"] + "-landuse.shp"
+    paths["OSM_Roads"] = PathTemp + "OSM" + fs + param["country_code"] + "-roads.shp"
+    paths["OSM_Railways"] = PathTemp + "OSM" + fs + param["country_code"] + "-railways.shp"
+    paths["OSM_Landuse"] = PathTemp + "OSM" + fs + param["country_code"] + "-landuse.shp"
     paths["WSF_global"] = PathTemp + "WSF" + fs + "WSF2015_Full.tif" #[1/400 , 1/400] resampled in QGIS
     paths["HydroLakes"] = PathTemp + "HydroLakes" + fs + "HydroLAKES_polys_v10.shp"
     paths["HydroRivers"] = PathTemp + "HydroRivers" + fs + "HydroRIVERS_v10.shp"

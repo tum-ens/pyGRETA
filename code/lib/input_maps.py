@@ -56,10 +56,10 @@ def generate_maps_for_scope(paths, param, multiprocessing):
 
     if multiprocessing:
         processes = []
-        processes.append(mp.Process(target=generate_sea, args=(paths, param)))
+        # processes.append(mp.Process(target=generate_sea, args=(paths, param)))
         processes.append(mp.Process(target=generate_area, args=(paths, param)))
         processes.append(mp.Process(target=generate_topography, args=(paths, param)))
-        processes.append(mp.Process(target=generate_bathymetry, args=(paths, param))) # ToDo: not tested
+        # processes.append(mp.Process(target=generate_bathymetry, args=(paths, param))) # ToDo: not tested
         processes.append(mp.Process(target=generate_landuse, args=(paths, param)))
         processes.append(mp.Process(target=generate_protected_areas, args=(paths, param)))
         processes.append(mp.Process(target=generate_airports, args=(paths, param)))
@@ -1220,11 +1220,16 @@ def generate_livestock(paths, param):
         # print (np.size(A_LS))
         A_LS[A_LS < 0] = float(0)
         A_LS = np.multiply(A_LS, A_area) / (10 ** 6)
-        sf.array2raster(paths["LS"] + animal + ".tif", GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
-                        GeoRef["pixelHeight"], A_LS)
-        logger.info("files saved: " + paths["LS"] + animal + ".tif")
-        ul.create_json(paths["LS"] + animal + ".tif", param,
+
+        # saving file
+        hdf5storage.writes({"LS": A_LS}, paths["LS"] + animal + ".mat", store_python_metadata=True, matlab_compatible=True)
+        logger.info("files saved: " + paths["LS"] + animal + ".mat")
+        ul.create_json(paths["LS"] + animal + ".mat", param,
                        ["region_name", "Crd_all", "res_livestock", "res_desired", "GeoRef"], paths, ["LS_global", "LS"])
+        if param["savetiff_inputmaps"]:
+            sf.array2raster(paths["LS"] + animal + ".tif", GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
+                            GeoRef["pixelHeight"], A_LS)
+            logger.info("files saved: " + paths["LS"] + animal + ".tif")
 
     logger.debug("End")
 

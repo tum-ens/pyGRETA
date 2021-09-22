@@ -1,4 +1,4 @@
-Name;Alpha-2;Alpha-3;Numeric;Geofabrik;osm.pbf;shp.zip;osm.bz2;IRENA;Merge1.Tabelle5.Countries shapefile;Merge1.Tabelle5.Countries Alpha-2 code;Merge1.Tabelle5.NAME_SHORT;Merge1.Tabelle5.ENTSO-E;Merge1.Tabelle5.EUROSTAT
+Country;Alpha-2;Alpha-3;Numeric;Geofabrik;osm.pbf;shp.zip;osm.bz2;IRENA;Merge1.Tabelle5.Countries shapefile;Merge1.Tabelle5.Countries Alpha-2 code;Merge1.Tabelle5.NAME_SHORT;Merge1.Tabelle5.ENTSO-E;Merge1.Tabelle5.EUROSTAT
 Afghanistan;AF;AFG;4;Afghanistan;https://download.geofabrik.de/asia/afghanistan-latest.osm.pbf;https://download.geofabrik.de/asia/afghanistan-latest-free.shp.zip;https://download.geofabrik.de/asia/afghanistan-latest.osm.bz2;Afghanistan;AFG;AF;;;
 Algeria;DZ;DZA;12;Algeria;https://download.geofabrik.de/africa/algeria-latest.osm.pbf;https://download.geofabrik.de/africa/algeria-latest-free.shp.zip;https://download.geofabrik.de/africa/algeria-latest.osm.bz2;Algeria;DZA;DZ;;;
 Åland Islands;AX;ALA;248;;;;;Aland Islands;ALA;AX;;;
@@ -134,7 +134,7 @@ Mongolia;MN;MNG;496;Mongolia;https://download.geofabrik.de/asia/mongolia-latest.
 Iran (Islamic Republic of);IR;IRN;364;;;;;Iran IR;IRN;IR;;;
 Micronesia (Federated States of);FM;FSM;583;Micronesia;https://download.geofabrik.de/australia-oceania/micronesia-latest.osm.pbf;https://download.geofabrik.de/australia-oceania/micronesia-latest-free.shp.zip;https://download.geofabrik.de/australia-oceania/micronesia-latest.osm.bz2;Micronesia;FSM;FM;;;
 Nepal;NP;NPL;524;Nepal;https://download.geofabrik.de/asia/nepal-latest.osm.pbf;https://download.geofabrik.de/asia/nepal-latest-free.shp.zip;https://download.geofabrik.de/asia/nepal-latest.osm.bz2;Nepal;NPL;NP;;;
-Ireland;IE;IRL;372;;;;;Ireland;IRL;IE;IE;IE;Ireland
+Ireland;IE;IRL;372;;;https://download.geofabrik.de/europe/ireland-and-northern-ireland-latest-free.shp.zip;;Ireland;IRL;IE;IE;IE;Ireland
 United Kingdom of Great Britain and Northern Ireland;GB;GBR;826;;;;;UK;GBR;GB;UK;GB, NI;United Kingdom
 Isle of Man;IM;IMN;833;Isle of Man;https://download.geofabrik.de/europe/isle-of-man-latest.osm.pbf;https://download.geofabrik.de/europe/isle-of-man-latest-free.shp.zip;https://download.geofabrik.de/europe/isle-of-man-latest.osm.bz2;Isle of Man;IMN;IM;;;
 Pakistan;PK;PAK;586;Pakistan;https://download.geofabrik.de/asia/pakistan-latest.osm.pbf;https://download.geofabrik.de/asia/pakistan-latest-free.shp.zip;https://download.geofabrik.de/asia/pakistan-latest.osm.bz2;Pakistan;PAK;PK;;;
@@ -145,8 +145,8 @@ Jamaica;JM;JAM;388;;;;;Jamaica;JAM;JM;;;
 Jersey;JE;JEY;832;;;;;Jersey;JEY;JE;;;
 Sri Lanka;LK;LKA;144;Sri Lanka;https://download.geofabrik.de/asia/sri-lanka-latest.osm.pbf;https://download.geofabrik.de/asia/sri-lanka-latest-free.shp.zip;https://download.geofabrik.de/asia/sri-lanka-latest.osm.bz2;Sri Lanka;LKA;LK;;;
 Kiribati;KI;KIR;296;Kiribati;https://download.geofabrik.de/australia-oceania/kiribati-latest.osm.pbf;https://download.geofabrik.de/australia-oceania/kiribati-latest-free.shp.zip;https://download.geofabrik.de/australia-oceania/kiribati-latest.osm.bz2;Kiribati;KIR;KI;;;
-Korea (Democratic People's Republic of);KP;PRK;408;;;;;Korea DPR;PRK;KP;;;
-Korea, Republic of;KR;KOR;410;;;;;Korea Rep;KOR;KR;;;
+Korea (Democratic People's Republic of);KP;PRK;408;;;https://download.geofabrik.de/asia/north-korea-latest-free.shp.zip;;Korea DPR;PRK;KP;;;
+Korea, Republic of;KR;KOR;410;;;https://download.geofabrik.de/asia/south-korea-latest-free.shp.zip;;Korea Rep;KOR;KR;;;
 Kuwait;KW;KWT;414;;;;;Kuwait;KWT;KW;;;
 Lao People's Democratic Republic;LA;LAO;418;;;;;Lao PDR;LAO;LA;;;
 Latvia;LV;LVA;428;Latvia;https://download.geofabrik.de/europe/latvia-latest.osm.pbf;https://download.geofabrik.de/europe/latvia-latest-free.shp.zip;https://download.geofabrik.de/europe/latvia-latest.osm.bz2;Latvia;LVA;LV;LV;LV;Latvia
@@ -179,7 +179,7 @@ North Macedonia;MK;MKD;807;;;;;North Macedonia;MKD;MK;MK;MK;North Macedonia
 Norfolk Island;NF;NFK;574;;;;;Norfolk Is;NFK;NF;;;
 Northern Mariana Islands;MP;MNP;580;;;;;Nth Mariana Is;MNP;MP;;;
 Norway;NO;NOR;578;Norway;https://download.geofabrik.de/europe/norway-latest.osm.pbf;https://download.geofabrik.de/europe/norway-latest-free.shp.zip;https://download.geofabrik.de/europe/norway-latest.osm.bz2;Norway;NOR;NO;NO;NO;Norway
-Oman;OM;OMN;512;;;;;Oman;OMN;OM;;;
+Oman;OM;OMN;512;;;https://download.geofabrik.de/asia/gcc-states-latest-free.shp.zip;;Oman;OMN;OM;;;
 Poland;PL;POL;616;Poland;https://download.geofabrik.de/europe/poland-latest.osm.pbf;;https://download.geofabrik.de/europe/poland-latest.osm.bz2;Poland;POL;PL;PL;PL;Poland
 Palestine, State of;PS;PSE;275;;;;;Palestine;PSE;PS;;;
 Panama;PA;PAN;591;;;;;Panama;PAN;PA;;;
@@ -198,7 +198,7 @@ Saint Helena, Ascension and Tristan da Cunha[b];SH;SHN;654;;;;;Saint Helena;SHN;
 Saint Pierre and Miquelon;PM;SPM;666;;;;;St Pierre Mq;SPM;PM;;;
 Saint Vincent and the Grenadines;VC;VCT;670;;;;;St Vincent Gren;VCT;VC;;;
 Samoa;WS;WSM;882;Samoa;https://download.geofabrik.de/australia-oceania/samoa-latest.osm.pbf;https://download.geofabrik.de/australia-oceania/samoa-latest-free.shp.zip;https://download.geofabrik.de/australia-oceania/samoa-latest.osm.bz2;Samoa;WSM;WS;;;
-Saudi Arabia;SA;SAU;682;;;;;Saudi Arabia;SAU;SA;;;
+Saudi Arabia;SA;SAU;682;;https://download.geofabrik.de/asia/gcc-states-latest-free.shp.zip;;;Saudi Arabia;SAU;SA;;;
 San Marino;SM;SMR;674;;;;;San Marino;SMR;SM;;;
 Sudan;SD;SDN;729;Sudan;https://download.geofabrik.de/africa/sudan-latest.osm.pbf;https://download.geofabrik.de/africa/sudan-latest-free.shp.zip;https://download.geofabrik.de/africa/sudan-latest.osm.bz2;Sudan;SDN;SD;;;
 Sao Tome and Principe;ST;STP;678;;;;;Sao Tome Prn;STP;ST;;;

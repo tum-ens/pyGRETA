@@ -848,6 +848,16 @@ def generate_airports(paths,param):
             if param["savetiff_inputmaps"]:
                 logger.info("files saved: " + ul.changeExt2tif(paths["AIRPORTS"]))
 
+        else:
+            GeoRef = param['GeoRef']
+            hdf5storage.writes({"BUFFER": A_land}, paths["AIRPORTS"], store_python_metadata=True, matlab_compatible=True)
+            logger.info("files saved: " + paths["AIRPORTS"])
+            ul.create_json(paths["AIRPORTS"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
+                           ["LAND", "AIRPORTS"])
+            if param["savetiff_inputmaps"]:
+                sf.array2raster(paths["AIRPORTS"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
+                             A_land)
+                logger.info("files saved: " + ul.changeExt2tif(paths["AIRPORTS"]))
         logger.debug("End")
 
 

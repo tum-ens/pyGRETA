@@ -1,0 +1,250 @@
+Country;Alpha-2;Alpha-3;Numeric;Geofabrik;osm.pbf;shp.zip;osm.bz2;IRENA;Merge1.Tabelle5.Countries shapefile;Merge1.Tabelle5.Countries Alpha-2 code;Merge1.Tabelle5.NAME_SHORT;Merge1.Tabelle5.ENTSO-E;Merge1.Tabelle5.EUROSTAT
+Afghanistan;AF;AFG;4;Afghanistan;https://download.geofabrik.de/asia/afghanistan-latest.osm.pbf;https://download.geofabrik.de/asia/afghanistan-latest-free.shp.zip;https://download.geofabrik.de/asia/afghanistan-latest.osm.bz2;Afghanistan;AFG;AF;;;
+Algeria;DZ;DZA;12;Algeria;https://download.geofabrik.de/africa/algeria-latest.osm.pbf;https://download.geofabrik.de/africa/algeria-latest-free.shp.zip;https://download.geofabrik.de/africa/algeria-latest.osm.bz2;Algeria;DZA;DZ;;;
+Åland Islands;AX;ALA;248;;;;;Aland Islands;ALA;AX;;;
+Aruba;AW;ABW;533;;;;;Aruba;ABW;AW;;;
+Albania;AL;ALB;8;Albania;https://download.geofabrik.de/europe/albania-latest.osm.pbf;https://download.geofabrik.de/europe/albania-latest-free.shp.zip;https://download.geofabrik.de/europe/albania-latest.osm.bz2;Albania;ALB;AL;;;Albania
+Angola;AO;AGO;24;Angola;https://download.geofabrik.de/africa/angola-latest.osm.pbf;https://download.geofabrik.de/africa/angola-latest-free.shp.zip;https://download.geofabrik.de/africa/angola-latest.osm.bz2;Angola;AGO;AO;;;
+American Samoa;AS;ASM;16;;;;;Amer Samoa;ASM;AS;;;
+Benin;BJ;BEN;204;Benin;https://download.geofabrik.de/africa/benin-latest.osm.pbf;https://download.geofabrik.de/africa/benin-latest-free.shp.zip;https://download.geofabrik.de/africa/benin-latest.osm.bz2;Benin;BEN;BJ;;;
+Andorra;AD;AND;20;Andorra;https://download.geofabrik.de/europe/andorra-latest.osm.pbf;https://download.geofabrik.de/europe/andorra-latest-free.shp.zip;https://download.geofabrik.de/europe/andorra-latest.osm.bz2;Andorra;AND;AD;;;
+Botswana;BW;BWA;72;Botswana;https://download.geofabrik.de/africa/botswana-latest.osm.pbf;https://download.geofabrik.de/africa/botswana-latest-free.shp.zip;https://download.geofabrik.de/africa/botswana-latest.osm.bz2;Botswana;BWA;BW;;;
+Anguilla;AI;AIA;660;;;;;Anguilla;AIA;AI;;;
+Burkina Faso;BF;BFA;854;Burkina Faso;https://download.geofabrik.de/africa/burkina-faso-latest.osm.pbf;https://download.geofabrik.de/africa/burkina-faso-latest-free.shp.zip;https://download.geofabrik.de/africa/burkina-faso-latest.osm.bz2;Burkina Faso;BFA;BF;;;
+Antarctica;AQ;ATA;10;;;;;Antarctica;ATA;AQ;;;
+Antigua and Barbuda;AG;ATG;28;;;;;Antigua Barb;ATG;AG;;;
+Burundi;BI;BDI;108;Burundi;https://download.geofabrik.de/africa/burundi-latest.osm.pbf;https://download.geofabrik.de/africa/burundi-latest-free.shp.zip;https://download.geofabrik.de/africa/burundi-latest.osm.bz2;Burundi;BDI;BI;;;
+Argentina;AR;ARG;32;Argentina;https://download.geofabrik.de/south-america/argentina-latest.osm.pbf;https://download.geofabrik.de/south-america/argentina-latest-free.shp.zip;https://download.geofabrik.de/south-america/argentina-latest.osm.bz2;Argentina;ARG;AR;;;
+Armenia;AM;ARM;51;Armenia;https://download.geofabrik.de/asia/armenia-latest.osm.pbf;https://download.geofabrik.de/asia/armenia-latest-free.shp.zip;https://download.geofabrik.de/asia/armenia-latest.osm.bz2;Armenia;ARM;AM;;;
+Cameroon;CM;CMR;120;Cameroon;https://download.geofabrik.de/africa/cameroon-latest.osm.pbf;https://download.geofabrik.de/africa/cameroon-latest-free.shp.zip;https://download.geofabrik.de/africa/cameroon-latest.osm.bz2;Cameroon;CMR;CM;;;
+Australia;AU;AUS;36;Australia;https://download.geofabrik.de/australia-oceania/australia-latest.osm.pbf;https://download.geofabrik.de/australia-oceania/australia-latest-free.shp.zip;https://download.geofabrik.de/australia-oceania/australia-latest.osm.bz2;Australia;AUS;AU;;;
+United Arab Emirates;AE;ARE;784;;;;;United Arab Em;ARE;AE;;;
+Austria;AT;AUT;40;Austria;https://download.geofabrik.de/europe/austria-latest.osm.pbf;https://download.geofabrik.de/europe/austria-latest-free.shp.zip;https://download.geofabrik.de/europe/austria-latest.osm.bz2;Austria;AUT;AT;AT;AT;Austria
+Azerbaijan;AZ;AZE;31;Azerbaijan;https://download.geofabrik.de/asia/azerbaijan-latest.osm.pbf;https://download.geofabrik.de/asia/azerbaijan-latest-free.shp.zip;https://download.geofabrik.de/asia/azerbaijan-latest.osm.bz2;Azerbaijan;AZE;AZ;;;
+Bahamas;BS;BHS;44;;;;;Bahamas;BHS;BS;;;
+Bahrain;BH;BHR;48;;;;;Bahrain;BHR;BH;;;
+Bangladesh;BD;BGD;50;Bangladesh;https://download.geofabrik.de/asia/bangladesh-latest.osm.pbf;https://download.geofabrik.de/asia/bangladesh-latest-free.shp.zip;https://download.geofabrik.de/asia/bangladesh-latest.osm.bz2;Bangladesh;BGD;BD;;;
+French Southern Territories;TF;ATF;260;;;;;French Southern Territories;ATF;TF;;;
+Barbados;BB;BRB;52;;;;;Barbados;BRB;BB;;;
+Belarus;BY;BLR;112;Belarus;https://download.geofabrik.de/europe/belarus-latest.osm.pbf;https://download.geofabrik.de/europe/belarus-latest-free.shp.zip;https://download.geofabrik.de/europe/belarus-latest.osm.bz2;Belarus;BLR;BY;;;
+Djibouti;DJ;DJI;262;Djibouti;https://download.geofabrik.de/africa/djibouti-latest.osm.pbf;https://download.geofabrik.de/africa/djibouti-latest-free.shp.zip;https://download.geofabrik.de/africa/djibouti-latest.osm.bz2;Djibouti;DJI;DJ;;;
+Belgium;BE;BEL;56;Belgium;https://download.geofabrik.de/europe/belgium-latest.osm.pbf;https://download.geofabrik.de/europe/belgium-latest-free.shp.zip;https://download.geofabrik.de/europe/belgium-latest.osm.bz2;Belgium;BEL;BE;BE;BE;Belgium
+Belize;BZ;BLZ;84;;;;;Belize;BLZ;BZ;;;
+Egypt;EG;EGY;818;Egypt;https://download.geofabrik.de/africa/egypt-latest.osm.pbf;https://download.geofabrik.de/africa/egypt-latest-free.shp.zip;https://download.geofabrik.de/africa/egypt-latest.osm.bz2;Egypt;EGY;EG;;;
+Bermuda;BM;BMU;60;;;;;Bermuda;BMU;BM;;;
+Bhutan;BT;BTN;64;Bhutan;https://download.geofabrik.de/asia/bhutan-latest.osm.pbf;https://download.geofabrik.de/asia/bhutan-latest-free.shp.zip;https://download.geofabrik.de/asia/bhutan-latest.osm.bz2;Bhutan;BTN;BT;;;
+Eritrea;ER;ERI;232;Eritrea;https://download.geofabrik.de/africa/eritrea-latest.osm.pbf;https://download.geofabrik.de/africa/eritrea-latest-free.shp.zip;https://download.geofabrik.de/africa/eritrea-latest.osm.bz2;Eritrea;ERI;ER;;;
+Bolivia (Plurinational State of);BO;BOL;68;Bolivia;https://download.geofabrik.de/south-america/bolivia-latest.osm.pbf;https://download.geofabrik.de/south-america/bolivia-latest-free.shp.zip;https://download.geofabrik.de/south-america/bolivia-latest.osm.bz2;Bolivia;BOL;BO;;;
+Ethiopia;ET;ETH;231;Ethiopia;https://download.geofabrik.de/africa/ethiopia-latest.osm.pbf;https://download.geofabrik.de/africa/ethiopia-latest-free.shp.zip;https://download.geofabrik.de/africa/ethiopia-latest.osm.bz2;Ethiopia;ETH;ET;;;
+Bonaire, Sint Eustatius and Saba[a];BQ;BES;535;;;;;BES Islands;BES;BQ;;;
+Bosnia and Herzegovina;BA;BIH;70;;;;;Bosnia Herzg;BIH;BA;BA;BA;Bosnia and Herzegovina
+Gabon;GA;GAB;266;Gabon;https://download.geofabrik.de/africa/gabon-latest.osm.pbf;https://download.geofabrik.de/africa/gabon-latest-free.shp.zip;https://download.geofabrik.de/africa/gabon-latest.osm.bz2;Gabon;GAB;GA;;;
+Ghana;GH;GHA;288;Ghana;https://download.geofabrik.de/africa/ghana-latest.osm.pbf;https://download.geofabrik.de/africa/ghana-latest-free.shp.zip;https://download.geofabrik.de/africa/ghana-latest.osm.bz2;Ghana;GHA;GH;GH;;Ghana
+Bouvet Island;BV;BVT;74;;;;;Bouvet Island;BVT;BV;;;
+Brazil;BR;BRA;76;Brazil;https://download.geofabrik.de/south-america/brazil-latest.osm.pbf;;https://download.geofabrik.de/south-america/brazil-latest.osm.bz2;Brazil;BRA;BR;;;
+Guinea;GN;GIN;324;Guinea;https://download.geofabrik.de/africa/guinea-latest.osm.pbf;https://download.geofabrik.de/africa/guinea-latest-free.shp.zip;https://download.geofabrik.de/africa/guinea-latest.osm.bz2;Guinea;GIN;GN;;;
+British Indian Ocean Territory;IO;IOT;86;;;;;British Indian Ocean Territory;IOT;IO;;;
+Brunei Darussalam;BN;BRN;96;;;;;Brunei Darsm;BRN;BN;;;
+Bulgaria;BG;BGR;100;Bulgaria;https://download.geofabrik.de/europe/bulgaria-latest.osm.pbf;https://download.geofabrik.de/europe/bulgaria-latest-free.shp.zip;https://download.geofabrik.de/europe/bulgaria-latest.osm.bz2;Bulgaria;BGR;BG;BG;BG;Bulgaria
+Kenya;KE;KEN;404;Kenya;https://download.geofabrik.de/africa/kenya-latest.osm.pbf;https://download.geofabrik.de/africa/kenya-latest-free.shp.zip;https://download.geofabrik.de/africa/kenya-latest.osm.bz2;Kenya;KEN;KE;;;
+Lesotho;LS;LSO;426;Lesotho;https://download.geofabrik.de/africa/lesotho-latest.osm.pbf;https://download.geofabrik.de/africa/lesotho-latest-free.shp.zip;https://download.geofabrik.de/africa/lesotho-latest.osm.bz2;Lesotho;LSO;LS;;;
+Cabo Verde;CV;CPV;132;;;;;Cabo Verde;CPV;CV;;;
+Cambodia;KH;KHM;116;Cambodia;https://download.geofabrik.de/asia/cambodia-latest.osm.pbf;https://download.geofabrik.de/asia/cambodia-latest-free.shp.zip;https://download.geofabrik.de/asia/cambodia-latest.osm.bz2;Cambodia;KHM;KH;;;
+Liberia;LR;LBR;430;Liberia;https://download.geofabrik.de/africa/liberia-latest.osm.pbf;https://download.geofabrik.de/africa/liberia-latest-free.shp.zip;https://download.geofabrik.de/africa/liberia-latest.osm.bz2;Liberia;LBR;LR;;;
+Canada;CA;CAN;124;Canada;https://download.geofabrik.de/north-america/canada-latest.osm.pbf;;https://download.geofabrik.de/north-america/canada-latest.osm.bz2;Canada;CAN;CA;;;
+Libya;LY;LBY;434;Libya;https://download.geofabrik.de/africa/libya-latest.osm.pbf;https://download.geofabrik.de/africa/libya-latest-free.shp.zip;https://download.geofabrik.de/africa/libya-latest.osm.bz2;Libya;LBY;LY;;;
+Cayman Islands;KY;CYM;136;;;;;Cayman Is;CYM;KY;;;
+Saint Barthélemy;BL;BLM;652;;;;;St Barth;BLM;BL;;;
+Central African Republic;CF;CAF;140;;;;;Cent Afr Rep;CAF;CF;;;
+Madagascar;MG;MDG;450;Madagascar;https://download.geofabrik.de/africa/madagascar-latest.osm.pbf;https://download.geofabrik.de/africa/madagascar-latest-free.shp.zip;https://download.geofabrik.de/africa/madagascar-latest.osm.bz2;Madagascar;MDG;MG;;;
+Chad;TD;TCD;148;Chad;https://download.geofabrik.de/africa/chad-latest.osm.pbf;https://download.geofabrik.de/africa/chad-latest-free.shp.zip;https://download.geofabrik.de/africa/chad-latest.osm.bz2;Chad;TCD;TD;;;
+Chile;CL;CHL;152;Chile;https://download.geofabrik.de/south-america/chile-latest.osm.pbf;https://download.geofabrik.de/south-america/chile-latest-free.shp.zip;https://download.geofabrik.de/south-america/chile-latest.osm.bz2;Chile;CHL;CL;;;
+Malawi;MW;MWI;454;Malawi;https://download.geofabrik.de/africa/malawi-latest.osm.pbf;https://download.geofabrik.de/africa/malawi-latest-free.shp.zip;https://download.geofabrik.de/africa/malawi-latest.osm.bz2;Malawi;MWI;MW;;;
+China;CN;CHN;156;China;https://download.geofabrik.de/asia/china-latest.osm.pbf;https://download.geofabrik.de/asia/china-latest-free.shp.zip;https://download.geofabrik.de/asia/china-latest.osm.bz2;China;CHN;CN;;;
+Christmas Island;CX;CXR;162;;;;;Christmas Is;CXR;CX;;;
+Mali;ML;MLI;466;Mali;https://download.geofabrik.de/africa/mali-latest.osm.pbf;https://download.geofabrik.de/africa/mali-latest-free.shp.zip;https://download.geofabrik.de/africa/mali-latest.osm.bz2;Mali;MLI;ML;;;
+Cocos (Keeling) Islands;CC;CCK;166;;;;;Cocos Is;CCK;CC;;;
+Colombia;CO;COL;170;Colombia;https://download.geofabrik.de/south-america/colombia-latest.osm.pbf;https://download.geofabrik.de/south-america/colombia-latest-free.shp.zip;https://download.geofabrik.de/south-america/colombia-latest.osm.bz2;Colombia;COL;CO;;;
+Mauritania;MR;MRT;478;Mauritania;https://download.geofabrik.de/africa/mauritania-latest.osm.pbf;https://download.geofabrik.de/africa/mauritania-latest-free.shp.zip;https://download.geofabrik.de/africa/mauritania-latest.osm.bz2;Mauritania;MRT;MR;;;
+Comoros;KM;COM;174;;;;;Comoros;COM;KM;;;
+Congo;CG;COG;178;;;;;Congo Rep;COG;CG;;;
+Mauritius;MU;MUS;480;Mauritius;https://download.geofabrik.de/africa/mauritius-latest.osm.pbf;https://download.geofabrik.de/africa/mauritius-latest-free.shp.zip;https://download.geofabrik.de/africa/mauritius-latest.osm.bz2;Mauritius;MUS;MU;;;
+Congo, Democratic Republic of the;CD;COD;180;;;;;Congo DR;COD;CD;;;
+Cook Islands;CK;COK;184;;;;;Cook Is;COK;CK;;;
+Morocco;MA;MAR;504;Morocco;https://download.geofabrik.de/africa/morocco-latest.osm.pbf;https://download.geofabrik.de/africa/morocco-latest-free.shp.zip;https://download.geofabrik.de/africa/morocco-latest.osm.bz2;Morocco;MAR;MA;;;
+Costa Rica;CR;CRI;188;;;;;Costa Rica;CRI;CR;;;
+Côte d'Ivoire;CI;CIV;384;;;;;Cote d Ivoire;CIV;CI;;;
+Mozambique;MZ;MOZ;508;Mozambique;https://download.geofabrik.de/africa/mozambique-latest.osm.pbf;https://download.geofabrik.de/africa/mozambique-latest-free.shp.zip;https://download.geofabrik.de/africa/mozambique-latest.osm.bz2;Mozambique;MOZ;MZ;;;
+Croatia;HR;HRV;191;Croatia;https://download.geofabrik.de/europe/croatia-latest.osm.pbf;https://download.geofabrik.de/europe/croatia-latest-free.shp.zip;https://download.geofabrik.de/europe/croatia-latest.osm.bz2;Croatia;HRV;HR;HR;HR;Croatia
+Cuba;CU;CUB;192;;;;;Cuba;CUB;CU;;;
+Namibia;NA;NAM;516;Namibia;https://download.geofabrik.de/africa/namibia-latest.osm.pbf;https://download.geofabrik.de/africa/namibia-latest-free.shp.zip;https://download.geofabrik.de/africa/namibia-latest.osm.bz2;Namibia;NAM;NA;;;
+Curaçao;CW;CUW;531;;;;;Curacao;CUW;CW;;;
+Cyprus;CY;CYP;196;Cyprus;https://download.geofabrik.de/europe/cyprus-latest.osm.pbf;https://download.geofabrik.de/europe/cyprus-latest-free.shp.zip;https://download.geofabrik.de/europe/cyprus-latest.osm.bz2;Cyprus;CYP;CY;CY;CY;Cyprus
+Niger;NE;NER;562;Niger;https://download.geofabrik.de/africa/niger-latest.osm.pbf;https://download.geofabrik.de/africa/niger-latest-free.shp.zip;https://download.geofabrik.de/africa/niger-latest.osm.bz2;Niger;NER;NE;;;
+Czechia;CZ;CZE;203;;;;;Czechia;CZE;CZ;CZ;CZ;Czechia
+Denmark;DK;DNK;208;Denmark;https://download.geofabrik.de/europe/denmark-latest.osm.pbf;https://download.geofabrik.de/europe/denmark-latest-free.shp.zip;https://download.geofabrik.de/europe/denmark-latest.osm.bz2;Denmark;DNK;DK;DK;DK;Denmark
+Nigeria;NG;NGA;566;Nigeria;https://download.geofabrik.de/africa/nigeria-latest.osm.pbf;https://download.geofabrik.de/africa/nigeria-latest-free.shp.zip;https://download.geofabrik.de/africa/nigeria-latest.osm.bz2;Nigeria;NGA;NG;;;
+Dominica;DM;DMA;212;;;;;Dominica;DMA;DM;;;
+Dominican Republic;DO;DOM;214;;;;;Dominican Rep;DOM;DO;;;
+Ecuador;EC;ECU;218;Ecuador;https://download.geofabrik.de/south-america/ecuador-latest.osm.pbf;;https://download.geofabrik.de/south-america/ecuador-latest.osm.bz2;Ecuador;ECU;EC;EC;;
+Switzerland;CH;CHE;756;Switzerland;https://download.geofabrik.de/europe/switzerland-latest.osm.pbf;https://download.geofabrik.de/europe/switzerland-latest-free.shp.zip;https://download.geofabrik.de/europe/switzerland-latest.osm.bz2;Switzerland;CHE;CH;CH;CH;
+El Salvador;SV;SLV;222;;;;;El Salvador;SLV;SV;;;
+Equatorial Guinea;GQ;GNQ;226;;;;;Eq Guinea;GNQ;GQ;;;
+Estonia;EE;EST;233;Estonia;https://download.geofabrik.de/europe/estonia-latest.osm.pbf;https://download.geofabrik.de/europe/estonia-latest-free.shp.zip;https://download.geofabrik.de/europe/estonia-latest.osm.bz2;Estonia;EST;EE;EE;EE;Estonia
+Eswatini;SZ;SWZ;748;;;;;Eswatini;SWZ;SZ;;;
+Falkland Islands (Malvinas);FK;FLK;238;;;;;Falklands Malv;FLK;FK;;;
+Faroe Islands;FO;FRO;234;Faroe Islands;https://download.geofabrik.de/europe/faroe-islands-latest.osm.pbf;https://download.geofabrik.de/europe/faroe-islands-latest-free.shp.zip;https://download.geofabrik.de/europe/faroe-islands-latest.osm.bz2;Faroe Islands;FRO;FO;;;
+Fiji;FJ;FJI;242;Fiji;https://download.geofabrik.de/australia-oceania/fiji-latest.osm.pbf;https://download.geofabrik.de/australia-oceania/fiji-latest-free.shp.zip;https://download.geofabrik.de/australia-oceania/fiji-latest.osm.bz2;Fiji;FJI;FJ;;;
+Finland;FI;FIN;246;Finland;https://download.geofabrik.de/europe/finland-latest.osm.pbf;https://download.geofabrik.de/europe/finland-latest-free.shp.zip;https://download.geofabrik.de/europe/finland-latest.osm.bz2;Finland;FIN;FI;FI;FI;Finland
+France;FR;FRA;250;France;https://download.geofabrik.de/europe/france-latest.osm.pbf;;https://download.geofabrik.de/europe/france-latest.osm.bz2;France;FRA;FR;FR;FR;France
+French Guiana;GF;GUF;254;;;;;Fr Guiana;GUF;GF;;;
+French Polynesia;PF;PYF;258;;;;;Fr Polynesia;PYF;PF;;;
+Gambia;GM;GMB;270;;;;;Gambia;GMB;GM;;;
+Germany;DE;DEU;276;Germany;https://download.geofabrik.de/europe/germany-latest.osm.pbf;https://download.geofabrik.de/europe/germany/baden-wuerttemberg-latest-free.shp.zip,https://download.geofabrik.de/europe/germany/bayern-latest-free.shp.zip,https://download.geofabrik.de/europe/germany/berlin-latest-free.shp.zip,https://download.geofabrik.de/europe/germany/brandenburg-latest-free.shp.zip,https://download.geofabrik.de/europe/germany/bremen-latest-free.shp.zip,https://download.geofabrik.de/europe/germany/hamburg-latest-free.shp.zip,https://download.geofabrik.de/europe/germany/hessen-latest-free.shp.zip,https://download.geofabrik.de/europe/germany/mecklenburg-vorpommern-latest-free.shp.zip,https://download.geofabrik.de/europe/germany/niedersachsen-latest-free.shp.zip,https://download.geofabrik.de/europe/germany/nordrhein-westfalen-latest-free.shp.zip,https://download.geofabrik.de/europe/germany/rheinland-pfalz-latest-free.shp.zip,https://download.geofabrik.de/europe/germany/saarland-latest-free.shp.zip,https://download.geofabrik.de/europe/germany/sachsen-latest-free.shp.zip,https://download.geofabrik.de/europe/germany/sachsen-anhalt-latest-free.shp.zip,https://download.geofabrik.de/europe/germany/schleswig-holstein-latest-free.shp.zip,https://download.geofabrik.de/europe/germany/thueringen-latest-free.shp.zip;https://download.geofabrik.de/europe/germany-latest.osm.bz2;Germany;DEU;DE;DE;DE;Germany (until 1990 former territory of the FRG)
+Georgia;GE;GEO;268;Georgia;https://download.geofabrik.de/europe/georgia-latest.osm.pbf;https://download.geofabrik.de/europe/georgia-latest-free.shp.zip;https://download.geofabrik.de/europe/georgia-latest.osm.bz2;Georgia;GEO;GE;;;Georgia
+Gibraltar;GI;GIB;292;;;;;Gibraltar;GIB;GI;;;
+India;IN;IND;356;India;https://download.geofabrik.de/asia/india-latest.osm.pbf;https://download.geofabrik.de/asia/india-latest-free.shp.zip;https://download.geofabrik.de/asia/india-latest.osm.bz2;India;IND;IN;;;
+Greece;GR;GRC;300;Greece;https://download.geofabrik.de/europe/greece-latest.osm.pbf;https://download.geofabrik.de/europe/greece-latest-free.shp.zip;https://download.geofabrik.de/europe/greece-latest.osm.bz2;Greece;GRC;GR;EL;GR;Greece
+Greenland;GL;GRL;304;Greenland;https://download.geofabrik.de/north-america/greenland-latest.osm.pbf;https://download.geofabrik.de/north-america/greenland-latest-free.shp.zip;https://download.geofabrik.de/north-america/greenland-latest.osm.bz2;Greenland;GRL;GL;;;
+Indonesia;ID;IDN;360;Indonesia;https://download.geofabrik.de/asia/indonesia-latest.osm.pbf;https://download.geofabrik.de/asia/indonesia-latest-free.shp.zip;https://download.geofabrik.de/asia/indonesia-latest.osm.bz2;Indonesia;IDN;ID;;;
+Grenada;GD;GRD;308;;;;;Grenada;GRD;GD;;;
+Guadeloupe;GP;GLP;312;;;;;Guadeloupe;GLP;GP;;;
+Iraq;IQ;IRQ;368;Iraq;https://download.geofabrik.de/asia/iraq-latest.osm.pbf;https://download.geofabrik.de/asia/iraq-latest-free.shp.zip;https://download.geofabrik.de/asia/iraq-latest.osm.bz2;Iraq;IRQ;IQ;;;
+Guam;GU;GUM;316;;;;;Guam;GUM;GU;;;
+Japan;JP;JPN;392;Japan;https://download.geofabrik.de/asia/japan-latest.osm.pbf;;https://download.geofabrik.de/asia/japan-latest.osm.bz2;Japan;JPN;JP;;;
+Guatemala;GT;GTM;320;;;;;Guatemala;GTM;GT;;;
+Western Sahara;EH;ESH;732;;;;;Westn Sahara;ESH;EH;;;
+Guernsey;GG;GGY;831;;;;;Guernsey;GGY;GG;;;
+Jordan;JO;JOR;400;Jordan;https://download.geofabrik.de/asia/jordan-latest.osm.pbf;https://download.geofabrik.de/asia/jordan-latest-free.shp.zip;https://download.geofabrik.de/asia/jordan-latest.osm.bz2;Jordan;JOR;JO;;;
+Spain;ES;ESP;724;Spain;https://download.geofabrik.de/europe/spain-latest.osm.pbf;https://download.geofabrik.de/europe/spain-latest-free.shp.zip;https://download.geofabrik.de/europe/spain-latest.osm.bz2;Spain;ESP;ES;ES;ES;Spain
+Guinea-Bissau;GW;GNB;624;;;;;Guinea Bissau;GNB;GW;;;
+Kazakhstan;KZ;KAZ;398;Kazakhstan;https://download.geofabrik.de/asia/kazakhstan-latest.osm.pbf;https://download.geofabrik.de/asia/kazakhstan-latest-free.shp.zip;https://download.geofabrik.de/asia/kazakhstan-latest.osm.bz2;Kazakhstan;KAZ;KZ;;;
+Guyana;GY;GUY;328;;;;;Guyana;GUY;GY;;;
+Haiti;HT;HTI;332;;;;;Haiti;HTI;HT;;;
+Kyrgyzstan;KG;KGZ;417;Kyrgyzstan;https://download.geofabrik.de/asia/kyrgyzstan-latest.osm.pbf;https://download.geofabrik.de/asia/kyrgyzstan-latest-free.shp.zip;https://download.geofabrik.de/asia/kyrgyzstan-latest.osm.bz2;Kyrgyzstan;KGZ;KG;;;
+Heard Island and McDonald Islands;HM;HMD;334;;;;;Heard Island and McDonald Islands;HMD;HM;;;
+Holy See;VA;VAT;336;;;;;Holy See;VAT;VA;;;
+Lebanon;LB;LBN;422;Lebanon;https://download.geofabrik.de/asia/lebanon-latest.osm.pbf;https://download.geofabrik.de/asia/lebanon-latest-free.shp.zip;https://download.geofabrik.de/asia/lebanon-latest.osm.bz2;Lebanon;LBN;LB;;;
+Honduras;HN;HND;340;;;;;Honduras;HND;HN;;;
+Hong Kong;HK;HKG;344;;;;;China HK SAR;HKG;HK;;;
+Hungary;HU;HUN;348;Hungary;https://download.geofabrik.de/europe/hungary-latest.osm.pbf;https://download.geofabrik.de/europe/hungary-latest-free.shp.zip;https://download.geofabrik.de/europe/hungary-latest.osm.bz2;Hungary;HUN;HU;HU;HU;Hungary
+Maldives;MV;MDV;462;Maldives;https://download.geofabrik.de/asia/maldives-latest.osm.pbf;https://download.geofabrik.de/asia/maldives-latest-free.shp.zip;https://download.geofabrik.de/asia/maldives-latest.osm.bz2;Maldives;MDV;MV;;;
+Iceland;IS;ISL;352;Iceland;https://download.geofabrik.de/europe/iceland-latest.osm.pbf;https://download.geofabrik.de/europe/iceland-latest-free.shp.zip;https://download.geofabrik.de/europe/iceland-latest.osm.bz2;Iceland;ISL;IS;IS;IS;Iceland
+Mongolia;MN;MNG;496;Mongolia;https://download.geofabrik.de/asia/mongolia-latest.osm.pbf;https://download.geofabrik.de/asia/mongolia-latest-free.shp.zip;https://download.geofabrik.de/asia/mongolia-latest.osm.bz2;Mongolia;MNG;MN;;;
+Iran (Islamic Republic of);IR;IRN;364;;;;;Iran IR;IRN;IR;;;
+Micronesia (Federated States of);FM;FSM;583;Micronesia;https://download.geofabrik.de/australia-oceania/micronesia-latest.osm.pbf;https://download.geofabrik.de/australia-oceania/micronesia-latest-free.shp.zip;https://download.geofabrik.de/australia-oceania/micronesia-latest.osm.bz2;Micronesia;FSM;FM;;;
+Nepal;NP;NPL;524;Nepal;https://download.geofabrik.de/asia/nepal-latest.osm.pbf;https://download.geofabrik.de/asia/nepal-latest-free.shp.zip;https://download.geofabrik.de/asia/nepal-latest.osm.bz2;Nepal;NPL;NP;;;
+Ireland;IE;IRL;372;;;https://download.geofabrik.de/europe/ireland-and-northern-ireland-latest-free.shp.zip;;Ireland;IRL;IE;IE;IE;Ireland
+United Kingdom of Great Britain and Northern Ireland;GB;GBR;826;;;;;UK;GBR;GB;UK;GB, NI;United Kingdom
+Isle of Man;IM;IMN;833;Isle of Man;https://download.geofabrik.de/europe/isle-of-man-latest.osm.pbf;https://download.geofabrik.de/europe/isle-of-man-latest-free.shp.zip;https://download.geofabrik.de/europe/isle-of-man-latest.osm.bz2;Isle of Man;IMN;IM;;;
+Pakistan;PK;PAK;586;Pakistan;https://download.geofabrik.de/asia/pakistan-latest.osm.pbf;https://download.geofabrik.de/asia/pakistan-latest-free.shp.zip;https://download.geofabrik.de/asia/pakistan-latest.osm.bz2;Pakistan;PAK;PK;;;
+Israel;IL;ISR;376;;;;;Israel;ISR;IL;;;
+Italy;IT;ITA;380;Italy;https://download.geofabrik.de/europe/italy-latest.osm.pbf;;https://download.geofabrik.de/europe/italy-latest.osm.bz2;Italy;ITA;IT;IT;IT;Italy
+Philippines;PH;PHL;608;Philippines;https://download.geofabrik.de/asia/philippines-latest.osm.pbf;https://download.geofabrik.de/asia/philippines-latest-free.shp.zip;https://download.geofabrik.de/asia/philippines-latest.osm.bz2;Philippines;PHL;PH;;;
+Jamaica;JM;JAM;388;;;;;Jamaica;JAM;JM;;;
+Jersey;JE;JEY;832;;;;;Jersey;JEY;JE;;;
+Sri Lanka;LK;LKA;144;Sri Lanka;https://download.geofabrik.de/asia/sri-lanka-latest.osm.pbf;https://download.geofabrik.de/asia/sri-lanka-latest-free.shp.zip;https://download.geofabrik.de/asia/sri-lanka-latest.osm.bz2;Sri Lanka;LKA;LK;;;
+Kiribati;KI;KIR;296;Kiribati;https://download.geofabrik.de/australia-oceania/kiribati-latest.osm.pbf;https://download.geofabrik.de/australia-oceania/kiribati-latest-free.shp.zip;https://download.geofabrik.de/australia-oceania/kiribati-latest.osm.bz2;Kiribati;KIR;KI;;;
+Korea (Democratic People's Republic of);KP;PRK;408;;;https://download.geofabrik.de/asia/north-korea-latest-free.shp.zip;;Korea DPR;PRK;KP;;;
+Korea, Republic of;KR;KOR;410;;;https://download.geofabrik.de/asia/south-korea-latest-free.shp.zip;;Korea Rep;KOR;KR;;;
+Kuwait;KW;KWT;414;;;;;Kuwait;KWT;KW;;;
+Lao People's Democratic Republic;LA;LAO;418;;;;;Lao PDR;LAO;LA;;;
+Latvia;LV;LVA;428;Latvia;https://download.geofabrik.de/europe/latvia-latest.osm.pbf;https://download.geofabrik.de/europe/latvia-latest-free.shp.zip;https://download.geofabrik.de/europe/latvia-latest.osm.bz2;Latvia;LVA;LV;LV;LV;Latvia
+Liechtenstein;LI;LIE;438;Liechtenstein;https://download.geofabrik.de/europe/liechtenstein-latest.osm.pbf;https://download.geofabrik.de/europe/liechtenstein-latest-free.shp.zip;https://download.geofabrik.de/europe/liechtenstein-latest.osm.bz2;Liechtenstein;LIE;LI;;;
+Lithuania;LT;LTU;440;Lithuania;https://download.geofabrik.de/europe/lithuania-latest.osm.pbf;https://download.geofabrik.de/europe/lithuania-latest-free.shp.zip;https://download.geofabrik.de/europe/lithuania-latest.osm.bz2;Lithuania;LTU;LT;LT;LT;Lithuania
+Luxembourg;LU;LUX;442;Luxembourg;https://download.geofabrik.de/europe/luxembourg-latest.osm.pbf;https://download.geofabrik.de/europe/luxembourg-latest-free.shp.zip;https://download.geofabrik.de/europe/luxembourg-latest.osm.bz2;Luxembourg;LUX;LU;LU;LU;Luxembourg
+Macao;MO;MAC;446;;;;;China Mac SAR;MAC;MO;;;
+Nauru;NR;NRU;520;Nauru;https://download.geofabrik.de/australia-oceania/nauru-latest.osm.pbf;https://download.geofabrik.de/australia-oceania/nauru-latest-free.shp.zip;https://download.geofabrik.de/australia-oceania/nauru-latest.osm.bz2;Nauru;NRU;NR;;;
+New Zealand;NZ;NZL;554;New Zealand;https://download.geofabrik.de/australia-oceania/new-zealand-latest.osm.pbf;https://download.geofabrik.de/australia-oceania/new-zealand-latest-free.shp.zip;https://download.geofabrik.de/australia-oceania/new-zealand-latest.osm.bz2;New Zealand;NZL;NZ;;;
+Malaysia;MY;MYS;458;;;;;Malaysia;MYS;MY;;;
+Niue;NU;NIU;570;Niue;https://download.geofabrik.de/australia-oceania/niue-latest.osm.pbf;https://download.geofabrik.de/australia-oceania/niue-latest-free.shp.zip;https://download.geofabrik.de/australia-oceania/niue-latest.osm.bz2;Niue;NIU;NU;;;
+Palau;PW;PLW;585;Palau;https://download.geofabrik.de/australia-oceania/palau-latest.osm.pbf;https://download.geofabrik.de/australia-oceania/palau-latest-free.shp.zip;https://download.geofabrik.de/australia-oceania/palau-latest.osm.bz2;Palau;PLW;PW;;;
+Malta;MT;MLT;470;Malta;https://download.geofabrik.de/europe/malta-latest.osm.pbf;https://download.geofabrik.de/europe/malta-latest-free.shp.zip;https://download.geofabrik.de/europe/malta-latest.osm.bz2;Malta;MLT;MT;;;Malta
+Marshall Islands;MH;MHL;584;;;;;Marshall Is;MHL;MH;;;
+Martinique;MQ;MTQ;474;;;;;Martinique;MTQ;MQ;;;
+Mayotte;YT;MYT;175;;;;;Mayotte;MYT;YT;;;
+Mexico;MX;MEX;484;Mexico;https://download.geofabrik.de/north-america/mexico-latest.osm.pbf;https://download.geofabrik.de/north-america/mexico-latest-free.shp.zip;https://download.geofabrik.de/north-america/mexico-latest.osm.bz2;Mexico;MEX;MX;;;
+Moldova, Republic of;MD;MDA;498;;;;;Moldova Rep;MDA;MD;;;Moldova
+Monaco;MC;MCO;492;Monaco;https://download.geofabrik.de/europe/monaco-latest.osm.pbf;https://download.geofabrik.de/europe/monaco-latest-free.shp.zip;https://download.geofabrik.de/europe/monaco-latest.osm.bz2;Monaco;MCO;MC;;;
+Saint Kitts and Nevis;KN;KNA;659;;;;;Saint Kitts and Nevis;KNA;KN;;;
+Montenegro;ME;MNE;499;Montenegro;https://download.geofabrik.de/europe/montenegro-latest.osm.pbf;https://download.geofabrik.de/europe/montenegro-latest-free.shp.zip;https://download.geofabrik.de/europe/montenegro-latest.osm.bz2;Montenegro;MNE;ME;ME;ME;Montenegro
+Montserrat;MS;MSR;500;;;;;Montserrat;MSR;MS;;;
+Saint Lucia;LC;LCA;662;;;;;St Lucia;LCA;LC;;;
+Myanmar;MM;MMR;104;;;;;Myanmar;MMR;MM;;;
+Netherlands;NL;NLD;528;Netherlands;https://download.geofabrik.de/europe/netherlands-latest.osm.pbf;https://download.geofabrik.de/europe/netherlands-latest-free.shp.zip;https://download.geofabrik.de/europe/netherlands-latest.osm.bz2;Netherlands;NLD;NL;NL;NL;Netherlands
+Saint Martin (French part);MF;MAF;663;;;;;St Martin;MAF;MF;;;
+New Caledonia;NC;NCL;540;;;;;New Caledon;NCL;NC;;;
+Nicaragua;NI;NIC;558;;;;;Nicaragua;NIC;NI;;;
+North Macedonia;MK;MKD;807;;;;;North Macedonia;MKD;MK;MK;MK;North Macedonia
+Norfolk Island;NF;NFK;574;;;;;Norfolk Is;NFK;NF;;;
+Northern Mariana Islands;MP;MNP;580;;;;;Nth Mariana Is;MNP;MP;;;
+Norway;NO;NOR;578;Norway;https://download.geofabrik.de/europe/norway-latest.osm.pbf;https://download.geofabrik.de/europe/norway-latest-free.shp.zip;https://download.geofabrik.de/europe/norway-latest.osm.bz2;Norway;NOR;NO;NO;NO;Norway
+Oman;OM;OMN;512;;;https://download.geofabrik.de/asia/gcc-states-latest-free.shp.zip;;Oman;OMN;OM;;;
+Poland;PL;POL;616;Poland;https://download.geofabrik.de/europe/poland-latest.osm.pbf;;https://download.geofabrik.de/europe/poland-latest.osm.bz2;Poland;POL;PL;PL;PL;Poland
+Palestine, State of;PS;PSE;275;;;;;Palestine;PSE;PS;;;
+Panama;PA;PAN;591;;;;;Panama;PAN;PA;;;
+Papua New Guinea;PG;PNG;598;;;;;Papua N Guin;PNG;PG;;;
+Paraguay;PY;PRY;600;Paraguay;https://download.geofabrik.de/south-america/paraguay-latest.osm.pbf;https://download.geofabrik.de/south-america/paraguay-latest-free.shp.zip;https://download.geofabrik.de/south-america/paraguay-latest.osm.bz2;Paraguay;PRY;PY;;;
+Peru;PE;PER;604;Peru;https://download.geofabrik.de/south-america/peru-latest.osm.pbf;https://download.geofabrik.de/south-america/peru-latest-free.shp.zip;https://download.geofabrik.de/south-america/peru-latest.osm.bz2;Peru;PER;PE;;;
+Pitcairn;PN;PCN;612;;;;;Pitcairn;PCN;PN;;;
+Portugal;PT;PRT;620;Portugal;https://download.geofabrik.de/europe/portugal-latest.osm.pbf;https://download.geofabrik.de/europe/portugal-latest-free.shp.zip;https://download.geofabrik.de/europe/portugal-latest.osm.bz2;Portugal;PRT;PT;PT;PT;Portugal
+Puerto Rico;PR;PRI;630;;;;;Puerto Rico;PRI;PR;;;
+Qatar;QA;QAT;634;;;;;Qatar;QAT;QA;;;
+Réunion;RE;REU;638;;;;;Reunion;REU;RE;;;
+Romania;RO;ROU;642;Romania;https://download.geofabrik.de/europe/romania-latest.osm.pbf;https://download.geofabrik.de/europe/romania-latest-free.shp.zip;https://download.geofabrik.de/europe/romania-latest.osm.bz2;Romania;ROU;RO;RO;RO;Romania
+Russian Federation;RU;RUS;643;;;;;Russian Fed;RUS;RU;;;
+Rwanda;RW;RWA;646;Rwanda;https://download.geofabrik.de/africa/rwanda-latest.osm.pbf;https://download.geofabrik.de/africa/rwanda-latest-free.shp.zip;https://download.geofabrik.de/africa/rwanda-latest.osm.bz2;Rwanda;RWA;RW;;;
+Saint Helena, Ascension and Tristan da Cunha[b];SH;SHN;654;;;;;Saint Helena;SHN;SH;;;
+Saint Pierre and Miquelon;PM;SPM;666;;;;;St Pierre Mq;SPM;PM;;;
+Saint Vincent and the Grenadines;VC;VCT;670;;;;;St Vincent Gren;VCT;VC;;;
+Samoa;WS;WSM;882;Samoa;https://download.geofabrik.de/australia-oceania/samoa-latest.osm.pbf;https://download.geofabrik.de/australia-oceania/samoa-latest-free.shp.zip;https://download.geofabrik.de/australia-oceania/samoa-latest.osm.bz2;Samoa;WSM;WS;;;
+Saudi Arabia;SA;SAU;682;;https://download.geofabrik.de/asia/gcc-states-latest-free.shp.zip;;;Saudi Arabia;SAU;SA;;;
+San Marino;SM;SMR;674;;;;;San Marino;SMR;SM;;;
+Sudan;SD;SDN;729;Sudan;https://download.geofabrik.de/africa/sudan-latest.osm.pbf;https://download.geofabrik.de/africa/sudan-latest-free.shp.zip;https://download.geofabrik.de/africa/sudan-latest.osm.bz2;Sudan;SDN;SD;;;
+Sao Tome and Principe;ST;STP;678;;;;;Sao Tome Prn;STP;ST;;;
+Senegal;SN;SEN;686;;;;;Senegal;SEN;SN;;;
+Singapore;SG;SGP;702;;;;;Singapore;SGP;SG;SG;SG;
+South Georgia and the South Sandwich Islands;GS;SGS;239;;;;;South Georgia and the South Sandwich Islands;SGS;GS;;;
+Serbia;RS;SRB;688;Serbia;https://download.geofabrik.de/europe/serbia-latest.osm.pbf;https://download.geofabrik.de/europe/serbia-latest-free.shp.zip;https://download.geofabrik.de/europe/serbia-latest.osm.bz2;Serbia;SRB;RS;RS;RS;Serbia
+Seychelles;SC;SYC;690;Seychelles;https://download.geofabrik.de/africa/seychelles-latest.osm.pbf;https://download.geofabrik.de/africa/seychelles-latest-free.shp.zip;https://download.geofabrik.de/africa/seychelles-latest.osm.bz2;Seychelles;SYC;SC;;;
+Svalbard and Jan Mayen[c];SJ;SJM;744;;;;;Svalbard and Jan Mayen;SJM;SJ;;;
+Sierra Leone;SL;SLE;694;Sierra Leone;https://download.geofabrik.de/africa/sierra-leone-latest.osm.pbf;https://download.geofabrik.de/africa/sierra-leone-latest-free.shp.zip;https://download.geofabrik.de/africa/sierra-leone-latest.osm.bz2;Sierra Leone;SLE;SL;;;
+Solomon Islands;SB;SLB;90;;;;;Solomon Is;SLB;SB;;;
+Sint Maarten (Dutch part);SX;SXM;534;;;;;St Maarten;SXM;SX;;;
+Slovakia;SK;SVK;703;Slovakia;https://download.geofabrik.de/europe/slovakia-latest.osm.pbf;https://download.geofabrik.de/europe/slovakia-latest-free.shp.zip;https://download.geofabrik.de/europe/slovakia-latest.osm.bz2;Slovakia;SVK;SK;SK;SK;Slovakia
+Slovenia;SI;SVN;705;Slovenia;https://download.geofabrik.de/europe/slovenia-latest.osm.pbf;https://download.geofabrik.de/europe/slovenia-latest-free.shp.zip;https://download.geofabrik.de/europe/slovenia-latest.osm.bz2;Slovenia;SVN;SI;SI;SI;Slovenia
+Somalia;SO;SOM;706;Somalia;https://download.geofabrik.de/africa/somalia-latest.osm.pbf;https://download.geofabrik.de/africa/somalia-latest-free.shp.zip;https://download.geofabrik.de/africa/somalia-latest.osm.bz2;Somalia;SOM;SO;;;
+South Sudan;SS;SSD;728;South Sudan;https://download.geofabrik.de/africa/south-sudan-latest.osm.pbf;https://download.geofabrik.de/africa/south-sudan-latest-free.shp.zip;https://download.geofabrik.de/africa/south-sudan-latest.osm.bz2;South Sudan;SSD;SS;;;
+Suriname;SR;SUR;740;Suriname;https://download.geofabrik.de/south-america/suriname-latest.osm.pbf;https://download.geofabrik.de/south-america/suriname-latest-free.shp.zip;https://download.geofabrik.de/south-america/suriname-latest.osm.bz2;Suriname;SUR;SR;;;
+Sweden;SE;SWE;752;Sweden;https://download.geofabrik.de/europe/sweden-latest.osm.pbf;https://download.geofabrik.de/europe/sweden-latest-free.shp.zip;https://download.geofabrik.de/europe/sweden-latest.osm.bz2;Sweden;SWE;SE;SE;SE;Sweden
+Syrian Arab Republic;SY;SYR;760;;;;;Syrian AR;SYR;SY;;;
+Turks and Caicos Islands;TC;TCA;796;;;;;Turks Caicos;TCA;TC;;;
+Taiwan, Province of China;TW;TWN;158;;;;;Chinese Taipei;TWN;TW;;;
+Tajikistan;TJ;TJK;762;Tajikistan;https://download.geofabrik.de/asia/tajikistan-latest.osm.pbf;https://download.geofabrik.de/asia/tajikistan-latest-free.shp.zip;https://download.geofabrik.de/asia/tajikistan-latest.osm.bz2;Tajikistan;TJK;TJ;;;
+Togo;TG;TGO;768;Togo;https://download.geofabrik.de/africa/togo-latest.osm.pbf;https://download.geofabrik.de/africa/togo-latest-free.shp.zip;https://download.geofabrik.de/africa/togo-latest.osm.bz2;Togo;TGO;TG;;;
+Tanzania, United Republic of;TZ;TZA;834;Tanzania;https://download.geofabrik.de/africa/tanzania-latest.osm.pbf;https://download.geofabrik.de/africa/tanzania-latest-free.shp.zip;https://download.geofabrik.de/africa/tanzania-latest.osm.bz2;Tanzania;TZA;TZ;;;
+Thailand;TH;THA;764;Thailand;https://download.geofabrik.de/asia/thailand-latest.osm.pbf;https://download.geofabrik.de/asia/thailand-latest-free.shp.zip;https://download.geofabrik.de/asia/thailand-latest.osm.bz2;Thailand;THA;TH;;;
+Timor-Leste;TL;TLS;626;;;;;Timor Leste;TLS;TL;;;
+Tokelau;TK;TKL;772;Tokelau;https://download.geofabrik.de/australia-oceania/tokelau-latest.osm.pbf;https://download.geofabrik.de/australia-oceania/tokelau-latest-free.shp.zip;https://download.geofabrik.de/australia-oceania/tokelau-latest.osm.bz2;Tokelau;TKL;TK;;;
+Turkmenistan;TM;TKM;795;Turkmenistan;https://download.geofabrik.de/asia/turkmenistan-latest.osm.pbf;https://download.geofabrik.de/asia/turkmenistan-latest-free.shp.zip;https://download.geofabrik.de/asia/turkmenistan-latest.osm.bz2;Turkmenistan;TKM;TM;;;
+Tonga;TO;TON;776;Tonga;https://download.geofabrik.de/australia-oceania/tonga-latest.osm.pbf;https://download.geofabrik.de/australia-oceania/tonga-latest-free.shp.zip;https://download.geofabrik.de/australia-oceania/tonga-latest.osm.bz2;Tonga;TON;TO;;;
+Trinidad and Tobago;TT;TTO;780;;;;;Trinidad Tobago;TTO;TT;;;
+Tunisia;TN;TUN;788;Tunisia;https://download.geofabrik.de/africa/tunisia-latest.osm.pbf;https://download.geofabrik.de/africa/tunisia-latest-free.shp.zip;https://download.geofabrik.de/africa/tunisia-latest.osm.bz2;Tunisia;TUN;TN;;;
+Turkey;TR;TUR;792;Turkey;https://download.geofabrik.de/europe/turkey-latest.osm.pbf;https://download.geofabrik.de/europe/turkey-latest-free.shp.zip;https://download.geofabrik.de/europe/turkey-latest.osm.bz2;Turkey;TUR;TR;;;Turkey
+Tuvalu;TV;TUV;798;Tuvalu;https://download.geofabrik.de/australia-oceania/tuvalu-latest.osm.pbf;https://download.geofabrik.de/australia-oceania/tuvalu-latest-free.shp.zip;https://download.geofabrik.de/australia-oceania/tuvalu-latest.osm.bz2;Tuvalu;TUV;TV;;;
+Uganda;UG;UGA;800;Uganda;https://download.geofabrik.de/africa/uganda-latest.osm.pbf;https://download.geofabrik.de/africa/uganda-latest-free.shp.zip;https://download.geofabrik.de/africa/uganda-latest.osm.bz2;Uganda;UGA;UG;;;
+Ukraine;UA;UKR;804;;;;;Ukraine;UKR;UA;;UA_W;Ukraine
+United States Minor Outlying Islands[e];UM;UMI;581;;;;;United States Minor Outlying Islands;UMI;UM;;;
+Uruguay;UY;URY;858;Uruguay;https://download.geofabrik.de/south-america/uruguay-latest.osm.pbf;https://download.geofabrik.de/south-america/uruguay-latest-free.shp.zip;https://download.geofabrik.de/south-america/uruguay-latest.osm.bz2;Uruguay;URY;UY;;;
+United States of America;US;USA;840;;;;;USA;USA;US;;;
+Uzbekistan;UZ;UZB;860;Uzbekistan;https://download.geofabrik.de/asia/uzbekistan-latest.osm.pbf;https://download.geofabrik.de/asia/uzbekistan-latest-free.shp.zip;https://download.geofabrik.de/asia/uzbekistan-latest.osm.bz2;Uzbekistan;UZB;UZ;;;
+Vanuatu;VU;VUT;548;Vanuatu;https://download.geofabrik.de/australia-oceania/vanuatu-latest.osm.pbf;https://download.geofabrik.de/australia-oceania/vanuatu-latest-free.shp.zip;https://download.geofabrik.de/australia-oceania/vanuatu-latest.osm.bz2;Vanuatu;VUT;VU;;;
+Venezuela (Bolivarian Republic of);VE;VEN;862;Venezuela;https://download.geofabrik.de/south-america/venezuela-latest.osm.pbf;https://download.geofabrik.de/south-america/venezuela-latest-free.shp.zip;;Venezuela;VEN;VE;;;
+Virgin Islands (British);VG;VGB;92;;;;;Br Virgin Is;VGB;VG;;;
+Viet Nam;VN;VNM;704;;;;;Viet Nam;VNM;VN;;;
+Virgin Islands (U.S.);VI;VIR;850;;;;;US Virgin Is;VIR;VI;;;
+Wallis and Futuna;WF;WLF;876;;;;;Wallis Fut Is;WLF;WF;;;
+Yemen;YE;YEM;887;Yemen;https://download.geofabrik.de/asia/yemen-latest.osm.pbf;https://download.geofabrik.de/asia/yemen-latest-free.shp.zip;https://download.geofabrik.de/asia/yemen-latest.osm.bz2;Yemen;YEM;YE;;;
+South Africa;ZA;ZAF;710;South Africa;https://download.geofabrik.de/africa/south-africa-latest.osm.pbf;https://download.geofabrik.de/africa/south-africa-latest-free.shp.zip;https://download.geofabrik.de/africa/south-africa-latest.osm.bz2;South Africa;ZAF;ZA;;;
+Zambia;ZM;ZMB;894;Zambia;https://download.geofabrik.de/africa/zambia-latest.osm.pbf;https://download.geofabrik.de/africa/zambia-latest-free.shp.zip;https://download.geofabrik.de/africa/zambia-latest.osm.bz2;Zambia;ZMB;ZM;;;
+Zimbabwe;ZW;ZWE;716;Zimbabwe;https://download.geofabrik.de/africa/zimbabwe-latest.osm.pbf;https://download.geofabrik.de/africa/zimbabwe-latest-free.shp.zip;https://download.geofabrik.de/africa/zimbabwe-latest.osm.bz2;Zimbabwe;ZWE;ZW;;;

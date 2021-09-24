@@ -5,9 +5,10 @@ import pandas as pd
 import geopandas as gpd
 import numpy as np
 
+# Settings
 filter = True  # Activate saving reduced/filtered shapefiles
 
-
+# Functions
 def downloadShapefile(url, filename):
     if not os.path.exists("zip"):
         os.mkdir("zip")
@@ -69,14 +70,14 @@ def mergeShapefiles(input_files, output_file):
         gdf_merged.to_file(output_file)
 
 
-print("Started ... - Version 7")
+# Start
+print("Started ... - Version 8")
 
 # Import links to Geofabrik data
 ISO = pd.read_csv("../assumptions/ISO3166-1.csv", sep=";")
 
-# Iterate over each country
+# Iterate over each country available
 for country in ISO["Country"]:
-    # Download shapefiles from Geofabrik
     url = ISO[ISO["Country"] == country]["shp.zip"].iloc[0]
     if type(url) == str:  # download only countries with url
         country_letterCode = ISO[ISO["Country"] == country]["Alpha-3"].iloc[0]

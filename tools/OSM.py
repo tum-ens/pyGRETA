@@ -23,30 +23,13 @@ def downloadShapefile(url, filename):
 
 def extractShapefile(file_path, shapefile_name, output_filename):
     with zipfile.ZipFile(file_path, "r") as zipObj:
-        output_file = output_filename + ".shp"
-        if not os.path.isfile(output_file):
-            with open(output_file, "wb") as f:
-                f.write(zipObj.read(shapefile_name + ".shp"))
-
-        output_file = output_filename + ".shx"
-        if not os.path.isfile(output_file):
-            with open(output_file, "wb") as f:
-                f.write(zipObj.read(shapefile_name + ".shx"))
-
-        output_file = output_filename + ".dbf"
-        if not os.path.isfile(output_file):
-            with open(output_file, "wb") as f:
-                f.write(zipObj.read(shapefile_name + ".dbf"))
-
-        output_file = output_filename + ".prj"
-        if not os.path.isfile(output_file):
-            with open(output_file, "wb") as f:
-                f.write(zipObj.read(shapefile_name + ".prj"))
-
-        output_file = output_filename + ".cpg"
-        if not os.path.isfile(output_file):
-            with open(output_file, "wb") as f:
-                f.write(zipObj.read(shapefile_name + ".cpg"))
+        for file in zipObj.namelist():
+            if file.startswith(shapefile_name):
+                filextension = "." + file.split(".")[-1]
+                output_file = output_filename + filextension
+                if not os.path.isfile(output_file):
+                    with open(output_file, "wb") as f:
+                        f.write(zipObj.read(file))
 
 
 def filterShapefile(input_file, output_file, classes):
@@ -83,7 +66,7 @@ for country in ISO["Country"]:
         country_letterCode = ISO[ISO["Country"] == country]["Alpha-3"].iloc[0]
         urls = url.split(",")
         numberOfparts = len(urls)
-        print('Started: ' + country + ", " + country_letterCode + " - parts: " + numberOfparts)
+        print('Started: ' + country + ", " + country_letterCode + " - parts: " + str(numberOfparts))
 
         for i, link in enumerate(urls):
 

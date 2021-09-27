@@ -81,7 +81,7 @@ Namibia;NA;NAM;516;Namibia;https://download.geofabrik.de/africa/namibia-latest.o
 Curaçao;CW;CUW;531;;;;;Curacao;CUW;CW;;;
 Cyprus;CY;CYP;196;Cyprus;https://download.geofabrik.de/europe/cyprus-latest.osm.pbf;https://download.geofabrik.de/europe/cyprus-latest-free.shp.zip;https://download.geofabrik.de/europe/cyprus-latest.osm.bz2;Cyprus;CYP;CY;CY;CY;Cyprus
 Niger;NE;NER;562;Niger;https://download.geofabrik.de/africa/niger-latest.osm.pbf;https://download.geofabrik.de/africa/niger-latest-free.shp.zip;https://download.geofabrik.de/africa/niger-latest.osm.bz2;Niger;NER;NE;;;
-Czechia;CZ;CZE;203;;;;;Czechia;CZE;CZ;CZ;CZ;Czechia
+Czechia;CZ;CZE;203;Czech Republic;http://download.geofabrik.de/europe/czech-republic-latest.osm.pbf;http://download.geofabrik.de/europe/czech-republic-latest-free.shp.zip;http://download.geofabrik.de/europe/czech-republic-latest.osm.bz2;Czechia;CZE;CZ;CZ;CZ;Czechia
 Denmark;DK;DNK;208;Denmark;https://download.geofabrik.de/europe/denmark-latest.osm.pbf;https://download.geofabrik.de/europe/denmark-latest-free.shp.zip;https://download.geofabrik.de/europe/denmark-latest.osm.bz2;Denmark;DNK;DK;DK;DK;Denmark
 Nigeria;NG;NGA;566;Nigeria;https://download.geofabrik.de/africa/nigeria-latest.osm.pbf;https://download.geofabrik.de/africa/nigeria-latest-free.shp.zip;https://download.geofabrik.de/africa/nigeria-latest.osm.bz2;Nigeria;NGA;NG;;;
 Dominica;DM;DMA;212;;;;;Dominica;DMA;DM;;;
@@ -175,7 +175,7 @@ Netherlands;NL;NLD;528;Netherlands;https://download.geofabrik.de/europe/netherla
 Saint Martin (French part);MF;MAF;663;;;;;St Martin;MAF;MF;;;
 New Caledonia;NC;NCL;540;;;;;New Caledon;NCL;NC;;;
 Nicaragua;NI;NIC;558;;;;;Nicaragua;NIC;NI;;;
-North Macedonia;MK;MKD;807;;;;;North Macedonia;MKD;MK;MK;MK;North Macedonia
+North Macedonia;MK;MKD;807;Macedonia;http://download.geofabrik.de/europe/macedonia-latest.osm.pbf;http://download.geofabrik.de/europe/macedonia-latest-free.shp.zip;http://download.geofabrik.de/europe/macedonia-latest.osm.bz2;North Macedonia;MKD;MK;MK;MK;North Macedonia
 Norfolk Island;NF;NFK;574;;;;;Norfolk Is;NFK;NF;;;
 Northern Mariana Islands;MP;MNP;580;;;;;Nth Mariana Is;MNP;MP;;;
 Norway;NO;NOR;578;Norway;https://download.geofabrik.de/europe/norway-latest.osm.pbf;https://download.geofabrik.de/europe/norway-latest-free.shp.zip;https://download.geofabrik.de/europe/norway-latest.osm.bz2;Norway;NOR;NO;NO;NO;Norway
@@ -248,3 +248,4 @@ Yemen;YE;YEM;887;Yemen;https://download.geofabrik.de/asia/yemen-latest.osm.pbf;h
 South Africa;ZA;ZAF;710;South Africa;https://download.geofabrik.de/africa/south-africa-latest.osm.pbf;https://download.geofabrik.de/africa/south-africa-latest-free.shp.zip;https://download.geofabrik.de/africa/south-africa-latest.osm.bz2;South Africa;ZAF;ZA;;;
 Zambia;ZM;ZMB;894;Zambia;https://download.geofabrik.de/africa/zambia-latest.osm.pbf;https://download.geofabrik.de/africa/zambia-latest-free.shp.zip;https://download.geofabrik.de/africa/zambia-latest.osm.bz2;Zambia;ZMB;ZM;;;
 Zimbabwe;ZW;ZWE;716;Zimbabwe;https://download.geofabrik.de/africa/zimbabwe-latest.osm.pbf;https://download.geofabrik.de/africa/zimbabwe-latest-free.shp.zip;https://download.geofabrik.de/africa/zimbabwe-latest.osm.bz2;Zimbabwe;ZWE;ZW;;;
+Kosovo;XK;XKX;;Kosovo;http://download.geofabrik.de/europe/kosovo-latest.osm.pbf;http://download.geofabrik.de/europe/kosovo-latest-free.shp.zip;http://download.geofabrik.de/europe/kosovo-latest.osm.bz2;;;;;;

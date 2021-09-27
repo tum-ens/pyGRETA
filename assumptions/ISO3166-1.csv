@@ -37,7 +37,7 @@ Eritrea;ER;ERI;232;Eritrea;https://download.geofabrik.de/africa/eritrea-latest.o
 Bolivia (Plurinational State of);BO;BOL;68;Bolivia;https://download.geofabrik.de/south-america/bolivia-latest.osm.pbf;https://download.geofabrik.de/south-america/bolivia-latest-free.shp.zip;https://download.geofabrik.de/south-america/bolivia-latest.osm.bz2;Bolivia;BOL;BO;;;
 Ethiopia;ET;ETH;231;Ethiopia;https://download.geofabrik.de/africa/ethiopia-latest.osm.pbf;https://download.geofabrik.de/africa/ethiopia-latest-free.shp.zip;https://download.geofabrik.de/africa/ethiopia-latest.osm.bz2;Ethiopia;ETH;ET;;;
 Bonaire, Sint Eustatius and Saba[a];BQ;BES;535;;;;;BES Islands;BES;BQ;;;
-Bosnia and Herzegovina;BA;BIH;70;;;;;Bosnia Herzg;BIH;BA;BA;BA;Bosnia and Herzegovina
+Bosnia and Herzegovina;BA;BIH;70;Bosnia-Herzegovina;http://download.geofabrik.de/europe/bosnia-herzegovina-latest.osm.pbf;http://download.geofabrik.de/europe/bosnia-herzegovina-latest-free.shp.zip;http://download.geofabrik.de/europe/bosnia-herzegovina-latest.osm.bz2;Bosnia Herzg;BIH;BA;BA;BA;Bosnia and Herzegovina
 Gabon;GA;GAB;266;Gabon;https://download.geofabrik.de/africa/gabon-latest.osm.pbf;https://download.geofabrik.de/africa/gabon-latest-free.shp.zip;https://download.geofabrik.de/africa/gabon-latest.osm.bz2;Gabon;GAB;GA;;;
 Ghana;GH;GHA;288;Ghana;https://download.geofabrik.de/africa/ghana-latest.osm.pbf;https://download.geofabrik.de/africa/ghana-latest-free.shp.zip;https://download.geofabrik.de/africa/ghana-latest.osm.bz2;Ghana;GHA;GH;GH;;Ghana
 Bouvet Island;BV;BVT;74;;;;;Bouvet Island;BVT;BV;;;

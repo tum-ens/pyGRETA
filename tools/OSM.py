@@ -6,16 +6,17 @@ import geopandas as gpd
 import numpy as np
 
 # Settings
-filter = True  # Activate saving reduced/filtered shapefiles
+filter = True       # Activate saving reduced/filtered shapefiles
+path_storage = "../../osm/"     # Creat "osm" folder next to project folder
 
 # Functions
 def downloadShapefile(url, filename):
-    if not os.path.exists("zip"):
-        os.mkdir("zip")
+    if not os.path.exists(path_storage + "zip"):
+        os.makedirs(path_storage + "zip")
 
-    if not os.path.isfile("zip/" + filename):
+    if not os.path.isfile(path_storage + "zip/" + filename):
         try:
-            urllib.request.urlretrieve(url, "zip/" + filename)
+            urllib.request.urlretrieve(url, path_storage + "zip/" + filename)
             print("Successfully downloaded: " + filename)
         except:
             print(print("wrong filename: " + filename))
@@ -54,13 +55,15 @@ def mergeShapefiles(input_files, output_file):
 
 
 # Start
-print("Started ... - Version 8")
+print("Started ... - Version 9")
 
 # Import links to Geofabrik data
 ISO = pd.read_csv("../assumptions/ISO3166-1.csv", sep=";")
 
 # Iterate over each country available
 for country in ISO["Country"]:
+    if not country in ["Czechia", "North Macedonia", "Bosnia and Herzegovina", "Kosovo"]:
+        continue
     url = ISO[ISO["Country"] == country]["shp.zip"].iloc[0]
     if type(url) == str:  # download only countries with url
         country_letterCode = ISO[ISO["Country"] == country]["Alpha-3"].iloc[0]
@@ -78,41 +81,41 @@ for country in ISO["Country"]:
             downloadShapefile(link, filename)
 
             # Unzip downloaded shapefiles
-            file_path = os.path.join("zip/", filename)
-            if not os.path.exists("shapefiles"):
-                os.mkdir("shapefiles")
+            file_path = path_storage + "zip/" + filename
+            if not os.path.exists(path_storage + "shapefiles"):
+                os.makedirs(path_storage + "shapefiles")
 
             shapefile_name = "gis_osm_landuse_a_free_1"
-            output_filename = "shapefiles/" + country_letterCode + str(i) + "-landuse"
-            extractShapefile(file_path, shapefile_name, output_filename)
+            output_file = path_storage + "shapefiles/" + country_letterCode + str(i) + "-landuse"
+            extractShapefile(file_path, shapefile_name, output_file)
 
             shapefile_name = "gis_osm_roads_free_1"
-            output_filename = "shapefiles/" + country_letterCode + str(i) + "-roads"
-            extractShapefile(file_path, shapefile_name, output_filename)
+            output_file = path_storage + "shapefiles/" + country_letterCode + str(i) + "-roads"
+            extractShapefile(file_path, shapefile_name, output_file)
 
-            if not os.path.exists("shapefiles/railways"):
-                os.mkdir("shapefiles/railways")
+            if not os.path.exists(path_storage + "shapefiles/railways"):
+                os.makedirs(path_storage + "shapefiles/railways")
             shapefile_name = "gis_osm_railways_free_1"
-            output_filename = "shapefiles/railways/" + country_letterCode + str(i) + "-railways"
-            extractShapefile(file_path, shapefile_name, output_filename)
+            output_file = path_storage + "shapefiles/railways/" + country_letterCode + str(i) + "-railways"
+            extractShapefile(file_path, shapefile_name, output_file)
 
 
             # Remove unused classes in shapefiles
             if filter:
                 print("filtering")
-                if not os.path.exists("shapefiles/filtered"):
-                    os.mkdir("shapefiles/filtered")
+                if not os.path.exists(path_storage + "shapefiles/filtered"):
+                    os.makedirs(path_storage + "shapefiles/filtered")
 
                 # Landuse
-                input_file = "shapefiles/" + country_letterCode + str(i) + "-landuse.shp"
-                output_file = "shapefiles/filtered/" + country_letterCode + str(i) + "-landuse.shp"
+                input_file = path_storage + "shapefiles/" + country_letterCode + str(i) + "-landuse.shp"
+                output_file = path_storage + "shapefiles/filtered/" + country_letterCode + str(i) + "-landuse.shp"
                 # "fclass" ILIKE 'commercial' OR "fclass" ILIKE 'industrial' OR "fclass" ILIKE 'quarry' OR "fclass" ILIKE 'military' OR "fclass" ILIKE 'park' OR "fclass" ILIKE 'recreation_ground'
                 classes = ['commercial', 'industrial', 'quarry', 'military', 'park', 'recreation_ground']
                 filterShapefile(input_file, output_file, classes)
 
                 # Roads
-                input_file = "shapefiles/" + country_letterCode + str(i) + "-roads.shp"
-                output_file = "shapefiles/filtered/" + country_letterCode + str(i) + "-roads.shp"
+                input_file = path_storage + "shapefiles/" + country_letterCode + str(i) + "-roads.shp"
+                output_file = path_storage + "shapefiles/filtered/" + country_letterCode + str(i) + "-roads.shp"
                 # "fclass" ILIKE 'primary' OR "fclass" ILIKE 'secondary'
                 classes = ['primary', 'secondary']
                 filterShapefile(input_file, output_file, classes)
@@ -120,16 +123,16 @@ for country in ISO["Country"]:
         # Merge if country is splitted into multiple shapefiles
         if numberOfparts >= 1:
             print("merging")
-            input_file = ["shapefiles/filtered/" + country_letterCode + str(i) + "-landuse.shp" for i in range(numberOfparts)]
-            output_file = "shapefiles/filtered/" + country_letterCode + "-landuse.shp"
+            input_file = [path_storage + "shapefiles/filtered/" + country_letterCode + str(i) + "-landuse.shp" for i in range(numberOfparts)]
+            output_file = path_storage + "shapefiles/filtered/" + country_letterCode + "-landuse.shp"
             mergeShapefiles(input_file, output_file)
 
-            input_file = ["shapefiles/filtered/" + country_letterCode + str(i) + "-roads.shp" for i in range(numberOfparts)]
-            output_file = "shapefiles/filtered/" + country_letterCode + "-roads.shp"
+            input_file = [path_storage + "shapefiles/filtered/" + country_letterCode + str(i) + "-roads.shp" for i in range(numberOfparts)]
+            output_file = path_storage + "shapefiles/filtered/" + country_letterCode + "-roads.shp"
             mergeShapefiles(input_file, output_file)
 
-            input_file = ["shapefiles/railways/" + country_letterCode + str(i) + "-railways.shp" for i in range(numberOfparts)]
-            output_file = "shapefiles/railways/" + country_letterCode + "-railways.shp"
+            input_file = [path_storage + "shapefiles/railways/" + country_letterCode + str(i) + "-railways.shp" for i in range(numberOfparts)]
+            output_file = path_storage + "shapefiles/railways/" + country_letterCode + "-railways.shp"
             mergeShapefiles(input_file, output_file)
 
 

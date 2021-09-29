@@ -1,11 +1,11 @@
-import os
 from pathlib import Path
 from warnings import warn
-
+import pandas as pd
 import numpy as np
+import os
+import sys
 
-
-def configuration():
+def configuration(config_file):
     """
     This function is the main configuration function that calls all the other modules in the code.
 
@@ -13,18 +13,23 @@ def configuration():
     :rtype: tuple(dict, dict)
     """
     paths, param = general_settings()
-    paths, param = scope_paths_and_parameters(paths, param)
+    paths, param = scope_paths_and_parameters(paths, param, config_file)
 
     param = computation_parameters(param)
+    param = resolution_parameters(param)
     param = weather_data_parameters(param)
     param = file_saving_options(param)
     param = time_series_parameters(param)
     param = landuse_parameters(param)
     param = protected_areas_parameters(param)
-    param = pv_parameters(param)
+    param = osm_areas(param)
+    param = buffers(param)
+    param = openfieldpv_parameters(param)
+    param = rooftoppv_parameters(param)
     param = csp_parameters(param)
     param = onshore_wind_parameters(param)
     param = offshore_wind_paramters(param)
+    param = biomass_parameters(param)
 
     paths = weather_input_folder(paths, param)
     paths, param = global_maps_input_paths(paths, param)
@@ -36,7 +41,7 @@ def configuration():
     for tech in param["technology"]:
         paths[tech] = {}
         paths = regression_paths(paths, param, tech)
-        paths = emhires_input_paths(paths, param, tech)
+        paths = emhires_input_paths(paths, tech)
         paths = potential_output_paths(paths, param, tech)
         paths = regional_analysis_output_paths(paths, param, tech)
         paths = discrete_output_paths(paths, param, tech)
@@ -54,20 +59,25 @@ def general_settings():
     # These variables will be initialized here, then read in other modules without modifying them.
     global fs
     global root
-
-    param = {}
-    param["author"] = "Kais Siala"  # the name of the person running the script
-    param["comment"] = "Workshop_example"
+    fs = os.path.sep
 
     paths = {}
-    fs = os.path.sep
-    current_folder = os.path.dirname(os.path.abspath(__file__))
-    root = str(Path(current_folder).parent.parent.parent)
-    # For use at TUM ENS
-    if root[-1] != fs:
-        root = root + fs + "Database_KS" + fs
-    else:
-        root = root + "Database_KS" + fs
+
+    param = {}
+    param["author"] = "Thushara Addanki"  # the name of the person running the script
+    param["comment"] = "Potential Analysis"
+    param["path_database_windows"] = "..\..\..\Database_KS"    # specify the relative (from the runme.py file) or the absolute path to the database folder
+    param["path_database_linux"] = os.path.expanduser("~") + fs + "database_ks"  # specify path to database on linux
+
+    if sys.platform.startswith("win"):
+        root = param["path_database_windows"]       # use windows location of database folder
+        # print('Working on windows')
+    elif sys.platform.startswith("linux"):
+        root = param["path_database_linux"]         # use linux location of database folder
+        # print('Working on linux')
+
+    if not root.endswith(fs):
+        root += fs      # add final slash('\' or '/') if not already there
 
     return paths, param
 
@@ -77,7 +87,7 @@ def general_settings():
 ###########################
 
 
-def scope_paths_and_parameters(paths, param):
+def scope_paths_and_parameters(paths, param, config_file):
     """
     This function defines the path of the geographic scope of the output *spatial_scope* and of the subregions of interest *subregions*.
     Both paths should point to shapefiles of polygons or multipolygons.
@@ -92,9 +102,6 @@ def scope_paths_and_parameters(paths, param):
       The shapefile of *subregions* does not have to have the same bounding box as *spatial_scope*.
       In case it is larger, features that lie completely outside the scope will be ignored, whereas those that lie partly inside it will be cropped using the bounding box
       of *spatial_scope*. In case it is smaller, all features are used with no modification.
-    
-    * *res_desired* is a numpy array with two numbers. The first number is the resolution in the vertical dimension (in degrees of latitude),
-      the second is for the horizontal dimension (in degrees of longitude).
     
     * *year* defines the year of the input data. 
     
@@ -112,24 +119,18 @@ def scope_paths_and_parameters(paths, param):
     # Paths to the shapefiles
     PathTemp = root + "02 Shapefiles for regions" + fs + "User-defined" + fs
 
-    paths["spatial_scope"] = PathTemp + "gadm36_GHA_0.shp"
-    paths["subregions"] = PathTemp + "gadm36_GHA_0.shp"
+    input_df = pd.read_csv('../configs' + fs + config_file, delimiter=':', comment='#', header=None, index_col=0,
+                           skip_blank_lines=True, )  # Import parameters from config_files in folder 'configs'
+    input_dict = input_df[1].to_dict()  # Convert dataframe to dict with values from the first column
 
-    # Name tags for the scope and the subregions
-    param["region_name"] = "Ghana"  # Name tag of the spatial scope
-    param["subregions_name"] = "Ghana_country"  # Name tag of the subregions
-    
-    # Desired resolution
-    param["res_desired"] = np.array([1 / 8, 1 / 8])
-
-    # Year
-    param["year"] = 2015
-
-    # Technologies
-    param["technology"] = ["WindOn", "PV"]  # ["PV", "CSP", "WindOn", "WindOff"]
+    paths["subregions"] = PathTemp + input_dict["regions"].replace(" ", "")
+    param["region_name"] = input_dict["region_name"].replace(" ", "")  # Name tag of the spatial scope
+    param["subregions_name"] = input_dict["subregions_name"] .replace(" ", "") # Name tag of the subregions
+    param["country_code"] = input_dict["country_code"].replace(" ", "")
+    param["year"] = int(input_dict["year"].replace(" ", ""))  # Convert string 'xxxx' to int
+    param["technology"] = input_dict["technology"].replace(" ", "").split(',')  # Creat array by comma separated string
 
     return paths, param
-
 
 def computation_parameters(param):
     """
@@ -146,8 +147,25 @@ def computation_parameters(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 6
+    param["nproc"] = 18
     param["CPU_limit"] = True
+    return param
+
+
+def resolution_parameters(param):
+    """
+    This function defines the resolution of weather data (low resolution), and the desired resolution of output rasters (high resolution).
+    Both are numpy arrays with two numbers. The first number is the resolution in the vertical dimension (in degrees of latitude),
+    the second is for the horizontal dimension (in degrees of longitude).
+
+    :param param: Dictionary including the user preferences.
+    :type param: dict
+
+    :return param: The updated dictionary param.
+    :rtype: dict
+    """
+    param["res_weather"] = np.array([1 / 2, 5 / 8])
+    param["res_desired"] = np.array([1 / 400, 1 / 400])
     return param
 
 
@@ -158,13 +176,8 @@ def weather_data_parameters(param):
     * *MERRA_coverage*: If you have downloaded the MERRA-2 data for the world, enter the name tag ``'World'``. The code will later search for the data in the corresponding folder.
       It is possible to download the MERRA-2 just for the geographic scope of the analysis. In that case, enter another name tag (we recommend using the same one as the spatial scope).
     
-    * *MERRA_correction*: MERRA-2 contains some outliers, especially in the wind data. *MERRA_correction* decides whether these outliers are dealt with.
-    
-    * *MERRA_correction_factor*: if *MERRA_correction* is ``'True'``, this sets the threshold of the relative distance between the yearly mean of the data point
-      to the yearly mean of its neighbors.
-      
-    * *res_weather*: defines the resolution of weather data using a numpy array with two numbers. The first number is the resolution in the vertical dimension (in degrees of latitude),
-    the second is for the horizontal dimension (in degrees of longitude).
+    * *MERRA_correction*: MERRA-2 contains some outliers, especially in the wind data. *MERRA_correction* sets the threshold of the relative distance between the yearly mean of the data point
+      to the yearly mean of its neighbors. 
 
     :param param: Dictionary including the user preferences.
     :type param: dict
@@ -174,8 +187,8 @@ def weather_data_parameters(param):
     """
     param["MERRA_coverage"] = "World"
     param["MERRA_correction"] = True
-    param["MERRA_correction_factor"] = {"W50M": 0.35, "CLEARNESS": 0.35, "T2M": 0.35}  # Wind Speed  # Clearness index  # Temperature at 2 m
-    param["res_weather"] = np.array([1 / 2, 5 / 8])
+    param["MERRA_correction_factor"] = {"W50M": 0.35, "CLEARNESS": 0.35,
+                                        "T2M": 0.35}  # Wind Speed  # Clearness index  # Temperature at 2 m
     return param
 
 
@@ -186,7 +199,7 @@ def file_saving_options(param):
     * *savetiff* is a boolean that determines whether tif rasters for the potentials are saved (``True``), or whether only mat files are saved (``False``).
       The latter are saved in any case.
     
-    * *report_sampling* is an integer that sets the sample size for the sorted FLH values per region (relevant for :mod:`potential.report_potentials`).
+    *  *report_sampling* is an integer that sets the sample size for the sorted FLH values per region (relevant for :mod:`potential.reporting`).
     
     :param param: Dictionary including the user preferences.
     :type param: dict
@@ -194,8 +207,11 @@ def file_saving_options(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
+    # imput maps
+    param["savetiff_inputmaps"] = False
+
     # Mask / Weight
-    param["savetiff"] = True  # Save geotiff files of mask and weight rasters
+    param["savetiff_potentials"] = True  # Save geotiff files of mask and weight rasters
 
     # Reporting
     param["report_sampling"] = 100
@@ -241,17 +257,24 @@ def time_series_parameters(param):
     :rtype: dict
     """
     # Quantiles for time series
-    param["quantiles"] = [100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0]
+    param["quantiles"] = [95,70,25]
 
     # User defined locations
-    param["useloc"] = {"Point1": (0, -80), "Point2": (1, 1)}  # {"point name": (latitude, longitude),...}
+    param["useloc"] = {
+        "Augsburg": (48.370, 10.898), "Forchheim": (49.720, 11.059),
+        "Kempten": (47.725, 10.315), "München": (48.144, 11.571),
+        "Neuburg": (48.736, 11.181), "Nürnberg": (49.453, 11.077),
+        "Rosenheim": (47.855, 12.125), "Straubing": (48.882, 12.570),
+        "Waldmünchen": (49.378, 12.706)
+    }  # {"point name": (latitude, longitude),...}
 
     # Regression
     param["regression"] = {
         "solver": "gurobi",  # string
         "WindOn": {"all": []},  # dictionary of hub height combinations
         "WindOff": {"80m": []},  # dictionary of hub height combinations
-        "PV": {"all": []},  # list of orientation combinations
+        "OpenFieldPV": {"all": []},  # list of orientation combinations
+        "RoofTopPV": {"all": []},  # list of orientation combinations
         "CSP": {"all": []},
     }
 
@@ -261,7 +284,8 @@ def time_series_parameters(param):
         # dictionary of hub height and orientation combinations
         "WindOn": {"2015": [60, 80, 100], "2030": [80, 100, 120], "2050": [100, 120, 140]},
         "WindOff": {"80m": [80], "100m": [100], "120m": [120]},
-        "PV": {"Solar": [0, 180, -90, 90]},
+        "OpenFieldPV": {"Solar": [0, 180, -90, 90]},
+        "RoofTopPV": {"Solar": [0, 180, -90, 90]},
         "CSP": {"all": []},
     }
 
@@ -277,43 +301,67 @@ def landuse_parameters(param):
       * *Ross_coeff* is a numpy array of Ross coefficients associated to each land use type (relevant for :mod:`physical_models.loss`).
       * *albedo* is a numpy array of albedo coefficients between 0 and 1 associated to each land use type (relevant for reflected irradiation, see :mod:`physical_models.calc_CF_solar`).
       * *hellmann* is a numpy array of Hellmann coefficients associated to each land use type (relevant for :mod:`correction_functions.generate_wind_correction`).
-      * *height* is a numpy array of gradient heights in meter associated to each land use type (relevant for :mod:`correction_functions.generate_wind_correction`).
-    
+
     :param param: Dictionary including the user preferences.
     :type param: dict
 
     :return param: The updated dictionary param.
     :rtype: dict
 
-    Land use reclassification::
+# Landuse reclassification
+        # 0	    No data
+        # 10	Cropland, rainfed
+        # 11	Herbaceous cover
+        # 12	Tree or shrub cover
+        # 20	Cropland, irrigated or post-flooding
+        # 30	Mosaic cropland (>50%) / natural vegetation (tree, shrub, herbaceous cover) (<50%)
+        # 40	Mosaic natural vegetation (tree, shrub, herbaceous cover) (>50%) / cropland (<50%)
+        # 50	Tree cover, broadleaved, evergreen, closed to open (>15%)
+        # 60	Tree cover, broadleaved, deciduous, closed to open (>15%)
+        # 61	Tree cover, broadleaved, deciduous, closed (>40%)
+        # 62	Tree cover, broadleaved, deciduous, open (15-40%)
+        # 70	Tree cover, needleleaved, evergreen, closed to open (>15%)
+        # 71	Tree cover, needleleaved, evergreen, closed (>40%)
+        # 72	Tree cover, needleleaved, evergreen, open (15-40%)
+        # 80	Tree cover, needleleaved, deciduous, closed to open (>15%)
+        # 81	Tree cover, needleleaved, deciduous, closed (>40%)
+        # 82	Tree cover, needleleaved, deciduous, open (15-40%)
+        # 90	Tree cover, mixed leaf type (broadleaved and needleleaved)
+        # 100	Mosaic tree and shrub (>50%) / herbaceous cover (<50%)
+        # 110	Mosaic herbaceous cover (>50%) / tree and shrub (<50%)
+        # 120	Shrubland
+        # 121	Shrubland evergreen
+        # 122	Shrubland deciduous
+        # 130	Grassland
+        # 140	Lichens and mosses
+        # 150	Sparse vegetation (tree, shrub, herbaceous cover) (<15%)
+        # 151	Sparse tree (<15%)
+        # 152	Sparse shrub (<15%)
+        # 153	Sparse herbaceous cover (<15%)
+        # 160	Tree cover, flooded, fresh or brakish water
+        # 170	Tree cover, flooded, saline water
+        # 180	Shrub or herbaceous cover, flooded, fresh/saline/brakish water
+        # 190	Urban areas
+        # 200	Bare areas
+        # 201	Consolidated bare areas
+        # 202	Unconsolidated bare areas
+        # 210	Water bodies
+        # 220	Permanent snow and ice
 
-        # 0   -- Water
-        # 1   -- Evergreen needle leaf forest
-        # 2   -- Evergreen broad leaf forest
-        # 3   -- Deciduous needle leaf forest
-        # 4   -- deciduous broad leaf forest
-        # 5   -- Mixed forests
-        # 6   -- Closed shrublands
-        # 7   -- Open shrublands
-        # 8   -- Woody savannas
-        # 9   -- Savannas
-        # 10  -- Grasslands
-        # 11  -- Permanent wetland
-        # 12  -- Croplands
-        # 13  -- Urban and built-up
-        # 14  -- Croplands / natural vegetation mosaic
-        # 15  -- Snow and ice
-        # 16  -- Barren or sparsely vegetated
+
     """
     landuse = {
-        "type": np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]),
-        "type_urban": 13,
-        "Ross_coeff": np.array(
-            [0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208]
-        ),
-        "albedo": np.array([0.00, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.00, 0.20, 0.20, 0.20, 0.00, 0.20]),
-        "hellmann": np.array([0.10, 0.25, 0.25, 0.25, 0.25, 0.25, 0.20, 0.20, 0.25, 0.25, 0.15, 0.15, 0.20, 0.40, 0.20, 0.15, 0.15]),
-        "height": np.array([213, 366, 366, 366, 366, 366, 320, 320, 366, 366, 274, 274, 320, 457, 320, 274, 274]),
+        "type": np.array([0, 10, 11, 12, 20, 30, 40, 50, 60, 61, 62, 70, 71, 72, 80, 81, 82, 90, 100, 110, 120,
+                        121, 122, 130, 140, 150, 151, 152, 153, 160, 170, 180, 190, 200, 201, 202, 210, 220]),
+        "Ross_coeff": np.array([0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208,
+                                0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208,
+                                0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208,
+                                0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208, 0.0208]),
+        "albedo": np.array([0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2,
+                            0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0, 0]),
+        "hellmann": np.array([0.25, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25,
+                              0.25, 0.25, 0.25, 0.2, 0.2, 0.2, 0.2, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.25, 0.25, 0.25,
+                              0.4, 0.15, 0.15, 0.15, 0.1, 0.15])
     }
     param["landuse"] = landuse
     return param
@@ -354,8 +402,58 @@ def protected_areas_parameters(param):
     param["protected_areas"] = protected_areas
     return param
 
+def osm_areas(param):
 
-def pv_parameters(param):
+    #"fclass" ILIKE 'commercial' OR 'industrial' OR 'quarry' OR 'military' OR 'park' OR 'recreation_ground'
+    osm_areas = {
+        "type": np.array([1, 2, 3, 4, 5, 6]),
+        "Category": np.array(
+            [
+                "commercial",  # 1
+                "industrial",  # 2
+                "quarry",  # 3
+                "military",  # 4
+                "park",  # 5
+                "recreation_ground" #6
+            ]
+        ),
+    }
+
+    param["osm_areas"] = osm_areas
+    return param
+
+def buffers(param):
+
+    buffer = {
+        "snow": 4,
+        "water": 1,
+        "wetland": 1,
+
+        "protected_areas_pv": 1,
+        "protected_areas_windon": 2,
+
+        "airport_windon": 16,
+        "boarder": 2,
+
+        "commercial_windon" : 2,
+        "industrial_windon" : 1,
+        "mining" : 1,
+        "military_windon" : 2,
+        "park_pv" : 1,
+        "park_windon" : 3,
+        "recreation_windon" : 1,
+
+        "settlement_pv": 1,
+        "settlement_windon" : 4,
+
+        "hydrolakes" : 1,
+        "hydrorivers_pv" : 1,
+    }
+
+    param["buffer"] = buffer
+    return param
+
+def openfieldpv_parameters(param):
     """
     This function sets the parameters for photovoltaics in the dictionary *pv* inside param:
     
@@ -398,33 +496,106 @@ def pv_parameters(param):
     :raise Tracking Warning: If *tracking* is not set to 0 and *orientation* is given as a value other than 0 or 180 (South or North), the orientation is ignored.
 
     """
-    pv = {}
-    pv["resource"] = {"clearness_correction": 1}
-    pv["technical"] = {
+    openfieldpv = {}
+    openfieldpv["resource"] = {"clearness_correction": 1}
+    openfieldpv["technical"] = {
         "T_r": 25,  # °C
-        "loss_coeff": 0.26,
+        "loss_coeff": 0.37,
         "tracking": 0,  # 0 for no tracking, 1 for one-axis tracking, 2 for two-axes tracking
         "orientation": 0,  # | 0: Towards equator | 90: West | 180: Away from equator | -90: East |
     }
-    pv["mask"] = {
-        "slope": 20,
-        "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
-        "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
+    openfieldpv["mask"] = {
+        "slope": 10,
+        "lu_suitability": np.array([1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,1,1,1,1,1,0,0,0,0,1,1,1,0,0]),
+        "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     }
-    GCR = {"shadefree_period": 8, "day_north": 79, "day_south": 263}
-    #GCR = {"shadefree_period": 11, "day_north": 356, "day_south": 172}
-    pv["weight"] = {
+    GCR = {"shadefree_period": 6, "day_north": 79, "day_south": 263}
+    openfieldpv["weight"] = {
         "GCR": GCR,
-        "lu_availability": np.array([0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.02, 0.00, 0.02, 0.02, 0.02, 0.00, 0.02]),
-        "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
-        "power_density": 0.000217,
+        "power_density": 0.000160,
         "f_performance": 0.75,
     }
     del GCR
-    if pv["technical"]["tracking"] != 0 and pv["technical"]["orientation"] not in [0, 180]:
-        warn("WARNING: " + str(pv["technical"]["tracking"]) + " axis tracking, overwrites orientation input: " + str(pv["technical"]["orientation"]))
-        pv["technical"]["orientation"] = "track_" + str(pv["technical"]["tracking"])
-    param["PV"] = pv
+    if openfieldpv["technical"]["tracking"] != 0 and openfieldpv["technical"]["orientation"] not in [0, 180]:
+        warn("WARNING: " + str(openfieldpv["technical"]["tracking"]) + " axis tracking, overwrites orientation input: " + str(
+            openfieldpv["technical"]["orientation"]))
+        openfieldpv["technical"]["orientation"] = "track_" + str(openfieldpv["technical"]["tracking"])
+    param["OpenFieldPV"] = openfieldpv
+    return param
+
+
+def rooftoppv_parameters(param):
+    """
+    This function sets the parameters for photovoltaics in the dictionary *pv* inside param:
+
+    * *resource* is a dictionary including the parameters related to the resource potential:
+
+      * *clearness_correction* is a factor that will be multiplied with the clearness index matrix to correct it. If no correction is required, leave it equal to 1.
+
+    * *technical* is a dictionary including the parameters related to the module:
+
+      * *T_r* is the rated temperature in °C.
+      * *loss_coeff* is the loss coefficient (relevant for :mod:`physical_models.loss`).
+      * *tracking* is either 0 for no tracking, 1 for one-axis tracking, or 2 for two-axes tracking.
+      * *orientation* is the azimuth orientation of the module in degrees relative to the equator.
+      * The tilt angle from the horizontal is chosen optimally in the code, see :mod:`physical_models.angles`.
+
+    * *mask* is a dictionary including the parameters related to the masking:
+
+      * *slope* is the threshold slope in percent. Areas with a larger slope are excluded.
+      * *lu_suitability* is a numpy array of values 0 (unsuitable) or 1 (suitable). It has the same size as the array of land use types.
+      * *pa_suitability* is a numpy array of values 0 (unsuitable) or 1 (suitable). It has the same size as the array of protected area categories.
+
+    * *weight* is a dictionary including the parameters related to the weighting:
+
+      * *GCR* is a dictionary of design settings for the ground cover ratio:
+
+        * *shadefree_period* is the number of shadefree hours in the design day.
+        * *day_north* is the design day for the northern hemisphere.
+        * *day_south* is the design day for the southern hemisphere.
+
+      * *lu_availability* is a numpy array of values between 0 (completely not available) and 1 (completely available). It has the same size as the array of land use types.
+      * *pa_availability* is a numpy array of values between 0 (completely not available) and 1 (completely available). It has the same size as the array of protected area categories.
+      * *power_density* is the power density of PV projects, assuming a GCR = 1, in MW/m².
+      * *f_performance* is a number smaller than 1, taking into account all the other losses from the module until the AC substation.
+
+    :param param: Dictionary including the user preferences.
+    :type param: dict
+
+    :return param: The updated dictionary param.
+    :rtype: dict
+    :raise Tracking Warning: If *tracking* is not set to 0 and *orientation* is given as a value other than 0 or 180 (South or North), the orientation is ignored.
+
+    """
+    rooftoppv = {}
+    rooftoppv["resource"] = {"clearness_correction": 1}
+    rooftoppv["technical"] = {
+        "T_r": 25,  # °C
+        "loss_coeff": 0.37,
+        "tracking": 0,  # 0 for no tracking, 1 for one-axis tracking, 2 for two-axes tracking
+        "orientation": 0,  # | 0: Towards equator | 90: West | 180: Away from equator | -90: East |
+    }
+    rooftoppv["mask"] = {
+        "slope": 10,
+        "lu_suitability": np.array(
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1,
+             0, 0]),
+        "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    }
+    GCR = {"shadefree_period": 6, "day_north": 79, "day_south": 263}
+    rooftoppv["weight"] = {
+        "GCR": GCR,
+        "suitable_roofs": 0.4,  # Percentage of south faced roofs. 40% should work for Europe!
+        "power_density": 0.000160,
+        "f_performance": 0.75,
+    }
+    del GCR
+    if rooftoppv["technical"]["tracking"] != 0 and rooftoppv["technical"]["orientation"] not in [0, 180]:
+        warn("WARNING: " + str(
+            rooftoppv["technical"]["tracking"]) + " axis tracking, overwrites orientation input: " + str(
+            rooftoppv["technical"]["orientation"]))
+        rooftoppv["technical"]["orientation"] = "track_" + str(rooftoppv["technical"]["tracking"])
+    param["RoofTopPV"] = rooftoppv
     return param
 
 
@@ -476,12 +647,10 @@ def csp_parameters(param):
     }
     csp["mask"] = {
         "slope": 20,
-        "lu_suitability": np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
-        "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
+        "lu_suitability": np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0]),
+        "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     }
     csp["weight"] = {
-        "lu_availability": np.array([0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.02, 0.02, 0.02, 0.00, 0.02, 0.02, 0.02, 0.00, 0.02]),
-        "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
         "power_density": 0.000160,
         "f_performance": 0.9 * 0.75,
     }
@@ -528,17 +697,15 @@ def onshore_wind_parameters(param):
     :rtype: dict
     """
     windon = {}
-    windon["resource"] = {"res_correction": 1, "topo_correction": 1, "topo_weight": "capacity"}  # 'none' or 'size' or 'capacity'
+    # windon["technical"] = {"w_in": 2, "w_r": 14, "w_off": 25, "P_r": 2.3, "hub_height": 99}
     windon["technical"] = {"w_in": 4, "w_r": 13, "w_off": 25, "P_r": 3, "hub_height": 80}
+    # windon["technical"] = {"w_in": 3, "w_r": 10.7, "w_off": 22, "P_r": 3.5, "hub_height": 100}
     windon["mask"] = {
-        "slope": 20,
-        "lu_suitability": np.array([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1]),
-        "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
-        "buffer_pixel_amount": 1,
+        "slope": 17,
+        "lu_suitability": np.array([1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,0,0]),
+        "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     }
     windon["weight"] = {
-        "lu_availability": np.array([0.00, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.10, 0.10, 0.10, 0.10, 0.00, 0.10, 0.00, 0.10, 0.00, 0.10]),
-        "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
         "power_density": 0.000008,
         "f_performance": 0.87,
     }
@@ -582,16 +749,136 @@ def offshore_wind_paramters(param):
     :rtype: dict
     """
     windoff = {}
-    windoff["resource"] = {"res_correction": 1}
+    # windoff["resource"] = {"res_correction": 0}
     windoff["technical"] = {"w_in": 3, "w_r": 16.5, "w_off": 34, "P_r": 7.58, "hub_height": 100}
-    windoff["mask"] = {"depth": -40, "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1])}
+    windoff["mask"] = {
+        "depth": -40,
+        "lu_suitability": np.array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0]),
+         "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    }
     windoff["weight"] = {
-        "lu_availability": np.array([0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00]),
-        "pa_availability": np.array([1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 1.00, 1.00, 1.00, 1.00]),
         "power_density": 0.000020,
         "f_performance": 0.87,
     }
     param["WindOff"] = windoff
+    return param
+
+
+def biomass_parameters(param):
+    """
+    This function sets the parameters for biomass in the dictionary *Biomass* inside param:
+   
+    :param param: Dictionary including the user preferences.
+    :type param: dict
+
+    :return param: The updated dictionary param.
+    :rtype: dict
+    """
+    biomass = {}
+    biomass["agriculture"] = {
+        "crops": np.array(
+            [
+                "Rice, paddy",
+                "Maize",
+                "Sugarcane",
+                "Oil_Palm",
+                "Cassava",
+                "Coconut",
+                "Coffee_Green",
+                "Groundnut",
+                "Sugar beet",
+                "Wheat",
+                "Barley",
+                "Rye",
+                "Rapeseed",
+                "Oats"
+            ]
+        ),
+        "residue": {
+            "Rice, paddy": ["Straw", "Husk"],
+            "Maize": ["Stalk", "Cob"],
+            "Sugarcane": ["Bagasse", "Top&Leave"],
+            "Oil_Palm": ["Shell", "Fiber", "EFB", "POME", "Frond"],
+            "Cassava": ["Stalk"],
+            "Coconut": ["Husk", "Shell", "Frond"],
+            "Coffee_Green": ["Husk"],
+            "Groundnut": ["Shell", "Straw"],
+            "Sugar beet": ["Leaves"],
+            "Wheat": ["Straw"],
+            "Barley": ["Straw"],
+            "Rye": ["Straw"],
+            "Rapeseed": ["Straw"],
+            "Oats": ["Straw"]
+        },
+        "rpr": {
+            "Rice, paddy": {"Straw": 1.00, "Husk": 0.27},
+            "Maize": {"Stalk": 1.00, "Cob": 0.25},
+            "Sugarcane": {"Bagasse": 0.25, "Top&Leave": 0.30},
+            "Oil_Palm": {"Shell": 0.07, "Fiber": 0.13, "EFB": 0.23, "POME": 0.67, "Frond": 0.55},
+            "Cassava": {"Stalk": 0.09},
+            "Coconut": {"Husk": 0.36, "Shell": 0.16, "Frond": 0.23},
+            "Coffee_Green": {"Husk": 2.10},
+            "Groundnut": {"Shell": 0.32, "Straw": 2.30},
+            "Sugar beet": {"Leaves": 0.3},
+            "Wheat": {"Straw": 1.2},
+            "Barley": {"Straw": 1.1},
+            "Rye": {"Straw": 1.3},
+            "Rapeseed": {"Straw": 1.7},
+            "Oats": {"Straw": 1.2}
+        },
+        "af": {
+            "Rice, paddy": {"Straw": 0.5, "Husk": 0.47},
+            "Maize": {"Stalk": 0.33, "Cob": 0.67},
+            "Sugarcane": {"Bagasse": 0.21, "Top&Leave": 0.99},
+            "Oil_Palm": {"Shell": 0.04, "Fiber": 0.13, "EFB": 0.58, "POME": 0.65, "Frond": 0.05},
+            "Cassava": {"Stalk": 0.41},
+            "Coconut": {"Husk": 0.60, "Shell": 0.38, "Frond": 0.81},
+            "Coffee_Green": {"Husk": 0.33},
+            "Groundnut": {"Shell": 1.00, "Straw": 0.33},
+            "Sugar beet": {"Leaves": 0.4},
+            "Wheat": {"Straw": 0.4},
+            "Barley": {"Straw": 0.4},
+            "Rye": {"Straw": 0.4},
+            "Rapeseed": {"Straw": 0.5},
+            "Oats": {"Straw": 0.4}
+        },
+        "lhv": {
+            "Rice, paddy": {"Straw": 3.89, "Husk": 3.57},
+            "Maize": {"Stalk": 3.97, "Cob": 4.62},
+            "Sugarcane": {"Bagasse": 1.79, "Top&Leave": 1.89},
+            "Oil_Palm": {"Shell": 4.72, "Fiber": 3.08, "EFB": 1.69, "POME": 0.17, "Frond": 2.21},
+            "Cassava": {"Stalk": 4.72},
+            "Coconut": {"Husk": 4.09, "Shell": 4.58, "Frond": 4.04},
+            "Coffee_Green": {"Husk": 3.44},
+            "Groundnut": {"Shell": 3.12, "Straw": 4.88},
+            "Sugar beet": {"Leaves": 3.7},
+            "Wheat": {"Straw": 4},
+            "Barley": {"Straw": 4},
+            "Rye": {"Straw": 4},
+            "Rapeseed": {"Straw": 4},
+            "Oats": {"Straw": 4}
+        },  # MWh/ton
+        "emission factor" : 1585  # kg/ton of crop residues
+    }
+
+    biomass["forest"] = {
+        "woods" : np.array(["Wood fuel, coniferous","Wood fuel, non-coniferous"]),
+        "density" : {"Wood fuel, coniferous": 0.75,"Wood fuel, non-coniferous":  0.85},  # tons/m3
+        "rpr": 0.67,
+        "af": 0.4,
+        "lhv": 4.31,  # MWh/ton
+        "emission factor": 1500  # kg/ton of wood
+    }
+
+    biomass["livestock"] = {
+        "animal": np.array(["Cattle", "Sheep", "Goats", "Chickens", "Pigs"]),
+        "rpr": np.array([0.84, 0.12, 0.13, 0.007, 0.11]),  # ton of manure per animal
+        "af": np.array([0.02, 0.02, 0.02, 0.47, 0.47]),
+        "lhv": np.array([1.01, 1.31, 1.31, 2.43, 2.93]),  # MWh/ton of manure
+        "emission factor": 859  # kg/ton of manure
+    }
+
+    param["Biomass"] = biomass
     return param
 
 
@@ -618,6 +905,7 @@ def weather_input_folder(paths, param):
     MERRA_coverage = param["MERRA_coverage"]
     year = str(param["year"])
     paths["MERRA_IN"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + MERRA_coverage + " " + year + fs
+    paths["GWA_global"] = root + "04 Global Wind Atlas Wind Speed" + fs + param["country_code"] + "_wind-speed_50m.tif"
 
     return paths
 
@@ -634,39 +922,47 @@ def global_maps_input_paths(paths, param):
       * *GWA* for the country data retrieved from the Global Wind Atlas (missing the country code, which will be filled in a for-loop in :mod:correction_functions.calc_gwa_correction)
       * *Countries* for the shapefiles of countries
       * *EEZ_global* for the shapefile of exclusive economic zones of countries
-      
-    It also defines the resolution of the input rasters (*res_landuse*, *res_topography*, *res_population*, *res_bathymetry*) using numpy arrays with two numbers. The first number is the resolution in the vertical dimension (in degrees of latitude),
-    the second is for the horizontal dimension (in degrees of longitude).
     
     :param paths: Dictionary including the paths.
     :type paths: dict
-    :param param: Dictionary including the user preferences.
-    :type param: dict
 
-    :return (paths, param): The updated dictionaries paths and param.
-    :rtype: tuple(dict, dict)
+    :return paths: The updated dictionary paths.
+    :rtype: dict
     """
     global root
     global fs
 
     # Global maps
     PathTemp = root + "01 Raw inputs" + fs + "Maps" + fs
-    paths["LU_global"] = PathTemp + "Landuse" + fs + "LCType.tif"
-    param["res_landuse"] = np.array([1 / 240, 1 / 240])
     
-    paths["Topo_tiles"] = PathTemp + "Topography" + fs
-    param["res_topography"] = np.array([1 / 240, 1 / 240])
+    paths["Countries"] = PathTemp + "Countries" + fs + "gadm36_0.shp"
     
-    paths["Pop_global"] = PathTemp + "Population" + fs + "gpw_v4_population_count_rev10_2015_30_sec.tif"
-    param["res_population"] = np.array([1 / 120, 1 / 120])
-    
+    paths["EEZ_global"] = PathTemp + "EEZ" + fs + "eez_v10.shp"
+    # paths["Topo_tiles"] = PathTemp + "Topography" + fs
+    # param["res_topography"] = np.array([1 / 240, 1 / 240])
+    paths["Topo_global"] = PathTemp + "Topography" + fs + "Topography_250m.tif"  # [1/400 , 1/400] resampled in QGIS
+
     paths["Bathym_global"] = PathTemp + "Bathymetry" + fs + "ETOPO1_Ice_c_geotiff.tif"
     param["res_bathymetry"] = np.array([1 / 60, 1 / 60])
     
+    paths["LU_global"] = PathTemp + "Landuse" + fs + "CCI-250m.tif" #[1/400 , 1/400] resampled in QGIS
     paths["Protected"] = PathTemp + "Protected Areas" + fs + "WDPA_Nov2018-shapefile-polygons.shp"
-    paths["GWA"] = PathTemp + "Global Wind Atlas" + fs + fs + "windSpeed.csv"
-    paths["Countries"] = PathTemp + "Countries" + fs + "gadm36_0.shp"
-    paths["EEZ_global"] = PathTemp + "EEZ" + fs + "eez_v10.shp"
+    paths["Airports"] = PathTemp + "Openflights" + fs + "airports.csv"
+    paths["OSM_Roads"] = PathTemp + "OSM" + fs + param["country_code"] + "-roads.shp"
+    paths["OSM_Railways"] = PathTemp + "OSM" + fs + param["country_code"] + "-railways.shp"
+    paths["OSM_Landuse"] = PathTemp + "OSM" + fs + param["country_code"] + "-landuse.shp"
+    paths["WSF_global"] = PathTemp + "WSF" + fs + "WSF2015_Full.tif" #[1/400 , 1/400] resampled in QGIS
+    paths["HydroLakes"] = PathTemp + "HydroLakes" + fs + "HydroLAKES_polys_v10.shp"
+    paths["HydroRivers"] = PathTemp + "HydroRivers" + fs + "HydroRIVERS_v10.shp"
+
+    paths["LS_global"] = PathTemp + "Livestock" + fs + "Glb_"
+    param["res_livestock"] = np.array([1 / 120, 1 / 120])
+
+    # paths["Pop_global"] = PathTemp + "Population" + fs + "gpw_v4_population_count_rev10_2015_30_sec.tif"
+    # param["res_population"] = np.array([1 / 120, 1 / 120])
+
+    paths["Biomass_Crops"] = PathTemp + "FAOSTAT" + fs + "FAOSTAT_data_7-26-2021.csv"
+    paths["Biomass_Forestry"] = PathTemp + "FAOSTAT" + fs + "FAOSTAT_Forestry_data_6-2-2021.csv"
 
     return paths, param
 
@@ -759,6 +1055,17 @@ def weather_output_paths(paths, param):
     paths["CLEARNESS"] = paths["weather_data"] + "clearness_" + year + ".mat"
     paths["T2M"] = paths["weather_data"] + "t2m_" + year + ".mat"
 
+    paths["MERRA_XMIN"] = paths["weather_data"] + "w50m_xmin" + year + ".mat"
+    paths["MERRA_XMAX"] = paths["weather_data"] + "w50m_xmax" + year + ".mat"
+    paths["MERRA_YMIN"] = paths["weather_data"] + "w50m_ymin" + year + ".mat"
+    paths["MERRA_YMAX"] = paths["weather_data"] + "w50m_ymax" + year + ".mat"
+
+    paths["GWA_X"] = paths["weather_data"] + "gwa_x" + year + ".mat"
+    paths["GWA_Y"] = paths["weather_data"] + "gwa_y" + year + ".mat"
+
+    paths["IND_GWA_MERRA_X"] = paths["weather_data"] + "ind_gwa_merra_x" + ".mat"
+    paths["IND_GWA_MERRA_Y"] = paths["weather_data"] + "ind_gwa_merra_y" + ".mat"
+
     return paths
 
 
@@ -792,17 +1099,46 @@ def local_maps_paths(paths, param):
     # Local maps
     PathTemp = paths["local_maps"] + param["region_name"]
     paths["LAND"] = PathTemp + "_Land.tif"  # Land pixels
-    paths["EEZ"] = PathTemp + "_EEZ.tif"  # Sea pixels
-    paths["SUB"] = PathTemp + "_Subregions.tif"  # Subregions pixels
-    paths["LU"] = PathTemp + "_Landuse.tif"  # Land use types
-    paths["TOPO"] = PathTemp + "_Topography.tif"  # Topography
-    paths["PA"] = PathTemp + "_Protected_areas.tif"  # Protected areas
-    paths["SLOPE"] = PathTemp + "_Slope.tif"  # Slope
-    paths["BATH"] = PathTemp + "_Bathymetry.tif"  # Bathymetry
-    paths["POP"] = PathTemp + "_Population.tif"  # Population
-    paths["BUFFER"] = PathTemp + "_Population_Buffered.tif"  # Buffered population
-    paths["CORR_GWA"] = PathTemp + "_GWA_Correction.mat"  # Correction factors based on the GWA
+    paths["EEZ"] = PathTemp + "_EEZ.mat"  # Sea pixels
     paths["AREA"] = PathTemp + "_Area.mat"  # Area per pixel in m²
+    paths["TOPO"] = PathTemp + "_Topography.mat"  # Topography
+    paths["SLOPE"] = PathTemp + "_Slope.mat"  # Slope
+    paths["BATH"] = PathTemp + "_Bathymetry.mat"  # Bathymetry
+
+    paths["LU"] = PathTemp + "_Landuse.mat"  # Land use types
+    paths["WATER_BUFFER"] = PathTemp + "_Water_Buffered.mat"  # Buffered Water
+    paths["WETLAND_BUFFER"] = PathTemp + "_Wetland_Buffered.mat"  # Buffered Wetlands
+    paths["SNOW_BUFFER"] = PathTemp + "_Snow_Buffered.mat"  # Buffered Snow
+
+    paths["PA"] = PathTemp + "_Protected_areas.tif"  # Protected areas
+    paths["PV_PA_BUFFER"] = PathTemp + "_PV_Protected_areas_Buffered.mat"  # Buffered Protected areas for PV
+    paths["WINDON_PA_BUFFER"] = PathTemp + "_WindOn_Protected_areas_Buffered.mat"  # Buffered Protected areas for Wind Onshore
+
+    paths["AIRPORTS"] = PathTemp + "_Airports.mat"  # Buffered Airports
+    paths["BOARDERS"] = PathTemp + "_Boarders.mat"  # Buffered Boarders
+
+    paths["ROADS"] = PathTemp + "_Roads.tif"
+    paths["RAILS"] = PathTemp + "_Rails.tif"
+    paths["OSM_AREAS"] = PathTemp + "_OSM_areas.tif"
+    paths["OSM_COM_BUFFER"] = PathTemp + "_OSM_Commercial_Buffered.mat"
+    paths["OSM_IND_BUFFER"] = PathTemp + "_OSM_Industrial_Buffered.mat"
+    paths["OSM_MINE_BUFFER"] = PathTemp + "_OSM_Mining_Buffered.mat"
+    paths["OSM_MIL_BUFFER"] = PathTemp + "_OSM_Military_Buffered.mat"
+    paths["PV_OSM_PARK_BUFFER"] = PathTemp + "_PV_OSM_Parks_Buffered.mat"
+    paths["WINDON_OSM_PARK_BUFFER"] = PathTemp + "_WindOn_OSM_Parks_Buffered.mat"
+    paths["OSM_REC_BUFFER"] = PathTemp + "_OSM_Recreation_Buffered.mat"
+
+    paths["WSF"] = PathTemp + "_Settlements.mat"
+    paths["PV_WSF_BUFFER"] = PathTemp + "_PV_Settlements_Buffered.mat"
+    paths["WINDON_WSF_BUFFER"] = PathTemp + "_WindOn_Settlements_Buffered.mat"
+
+    paths["HYDROLAKES"] = PathTemp + "_HydroLakes.tif"
+    paths["HYDROLAKES_BUFFER"] = PathTemp + "_HydroLakes_Buffered.mat"
+    paths["HYDRORIVERS"] = PathTemp + "_HydroRivers.tif"
+    paths["HYDRORIVERS_BUFFER"] = PathTemp + "_HydroRivers_Buffered.mat"
+
+    paths["LS"] = PathTemp + "_Livestock_"  # Livestock density per animal type
+    # paths["POP"] = PathTemp + "_Population.tif"  # Population
 
     # Correction factors for wind speeds
     turbine_height_on = str(param["WindOn"]["technical"]["hub_height"])
@@ -836,7 +1172,7 @@ def irena_paths(paths, param):
 
     # IRENA input
     paths["IRENA"] = (
-        root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA" + fs + "IRENA_RE_electricity_statistics_allcountries_alltech_" + year + ".csv"
+            root + "01 Raw inputs" + fs + "Renewable energy" + fs + "IRENA" + fs + "IRENA_RE_electricity_statistics_allcountries_alltech_" + year + ".csv"
     )
 
     current_folder = os.path.dirname(os.path.abspath(__file__))
@@ -874,7 +1210,7 @@ def regression_paths(paths, param, tech):
     return paths
 
 
-def emhires_input_paths(paths, param, tech):
+def emhires_input_paths(paths, tech):
     """
     This function defines the path to the EMHIRES input file for each technology (only ``'WindOn'``,
     ``'WindOff'``, and ``'PV'`` are supported by EMHIRES).
@@ -893,11 +1229,14 @@ def emhires_input_paths(paths, param, tech):
     global fs
 
     if tech == "WindOn":
-        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES" + fs + "TS.CF.COUNTRY.30yr.date.txt"
+        paths[tech][
+            "EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES" + fs + "TS.CF.COUNTRY.30yr.date.txt"
     elif tech == "WindOff":
-        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES" + fs + "TS.CF.OFFSHORE.30yr.date.txt"
+        paths[tech][
+            "EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES" + fs + "TS.CF.OFFSHORE.30yr.date.txt"
     elif tech == "PV":
-        paths[tech]["EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES" + fs + "EMHIRESPV_TSh_CF_Country_19862015.txt"
+        paths[tech][
+            "EMHIRES"] = root + "01 Raw inputs" + fs + "Renewable energy" + fs + "EMHIRES" + fs + "EMHIRESPV_TSh_CF_Country_19862015.txt"
 
     return paths
 
@@ -925,11 +1264,12 @@ def potential_output_paths(paths, param, tech):
     region = param["region_name"]
     year = str(param["year"])
 
+    PathTemp = ''
     if tech in ["WindOn", "WindOff"]:
         hubheight = str(param[tech]["technical"]["hub_height"])
         PathTemp = paths["potential"] + region + "_" + tech + "_" + hubheight
-    elif tech in ["PV"]:
-        if "orientation" in param["PV"]["technical"].keys():
+    elif tech in ["OpenFieldPV", "RoofTopPV"]:
+        if "orientation" in param[tech]["technical"].keys():
             orientation = str(param[tech]["technical"]["orientation"])
         else:
             orientation = "0"
@@ -937,12 +1277,20 @@ def potential_output_paths(paths, param, tech):
     elif tech in ["CSP"]:
         orientation = "0"
         PathTemp = paths["potential"] + region + "_" + tech + "_" + orientation
+    elif tech in ["Biomass"]:
+        PathTemp = paths["potential"] + region + "_" + tech
 
-    paths[tech]["FLH"] = PathTemp + "_FLH_" + year + ".mat"
-    paths[tech]["mask"] = PathTemp + "_mask_" + year + ".mat"
-    paths[tech]["FLH_mask"] = PathTemp + "_FLH_mask_" + year + ".mat"
-    paths[tech]["weight"] = PathTemp + "_weight_" + year + ".mat"
-    paths[tech]["FLH_weight"] = PathTemp + "_FLH_weight_" + year + ".mat"
+    # File name for Biomass
+    if tech in ["Biomass"]:
+        paths[tech]["BIOMASS_ENERGY"] = PathTemp + "_Biomass_Energy.mat"
+        paths[tech]["BIOMASS_CO2"] = PathTemp + "_Biomass_CO2.mat"
+    # File name for all other tech
+    else:
+        paths[tech]["FLH"] = PathTemp + "_FLH_" + year + ".mat"
+        paths[tech]["mask"] = PathTemp + "_mask_" + year + ".mat"
+        paths[tech]["FLH_mask"] = PathTemp + "_FLH_mask_" + year + ".mat"
+        paths[tech]["weight"] = PathTemp + "_weight_" + year + ".mat"
+        paths[tech]["FLH_weight"] = PathTemp + "_FLH_weight_" + year + ".mat"
 
     return paths
 
@@ -971,11 +1319,12 @@ def regional_analysis_output_paths(paths, param, tech):
     subregions = param["subregions_name"]
     year = str(param["year"])
 
+    PathTemp = ''
     if tech in ["WindOn", "WindOff"]:
         hubheight = str(param[tech]["technical"]["hub_height"])
         PathTemp = paths["regional_analysis"] + subregions + "_" + tech + "_" + hubheight
-    elif tech in ["PV"]:
-        if "orientation" in param["PV"]["technical"].keys():
+    elif tech in ["OpenFieldPV", "RoofTopPV"]:
+        if "orientation" in param[tech]["technical"].keys():
             orientation = str(param[tech]["technical"]["orientation"])
         else:
             orientation = "0"
@@ -983,28 +1332,31 @@ def regional_analysis_output_paths(paths, param, tech):
     elif tech in ["CSP"]:
         orientation = "0"
         PathTemp = paths["regional_analysis"] + subregions + "_" + tech + "_" + orientation
+    elif tech in ["Biomass"]:
+        PathTemp = paths["regional_analysis"] + subregions + "_" + tech
 
-    paths[tech]["Locations"] = PathTemp + "_Locations.shp"
-    paths[tech]["TS"] = PathTemp + "_TS_" + year + ".csv"
     paths[tech]["Region_Stats"] = PathTemp + "_Region_stats_" + year + ".csv"
-    paths[tech]["Sorted_FLH"] = PathTemp + "_sorted_FLH_sampled_" + year + ".mat"
 
-    paths[tech]["Regression_coefficients"] = paths["regression_out"] + subregions + "_" + tech + "_reg_coefficients_"
-    paths[tech]["Regression_TS"] = paths["regression_out"] + subregions + "_" + tech + "_reg_TimeSeries_"
+    if tech != "Biomass":
+        paths[tech]["Locations"] = PathTemp + "_Locations.shp"
+        paths[tech]["TS"] = PathTemp + "_TS_" + year + ".csv"
+        paths[tech]["Sorted_FLH"] = PathTemp + "_sorted_FLH_sampled_" + year + ".mat"
+        paths[tech]["Regression_coefficients"] = paths["regression_out"] + subregions + "_" + tech + "_reg_coefficients_"
+        paths[tech]["Regression_TS"] = paths["regression_out"] + subregions + "_" + tech + "_reg_TimeSeries_"
 
     return paths
 
 
 def discrete_output_paths(paths, param, tech):
-
     region = param["region_name"]
     year = str(param["year"])
 
+    PathTemp = ''
     if tech in ["WindOn", "WindOff"]:
         hubheight = str(param[tech]["technical"]["hub_height"])
         PathTemp = paths["discrete_analysis"] + region + "_" + tech + "_" + hubheight
-    elif tech in ["PV"]:
-        if "orientation" in param["PV"]["technical"].keys():
+    elif tech in ["OpenFieldPV", "RoofTopPV"]:
+        if "orientation" in param[tech]["technical"].keys():
             orientation = str(param[tech]["technical"]["orientation"])
         else:
             orientation = "0"
@@ -1013,6 +1365,7 @@ def discrete_output_paths(paths, param, tech):
         orientation = "0"
         PathTemp = paths["discrete_analysis"] + region + "_" + tech + "_" + orientation
 
-    paths[tech]["TS_discrete"] = PathTemp + "_TS_" + year + ".csv"
+    if tech != "Biomass":
+        paths[tech]["TS_discrete"] = PathTemp + "_TS_" + year + ".csv"
 
     return paths

@@ -1,0 +1,6 @@
+regions:gadm36_DEU_0.shp
+region_name:Germany
+subregions_name:Germany_level0
+country_code:DEU
+year:2019
+technology:OpenFieldPV,RoofTopPV,WindOn

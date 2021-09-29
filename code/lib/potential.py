@@ -564,8 +564,7 @@ def mask_potential_maps(paths, param, tech): #ToDo optimize no. of lines
         A_notWater = hdf5storage.read("BUFFER", paths["WATER_BUFFER"]).astype(int)
         A_notWetland = hdf5storage.read("BUFFER", paths["WETLAND_BUFFER"]).astype(int)
         A_notSnow = hdf5storage.read("BUFFER", paths["SNOW_BUFFER"]).astype(int)
-        A_Boarder = hdf5storage.read("BOARDERS", paths["BOARDERS"]).astype(int)
-        A_notBoarder = (np.flipud(~A_Boarder.astype(bool))).astype(int)
+        A_notBoarder = hdf5storage.read("BOARDERS", paths["BOARDERS"]).astype(int)
         with rasterio.open(paths["ROADS"]) as src:
             A_Roads = src.read(1)
             A_notRoads = (np.flipud(~A_Roads.astype(bool))).astype(int)

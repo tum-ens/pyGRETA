@@ -1,4 +1,13 @@
-from lib.util import *
+from . import util as ul
+from osgeo import gdal, osr, ogr
+#from rasterio import MemoryFile
+import rasterio.mask
+import numpy as np
+import math
+import rasterio
+import scipy.ndimage
+import os
+import hdf5storage
 
 
 def define_spatial_scope(scope_shp):
@@ -11,10 +20,10 @@ def define_spatial_scope(scope_shp):
     :return box: List of the bounding box coordinates.
     :rtype: list
     """
-    scope_shp = scope_shp.to_crs({"init": "epsg:4326"})
-    r = scope_shp.total_bounds
-    box = r[::-1][np.newaxis]
-    return box
+
+    lon_min, lat_min, lon_max, lat_max = scope_shp.total_bounds
+
+    return np.array([lat_max, lon_max, lat_min, lon_min])
 
 
 def crd_merra(Crd_regions, res_weather):
@@ -31,17 +40,35 @@ def crd_merra(Crd_regions, res_weather):
     """
     Crd = np.array(
         [
-            np.ceil((Crd_regions[:, 0] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
-            np.ceil((Crd_regions[:, 1] + res_weather[1] / 2) / res_weather[1]) * res_weather[1] - res_weather[1] / 2,
-            np.floor((Crd_regions[:, 2] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
-            np.floor((Crd_regions[:, 3] + res_weather[1] / 2) / res_weather[1]) * res_weather[1] - res_weather[1] / 2,
+            np.ceil((Crd_regions[0] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
+            np.ceil(Crd_regions[1] / res_weather[1]) * res_weather[1],
+            #np.ceil((Crd_regions[:, 1] + res_weather[1] / 2) / res_weather[1]) * res_weather[1] - res_weather[1] / 2,
+            np.floor((Crd_regions[2] + res_weather[0] / 2) / res_weather[0]) * res_weather[0] - res_weather[0] / 2,
+            np.floor(Crd_regions[3] / res_weather[1]) * res_weather[1],
+            #np.floor((Crd_regions[:, 3] + res_weather[1] / 2) / res_weather[1]) * res_weather[1] - res_weather[1] / 2,
         ]
     )
     Crd = Crd.T
+
+    # Todo: New approach because coordinates are not correct (Patrick)
+    # resolution_latitude, resolution_longitude = res_weather
+    # lat_max, lon_max, lat_min, lon_min = bounding_box
+    #
+    #
+    # Crd = np.array(
+    #     [
+    #         # |-x-|....|-x-|,     'x': center coordinate of raster, '|': raster
+    #         resolution_latitude * np.ceil(lat_max / resolution_latitude) - resolution_latitude / 2,
+    #         resolution_longitude * np.ceil(lon_max / resolution_longitude),# - resolution_longitude / 2,
+    #         resolution_latitude * np.floor(lat_min / resolution_latitude) - resolution_latitude / 2,
+    #         resolution_longitude * np.floor(lon_min / resolution_longitude),# + resolution_longitude / 2
+    #     ]
+    # )
+
     return Crd
 
 
-def crd_exact_points(Ind_points, Crd_all, res):
+def ind2crd(Ind_points, Crd_all, resolution):
     """
     This function converts indices of points in high resolution rasters into longitude and latitude coordinates.
 
@@ -49,17 +76,17 @@ def crd_exact_points(Ind_points, Crd_all, res):
     :type Ind_points: tuple of arrays
     :param Crd_all: Array of coordinates of the bounding box of the spatial scope.
     :type Crd_all: numpy array
-    :param res: Data resolution in the vertical and horizontal dimensions.
-    :type res: list
+    :param resolution: Data resolution in the vertical and horizontal dimensions.
+    :type resolution: list
     
     :return Crd_points: Coordinates of the points in the vertical and horizontal dimensions.
     :rtype: list of arrays
     """
-    Crd_points = [Ind_points[0] * res[0] + Crd_all[2] + res[0] / 2, Ind_points[1] * res[1] + Crd_all[3] + res[1] / 2]
+    Crd_points = [Ind_points[0] * resolution[0] + Crd_all[2] + resolution[0] / 2, Ind_points[1] * resolution[1] + Crd_all[3] + resolution[1] / 2]
     return Crd_points
 
 
-def ind_exact_points(Crd_points, Crd_all, res):
+def crd2ind(Crd_points, Crd_all, resolution):
     """
     This function converts latitude and longitude of points in high resolution rasters into indices.
 
@@ -67,13 +94,15 @@ def ind_exact_points(Crd_points, Crd_all, res):
     :type Crd_points: tuple of arrays
     :param Crd_all: Array of coordinates of the bounding box of the spatial scope.
     :type Crd_all: numpy array
-    :param res: Data resolution in the vertical and horizontal dimensions.
-    :type res: list
+    :param resolution: Data resolution in the vertical and horizontal dimensions.
+    :type resolution: list
 
     :return Ind_points: Tuple of arrays of indices in the vertical and horizontal axes.
     :rtype: list of arrays
     """
-    Ind_points = [np.around((Crd_points[0] - Crd_all[2]) / res[0]).astype(int), np.around((Crd_points[1] - Crd_all[3]) / res[1]).astype(int)]
+
+    Ind_points = [np.around((Crd_points[0] - Crd_all[2]) / resolution[0]).astype(int),
+                  np.around((Crd_points[1] - Crd_all[3]) / resolution[1]).astype(int)]
     return Ind_points
 
 
@@ -98,7 +127,6 @@ def subset(A, param):
         westlim = int(math.floor((crd[3] + res[1] / 10 + 180 + res[1] / 2) / res[1]))
         eastlim = int(math.ceil((crd[1] - res[1] / 10 + 180) / res[1]))
         subset = A[:, southlim:northlim, westlim:eastlim]
-        #import pdb; pdb.set_trace()
     else:
         subset = A
     return subset
@@ -204,10 +232,10 @@ def calc_region(region, Crd_reg, res_desired, GeoRef):
     A_region = np.ones((M, N))
     origin = [Crd_reg[3], Crd_reg[2]]
 
-    if region.geometry.geom_type == "MultiPolygon":
-        features = [feature for feature in region.geometry]
+    if region['geometry'].geom_type == "MultiPolygon":
+        features = [feature for feature in region['geometry']]
     else:
-        features = [region.geometry]
+        features = [region['geometry']]
     west = origin[0]
     south = origin[1]
     profile = {
@@ -220,10 +248,10 @@ def calc_region(region, Crd_reg, res_desired, GeoRef):
         "transform": rasterio.transform.from_origin(west, south, GeoRef["pixelWidth"], GeoRef["pixelHeight"]),
     }
 
-    with MemoryFile() as memfile:
+    with rasterio.MemoryFile() as memfile:
         with memfile.open(**profile) as f:
             f.write(A_region, 1)
-            out_image, out_transform = mask.mask(f, features, crop=False, nodata=0, all_touched=False, filled=True)
+            out_image, out_transform = rasterio.mask.mask(f, features, crop=False, nodata=0, all_touched=False, filled=True)
         A_region = out_image[0]
 
     return A_region
@@ -263,6 +291,7 @@ def array2raster(newRasterfn, rasterOrigin, pixelWidth, pixelHeight, array):
     outband.FlushCache()
     outband = None
 
+
 def aggregate_x_dim(array, res_data, res_desired, aggfun):
     """
     description
@@ -277,7 +306,7 @@ def aggregate_x_dim(array, res_data, res_desired, aggfun):
         elif aggfun == "sum":
             array2 = np.sum(array2, 2)
     return array2
-	
+
 
 def aggregate_y_dim(array, res_data, res_desired, aggfun):
     """
@@ -293,22 +322,225 @@ def aggregate_y_dim(array, res_data, res_desired, aggfun):
         elif aggfun == "sum":
             array2 = np.sum(array2, 2).transpose()
     return array2
-	
-	
+
+
 def adjust_resolution(array, res_data, res_desired, aggfun=None):
     """
     description
     """
     if ((res_data[1] % res_desired[1] < 1e-10) and (res_data[1] > res_desired[1])): # data is coarse on x dimension (columns)
-        array = resizem(array, array.shape[0], array.shape[1]*int(res_data[1] / res_desired[1]))
+        array = ul.resizem(array, array.shape[0], int(array.shape[1]*(res_data[1] / res_desired[1])))
         if aggfun == "sum":
             array = array / (res_data[1] % res_desired[1])
     if ((res_desired[1] % res_data[1] < 1e-10) and (res_desired[1] > res_data[1])): # data is too detailed on x dimension
         array = aggregate_x_dim(array, res_data, res_desired, aggfun)
     if ((res_data[0] % res_desired[0] < 1e-10) and (res_data[0] > res_desired[0])): # data is coarse on y dimension (rows)
-        array = resizem(array, array.shape[0]*int(res_data[0] / res_desired[0]), array.shape[1])
+        array = ul.resizem(array, int(array.shape[0]*(res_data[0] / res_desired[0])), array.shape[1])
         if aggfun == "sum":
             array = array / (res_data[0] % res_desired[0])
     if ((res_desired[0] % res_data[0] < 1e-10) and (res_desired[0] > res_data[0])): # data is too detailed on y dimension
         array = aggregate_y_dim(array, res_data, res_desired, aggfun)
     return array
+
+def recalc_topo_resolution(array, res_data, res_desired):
+    
+    array1 = np.zeros([int(array.shape[0]*res_data[0]/res_desired[0]),int(array.shape[1]*res_data[1]/res_desired[1])])
+    array1[:] = np.NaN
+    for i in range(0,array.shape[0],3):
+        for j in range(0,array.shape[1],3):
+            array1[int(i*5/3),int(j*5/3)] = array[i,j] #first row, first column
+            array1[int(i*5/3),int(j*5/3)+2] = array[i,j+1] 
+            array1[int(i*5/3),int(j*5/3)+4] = array[i,j+2]
+            
+            array1[int(i*5/3)+2,int(j*5/3)] = array[i+1,j] #third row, first column
+            array1[int(i*5/3)+2,int(j*5/3)+2] = array[i+1,j+1] 
+            array1[int(i*5/3)+2,int(j*5/3)+4] = array[i+1,j+2]
+            
+            array1[int(i*5/3)+4,int(j*5/3)] = array[i+2,j] #fifth row, first column
+            array1[int(i*5/3)+4,int(j*5/3)+2] = array[i+2,j+1] 
+            array1[int(i*5/3)+4,int(j*5/3)+4] = array[i+2,j+2]
+
+            array1[int(i*5/3),int(j*5/3)+1] = np.mean([array1[int(i*5/3),int(j*5/3)],array1[int(i*5/3),int(j*5/3)+2]],dtype=np.float64)
+            array1[int(i*5/3),int(j*5/3)+3] = np.mean([array1[int(i*5/3),int(j*5/3)+2],array1[int(i*5/3),int(j*5/3)+4]],dtype=np.float64)
+                            
+            array1[int(i*5/3)+1,int(j*5/3)] = np.mean([array1[int(i*5/3),int(j*5/3)],array1[int(i*5/3)+2,int(j*5/3)]],dtype=np.float64)
+            array1[int(i*5/3)+1,int(j*5/3)+2] = np.mean([array1[int(i*5/3),int(j*5/3)+2],array1[int(i*5/3)+2,int(j*5/3)+2]],dtype=np.float64)
+            array1[int(i*5/3)+1,int(j*5/3)+4] = np.mean([array1[int(i*5/3),int(j*5/3)+4],array1[int(i*5/3)+2,int(j*5/3)+4]],dtype=np.float64)
+                          
+            array1[int(i*5/3)+2,int(j*5/3)+1] = np.mean([array1[int(i*5/3)+2,int(j*5/3)],array1[int(i*5/3)+2,int(j*5/3)+2]],dtype=np.float64)
+            array1[int(i*5/3)+2,int(j*5/3)+3] = np.mean([array1[int(i*5/3)+2,int(j*5/3)+2],array1[int(i*5/3)+2,int(j*5/3)+4]],dtype=np.float64)
+                            
+            array1[int(i*5/3)+3,int(j*5/3)] = np.mean([array1[int(i*5/3)+2,int(j*5/3)],array1[int(i*5/3)+4,int(j*5/3)]],dtype=np.float64)
+            array1[int(i*5/3)+3,int(j*5/3)+2] = np.mean([array1[int(i*5/3)+2,int(j*5/3)+2],array1[int(i*5/3)+4,int(j*5/3)+2]],dtype=np.float64)
+            array1[int(i*5/3)+3,int(j*5/3)+4] = np.mean([array1[int(i*5/3)+2,int(j*5/3)+4],array1[int(i*5/3)+4,int(j*5/3)+4]],dtype=np.float64)
+                            
+            array1[int(i*5/3)+4,int(j*5/3)+1] = np.mean([array1[int(i*5/3)+4,int(j*5/3)],array1[int(i*5/3)+4,int(j*5/3)+2]],dtype=np.float64)
+            array1[int(i*5/3)+4,int(j*5/3)+3] = np.mean([array1[int(i*5/3)+4,int(j*5/3)+2],array1[int(i*5/3)+4,int(j*5/3)+4]],dtype=np.float64)
+            
+            array1[int(i*5/3)+1,int(j*5/3)+1] = np.mean([array1[int(i*5/3)+1,int(j*5/3)],array1[int(i*5/3)+1,int(j*5/3)+2],array1[int(i*5/3),int(j*5/3)+1],array1[int(i*5/3)+2,int(j*5/3)+1]],dtype=np.float64)
+            array1[int(i*5/3)+1,int(j*5/3)+3] = np.mean([array1[int(i*5/3)+1,int(j*5/3)+2],array1[int(i*5/3)+1,int(j*5/3)+4],array1[int(i*5/3),int(j*5/3)+3],array1[int(i*5/3)+2,int(j*5/3)+3]],dtype=np.float64)
+            
+            array1[int(i*5/3)+3,int(j*5/3)+1] = np.mean([array1[int(i*5/3)+3,int(j*5/3)],array1[int(i*5/3)+3,int(j*5/3)+2],array1[int(i*5/3)+2,int(j*5/3)+1],array1[int(i*5/3)+4,int(j*5/3)+1]],dtype=np.float64)
+            array1[int(i*5/3)+3,int(j*5/3)+3] = np.mean([array1[int(i*5/3)+3,int(j*5/3)+2],array1[int(i*5/3)+3,int(j*5/3)+4],array1[int(i*5/3)+2,int(j*5/3)+3],array1[int(i*5/3)+4,int(j*5/3)+3]],dtype=np.float64)
+                
+    return array1
+    
+
+def recalc_bath_resolution(array, res_data, res_desired):
+    
+    array1 = np.zeros([int(array.shape[0]*res_data[0]/res_desired[0]),int(array.shape[1]*res_data[1]/res_desired[1])])
+    array1[:] = np.NaN
+    for i in range(0,array.shape[0],3):
+        for j in range(0,array.shape[1],3):
+            #print (str(i)+"_"+str(j))
+            array1[int(i*20/3):int(i*20/3)+6,int(j*20/3):int(j*20/3)+6] = array[i,j] #first row, first column
+            array1[int(i*20/3):int(i*20/3)+6,int(j*20/3)+7:int(j*20/3)+13] = array[i,j+1] 
+            array1[int(i*20/3):int(i*20/3)+6,int(j*20/3)+14:int(j*20/3)+20] = array[i,j+2]
+            
+            array1[int(i*20/3)+7:int(i*20/3)+13,int(j*20/3):int(j*20/3)+6] = array[i+1,j] #third row, first column
+            array1[int(i*20/3)+7:int(i*20/3)+13,int(j*20/3)+7:int(j*20/3)+13] = array[i+1,j+1] 
+            array1[int(i*20/3)+7:int(i*20/3)+13,int(j*20/3)+14:int(j*20/3)+20] = array[i+1,j+2]
+            
+            array1[int(i*20/3)+14:int(i*20/3)+20,int(j*20/3):int(j*20/3)+6] = array[i+2,j] #fifth row, first column
+            array1[int(i*20/3)+14:int(i*20/3)+20,int(j*20/3)+7:int(j*20/3)+13] = array[i+2,j+1] 
+            array1[int(i*20/3)+14:int(i*20/3)+20,int(j*20/3)+14:int(j*20/3)+20] = array[i+2,j+2]
+
+            array1[int(i*20/3):int(i*20/3)+6,int(j*20/3)+6] = np.mean([array1[int(i*20/3),int(j*20/3)],array1[int(i*20/3),int(j*20/3)+7]],dtype=np.float64)
+            array1[int(i*20/3):int(i*20/3)+6,int(j*20/3)+13] = np.mean([array1[int(i*20/3),int(j*20/3)+7],array1[int(i*20/3),int(j*20/3)+14]],dtype=np.float64)
+                            
+            array1[int(i*20/3)+6,int(j*20/3):int(j*20/3)+6] = np.mean([array1[int(i*20/3),int(j*20/3)],array1[int(i*20/3)+7,int(j*20/3)]],dtype=np.float64)
+            array1[int(i*20/3)+6,int(j*20/3)+7:int(j*20/3)+13] = np.mean([array1[int(i*20/3),int(j*20/3)+7],array1[int(i*20/3)+7,int(j*20/3)+7]],dtype=np.float64)
+            array1[int(i*20/3)+6,int(j*20/3)+14:int(j*20/3)+20] = np.mean([array1[int(i*20/3),int(j*20/3)+14],array1[int(i*20/3)+7,int(j*20/3)+14]],dtype=np.float64)
+                          
+            array1[int(i*20/3)+7:int(i*20/3)+13,int(j*20/3)+6] = np.mean([array1[int(i*20/3)+7,int(j*20/3)],array1[int(i*20/3)+7,int(j*20/3)+7]],dtype=np.float64)
+            array1[int(i*20/3)+7:int(i*20/3)+13,int(j*20/3)+13] = np.mean([array1[int(i*20/3)+7,int(j*20/3)+7],array1[int(i*20/3)+7,int(j*20/3)+14]],dtype=np.float64)
+                            
+            array1[int(i*20/3)+13,int(j*20/3):int(j*20/3)+6] = np.mean([array1[int(i*20/3)+7,int(j*20/3)],array1[int(i*20/3)+14,int(j*20/3)]],dtype=np.float64)
+            array1[int(i*20/3)+13,int(j*20/3)+7:int(j*20/3)+13] = np.mean([array1[int(i*20/3)+7,int(j*20/3)+7],array1[int(i*20/3)+14,int(j*20/3)+7]],dtype=np.float64)
+            array1[int(i*20/3)+13,int(j*20/3)+14:int(j*20/3)+20] = np.mean([array1[int(i*20/3)+7,int(j*20/3)+14],array1[int(i*20/3)+14,int(j*20/3)+14]],dtype=np.float64)
+                            
+            array1[int(i*20/3)+14:int(i*20/3)+20,int(j*20/3)+6] = np.mean([array1[int(i*20/3)+14,int(j*20/3)],array1[int(i*20/3)+14,int(j*20/3)+7]],dtype=np.float64)
+            array1[int(i*20/3)+14:int(i*20/3)+20,int(j*20/3)+13] = np.mean([array1[int(i*20/3)+14,int(j*20/3)+7],array1[int(i*20/3)+14,int(j*20/3)+14]],dtype=np.float64)
+            
+            array1[int(i*20/3)+6,int(j*20/3)+6] = np.mean([array1[int(i*20/3)+6,int(j*20/3)],array1[int(i*20/3)+6,int(j*20/3)+7],array1[int(i*20/3),int(j*20/3)+6],array1[int(i*20/3)+7,int(j*20/3)+6]],dtype=np.float64)
+            array1[int(i*20/3)+6,int(j*20/3)+13] = np.mean([array1[int(i*20/3)+6,int(j*20/3)+7],array1[int(i*20/3)+6,int(j*20/3)+14],array1[int(i*20/3),int(j*20/3)+13],array1[int(i*20/3)+7,int(j*20/3)+13]],dtype=np.float64)
+            
+            array1[int(i*20/3)+13,int(j*20/3)+6] = np.mean([array1[int(i*20/3)+13,int(j*20/3)],array1[int(i*20/3)+13,int(j*20/3)+7],array1[int(i*20/3)+7,int(j*20/3)+6],array1[int(i*20/3)+14,int(j*20/3)+6]],dtype=np.float64)
+            array1[int(i*20/3)+13,int(j*20/3)+13] = np.mean([array1[int(i*20/3)+13,int(j*20/3)+7],array1[int(i*20/3)+13,int(j*20/3)+14],array1[int(i*20/3)+7,int(j*20/3)+13],array1[int(i*20/3)+14,int(j*20/3)+13]],dtype=np.float64)
+                
+    return array1
+
+    
+def recalc_livestock_resolution(array, res_data, res_desired):
+    
+    #The livestock density (number of animals per sq.km) will be adjusted to higher resolution
+    #The new pixel just takes the value from the old pixel with which it has more area
+    #It is an approximation
+    
+    array1 = np.zeros([int(array.shape[0]*res_data[0]/res_desired[0]),int(array.shape[1]*res_data[1]/res_desired[1])])
+    array1[:] = np.NaN
+    for i in range(0, array.shape[0],3):
+        for j in range(0,array.shape[1],3):
+            array1[int(i*10/3):int(i*10/3)+3,int(j*10/3):int(j*10/3)+3] = array[i,j]
+            array1[int(i*10/3):int(i*10/2)+3,int(j*10/3)+3:int(j*10/3)+7] = array[i,j+1] 
+            array1[int(i*10/3):int(i*10/3)+3,int(j*10/3)+7:int(j*10/3)+10] = array[i,j+2]
+            
+            array1[int(i*10/3)+3:int(i*10/3)+7,int(j*10/3):int(j*10/3)+3] = array[i+1,j]
+            array1[int(i*10/3)+3:int(i*10/2)+7,int(j*10/3)+3:int(j*10/3)+7] = array[i+1,j+1] 
+            array1[int(i*10/3)+3:int(i*10/3)+7,int(j*10/3)+7:int(j*10/3)+10] = array[i+1,j+2]
+            
+            array1[int(i*10/3)+7:int(i*10/3)+10,int(j*10/3):int(j*10/3)+3] = array[i+2,j]
+            array1[int(i*10/3)+7:int(i*10/2)+10,int(j*10/3)+3:int(j*10/3)+7] = array[i+2,j+1] 
+            array1[int(i*10/3)+7:int(i*10/3)+10,int(j*10/3)+7:int(j*10/3)+10] = array[i+2,j+2]
+    
+    return array1
+
+
+def create_buffer(param, array, buffer_pixel_amount, GeoRef, Outraster):
+    kernel = np.zeros((2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1))
+    y, x = np.ogrid[-buffer_pixel_amount:buffer_pixel_amount + 1, -buffer_pixel_amount:buffer_pixel_amount + 1]
+    mask = x ** 2 + y ** 2 <= buffer_pixel_amount ** 2
+    kernel[mask] = 1
+    # kernel = np.tri(2 * buffer_pixel_amount + 1, 2 * buffer_pixel_amount + 1, buffer_pixel_amount).astype(int)
+    # kernel = kernel * kernel.T * np.flipud(kernel) * np.fliplr(kernel)
+    A_array = scipy.ndimage.maximum_filter(array, footprint=kernel, mode="constant", cval=0)
+    A_NotArray = (~A_array).astype(int)
+
+    #saving file
+    hdf5storage.writes({"BUFFER": A_NotArray}, Outraster, store_python_metadata=True, matlab_compatible=True)
+    if param["savetiff_inputmaps"]:
+        array2raster(Outraster, GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
+                    A_NotArray)
+
+
+def shape2raster(fileinput, fileoutput, fieldname, dictinput, rastertyp):
+
+    if not os.path.isfile(fileinput):
+        raise FileNotFoundError(fileinput)  # Raise error if input file doesn't exist
+    else:
+
+        # First we will open our raster image, to understand how we will want to rasterize our vector
+        raster_ds = gdal.Open(rastertyp, gdal.GA_ReadOnly)
+
+        # Fetch number of rows and columns
+        ncol = raster_ds.RasterXSize
+        nrow = raster_ds.RasterYSize
+
+        # Fetch projection and extent
+        proj = raster_ds.GetProjectionRef()
+        ext = raster_ds.GetGeoTransform()
+
+        raster_ds = None
+        shp_path = fileinput
+        # Open the dataset from the file
+        dataset = ogr.Open(shp_path, 1)
+        layer = dataset.GetLayerByIndex(0)
+
+        # Add a new field
+        if not ul.field_exists("Raster", shp_path):
+            new_field = ogr.FieldDefn("Raster", ogr.OFTInteger)
+            layer.CreateField(new_field)
+
+            for feat in layer:
+               if dictinput == []:
+                    feat.SetField("Raster", 1)
+                    layer.SetFeature(feat)
+                    feat = None
+               else:
+                    pt = feat.GetField(fieldname)
+                    feat.SetField("Raster", int(dictinput[pt]))
+                    layer.SetFeature(feat)
+                    feat = None
+
+        # Create a second (modified) layer
+        # outdriver = ogr.GetDriverByName("MEMORY")
+        # source = outdriver.CreateDataSource("memData")
+
+        # Create the raster dataset
+        memory_driver = gdal.GetDriverByName("GTiff")
+        out_raster_ds = memory_driver.Create(fileoutput, ncol, nrow, 1, gdal.GDT_Byte)
+
+        # Set the ROI image's projection and extent to our input raster's projection and extent
+        out_raster_ds.SetProjection(proj)
+        out_raster_ds.SetGeoTransform(ext)
+
+        # Fill our output band with the 0 blank, no class label, value
+        b = out_raster_ds.GetRasterBand(1)
+        b.Fill(0)
+
+        # Rasterize the shapefile layer to our new dataset
+        gdal.RasterizeLayer(
+            out_raster_ds,  # output to our new dataset
+            [1],  # output to our new dataset's first band
+            layer,  # rasterize this layer
+            None,
+            None,  # don't worry about transformations ul.since we're in same projection
+            [0],  # burn value 0
+            [
+                "ALL_TOUCHED=FALSE",  # rasterize all pixels touched by polygons
+                "ATTRIBUTE=Raster",
+            ],  # put raster values according to the 'Raster' field values
+        )
+
+        # Close dataset
+        out_raster_ds = None

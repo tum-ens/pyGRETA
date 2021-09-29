@@ -1,6 +1,11 @@
-from lib.correction_functions import clean_IRENA_summary
-from lib.util import *
-
+from . import correction_functions as cf
+from . import util as ul
+from warnings import warn
+from glob import glob
+import pyomo as pyo
+import pandas as pd
+import numpy as np
+import os
 
 def pyomo_regression_model():
     """
@@ -71,7 +76,7 @@ def clean_FLH_regression(paths, param):
     """
     # Read IRENA summary
     if not os.path.isfile(paths["IRENA_summary"]):
-        clean_IRENA_summary(paths, param)
+        cf.clean_IRENA_summary(paths, param)
     IRENA_summary = pd.read_csv(paths["IRENA_summary"], sep=";", decimal=",", index_col=[0, 1])
 
     # Load IRENA dictionary
@@ -101,7 +106,7 @@ def clean_FLH_regression(paths, param):
 
     # Save FLH_regression
     FLH_regression.to_csv(paths["FLH_regression"], sep=";", decimal=",", index=True)
-    create_json(
+    ul.create_json(
         paths["FLH_regression"],
         param,
         ["author", "comment", "region_name", "subregions_name", "year", "Crd_all"],
@@ -200,7 +205,7 @@ def clean_TS_regression(paths, param, tech):
 
     # Save TS_regression as CSV
     TS_regression.to_csv(paths[tech]["TS_regression"], sep=";", decimal=",", index=True)
-    create_json(
+    ul.create_json(
         paths[tech]["TS_regression"], param, ["author", "comment", tech, "region_name", "subregions_name", "year"], paths, ["FLH_regression", tech]
     )
     if nanval != "":
@@ -240,17 +245,17 @@ def get_regression_coefficients(paths, param, tech):
     :raise Missing Data: No time series present for technology *tech*.
     :raise Missing Data for Setting: Missing time series for desired settings (hub heights / orientations).
     """
-    timecheck("Start")
+    ul.timecheck("Start")
     year = str(param["year"])
 
     try:
         combinations = combinations_for_regression(paths, param, tech)
         param["combinations"] = combinations
     except UserWarning:
-        timecheck("End")
+        ul.timecheck("End")
         return
     if combinations is None:
-        timecheck("End")
+        ul.timecheck("End")
         return
 
     # Display the combinations of settings to be used
@@ -289,7 +294,7 @@ def get_regression_coefficients(paths, param, tech):
         for reg in list_regions:
             # Show progress of the simulation
             status = status + 1
-            display_progress("Regression Coefficients " + tech + " " + param["subregions_name"], (len(list_regions), status))
+            ul.display_progress("Regression Coefficients " + tech + " " + param["subregions_name"], (len(list_regions), status))
 
             region_data = regmodel_load_data(paths, param, tech, settings, reg)
 
@@ -304,7 +309,7 @@ def get_regression_coefficients(paths, param, tech):
             if region_data[None]["IRENA_best_worst"] == (True, True):
 
                 # create model instance
-                solver = SolverFactory(param["regression"]["solver"])
+                solver = pyo.optSolverFactory(param["regression"]["solver"])
                 model = pyomo_regression_model()
                 regression = model.create_instance(region_data)
 
@@ -365,7 +370,7 @@ def get_regression_coefficients(paths, param, tech):
             st = st + str(setting) + "_"
 
         summary.to_csv(paths[tech]["Regression_coefficients"] + st + year + ".csv", sep=";", decimal=",")
-        create_json(
+        ul.create_json(
             paths[tech]["Regression_coefficients"],
             param,
             ["author", "comment", tech, "region_name", "subregions_name", "quantiles", "regression", "year", "Crd_all"],
@@ -374,7 +379,7 @@ def get_regression_coefficients(paths, param, tech):
         )
         print("\nfiles saved: " + paths[tech]["Regression_coefficients"] + st + year + ".csv")
 
-    timecheck("End")
+    ul.timecheck("End")
 
 
 def read_generated_TS(paths, param, tech, settings, subregion):

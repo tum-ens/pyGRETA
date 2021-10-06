@@ -7,7 +7,7 @@ import numpy as np
 
 # Settings
 filter = True       # Activate saving reduced/filtered shapefiles
-path_storage = "../../osm/"     # Creat "osm" folder next to project folder
+path_storage = ""     # Creat "osm" folder next to project folder
 
 # Functions
 def downloadShapefile(url, filename):
@@ -46,6 +46,7 @@ def filterShapefile(input_file, output_file, classes):
             gdf_filtered.to_file(output_file)
         else:
             print("filtering unnecessary")
+            gdf.to_file(output_file)
 
 
 def mergeShapefiles(input_files, output_file):
@@ -55,15 +56,13 @@ def mergeShapefiles(input_files, output_file):
 
 
 # Start
-print("Started ... - Version 9")
+print("Started ... - Version 11")
 
 # Import links to Geofabrik data
 ISO = pd.read_csv("../assumptions/ISO3166-1.csv", sep=";")
 
 # Iterate over each country available
 for country in ISO["Country"]:
-    if not country in ["Czechia", "North Macedonia", "Bosnia and Herzegovina", "Kosovo"]:
-        continue
     url = ISO[ISO["Country"] == country]["shp.zip"].iloc[0]
     if type(url) == str:  # download only countries with url
         country_letterCode = ISO[ISO["Country"] == country]["Alpha-3"].iloc[0]
@@ -72,9 +71,15 @@ for country in ISO["Country"]:
         print('Started: ' + country + ", " + country_letterCode + " - parts: " + str(numberOfparts))
 
         for i, link in enumerate(urls):
-
+            
             if len(urls) == 1:
                 i = ''  # remove additional number in shapefile names for unsplitted countries
+
+            # Skip intermediate-steps if filtered osm-file already exists
+            output_file = path_storage + "shapefiles/filtered/" + country_letterCode + str(i) + "-roads.shp"
+            if os.path.isfile(output_file):
+                print("Skipped: " + str(output_file))
+                continue
 
             # Download shapefile as *.zip if not already available
             filename = country_letterCode + str(i) + '-latest-free.shp.zip'

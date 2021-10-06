@@ -70,19 +70,19 @@ for country in ISO["Country"]:
         numberOfparts = len(urls)
         print('Started: ' + country + ", " + country_letterCode + " - parts: " + str(numberOfparts))
 
-        for i, link in enumerate(urls):
+        for count, link in enumerate(urls):
             
             if len(urls) == 1:
-                i = ''  # remove additional number in shapefile names for unsplitted countries
+                count = ''  # remove additional number in shapefile names for unsplitted countries
 
             # Skip intermediate-steps if filtered osm-file already exists
-            output_file = path_storage + "shapefiles/filtered/" + country_letterCode + str(i) + "-roads.shp"
+            output_file = path_storage + "shapefiles/filtered/" + country_letterCode + str(count) + "-roads.shp"
             if os.path.isfile(output_file):
                 print("Skipped: " + str(output_file))
                 continue
 
             # Download shapefile as *.zip if not already available
-            filename = country_letterCode + str(i) + '-latest-free.shp.zip'
+            filename = country_letterCode + str(count) + '-latest-free.shp.zip'
             downloadShapefile(link, filename)
 
             # Unzip downloaded shapefiles
@@ -91,17 +91,17 @@ for country in ISO["Country"]:
                 os.makedirs(path_storage + "shapefiles")
 
             shapefile_name = "gis_osm_landuse_a_free_1"
-            output_file = path_storage + "shapefiles/" + country_letterCode + str(i) + "-landuse"
+            output_file = path_storage + "shapefiles/" + country_letterCode + str(count) + "-landuse"
             extractShapefile(file_path, shapefile_name, output_file)
 
             shapefile_name = "gis_osm_roads_free_1"
-            output_file = path_storage + "shapefiles/" + country_letterCode + str(i) + "-roads"
+            output_file = path_storage + "shapefiles/" + country_letterCode + str(count) + "-roads"
             extractShapefile(file_path, shapefile_name, output_file)
 
             if not os.path.exists(path_storage + "shapefiles/railways"):
                 os.makedirs(path_storage + "shapefiles/railways")
             shapefile_name = "gis_osm_railways_free_1"
-            output_file = path_storage + "shapefiles/railways/" + country_letterCode + str(i) + "-railways"
+            output_file = path_storage + "shapefiles/railways/" + country_letterCode + str(count) + "-railways"
             extractShapefile(file_path, shapefile_name, output_file)
 
 
@@ -112,15 +112,15 @@ for country in ISO["Country"]:
                     os.makedirs(path_storage + "shapefiles/filtered")
 
                 # Landuse
-                input_file = path_storage + "shapefiles/" + country_letterCode + str(i) + "-landuse.shp"
-                output_file = path_storage + "shapefiles/filtered/" + country_letterCode + str(i) + "-landuse.shp"
+                input_file = path_storage + "shapefiles/" + country_letterCode + str(count) + "-landuse.shp"
+                output_file = path_storage + "shapefiles/filtered/" + country_letterCode + str(count) + "-landuse.shp"
                 # "fclass" ILIKE 'commercial' OR "fclass" ILIKE 'industrial' OR "fclass" ILIKE 'quarry' OR "fclass" ILIKE 'military' OR "fclass" ILIKE 'park' OR "fclass" ILIKE 'recreation_ground'
                 classes = ['commercial', 'industrial', 'quarry', 'military', 'park', 'recreation_ground']
                 filterShapefile(input_file, output_file, classes)
 
                 # Roads
-                input_file = path_storage + "shapefiles/" + country_letterCode + str(i) + "-roads.shp"
-                output_file = path_storage + "shapefiles/filtered/" + country_letterCode + str(i) + "-roads.shp"
+                input_file = path_storage + "shapefiles/" + country_letterCode + str(count) + "-roads.shp"
+                output_file = path_storage + "shapefiles/filtered/" + country_letterCode + str(count) + "-roads.shp"
                 # "fclass" ILIKE 'primary' OR "fclass" ILIKE 'secondary'
                 classes = ['primary', 'secondary']
                 filterShapefile(input_file, output_file, classes)

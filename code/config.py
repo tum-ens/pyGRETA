@@ -147,7 +147,7 @@ def computation_parameters(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 18
+    param["nproc"] = 24
     param["CPU_limit"] = True
     return param
 
@@ -257,7 +257,7 @@ def time_series_parameters(param):
     :rtype: dict
     """
     # Quantiles for time series
-    param["quantiles"] = [95,70,25]
+    param["quantiles"] = [90,70,50,30]
 
     # User defined locations
     param["useloc"] = {
@@ -310,7 +310,7 @@ def landuse_parameters(param):
 
 # Landuse reclassification
         # 0	    No data
-        # 10	Cropland, rainfed
+        # 10	Cropland, rain-fed
         # 11	Herbaceous cover
         # 12	Tree or shrub cover
         # 20	Cropland, irrigated or post-flooding
@@ -780,12 +780,12 @@ def biomass_parameters(param):
             [
                 "Rice, paddy",
                 "Maize",
-                "Sugarcane",
-                "Oil_Palm",
+                "Sugar cane",
+                "Oil palm fruit",
                 "Cassava",
-                "Coconut",
-                "Coffee_Green",
-                "Groundnut",
+                "Coconuts",
+                "Coffee, green",
+                "Groundnuts, with shell",
                 "Sugar beet",
                 "Wheat",
                 "Barley",
@@ -797,12 +797,12 @@ def biomass_parameters(param):
         "residue": {
             "Rice, paddy": ["Straw", "Husk"],
             "Maize": ["Stalk", "Cob"],
-            "Sugarcane": ["Bagasse", "Top&Leave"],
-            "Oil_Palm": ["Shell", "Fiber", "EFB", "POME", "Frond"],
+            "Sugar cane": ["Bagasse", "Top&Leave"],
+            "Oil palm fruit": ["Shell", "Fiber", "EFB", "POME", "Frond"],
             "Cassava": ["Stalk"],
-            "Coconut": ["Husk", "Shell", "Frond"],
-            "Coffee_Green": ["Husk"],
-            "Groundnut": ["Shell", "Straw"],
+            "Coconuts": ["Husk", "Shell", "Frond"],
+            "Coffee, green": ["Husk"],
+            "Groundnuts, with shell": ["Shell", "Straw"],
             "Sugar beet": ["Leaves"],
             "Wheat": ["Straw"],
             "Barley": ["Straw"],
@@ -813,12 +813,12 @@ def biomass_parameters(param):
         "rpr": {
             "Rice, paddy": {"Straw": 1.00, "Husk": 0.27},
             "Maize": {"Stalk": 1.00, "Cob": 0.25},
-            "Sugarcane": {"Bagasse": 0.25, "Top&Leave": 0.30},
-            "Oil_Palm": {"Shell": 0.07, "Fiber": 0.13, "EFB": 0.23, "POME": 0.67, "Frond": 0.55},
+            "Sugar cane": {"Bagasse": 0.25, "Top&Leave": 0.30},
+            "Oil palm fruit": {"Shell": 0.07, "Fiber": 0.13, "EFB": 0.23, "POME": 0.67, "Frond": 0.55},
             "Cassava": {"Stalk": 0.09},
-            "Coconut": {"Husk": 0.36, "Shell": 0.16, "Frond": 0.23},
-            "Coffee_Green": {"Husk": 2.10},
-            "Groundnut": {"Shell": 0.32, "Straw": 2.30},
+            "Coconuts": {"Husk": 0.36, "Shell": 0.16, "Frond": 0.23},
+            "Coffee, green": {"Husk": 2.10},
+            "Groundnuts, with shell": {"Shell": 0.32, "Straw": 2.30},
             "Sugar beet": {"Leaves": 0.3},
             "Wheat": {"Straw": 1.2},
             "Barley": {"Straw": 1.1},
@@ -829,12 +829,12 @@ def biomass_parameters(param):
         "af": {
             "Rice, paddy": {"Straw": 0.5, "Husk": 0.47},
             "Maize": {"Stalk": 0.33, "Cob": 0.67},
-            "Sugarcane": {"Bagasse": 0.21, "Top&Leave": 0.99},
-            "Oil_Palm": {"Shell": 0.04, "Fiber": 0.13, "EFB": 0.58, "POME": 0.65, "Frond": 0.05},
+            "Sugar cane": {"Bagasse": 0.21, "Top&Leave": 0.99},
+            "Oil palm fruit": {"Shell": 0.04, "Fiber": 0.13, "EFB": 0.58, "POME": 0.65, "Frond": 0.05},
             "Cassava": {"Stalk": 0.41},
-            "Coconut": {"Husk": 0.60, "Shell": 0.38, "Frond": 0.81},
-            "Coffee_Green": {"Husk": 0.33},
-            "Groundnut": {"Shell": 1.00, "Straw": 0.33},
+            "Coconuts": {"Husk": 0.60, "Shell": 0.38, "Frond": 0.81},
+            "Coffee, green": {"Husk": 0.33},
+            "Groundnuts, with shell": {"Shell": 1.00, "Straw": 0.33},
             "Sugar beet": {"Leaves": 0.4},
             "Wheat": {"Straw": 0.4},
             "Barley": {"Straw": 0.4},
@@ -845,12 +845,12 @@ def biomass_parameters(param):
         "lhv": {
             "Rice, paddy": {"Straw": 3.89, "Husk": 3.57},
             "Maize": {"Stalk": 3.97, "Cob": 4.62},
-            "Sugarcane": {"Bagasse": 1.79, "Top&Leave": 1.89},
-            "Oil_Palm": {"Shell": 4.72, "Fiber": 3.08, "EFB": 1.69, "POME": 0.17, "Frond": 2.21},
+            "Sugar cane": {"Bagasse": 1.79, "Top&Leave": 1.89},
+            "Oil palm fruit": {"Shell": 4.72, "Fiber": 3.08, "EFB": 1.69, "POME": 0.17, "Frond": 2.21},
             "Cassava": {"Stalk": 4.72},
-            "Coconut": {"Husk": 4.09, "Shell": 4.58, "Frond": 4.04},
-            "Coffee_Green": {"Husk": 3.44},
-            "Groundnut": {"Shell": 3.12, "Straw": 4.88},
+            "Coconuts": {"Husk": 4.09, "Shell": 4.58, "Frond": 4.04},
+            "Coffee, green": {"Husk": 3.44},
+            "Groundnuts, with shell": {"Shell": 3.12, "Straw": 4.88},
             "Sugar beet": {"Leaves": 3.7},
             "Wheat": {"Straw": 4},
             "Barley": {"Straw": 4},
@@ -961,7 +961,7 @@ def global_maps_input_paths(paths, param):
     # paths["Pop_global"] = PathTemp + "Population" + fs + "gpw_v4_population_count_rev10_2015_30_sec.tif"
     # param["res_population"] = np.array([1 / 120, 1 / 120])
 
-    paths["Biomass_Crops"] = PathTemp + "FAOSTAT" + fs + "FAOSTAT_data_7-26-2021.csv"
+    paths["Biomass_Crops"] = PathTemp + "FAOSTAT" + fs + "FAOSTAT_data_9-28-2021.csv"
     paths["Biomass_Forestry"] = PathTemp + "FAOSTAT" + fs + "FAOSTAT_Forestry_data_6-2-2021.csv"
 
     return paths, param

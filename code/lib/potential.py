@@ -1192,6 +1192,7 @@ def generate_biomass_production(paths, param, tech): #ToDo update to .mat files
             production_country = production[production.index == country_name]
             for crop in biomass["agriculture"]["crops"]:
                 production_country_crop = production_country[production_country["Item"] == crop]
+                production_country_crop = production_country_crop.dropna()
                 if not production_country_crop.empty:
                     for residue in biomass["agriculture"]["residue"][crop]:
                         bio_energy = bio_energy \

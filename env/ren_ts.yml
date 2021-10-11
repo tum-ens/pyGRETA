@@ -5,7 +5,7 @@ channels:
 dependencies:
   - pip=19.3.1
   - pip:
-    - pyproj=2.4.1
+    - pyproj==2.4.1
   - fiona=1.8.4
   - gdal=2.3.3
   - geopandas=0.4.1

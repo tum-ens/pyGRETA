@@ -10,14 +10,14 @@ First, clone the git repository in a directory of your choice using a Command Pr
 
 	$ ~\directory-of-my-choice> git clone https://github.com/tum-ens/pyGRETA.git
 
-We recommend using conda and installing the environment from the file ``ren_ts.yml`` that you can find in the repository. In the Command Prompt window, type::
+We recommend using conda and installing the environment from the file ``ren_ts_new.yml`` that you can find in the repository. In the Command Prompt window, type::
 
 	$ cd pyGRETA\env\
-	$ conda env create -f ren_ts.yml
+	$ conda env create -f ren_ts_new.yml
 
 Then activate the environment::
 
-	$ conda activate ren_ts
+	$ conda activate ren_ts_new
 
 In the folder ``code``, you will find multiple files:
 
@@ -67,7 +67,7 @@ runme.py
 .. literalinclude:: ../code/runme.py
    :language: python
    :linenos:
-   :emphasize-lines: 18,28-31,34-36,42,45
+   :emphasize-lines: 30-31,33,38-40,44-47
 
 
 Recommended input sources
@@ -128,6 +128,10 @@ In both cases, please follow these instructions to download the MERRA-2 dataset:
 
 If you follow these steps to download the data for the year 2015, you will obtain 730 NetCDF files, one for each day of the year and for each data product. 
 
+Raster of Mean Wind Speed
+^^^^^^^^^^^^^^^^^^^^^^^^^
+High resolution (250m) country-wise rasters of mean wind speed from Global wind atlas website will be automatically downloaded by the tool.
+
 Raster of land use
 ^^^^^^^^^^^^^^^^^^
 Another important input for this model is the land use type. 
@@ -138,17 +142,15 @@ A land use map is useful in the sense that other parameters can be associated wi
 * Hellmann coefficients
 * Albedo
 * Suitability
-* Availability
 * Installation cost
 * etc.
 
 For each land use type, we can assign a value for these parameters which affect
 the calculations for solar power and wind speed correction.
-The global land use raster for which :mod:`lib.input_maps.generate_landuse` has been written cannot be downloaded anymore (broken link),
-but a newer version is available from the `USGS <https://lpdaac.usgs.gov/products/mcd12q1v006/>`_ website. 
+The global land use raster for which :mod:`lib.input_maps.generate_landuse` has been written can be downloaded from the `ESA CCI <http://maps.elie.ucl.ac.be/CCI/viewer/download.php>`_ website.
 However, this new version requires additional data processing.
-The spatial resolution of the land use raster, and therefore of the other geographic intermediate rasters
-used in this model, is 1/240° longitude and 1/240° latitude.
+The spatial resolution of the land use raster downloaded is 300m, but the resolution used in the model is 250m.
+So the landuse raster should be resampled in a GIS software. QGIS can be used easily for doing this.
 
 Shapefile of the region of interest
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -179,16 +181,13 @@ Raster of topography / elevation data
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 A high resolution raster (15 arcsec = 1/240° longitude and 1/240° latitude) made of 24 tiles can be downloaded from `viewfinder panoramas
 <http://viewfinderpanoramas.org/Coverage%20map%20viewfinderpanoramas_org15.htm>`_.
+Multiple files will be downloaded from this source. They can all be merged and resampled to the resolution of the model (250m)
+using QGIS, similar to the landuse raster.
 
 Raster of bathymetry
 ^^^^^^^^^^^^^^^^^^^^
 A high resolution raster (60 arcsec) of bathymetry can be downloaded from the website of the National Oceanic and Atmospheric Administration `(NOAA)
 <https://ngdc.noaa.gov/mgg/global/global.html>`_. The one used in the database is ETOPO1 Ice Surface, cell-registered.
-
-Raster of population density
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-A high resolution raster (30 arcsec) of population density can be downloaded from the website of `SEDAC
-<https://sedac.ciesin.columbia.edu/data/set/gpw-v4-population-density-rev11/data-download>`_ after registration.
 
 Shapefile of protected areas
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -197,14 +196,47 @@ published by the International Union for Conservation of Nature `(IUCN) <https:/
 The shapefile has many attributes, but only one is used in the tool: "IUCN_CAT". If another database is used, an 
 equivalent attribute with the different categories of the protection has to be used and :mod:`config.py` has to be updated accordingly.
 
-Wind frequencies from the Global Wind Atlas
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-In order to correct the data biases of MERRA-2, especially in high-altitude regions, this tool uses wind speed frequencies
-of each country that are obtained from the `Global Wind Atlas <https://globalwindatlas.info/>`_. Select the country that you
-need, choose 50m height, and download the plot data for the wind speed in a folder with the name of the country
-(use the ISO 3166-1 Alpha-3 code).
+Shapefiles from OSM data
+^^^^^^^^^^^^^^^^^^^^^^^^
+Open Street Map data can be downloaded as shapefiles from `geofabrik <https://download.geofabrik.de/>`_.
+The shapefiles for roads, railways and landuse are used in this model.
+These shapefiles have many attributes, but only one is used in the tool: "fclass".
+For roads shapefile, the "fclass" types "Motoways, motorways_link, primary, primary-link, secondary, secondary-link, trunk, trunk-link" are filtered prior to using the model.
+For railways shapefile, no filtering is necessary.
+For landuse shapefile, the "fclass" types "commercial, industrial, quarry, military, park, recreation_ground" are filtered prior to using the model.
+If another exclusion criteria is used, :mod:`config.py` has to be updated accordingly.
 
-.. NOTE:: You need to download the data for all the countries that lie in the scope of the study.
+Raster of Settlement Footprint
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+A high resolution raster (0.32 arcsec or 10m) of World settlement footprint can be downloaded from `open source
+<https://figshare.com/articles/dataset/World_Settlement_Footprint_WSF_2015/10048412>`_. The downloaded multiple files need to be
+merged and resampled to the desired resolution (250m) of the model prior to the run.
+
+Shapefile of HydroLakes
+^^^^^^^^^^^^^^^^^^^^^^^
+Any database for Lakes can be used with this tool, in particular from `HydroSheds <https://www.hydrosheds.org/page/hydrolakes>`_.
+No preprocessing is necessary for this dataset.
+
+Shapefile of HydroRivers
+^^^^^^^^^^^^^^^^^^^^^^^^
+Any database for Rivers can be used with this tool, in particular from `HydroSheds <https://www.hydrosheds.org/page/hydrorivers>`_.
+No preprocessing is necessary for this dataset.
+
+Data of Crop Production
+^^^^^^^^^^^^^^^^^^^^^^^
+Annual crop production data of all countries in the world can be downloaded from the website of Food and Agriculture Organization of United States
+`(FAOSTAT) <https://www.fao.org/faostat/en/#data/QCL>`_. While downloading, the latest year and "Production Quantity" should be selected as filters.
+
+Data of Forestry Production
+^^^^^^^^^^^^^^^^^^^^^^^
+Annual forestry production data of all countries in the world can be downloaded from the website of Food and Agriculture Organization of United States
+`(FAOSTAT) <https://www.fao.org/faostat/en/#data/FO>`_. While downloading, the latest year and "Production Quantity" should be selected as filters.
+
+Shapefile of Livestock density
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Any dataset for Livestock density can be used with this tool, in particular the rasters created from the data of Food and Agriculture Organization of United States
+for various animals `(FAO GLW3) <https://www.fao.org/land-water/land/land-governance/land-resources-planning-toolbox/category/details/en/c/1236449/>`_.
+These files are available at high resolution (5 arc-minutes). The model can read these high resolution rasters and resample them to the resolution of the model.
 
 Recommended workflow
 --------------------
@@ -234,13 +266,21 @@ The :mod:`lib.input_maps` module is used to generate data (mostly raster maps, b
 
 * Weather data
 * Land and sea masking
-* Subregions masking
-* Land use
 * Bathymetry
 * Topography
 * Slope
-* Population and the population buffer masking
 * Area
+* Land use and buffer masking
+* Protected areas and their buffer masking
+* Boarder Buffer masking
+* Roads Buffer masking
+* Railway lines Buffer masking
+* OSM defined areas like mining, military zones Buffer masking
+* Settlement regions Buffer masking
+* HydroLakes Buffer masking
+* HydroRivers Buffer masking
+* Livestock density
+
 
 All these maps are needed before the potential or time series modules can be used for a specific spatial scope.
 

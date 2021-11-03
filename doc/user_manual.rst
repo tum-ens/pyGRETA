@@ -196,6 +196,10 @@ published by the International Union for Conservation of Nature `(IUCN) <https:/
 The shapefile has many attributes, but only one is used in the tool: "IUCN_CAT". If another database is used, an 
 equivalent attribute with the different categories of the protection has to be used and :mod:`config.py` has to be updated accordingly.
 
+Airports Coordinates
+^^^^^^^^^^^^^^^^^^^^
+List of airports around the world can be downloaded as a csv file from open data `(openflights) <https://openflights.org/data.html>`_.
+
 Shapefiles from OSM data
 ^^^^^^^^^^^^^^^^^^^^^^^^
 Open Street Map data can be downloaded as shapefiles from `geofabrik <https://download.geofabrik.de/>`_.
@@ -273,6 +277,7 @@ The :mod:`lib.input_maps` module is used to generate data (mostly raster maps, b
 * Land use and buffer masking
 * Protected areas and their buffer masking
 * Boarder Buffer masking
+* Airports and buffer masking
 * Roads Buffer masking
 * Railway lines Buffer masking
 * OSM defined areas like mining, military zones Buffer masking

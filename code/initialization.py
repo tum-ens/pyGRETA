@@ -26,9 +26,6 @@ def initialization(config_file):
     paths, param = configuration(config_file)   # Load configurations depended on the recent config_file
     param = read_shapefiles(paths, param)       # Import land and eez regions based on the given shapefile
 
-    # Saving parameters
-    param["Crd_regions"] = np.concatenate((param['Crd_regions_land'], param['Crd_regions_sea']), axis=0)
-
     # Indices and matrix dimensions
     Crd_all = param["Crd_all"]
     Ind_all_low = sf.ind_merra(Crd_all, Crd_all, param["res_weather"])
@@ -62,7 +59,7 @@ def read_shapefiles(paths, param):
 
 def read_regions(param, regions_shp):
     logger.info("Start")
-
+    # regions_shp.sort_values(by=["NAME_SHORT"], inplace=True)
     regions_shp.sort_values(by=["GID_0"], inplace=True)     # ToDo: Replace 'GID_0' by variable
     regions_shp.reset_index(inplace=True)
     param["regions_land"] = regions_shp
@@ -78,7 +75,6 @@ def read_regions(param, regions_shp):
 
     return param
 
-
 def read_EEZ(paths, param, scope_shp):
     logger.info("Start")
 
@@ -87,6 +83,19 @@ def read_EEZ(paths, param, scope_shp):
 
     countries = scope_shp['GID_0'].drop_duplicates()        # Obtain the countries out of the regions shapefile
     eez_shp = eez_shp[eez_shp['ISO_Ter1'].isin(countries)].reset_index()    # Remain only eez areas of countries involved
+
+    param["offshore_scope"] = sf.define_spatial_scope(eez_shp)
+    param["Crd_offshore"] = sf.crd_merra(param["offshore_scope"], param["res_weather"])  # rectangle coordinates
+
+    Crd_offshore = param["Crd_offshore"]
+    Ind_offshore_low = sf.ind_merra(Crd_offshore, Crd_offshore, param["res_weather"])
+    Ind_offshore_high = sf.ind_merra(Crd_offshore, Crd_offshore, param["res_desired"])
+
+    param["m_high_offshore"] = int((Ind_offshore_high[:, 0] - Ind_offshore_high[:, 2] + 1)[0])  # number of rows
+    param["n_high_offshore"] = int((Ind_offshore_high[:, 1] - Ind_offshore_high[:, 3] + 1)[0])  # number of columns
+    param["m_low_offshore"] = int((Ind_offshore_low[:, 0] - Ind_offshore_low[:, 2] + 1)[0])  # number of rows
+    param["n_low_offshore"] = int((Ind_offshore_low[:, 1] - Ind_offshore_low[:, 3] + 1)[0])  # number of columns
+    param["GeoRef_offshore"] = sf.calc_geotiff(Crd_offshore, param["res_desired"])
 
     param["regions_sea"] = eez_shp
     param["nRegions_sea"] = len(eez_shp)

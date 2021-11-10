@@ -45,9 +45,8 @@ def calculate_full_load_hours(paths, param, tech, multiprocessing):
     Ind = sf.ind_merra(Crd_all, Crd_all, res_weather)[0]
     
     if tech == "WindOff":
-        w = np.flipud(hdf5storage.read("EEZ", paths["EEZ"]))
-        # with rasterio.open(paths["EEZ"]) as src:
-        #     w = src.read(1)
+        with rasterio.open(paths["EEZ"]) as src:
+            w = src.read(1)
     else:
         with rasterio.open(paths["LAND"]) as src:
             w = src.read(1)
@@ -63,24 +62,6 @@ def calculate_full_load_hours(paths, param, tech, multiprocessing):
 
         day_filter = np.nonzero(merraData["CLEARNESS"][Ind[2] - 1: Ind[0], Ind[3] - 1: Ind[1], :].sum(axis=(0, 1)))
         list_hours = np.arange(0, 8760)
-        # if nproc == 1:
-        #     param["status_bar_limit"] = list_hours[-1]
-        #     results = calc_FLH_solar(list_hours[day_filter], [param, tech, rasterData, merraData])
-        # else:
-        #     list_hours = np.array_split(list_hours[day_filter], nproc)
-        #     param["status_bar_limit"] = list_hours[0][-1]
-        #     results = mp.Pool(processes=nproc, initializer=ul.limit_cpu, initargs=CPU_limit).starmap(
-        #         calc_FLH_solar, it.product(list_hours, [[param, tech, rasterData, merraData]])
-        #     )
-        #  # Collecting results
-        # FLH_low = np.zeros((m_low, n_low))
-        #
-        # if nproc > 1:
-        #     for p in range(len(results)):
-        #         FLH_low = FLH_low + results[p]
-        # else:
-        #     FLH_low = results
-
         param["status_bar_limit"] = list_hours[-1]
         FLH_low = calc_FLH_solar(list_hours[day_filter], [param, tech, rasterData, merraData])
         
@@ -105,13 +86,16 @@ def calculate_full_load_hours(paths, param, tech, multiprocessing):
             logger.info("files saved:" + ul.changeExt2tif(paths[tech]["FLH"]))
     
     elif tech in ["WindOff"]:
+        m_high_offshore = param["m_high_offshore"]
+        n_high_offshore = param["n_high_offshore"]
+        GeoRef_offshore = param["GeoRef_offshore"]
         list_hours = np.array_split(np.arange(0, 8760), nproc)
         param["status_bar_limit"] = list_hours[0][-1]
         results = mp.Pool(processes=nproc, initializer=ul.limit_cpu, initargs=CPU_limit).starmap(
             calc_FLH_windoff, it.product(list_hours, [[param, tech, rasterData, merraData]])
         )
         # Collecting results
-        FLH = np.full((m_high, n_high), np.nan)
+        FLH = np.full((m_high_offshore, n_high_offshore), np.nan)
         FLH[param["Ind_nz"]] = 0
         if nproc > 1:
             for p in range(len(results)):
@@ -131,8 +115,7 @@ def calculate_full_load_hours(paths, param, tech, multiprocessing):
 
         # Save GEOTIFF files
         if param["savetiff_potentials"]:
-            GeoRef = param["GeoRef"]
-            sf.array2raster(ul.changeExt2tif(paths[tech]["FLH"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], FLH)
+            sf.array2raster(ul.changeExt2tif(paths[tech]["FLH"]), GeoRef_offshore["RasterOrigin"], GeoRef_offshore["pixelWidth"], GeoRef_offshore["pixelHeight"], FLH)
             logger.info("files saved:" + ul.changeExt2tif(paths[tech]["FLH"]))
     
     elif tech in ["WindOn"]:
@@ -205,7 +188,7 @@ def calculate_full_load_hours(paths, param, tech, multiprocessing):
         FLH_scope = np.full((m_high, n_high), np.nan)
         FLH_scope[param["Ind_nz"]] = FLH[param["Ind_nz"]]
 
-        hdf5storage.writes({"FLH": FLH}, paths[tech]["FLH"], store_python_metadata=True, matlab_compatible=True)
+        hdf5storage.writes({"FLH": FLH_scope}, paths[tech]["FLH"], store_python_metadata=True, matlab_compatible=True)
         logger.info("\nfiles saved: " + paths[tech]["FLH"])
 
         if param["savetiff_potentials"]:
@@ -247,8 +230,6 @@ def get_merra_raster_data(paths, param, tech): #ToDo clean up unnecessary things
         # Calculate A matrices correction
         # A_lu
         w = np.flipud(hdf5storage.read("LU", paths["LU"]))
-        # with rasterio.open(ul.changeExt2tif(paths["LU"])) as src:
-        #     w = src.read(1)
         rasterData["A_lu"] = np.flipud(w)
         # A_Ross (Temperature coefficients for heating losses)
         rasterData["A_Ross"] = ul.changem(rasterData["A_lu"], param["landuse"]["Ross_coeff"],
@@ -272,6 +253,8 @@ def get_merra_raster_data(paths, param, tech): #ToDo clean up unnecessary things
             w = src.read(1)
         rasterData["A_cf"] = np.flipud(w).astype("float16")
         if tech == "WindOff":
+            # Wind Speed Data
+            merraData["W50M_offshore"] = hdf5storage.read("W50M_offshore", paths["W50M_offshore"])
             rasterData["A_cf"] = rasterData["A_cf"][tuple(reg_ind)]
         del w
     return merraData, rasterData
@@ -354,8 +337,8 @@ def calc_FLH_windoff(hours, args):
     tech = args[1]
     rasterData = args[2]
     merraData = args[3]
-    m_high = param["m_high"]
-    n_high = param["n_high"]
+    m_high_offshore = param["m_high_offshore"]
+    n_high_offshore = param["n_high_offshore"]
     reg_ind = param["Ind_nz"]
 
     turbine = param[tech]["technical"]
@@ -369,7 +352,7 @@ def calc_FLH_windoff(hours, args):
             ul.display_progress(tech + " " + param["region_name"], [len(hours), status])
 
         # Calculate hourly capacity factor
-        CF = pm.calc_CF_windoff(hour, reg_ind, turbine, m_high, n_high, merraData, rasterData)
+        CF = pm.calc_CF_windoff(hour, reg_ind, turbine, m_high_offshore, n_high_offshore, merraData, rasterData)
 
         # Aggregates CF to obtain the yearly FLH
         CF[np.isnan(CF)] = 0
@@ -377,7 +360,6 @@ def calc_FLH_windoff(hours, args):
     return FLH
 
 
-# def calc_FLH_windon(row, args):
 def calc_FLH_windon(param, tech, rasterData, merraData, GWA_array, b_xmin, b_xmax, b_ymin, b_ymax, x_gwa, y_gwa,
                     pixles, list_results):
     """
@@ -492,8 +474,8 @@ def redistribution_array(param, merraData, i, j, xmin, xmax, ymin, ymax, GWA_arr
     GWA_array_copy = GWA_array.astype(dtype=np.float32).copy()  # Create copy so that the origin array doesnt get changed
     # GWA_array_copy = GWA_array.astype(dtype=np.float16).copy()
     selection_index = (xmin <= x_gwa) & (x_gwa < xmax) & (ymin <= y_gwa) & (
-            y_gwa < ymax)  # Determine the pixels that are inbetween the range
-    GWA_array_copy[np.invert(selection_index)] = 0  # Set pixel not covered by the shapfile to zero
+            y_gwa < ymax)  # Determine the pixels that are in between the range
+    GWA_array_copy[np.invert(selection_index)] = 0  # Set pixel not covered by the shapefile to zero
     value_num_cells = np.count_nonzero(GWA_array_copy)  # Number of non-zero pixels
 
     coordinates_nonzero_pixels_x, coordinates_nonzero_pixels_y = selection_index.nonzero()
@@ -573,128 +555,152 @@ def mask_potential_maps(paths, param, tech): #ToDo optimize no. of lines
             A_notRails = (np.flipud(~A_Rails.astype(bool))).astype(int)
         A_notMine = hdf5storage.read("BUFFER", paths["OSM_MINE_BUFFER"]).astype(int)
         A_NotLake = hdf5storage.read("BUFFER", paths["HYDROLAKES_BUFFER"]).astype(int)
-        # Irrelevant parameters
-        A_bathymetry = 1
 
-    if tech in ["OpenFieldPV", "RoofTopPV", "CSP"]:
-        A_notProtected = hdf5storage.read("BUFFER", paths["PV_PA_BUFFER"]).astype(int)
-        with rasterio.open(paths["OSM_AREAS"]) as src:
-            A_osma = src.read(1)
-            A_com = A_osma == 1
-            A_notCommercial = (np.flipud(~A_com.astype(bool))).astype(int)
-            A_ind = A_osma == 2
-            A_notIndustrial = (np.flipud(~A_ind.astype(bool))).astype(int)
-            A_mil = A_osma == 4
-            A_notMilitary = (np.flipud(~A_mil.astype(bool))).astype(int)
-            A_rec = A_osma == 6
-            A_notRecreation = (np.flipud(~A_rec.astype(bool))).astype(int)
-        A_notPark = hdf5storage.read("BUFFER", paths["PV_OSM_PARK_BUFFER"]).astype(int)
-        A_notSettlement = hdf5storage.read("BUFFER", paths["PV_WSF_BUFFER"]).astype(int)
-        A_NotRiver = hdf5storage.read("BUFFER", paths["HYDRORIVERS_BUFFER"]).astype(int)
-        A_notAirport = 1
+        if tech in ["OpenFieldPV", "RoofTopPV", "CSP"]:
+            A_notProtected = hdf5storage.read("BUFFER", paths["PV_PA_BUFFER"]).astype(int)
+            with rasterio.open(paths["OSM_AREAS"]) as src:
+                A_osma = src.read(1)
+                A_com = A_osma == 1
+                A_notCommercial = (np.flipud(~A_com.astype(bool))).astype(int)
+                A_ind = A_osma == 2
+                A_notIndustrial = (np.flipud(~A_ind.astype(bool))).astype(int)
+                A_mil = A_osma == 4
+                A_notMilitary = (np.flipud(~A_mil.astype(bool))).astype(int)
+                A_rec = A_osma == 6
+                A_notRecreation = (np.flipud(~A_rec.astype(bool))).astype(int)
+            A_notPark = hdf5storage.read("BUFFER", paths["PV_OSM_PARK_BUFFER"]).astype(int)
+            A_notSettlement = hdf5storage.read("BUFFER", paths["PV_WSF_BUFFER"]).astype(int)
+            A_NotRiver = hdf5storage.read("BUFFER", paths["HYDRORIVERS_BUFFER"]).astype(int)
+            A_notAirport = 1
 
-    if tech in ["OpenFieldPV", "CSP"]:
-        A_slope = hdf5storage.read("SLOPE", paths["SLOPE"])
-        A_slope = (A_slope <= mask["slope"]).astype(int)
+        if tech in ["OpenFieldPV", "CSP"]:
+            A_slope = hdf5storage.read("SLOPE", paths["SLOPE"])
+            A_slope = (A_slope <= mask["slope"]).astype(int)
 
-    if tech == "RoofTopPV":
-        A_Settlement = hdf5storage.read("WSF", paths["WSF"]).astype(bool)
-        A_Settlement = (np.flipud(A_Settlement)).astype(int)
-        A_notSettlement = A_Settlement  # Just for using the same mask equation.
-        # Irrelevant parameters
-        A_slope = 1
+        if tech == "RoofTopPV":
+            A_Settlement = hdf5storage.read("WSF", paths["WSF"]).astype(bool)
+            A_Settlement = (np.flipud(A_Settlement)).astype(int)
+            A_notSettlement = A_Settlement  # Just for using the same mask equation.
+            # Irrelevant parameters
+            A_slope = 1
 
-    if tech == "WindOn":
-        A_slope = hdf5storage.read("SLOPE", paths["SLOPE"])
-        A_slope = (A_slope <= mask["slope"]).astype(int)
-        A_notProtected = hdf5storage.read("BUFFER", paths["WINDON_PA_BUFFER"]).astype(int)
-        A_notAirport = hdf5storage.read("BUFFER", paths["AIRPORTS"]).astype(int)
-        A_notCommercial = hdf5storage.read("BUFFER", paths["OSM_COM_BUFFER"]).astype(int)
-        A_notIndustrial = hdf5storage.read("BUFFER", paths["OSM_IND_BUFFER"]).astype(int)
-        A_notMilitary = hdf5storage.read("BUFFER", paths["OSM_MIL_BUFFER"]).astype(int)
-        A_notPark = hdf5storage.read("BUFFER", paths["WINDON_OSM_PARK_BUFFER"]).astype(int)
-        A_notRecreation = hdf5storage.read("BUFFER", paths["OSM_REC_BUFFER"]).astype(int)
-        A_notSettlement = hdf5storage.read("BUFFER", paths["WINDON_WSF_BUFFER"]).astype(int)
-        with rasterio.open(paths["HYDRORIVERS"]) as src:
-            A_Riv = src.read(1)
-            A_NotRiver = (np.flipud(~A_Riv.astype(bool))).astype(int)
-        # Irrelevant parameters
-        A_bathymetry = 1
+        if tech == "WindOn":
+            A_slope = hdf5storage.read("SLOPE", paths["SLOPE"])
+            A_slope = (A_slope <= mask["slope"]).astype(int)
+            A_notProtected = hdf5storage.read("BUFFER", paths["WINDON_PA_BUFFER"]).astype(int)
+            A_notAirport = hdf5storage.read("BUFFER", paths["AIRPORTS"]).astype(int)
+            A_notCommercial = hdf5storage.read("BUFFER", paths["OSM_COM_BUFFER"]).astype(int)
+            A_notIndustrial = hdf5storage.read("BUFFER", paths["OSM_IND_BUFFER"]).astype(int)
+            A_notMilitary = hdf5storage.read("BUFFER", paths["OSM_MIL_BUFFER"]).astype(int)
+            A_notPark = hdf5storage.read("BUFFER", paths["WINDON_OSM_PARK_BUFFER"]).astype(int)
+            A_notRecreation = hdf5storage.read("BUFFER", paths["OSM_REC_BUFFER"]).astype(int)
+            A_notSettlement = hdf5storage.read("BUFFER", paths["WINDON_WSF_BUFFER"]).astype(int)
+            with rasterio.open(paths["HYDRORIVERS"]) as src:
+                A_Riv = src.read(1)
+                A_NotRiver = (np.flipud(~A_Riv.astype(bool))).astype(int)
+
+        # Masking matrix for the suitable sites (pixels)
+        A_mask = (
+                A_suitability_pa * A_suitability_lu * A_slope
+                * A_notProtected * A_notAirport * A_notBoarder
+                * A_notWater * A_notWetland * A_notSnow
+                * A_notRoads * A_notRails * A_notCommercial * A_notIndustrial
+                * A_notMine * A_notMilitary * A_notPark * A_notRecreation
+                * A_notSettlement * A_NotLake * A_NotRiver
+        ).astype(float)
+
+        del A_suitability_lu, A_suitability_pa, A_slope
+        del A_notProtected, A_notAirport, A_notBoarder
+        del A_notWater, A_notWetland, A_notSnow
+        del A_notRoads, A_notRails, A_notCommercial, A_notIndustrial
+        del A_notMine, A_notMilitary, A_notPark, A_notRecreation
+        del A_notSettlement, A_NotLake, A_NotRiver
+
+        # Calculate masked FLH
+        FLH = hdf5storage.read("FLH", paths[tech]["FLH"])
+        FLH_mask = FLH * A_mask
+        FLH_mask[FLH_mask == 0] = np.nan
+
+        # Save HDF5 Files
+        hdf5storage.writes({"A_mask": A_mask}, paths[tech]["mask"], store_python_metadata=True, matlab_compatible=True)
+        logger.info("files saved: " + paths[tech]["mask"])
+        hdf5storage.writes({"FLH_mask": FLH_mask}, paths[tech]["FLH_mask"], store_python_metadata=True,
+                           matlab_compatible=True)
+        logger.info("files saved: " + paths[tech]["FLH_mask"])
+
+        ul.create_json(
+            paths[tech]["mask"],
+            param,
+            ["author", "comment", tech, "region_name", "year", "GeoRef", "landuse", "protected_areas"],
+            paths,
+            ["subregions", "PA", "LU", "SLOPE"],
+        )
+
+        # Save GEOTIFF files
+        if param["savetiff_potentials"]:
+            GeoRef = param["GeoRef"]
+            sf.array2raster(ul.changeExt2tif(paths[tech]["mask"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
+                            GeoRef["pixelHeight"], A_mask)
+            logger.info("files saved: " + ul.changeExt2tif(paths[tech]["mask"]))
+
+            # sf.array2raster(ul.changeExt2tif(paths[tech]["FLH_mask"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
+            #              GeoRef["pixelHeight"], FLH_mask)
+            # logger.info("files saved: " + ul.changeExt2tif(paths[tech]["FLH_mask"]))
 
     if tech == "WindOff":
-        A_suitability_lu = hdf5storage.read("EEZ", paths["EEZ"]).astype(int)
-        with rasterio.open(paths["PA"]) as src:
+        with rasterio.open(paths["EEZ"]) as src:
+            A_suitability_lu = np.flipud(src.read(1)).astype(int)
+        with rasterio.open(paths["PA_offshore"]) as src:
             A_protect = src.read(1)
             A_protect = np.flipud(A_protect).astype(int)  # Protection categories 0-10, to be classified
         # Exclude protection categories that are not suitable
-        A_suitability_pa = ul.changem(A_protect, mask["pa_suitability"], param["protected_areas"]["type"]).astype(float)
-        A_suitability_pa = (A_suitability_pa > 0).astype(int)
+        A_suitability_pa = ul.changem(A_protect, mask["pa_suitability"], param["protected_areas"]["type"]).astype(int)
+        # A_suitability_pa = (A_suitability_pa > 0).astype(int)
+        A_notProtected = hdf5storage.read("BUFFER", paths["WINDOFF_PA_BUFFER"]).astype(int)
+        # with rasterio.open(paths["TERR_SEA"]) as src:
+        #     A_TerritorialSeas = src.read(1)
+        #     A_notTerritorialSeas = np.flipud(~A_TerritorialSeas.astype(bool)).astype(int)
+        with rasterio.open(paths["INT_WATER"]) as src:
+            A_InternalWaters = src.read(1)
+            A_notInternalWaters = np.flipud(~A_InternalWaters.astype(bool)).astype(int)
+        # A_notProtected = 1
         A_bathymetry = hdf5storage.read("BATH", paths["BATH"]) # Bathymetry (depth) in meter
-        A_bathymetry = (A_bathymetry >= mask["depth"]).astype(int) # (boolean)
-        # Irrelevant parameters
-        A_slope = 1
-        A_notSettlement= 1
-        A_notWater = 1
-        A_notWetland = 1
-        A_notSnow = 1
-        A_notProtected = 1
-        A_notAirport = 1
-        A_notBoarder = 1
-        A_notRoads = 1
-        A_notCommercial = 1
-        A_notIndustrial = 1
-        A_notMine = 1
-        A_notMilitary = 1
-        A_notPark = 1
-        A_notRecreation = 1
+        A_bathymetry = (np.logical_and(A_bathymetry >= mask["depth"],A_bathymetry < -50)).astype(int) # (boolean)
+        # Masking matrix for the suitable sites (pixels)
+        A_mask = (A_suitability_pa * A_suitability_lu * A_notInternalWaters * A_bathymetry * A_notProtected).astype(float)
 
-    # Masking matrix for the suitable sites (pixels)
-    A_mask = (
-            A_suitability_pa * A_suitability_lu * A_slope * A_bathymetry
-            * A_notProtected * A_notAirport * A_notBoarder
-            * A_notWater * A_notWetland * A_notSnow
-            * A_notRoads * A_notRails * A_notCommercial * A_notIndustrial
-            * A_notMine * A_notMilitary * A_notPark * A_notRecreation
-            * A_notSettlement * A_NotLake * A_NotRiver
-    ).astype(float)
+        del A_suitability_lu, A_suitability_pa, A_bathymetry, A_notProtected, A_notInternalWaters
 
-    del A_suitability_lu, A_suitability_pa, A_slope, A_bathymetry
-    del A_notProtected, A_notAirport, A_notBoarder
-    del A_notWater, A_notWetland, A_notSnow
-    del A_notRoads, A_notRails, A_notCommercial, A_notIndustrial
-    del A_notMine, A_notMilitary, A_notPark, A_notRecreation
-    del A_notSettlement, A_NotLake, A_NotRiver
+        # Calculate masked FLH
+        FLH = hdf5storage.read("FLH", paths[tech]["FLH"])
+        FLH_mask = FLH * A_mask
+        FLH_mask[FLH_mask == 0] = np.nan
 
-    # Calculate masked FLH
-    FLH = hdf5storage.read("FLH", paths[tech]["FLH"])
-    FLH_mask = FLH * A_mask
-    FLH_mask[FLH_mask == 0] = np.nan
+        # Save HDF5 Files
+        hdf5storage.writes({"A_mask": A_mask}, paths[tech]["mask"], store_python_metadata=True, matlab_compatible=True)
+        logger.info("files saved: " + paths[tech]["mask"])
+        hdf5storage.writes({"FLH_mask": FLH_mask}, paths[tech]["FLH_mask"], store_python_metadata=True,
+                           matlab_compatible=True)
+        logger.info("files saved: " + paths[tech]["FLH_mask"])
 
-    # Save HDF5 Files
-    hdf5storage.writes({"A_mask": A_mask}, paths[tech]["mask"], store_python_metadata=True, matlab_compatible=True)
-    logger.info("files saved: " + paths[tech]["mask"])
-    hdf5storage.writes({"FLH_mask": FLH_mask}, paths[tech]["FLH_mask"], store_python_metadata=True,
-                       matlab_compatible=True)
-    logger.info("files saved: " + paths[tech]["FLH_mask"])
+        ul.create_json(
+            paths[tech]["mask"],
+            param,
+            ["author", "comment", tech, "region_name", "year", "GeoRef_offshore", "landuse", "protected_areas"],
+            paths,
+            ["subregions", "PA", "LU", "BATH"],
+        )
 
-    ul.create_json(
-        paths[tech]["mask"],
-        param,
-        ["author", "comment", tech, "region_name", "year", "GeoRef", "landuse", "protected_areas"],
-        paths,
-        ["subregions", "PA", "LU", "SLOPE", "BATH"],
-    )
+        # Save GEOTIFF files
+        if param["savetiff_potentials"]:
+            GeoRef_offshore = param["GeoRef_offshore"]
+            sf.array2raster(ul.changeExt2tif(paths[tech]["mask"]), GeoRef_offshore["RasterOrigin"], GeoRef_offshore["pixelWidth"],
+                         GeoRef_offshore["pixelHeight"], A_mask)
+            logger.info("files saved: " + ul.changeExt2tif(paths[tech]["mask"]))
 
-    # Save GEOTIFF files
-    if param["savetiff_potentials"]:
-        GeoRef = param["GeoRef"]
-        sf.array2raster(ul.changeExt2tif(paths[tech]["mask"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
-                     GeoRef["pixelHeight"], A_mask)
-        logger.info("files saved: " + ul.changeExt2tif(paths[tech]["mask"]))
-
-        # sf.array2raster(ul.changeExt2tif(paths[tech]["FLH_mask"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
-        #              GeoRef["pixelHeight"], FLH_mask)
-        # logger.info("files saved: " + ul.changeExt2tif(paths[tech]["FLH_mask"]))
+            # sf.array2raster(ul.changeExt2tif(paths[tech]["FLH_mask"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"],
+            #              GeoRef["pixelHeight"], FLH_mask)
+            # logger.info("files saved: " + ul.changeExt2tif(paths[tech]["FLH_mask"]))
 
     logger.debug("End")
 
@@ -819,7 +825,6 @@ def weight_potential_maps(paths, param, tech): #ToDo change variable names
     n_high = param["n_high"]
     res_desired = param["res_desired"]
     A_mask = hdf5storage.read("A_mask", paths[tech]["mask"])
-    GeoRef = param["GeoRef"]
 
     if tech in ["OpenFieldPV", "RoofTopPV"]:
         # Ground Cover Ratio - defines spacing between PV arrays
@@ -827,27 +832,11 @@ def weight_potential_maps(paths, param, tech): #ToDo change variable names
     else:
         A_GCR = 1
 
-    with rasterio.open(paths["PA"]) as src:
-        A_protect = src.read(1)
-        A_protect = np.flipud(A_protect).astype(int)  # Protection categories 0-10, to be classified
-
-    # Calculate availability based on protection categories
-    A_availability_pa = ul.changem(A_protect, mask["pa_suitability"], param["protected_areas"]["type"]).astype(float)
-
-    A_lu = hdf5storage.read("LU", paths["LU"]).astype(int)
-    # with rasterio.open(paths["LU"]) as src:
-    #     A_lu = src.read(1)
-    #     A_lu = np.flipud(A_lu).astype(int)  # Landuse classes 0-16, to be reclassified
-
-    # Calculate availability based on landuse types
-    A_availability_lu = ul.changem(A_lu, mask["lu_suitability"], param["landuse"]["type"]).astype(float)
-
-    # Calculate availability
-    A_availability = np.minimum(A_availability_pa, A_availability_lu)
-    del A_availability_pa, A_availability_lu
-
     # Read available areas
-    A_area = hdf5storage.read("A_area", paths["AREA"])
+    if tech == "WindOff":
+        A_area = hdf5storage.read("A_area_offshore", paths["AREA_offshore"])
+    else:
+        A_area = hdf5storage.read("A_area", paths["AREA"])
 
     # Weighting matrix for the power output (technical potential) in MWp
     A_weight = A_area * A_mask * A_GCR * weight["power_density"] * weight["f_performance"]
@@ -937,7 +926,10 @@ def report_potentials(paths, param, tech):
     FLH = hdf5storage.read("FLH", paths[tech]["FLH"])
     A_mask = hdf5storage.read("A_mask", paths[tech]["mask"])
     A_weight = hdf5storage.read("A_weight", paths[tech]["weight"])
-    A_area = hdf5storage.read("A_area", paths["AREA"])
+    if tech == "WindOff":
+        A_area = hdf5storage.read("A_area_offshore", paths["AREA_offshore"])
+    else:
+        A_area = hdf5storage.read("A_area", paths["AREA"])
     density = param[tech]["weight"]["power_density"]
 
     # Check if land or see
@@ -947,11 +939,17 @@ def report_potentials(paths, param, tech):
         location = "sea"
 
     # Initialize region masking parameters
+    res_desired = param["res_desired"]
     Crd_all = param["Crd_all"]
     GeoRef = param["GeoRef"]
-    res_desired = param["res_desired"]
     nRegions = param["nRegions_land"]
     regions_shp = param["regions_land"]
+
+    if tech == "WindOff":
+        Crd_all = param["Crd_offshore"]
+        GeoRef = param["GeoRef_offshore"]
+        nRegions = param["nRegions_sea"]
+        regions_shp = param["regions_sea"]
 
     # Initialize regions list of sorted FLH, FLH_M, and FLH_W
     sorted_FLH_list = {}
@@ -968,6 +966,8 @@ def report_potentials(paths, param, tech):
             "Available",
             "Available_Masked",
             "Available_Area_km2",
+            "Available_Masked_Area_km2",
+            "Percentage_Land_available",
             "FLH_Mean",
             "FLH_Median",
             "FLH_Max",
@@ -991,8 +991,12 @@ def report_potentials(paths, param, tech):
     ul.display_progress("Reporting ", (nRegions, status))
     for reg in range(0, nRegions):
         # Get name of region
-        # regions.loc[reg, "Region"] = regions_shp.loc[reg]["NAME_SHORT"] + "_" + location
-        regions.loc[reg, "Region"] = regions_shp.loc[reg]["GID_0"] + "_" + location
+
+        if tech == "WindOff":
+            regions.loc[reg, "Region"] = regions_shp.loc[reg]["ISO_Ter1"] + "_" + location
+        else:
+            # regions.loc[reg, "Region"] = regions_shp.loc[reg]["NAME_SHORT"] + "_" + location
+            regions.loc[reg, "Region"] = regions_shp.loc[reg]["GID_0"] + "_" + location
 
         # Compute region_mask
         A_region_extended = sf.calc_region(regions_shp.loc[reg], Crd_all, res_desired, GeoRef)
@@ -1024,6 +1028,13 @@ def report_potentials(paths, param, tech):
         A_area_region = A_region_extended * A_area
         Total_area = np.nansum(A_area_region) / (10 ** 6)
         regions.loc[reg, "Available_Area_km2"] = Total_area
+
+        A_area_masked = A_masked * A_area
+        Masked_area = np.nansum(A_area_masked) / (10 ** 6)
+        regions.loc[reg, "Available_Masked_Area_km2"] = Masked_area
+
+        percent_availability = Masked_area / Total_area * 100
+        regions.loc[reg, "Percentage_Land_available"] = percent_availability
 
         # Stats for FLH
         FLH_region = A_region_extended * FLH

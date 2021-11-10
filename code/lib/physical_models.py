@@ -518,7 +518,7 @@ def calc_CF_windoff(hour, reg_ind, turbine, m, n, merraData, rasterData):
     """
 
     # Load MERRA data, increase its resolution, and fit it to the extent
-    w50m_h = ul.resizem(merraData["W50M"][:, :, hour], m, n)
+    w50m_h = ul.resizem(merraData["W50M_offshore"][:, :, hour], m, n)
     w50m_h = w50m_h[tuple(reg_ind)]
 
     # Calculate the wind speed a the desired height

@@ -66,7 +66,7 @@ def general_settings():
     param = {}
     param["author"] = "Thushara Addanki"  # the name of the person running the script
     param["comment"] = "Potential Analysis"
-    param["path_database_windows"] = "..\..\..\Database_KS"    # specify the relative (from the runme.py file) or the absolute path to the database folder
+    param["path_database_windows"] = "..\..\pyGRETA\Database_KS"    # specify the relative (from the runme.py file) or the absolute path to the database folder
     param["path_database_linux"] = os.path.expanduser("~") + fs + "database_ks"  # specify path to database on linux
 
     if sys.platform.startswith("win"):
@@ -147,7 +147,7 @@ def computation_parameters(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 24
+    param["nproc"] = 6
     param["CPU_limit"] = True
     return param
 
@@ -187,8 +187,8 @@ def weather_data_parameters(param):
     """
     param["MERRA_coverage"] = "World"
     param["MERRA_correction"] = True
-    param["MERRA_correction_factor"] = {"W50M": 0.35, "CLEARNESS": 0.35,
-                                        "T2M": 0.35}  # Wind Speed  # Clearness index  # Temperature at 2 m
+    param["MERRA_correction_factor"] = {"W50M": 0.35, "W50M_offshore": 0.35,
+                                        "CLEARNESS": 0.35, "T2M": 0.35}  # Wind Speed  # Clearness index  # Temperature at 2 m
     return param
 
 
@@ -431,6 +431,7 @@ def buffers(param):
 
         "protected_areas_pv": 1,
         "protected_areas_windon": 2,
+        "protected_areas_windoff": 4,
 
         "airport_windon": 16,
         "boarder": 2,
@@ -736,9 +737,7 @@ def offshore_wind_paramters(param):
       * *pa_suitability* is a numpy array of values 0 (unsuitable) or 1 (suitable). It has the same size as the array of protected area categories.
       
     * *weight* is a dictionary including the parameters related to the weighting:
-        
-      * *lu_availability* is a numpy array of values between 0 (completely not available) and 1 (completely available). It has the same size as the array of land use types.
-      * *pa_availability* is a numpy array of values between 0 (completely not available) and 1 (completely available). It has the same size as the array of protected area categories.
+
       * *power_density* is the power density of offshore wind projects in MW/m².
       * *f_performance* is a number smaller than 1, taking into account all the other losses from the turbine generator until the AC substation.
     
@@ -749,15 +748,14 @@ def offshore_wind_paramters(param):
     :rtype: dict
     """
     windoff = {}
-    # windoff["resource"] = {"res_correction": 0}
-    windoff["technical"] = {"w_in": 3, "w_r": 16.5, "w_off": 34, "P_r": 7.58, "hub_height": 100}
+    # windoff["technical"] = {"w_in": 3, "w_r": 16.5, "w_off": 34, "P_r": 7.58, "hub_height": 100}
+    windoff["technical"] = {"w_in": 3, "w_r": 13, "w_off": 25, "P_r": 7, "hub_height": 150}
     windoff["mask"] = {
-        "depth": -40,
-        "lu_suitability": np.array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0]),
-         "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        "depth": -50,
+        "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     }
     windoff["weight"] = {
-        "power_density": 0.000020,
+        "power_density": 0.000003,
         "f_performance": 0.87,
     }
     param["WindOff"] = windoff
@@ -938,13 +936,9 @@ def global_maps_input_paths(paths, param):
     paths["Countries"] = PathTemp + "Countries" + fs + "gadm36_0.shp"
     
     paths["EEZ_global"] = PathTemp + "EEZ" + fs + "eez_v10.shp"
-    # paths["Topo_tiles"] = PathTemp + "Topography" + fs
-    # param["res_topography"] = np.array([1 / 240, 1 / 240])
+    paths["Internal_waters_global"] = PathTemp + "Internal Waters" + fs + "eez_internal_waters_v3.shp"
     paths["Topo_global"] = PathTemp + "Topography" + fs + "Topography_250m.tif"  # [1/400 , 1/400] resampled in QGIS
-
-    paths["Bathym_global"] = PathTemp + "Bathymetry" + fs + "ETOPO1_Ice_c_geotiff.tif"
-    param["res_bathymetry"] = np.array([1 / 60, 1 / 60])
-    
+    paths["Bathym_global"] = PathTemp + "Bathymetry" + fs + "ETOPO1_Ice_c_geotiff_250m.tif" # [1/400 , 1/400] resampled in QGIS
     paths["LU_global"] = PathTemp + "Landuse" + fs + "CCI-250m.tif" #[1/400 , 1/400] resampled in QGIS
     paths["Protected"] = PathTemp + "Protected Areas" + fs + "WDPA_Nov2018-shapefile-polygons.shp"
     paths["Airports"] = PathTemp + "Openflights" + fs + "airports.csv"
@@ -1054,6 +1048,7 @@ def weather_output_paths(paths, param):
     paths["W50M"] = paths["weather_data"] + "w50m_" + year + ".mat"
     paths["CLEARNESS"] = paths["weather_data"] + "clearness_" + year + ".mat"
     paths["T2M"] = paths["weather_data"] + "t2m_" + year + ".mat"
+    paths["W50M_offshore"] = paths["weather_data"] + "w50m_offshore" + year + ".mat"
 
     paths["MERRA_XMIN"] = paths["weather_data"] + "w50m_xmin" + year + ".mat"
     paths["MERRA_XMAX"] = paths["weather_data"] + "w50m_xmax" + year + ".mat"
@@ -1099,8 +1094,10 @@ def local_maps_paths(paths, param):
     # Local maps
     PathTemp = paths["local_maps"] + param["region_name"]
     paths["LAND"] = PathTemp + "_Land.tif"  # Land pixels
-    paths["EEZ"] = PathTemp + "_EEZ.mat"  # Sea pixels
+    paths["EEZ"] = PathTemp + "_EEZ.tif"  # Sea pixels
+    paths["INT_WATER"] = PathTemp + "_INT_WATER.tif"  # Internal Waters pixels
     paths["AREA"] = PathTemp + "_Area.mat"  # Area per pixel in m²
+    paths["AREA_offshore"] = PathTemp + "_Area_offshore.mat"  # Area per pixel in m²
     paths["TOPO"] = PathTemp + "_Topography.mat"  # Topography
     paths["SLOPE"] = PathTemp + "_Slope.mat"  # Slope
     paths["BATH"] = PathTemp + "_Bathymetry.mat"  # Bathymetry
@@ -1113,6 +1110,8 @@ def local_maps_paths(paths, param):
     paths["PA"] = PathTemp + "_Protected_areas.tif"  # Protected areas
     paths["PV_PA_BUFFER"] = PathTemp + "_PV_Protected_areas_Buffered.mat"  # Buffered Protected areas for PV
     paths["WINDON_PA_BUFFER"] = PathTemp + "_WindOn_Protected_areas_Buffered.mat"  # Buffered Protected areas for Wind Onshore
+    paths["PA_offshore"] = PathTemp + "_Protected_areas_offshore.tif"  # Protected areas
+    paths["WINDOFF_PA_BUFFER"] = PathTemp + "_WindOff_Protected_areas_Buffered.mat"  # Buffered Protected areas for Wind Offshore
 
     paths["AIRPORTS"] = PathTemp + "_Airports.mat"  # Buffered Airports
     paths["BOARDERS"] = PathTemp + "_Boarders.mat"  # Buffered Boarders

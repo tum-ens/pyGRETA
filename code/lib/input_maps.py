@@ -52,14 +52,15 @@ def generate_maps_for_scope(paths, param, multiprocessing):
     """
 
     generate_land(paths, param)  # Subregions
-    generate_weather_files(paths, param)  # MERRA Weather data
+    generate_sea(paths, param)  # Sea
+    generate_weather_files(paths, param)  # MERRA Weather data for land
+    generate_weather_offshore_files(paths, param)  # MERRA Weather data for offshore # comment out if no offshore
 
     if multiprocessing:
         processes = []
-        # processes.append(mp.Process(target=generate_sea, args=(paths, param)))
+
         processes.append(mp.Process(target=generate_area, args=(paths, param)))
         processes.append(mp.Process(target=generate_topography, args=(paths, param)))
-        # processes.append(mp.Process(target=generate_bathymetry, args=(paths, param))) # ToDo: not tested
         processes.append(mp.Process(target=generate_landuse, args=(paths, param)))
         processes.append(mp.Process(target=generate_protected_areas, args=(paths, param)))
         processes.append(mp.Process(target=generate_airports, args=(paths, param)))
@@ -70,6 +71,10 @@ def generate_maps_for_scope(paths, param, multiprocessing):
         processes.append(mp.Process(target=generate_settlements, args=(paths, param)))
         processes.append(mp.Process(target=generate_HydroLakes, args=(paths, param)))
         processes.append(mp.Process(target=generate_HydroRivers, args=(paths, param)))
+        processes.append(mp.Process(target=generate_area_offshore, args=(paths, param)))
+        processes.append(mp.Process(target=generate_internal_waters, args=(paths, param)))
+        processes.append(mp.Process(target=generate_bathymetry, args=(paths, param)))
+        processes.append(mp.Process(target=generate_protected_areas_offshore, args=(paths, param)))
 
         logger.debug('Starting processes')
         for p in processes:
@@ -81,10 +86,9 @@ def generate_maps_for_scope(paths, param, multiprocessing):
         logger.info('All processes finished')
 
     else:
-        # generate_sea(paths, param)  # Land and Sea
+
         generate_area(paths, param)  # Area Gradient
         generate_topography(paths, param)  # Topography
-        # generate_bathymetry(paths, param)  # Bathymetry # ToDo: not tested
         generate_landuse(paths, param)  # Landuse
         generate_protected_areas(paths,param)
         generate_airports(paths, param)
@@ -95,7 +99,10 @@ def generate_maps_for_scope(paths, param, multiprocessing):
         generate_settlements(paths, param)
         generate_HydroLakes(paths, param)
         generate_HydroRivers(paths, param)
-
+        generate_area_offshore(paths, param)
+        generate_internal_waters(paths, param)
+        generate_bathymetry(paths, param)  # Bathymetry
+        generate_protected_areas_offshore(paths, param)
 
 def generate_land(paths, param):
     """
@@ -149,7 +156,7 @@ def generate_land(paths, param):
         logger.debug("End")
 
 
-def generate_weather_files(paths, param):
+def generate_weather_files(paths, param): #ToDo: Multiprocessing?
     """
     This function reads the daily NetCDF data (from MERRA-2) for SWGDN, SWTDN, T2M, U50m, and V50m,
     and saves them in matrices with yearly time series with low spatial resolution. Depending on the *MERRA_correction*
@@ -204,38 +211,37 @@ def generate_weather_files(paths, param):
             # Read NetCDF file, extract hourly tables
             with h5netcdf.File(name, "r") as f:
                 # [time, lat 361, lon 576]
-                swgdn = np.transpose(sf.subset(f["SWGDN"], param), [1, 2, 0])
+                swgdn = np.transpose(sf.subset(f["SWGDN"], param["Crd_all"], param), [1, 2, 0])
                 if SWGDN.size == 0:
                     SWGDN = swgdn
                 else:
                     SWGDN = np.concatenate((SWGDN, swgdn), axis=2)
 
-                swtdn = np.transpose(sf.subset(f["SWTDN"], param), [1, 2, 0])
+                swtdn = np.transpose(sf.subset(f["SWTDN"], param["Crd_all"], param), [1, 2, 0])
                 if SWTDN.size == 0:
                     SWTDN = swtdn
                 else:
                     SWTDN = np.concatenate((SWTDN, swtdn), axis=2)
 
             with h5netcdf.File(name2, "r") as f:
-                t2m = np.transpose(sf.subset(f["T2M"], param), [1, 2, 0])
+                t2m = np.transpose(sf.subset(f["T2M"], param["Crd_all"], param), [1, 2, 0])
                 if T2M.size == 0:
                     T2M = t2m
                 else:
                     T2M = np.concatenate((T2M, t2m), axis=2)
 
-                u50m = np.transpose(sf.subset(f["U50M"], param), [1, 2, 0])
+                u50m = np.transpose(sf.subset(f["U50M"], param["Crd_all"], param), [1, 2, 0])
                 if U50M.size == 0:
                     U50M = u50m
                 else:
                     U50M = np.concatenate((U50M, u50m), axis=2)
 
-                v50m = np.transpose(sf.subset(f["V50M"], param), [1, 2, 0])
+                v50m = np.transpose(sf.subset(f["V50M"], param["Crd_all"], param), [1, 2, 0])
                 if V50M.size == 0:
                     V50M = v50m
                 else:
                     V50M = np.concatenate((V50M, v50m), axis=2)
 
-            # if date.year != tomorrow.year:
         # Create the overall wind speed
         W50M = abs(U50M + (1j * V50M))
         # Calculate the clearness index
@@ -248,7 +254,9 @@ def generate_weather_files(paths, param):
         hdf5storage.writes({"CLEARNESS": CLEARNESS}, paths["CLEARNESS"], store_python_metadata=True, matlab_compatible=True)
 
         if param["MERRA_correction"]:
-            cf.clean_weather_data(paths, param)
+            cf.clean_weather_data("W50M", paths, param)
+            cf.clean_weather_data("CLEARNESS", paths, param)
+            cf.clean_weather_data("T2M", paths, param)
 
         ul.create_json(
             paths["T2M"],
@@ -276,6 +284,84 @@ def generate_weather_files(paths, param):
 
         logger.debug("End")
 
+def generate_weather_offshore_files(paths, param): #ToDo: Multiprocessing?
+    """
+    This function reads the daily NetCDF data (from MERRA-2) for U50m, and V50m,
+    and saves them in matrices with yearly time series with low spatial resolution. Depending on the *MERRA_correction*
+    parameter this function will also call clean_weather_data() to remove data outliers.
+    This function has to be run only once.
+
+    :param paths: Dictionary including the paths to the MERRA-2 input files *MERRA_IN*, and to the desired output locations for *T2M*, *W50M* and *CLEARNESS*.
+    :type paths: dict
+    :param param: Dictionary including the year, the spatial scope, and the MERRA_correction parameter.
+    :type param: dict
+
+    :return: The file W50M.mat is saved directly in the defined paths, along with their metadata in JSON files.
+    :rtype: None
+    """
+    if os.path.isfile(paths["W50M_offshore"]):
+        logger.info('Skip')    # Skip generation if files are already there
+
+    else:
+        logger.info("Start")
+
+        U50M = np.array([])
+        V50M = np.array([])
+
+        status = 0
+        start = datetime.date(param["year"], 1, 1)
+        end = datetime.date(param["year"], 12, 31)
+        delta = (end - start).days + 1
+
+        for date in pd.date_range(start, end):
+            # Show status bar
+            status = status + 1
+            sys.stdout.write("\r")
+            sys.stdout.write(
+                "Reading NetCDF files " + "[%-50s] %d%%" % ("=" * ((status * 50) // delta), (status * 100) // delta))
+            sys.stdout.flush()
+
+            # tomorrow = date + pd.Timedelta("1 day")
+            if date.day == 29 and date.month == 2:
+                continue    # Skip additional day of non leap year
+
+            # Name and path of the NetCDF file to be read
+            name2 = paths["MERRA_IN"] + "MERRA2_400.tavg1_2d_slv_Nx." + date.strftime("%Y%m%d") + ".nc4.nc4"
+
+            # Read NetCDF file, extract hourly tables
+            with h5netcdf.File(name2, "r") as f:
+
+                u50m = np.transpose(sf.subset(f["U50M"], param["Crd_offshore"], param), [1, 2, 0])
+                if U50M.size == 0:
+                    U50M = u50m
+                else:
+                    U50M = np.concatenate((U50M, u50m), axis=2)
+
+                v50m = np.transpose(sf.subset(f["V50M"], param["Crd_offshore"], param), [1, 2, 0])
+                if V50M.size == 0:
+                    V50M = v50m
+                else:
+                    V50M = np.concatenate((V50M, v50m), axis=2)
+
+        # Create the overall wind speed
+        W50M_offshore = abs(U50M + (1j * V50M))
+
+        sys.stdout.write("\n")
+        logger.info("Writing Files: W50M_offshore")
+        hdf5storage.writes({"W50M_offshore": W50M_offshore}, paths["W50M_offshore"], store_python_metadata=True, matlab_compatible=True)
+
+        if param["MERRA_correction"]:
+            cf.clean_weather_data("W50M_offshore", paths, param)
+
+        ul.create_json(
+            paths["W50M_offshore"],
+            param,
+            ["MERRA_coverage", "region_name", "Crd_offshore", "res_weather", "MERRA_correction", "MERRA_correction_factor"],
+            paths,
+            ["MERRA_IN", "W50M_offshore"],
+        )
+
+        logger.debug("End")
     
 def generate_array_coordinates(paths, param, W50M):
     """
@@ -344,7 +430,6 @@ def generate_array_coordinates(paths, param, W50M):
         logger.info("files saved: " + paths["GWA_Y"])
         logger.debug("End")
 
-
 def generate_sea(paths, param):
     """
     This function reads the shapefiles of the countries (land areas) and of the exclusive economic zones (sea areas)
@@ -365,22 +450,22 @@ def generate_sea(paths, param):
     else:
         logger.info("Start")
 
-        m_high = param["m_high"]
-        n_high = param["n_high"]
-        Crd_all = param["Crd_all"]
+        m_high_offshore = param["m_high_offshore"]
+        n_high_offshore = param["n_high_offshore"]
+        Crd_offshore = param["Crd_offshore"]
         res_desired = param["res_desired"]
-        GeoRef = param["GeoRef"]
+        GeoRef_offshore = param["GeoRef_offshore"]
         nRegions_sea = param["nRegions_sea"]
 
         # Extract sea areas
         eez_shp = param["regions_sea"]
-        Crd_regions_sea = param["Crd_regions"][-nRegions_sea:]
-        Ind = sf.ind_merra(Crd_regions_sea, Crd_all, res_desired)
-        A_sea = np.zeros((m_high, n_high))
+        Crd_regions_sea = param["Crd_regions_sea"]
+        Ind = sf.ind_merra(Crd_regions_sea, Crd_offshore, res_desired)
+        A_sea = np.zeros((m_high_offshore, n_high_offshore))
 
-        for reg in range(0, param["nRegions_sea"]):
+        for reg in range(0, nRegions_sea):
             logger.debug('Region: ' + str(reg))
-            A_region = sf.calc_region(eez_shp.iloc[reg], Crd_regions_sea[reg, :], res_desired, GeoRef)
+            A_region = sf.calc_region(eez_shp.iloc[reg], Crd_regions_sea[reg, :], res_desired, GeoRef_offshore)
 
             # Include A_region in A_sea
             A_sea[(Ind[reg, 2] - 1) : Ind[reg, 0], (Ind[reg, 3] - 1) : Ind[reg, 1]] = (
@@ -391,17 +476,26 @@ def generate_sea(paths, param):
         A_sea[A_sea > 0] = 1
 
         # Saving file
-        hdf5storage.writes({"EEZ": A_sea}, paths["EEZ"], store_python_metadata=True, matlab_compatible=True)
+        # hdf5storage.writes({"EEZ": A_sea}, paths["EEZ"], store_python_metadata=True, matlab_compatible=True)
+        sf.array2raster(paths["EEZ"], GeoRef_offshore["RasterOrigin"], GeoRef_offshore["pixelWidth"],
+                        GeoRef_offshore["pixelHeight"], A_sea)
         logger.info("files saved: " + paths["EEZ"])
         ul.create_json(
-            paths["EEZ"], param, ["region_name", "m_high", "n_high", "Crd_all", "res_desired", "GeoRef", "nRegions_sea"], paths, ["EEZ_global", "EEZ"]
+            paths["EEZ"], param, ["region_name", "m_high_offshore", "n_high_offshore", "Crd_offshore", "res_desired", "GeoRef_offshore", "nRegions_sea"], paths, ["EEZ_global", "EEZ"]
         )
-        if param["savetiff_inputmaps"]:
-            sf.array2raster(ul.changeExt2tif(paths["EEZ"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_sea)
-            logger.info("files saved: " + ul.changeExt2tif(paths["EEZ"]))
 
         logger.debug("End")
 
+def generate_internal_waters(paths, param):
+    if os.path.isfile(paths["INT_WATER"]):
+        logger.info('Skip')  # Skip generation if files are already there
+    else:
+        logger.info("Start")
+        sf.shape2raster(paths["Internal_waters_global"], paths["INT_WATER"], "", [], paths["EEZ"])
+        logger.info("files saved: " + paths["INT_WATER"])
+        ul.create_json(paths["INT_WATER"], param, ["region_name", "Crd_offshore", "res_desired", "GeoRef_offshore"], paths,
+                       ["INT_WATER"])
+        logger.debug("End")
 
 def generate_area(paths, param):
     """
@@ -462,6 +556,69 @@ def generate_area(paths, param):
         hdf5storage.writes({"A_area": A_area}, paths["AREA"], store_python_metadata=True, matlab_compatible=True)
         logger.info("files saved: " + paths["AREA"])
         ul.create_json(paths["AREA"], param, ["Crd_all", "res_desired", "n_high"], paths, [])
+
+        logger.debug("End")
+
+
+def generate_area_offshore(paths, param):
+    """
+    This function retreives the coordinates of the spatial scope and computes the pixel area gradient of the corresponding
+    raster.
+
+    :param paths: Dictionary of dictionaries containing the path to the output file.
+    :type paths: dict
+    :param param: Dictionary of dictionaries containing spatial scope coordinates and desired resolution.
+    :type param: dict
+
+    :return: The mat file for AREA is saved in its respective path, along with its metadata in a JSON file.
+    :rtype: None
+    """
+    if os.path.isfile(paths["AREA_offshore"]):
+        logger.info('Skip')    # Skip generation if files are already there
+
+    else:
+        logger.info("Start")
+
+        Crd_offshore = param["Crd_offshore"]
+        n_high_offshore = param["n_high_offshore"]
+        res_desired = param["res_desired"]
+
+        # Calculate available area
+        # WSG84 ellipsoid constants
+        a = 6378137  # major axis
+        b = 6356752.3142  # minor axis
+        e = np.sqrt(1 - (b / a) ** 2)
+
+        # Lower pixel latitudes
+        lat_vec = np.arange(Crd_offshore[2], Crd_offshore[0], res_desired[0])
+        lat_vec = lat_vec[np.newaxis]
+
+        # Lower slice areas
+        # Areas between the equator and the lower pixel latitudes circling the globe
+        f_lower = np.deg2rad(lat_vec)
+        zm_lower = 1 - (e * ul.sin(f_lower))
+        zp_lower = 1 + (e * ul.sin(f_lower))
+
+        lowerSliceAreas = np.pi * b ** 2 * ((2 * np.arctanh(e * ul.sin(f_lower))) / (2 * e) + (ul.sin(f_lower) / (zp_lower * zm_lower)))
+
+        # Upper slice areas
+        # Areas between the equator and the upper pixel latitudes circling the globe
+        f_upper = np.deg2rad(lat_vec + res_desired[0])
+
+        zm_upper = 1 - (e * ul.sin(f_upper))
+        zp_upper = 1 + (e * ul.sin(f_upper))
+
+        upperSliceAreas = np.pi * b ** 2 * ((2 * np.arctanh((e * ul.sin(f_upper)))) / (2 * e) + (ul.sin(f_upper) / (zp_upper * zm_upper)))
+
+        # Pixel areas
+        # Finding the latitudinal pixel-sized globe slice areas then dividing them by the longitudinal pixel size
+        area_vec = ((upperSliceAreas - lowerSliceAreas) * res_desired[1] / 360).T
+        A_area = np.tile(area_vec, (1, n_high_offshore))
+
+        # Save to HDF File
+        hdf5storage.writes({"A_area_offshore": A_area}, paths["AREA_offshore"], store_python_metadata=True, matlab_compatible=True)
+        logger.info("files saved: " + paths["AREA_offshore"])
+        ul.create_json(paths["AREA_offshore"], param, ["Crd_offshore", "res_desired", "n_high_offshore"], paths, [])
 
         logger.debug("End")
 
@@ -632,24 +789,20 @@ def generate_bathymetry(paths, param): #ToDo Adapt to new resolution
 
     else:
         logger.info("Start")
-
-        Crd_all = param["Crd_all"]
-        Ind = sf.ind_global(Crd_all, param["res_topography"])[0]
-        GeoRef = param["GeoRef"]
+        Crd_offshore = param["Crd_offshore"]
+        Ind = sf.ind_global(Crd_offshore, param["res_desired"])[0]
+        GeoRef_offshore = param["GeoRef_offshore"]
         with rasterio.open(paths["Bathym_global"]) as src:
-            A_BATH = src.read(1)
-        #A_BATH = resizem(A_BATH, 180 * 240, 360 * 240)
-        A_BATH = sf.adjust_resolution(A_BATH, param["res_bathymetry"], param["res_topography"], "mean")
-        A_BATH = np.flipud(A_BATH[Ind[0] - 1 : Ind[2], Ind[3] - 1 : Ind[1]])
-        print (A_BATH.shape)
-        A_BATH = sf.recalc_topo_resolution(A_BATH, param["res_topography"], param["res_desired"])
+            A_BATH = src.read(1, window=rasterio.windows.Window.from_slices(slice(Ind[0] - 1, Ind[2]),
+                                                                            slice(Ind[3] - 1, Ind[1])))
+            A_BATH = np.flipud(A_BATH)
 
         #saving file
         hdf5storage.writes({"BATH": A_BATH}, paths["BATH"], store_python_metadata=True, matlab_compatible=True)
         logger.info("files saved: " + paths["BATH"])
-        ul.create_json(paths["BATH"], param, ["region_name", "Crd_all", "res_bathymetry", "res_desired", "GeoRef"], paths, ["Bathym_global", "BATH"])
+        ul.create_json(paths["BATH"], param, ["region_name", "Crd_offshore", "res_desired", "GeoRef_offshore"], paths, ["Bathym_global", "BATH"])
         if param["savetiff_inputmaps"]:
-            sf.array2raster(ul.changeExt2tif(paths["BATH"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_BATH)
+            sf.array2raster(ul.changeExt2tif(paths["BATH"]), GeoRef_offshore["RasterOrigin"], GeoRef_offshore["pixelWidth"], GeoRef_offshore["pixelHeight"], A_BATH)
             logger.info("files saved: " + ul.changeExt2tif(paths["BATH"]))
 
         logger.debug("End")
@@ -794,6 +947,53 @@ def generate_protected_areas(paths, param):
     logger.debug("End")
 
 
+def generate_protected_areas_offshore(paths, param):
+    """
+    This function reads the shapefile of the globally protected areas, adds an attribute whose values are based on the dictionary
+    of conversion (protected_areas) to identify the protection category, then converts the shapefile into a raster for the scope.
+    The values are integers from 0 to 10.
+
+    :param paths: Dictionary including the paths to the shapefile of the globally protected areas, to the land raster of the scope, and to the output path PA.
+    :type paths: dict
+    :param param: Dictionary including the dictionary of conversion of protection categories (protected_areas).
+    :type param: dict
+    :return: The tif file for PA is saved in its respective path, along with its metadata in a JSON file.
+    :rtype: None
+    """
+
+    if os.path.isfile(paths["PA_offshore"]):
+        logger.info('Skip')    # Skip generation if files are already there
+    else:
+        logger.info("Start")
+        protected_areas = param["protected_areas"]
+        # set up protected areas dictionary
+        protection_type = dict(zip(protected_areas["IUCN_Category"], protected_areas["type"]))
+        sf.shape2raster(paths["Protected"],paths["PA_offshore"],"IUCN_CAT",protection_type,paths["EEZ"])
+        logger.info("files saved: " + paths["PA_offshore"])
+        ul.create_json(paths["PA_offshore"], param, ["region_name", "protected_areas", "Crd_offshore", "res_desired", "GeoRef_offshore"], paths, ["Protected", "PA_offshore"])
+
+    # Buffer maps for offshore protected areas
+    logger.info("Start-Buffer")
+    with rasterio.open(paths["PA_offshore"]) as src:
+        A_pa = src.read(1)
+    A_pa = np.flipud(A_pa).astype(int)
+    A_pa_f = A_pa > 0 #All protected areas pixels
+
+    if os.path.isfile(paths["WINDOFF_PA_BUFFER"]):
+        logger.info('Skip-Buffer')  # Skip generation if files are already there
+    else:
+        logger.info("Start-Buffer")
+        sf.create_buffer(param, A_pa_f, param["buffer"]["protected_areas_windoff"], param["GeoRef_offshore"],
+                                  paths["WINDOFF_PA_BUFFER"])
+        logger.info("files saved: " + paths["WINDOFF_PA_BUFFER"])
+        ul.create_json(paths["WINDOFF_PA_BUFFER"], param,
+                       ["region_name", "protected_areas", "WindOff", "Crd_offshore", "res_desired", "GeoRef_offshore"],
+                       paths,
+                       ["PA_offshore", "WINDOFF_PA_BUFFER"])
+        if param["savetiff_inputmaps"]:
+            logger.info("files saved: " + ul.changeExt2tif(paths["WINDOFF_PA_BUFFER"]))
+    logger.debug("End")
+
 def generate_airports(paths,param):
 
     if os.path.isfile(paths["AIRPORTS"]):
@@ -855,7 +1055,7 @@ def generate_airports(paths,param):
             ul.create_json(paths["AIRPORTS"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"], paths,
                            ["LAND", "AIRPORTS"])
             if param["savetiff_inputmaps"]:
-                sf.array2raster(paths["AIRPORTS"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
+                sf.array2raster(ul.changeExt2tif(paths["AIRPORTS"]), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
                              A_land)
                 logger.info("files saved: " + ul.changeExt2tif(paths["AIRPORTS"]))
         logger.debug("End")

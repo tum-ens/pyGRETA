@@ -6,7 +6,7 @@ Anguilla;AIA;AI;;;
 Aland Islands;ALA;AX;;;
 Albania;ALB;AL;;;Albania
 Andorra;AND;AD;;;
-United Arab Em;ARE;AE;;;
+United Arab Emirates;ARE;AE;;;
 Argentina;ARG;AR;;;
 Armenia;ARM;AM;;;
 Amer Samoa;ASM;AS;;;
@@ -25,28 +25,28 @@ Bangladesh;BGD;BD;;;
 Bulgaria;BGR;BG;BG;BG;Bulgaria
 Bahrain;BHR;BH;;;
 Bahamas;BHS;BS;;;
-Bosnia Herzg;BIH;BA;BA;BA;Bosnia and Herzegovina
+Bosnia and Herzegovina;BIH;BA;BA;BA;Bosnia and Herzegovina
 St Barth;BLM;BL;;;
 Belarus;BLR;BY;;;
 Belize;BLZ;BZ;;;
 Bermuda;BMU;BM;;;
-Bolivia;BOL;BO;;;
+Bolivia (Plurinational State of);BOL;BO;;;
 Brazil;BRA;BR;;;
 Barbados;BRB;BB;;;
-Brunei Darsm;BRN;BN;;;
+Brunei Darussalam;BRN;BN;;;
 Bhutan;BTN;BT;;;
 Bouvet Island;BVT;BV;;;
 Botswana;BWA;BW;;;
-Cent Afr Rep;CAF;CF;;;
+Central African Republic;CAF;CF;;;
 Canada;CAN;CA;;;
 Cocos Is;CCK;CC;;;
 Switzerland;CHE;CH;CH;CH;
 Chile;CHL;CL;;;
 China;CHN;CN;;;
-Cote d Ivoire;CIV;CI;;;
+Cote d'Ivoire;CIV;CI;;;
 Cameroon;CMR;CM;;;
-Congo DR;COD;CD;;;
-Congo Rep;COG;CG;;;
+Democratic Republic of the Congo;COD;CD;;;
+Republic of Congo;COG;CG;;;
 Cook Is;COK;CK;;;
 Colombia;COL;CO;;;
 Comoros;COM;KM;;;
@@ -62,12 +62,12 @@ Germany;DEU;DE;DE;DE;Germany (until 1990 former territory of the FRG)
 Djibouti;DJI;DJ;;;
 Dominica;DMA;DM;;;
 Denmark;DNK;DK;DK;DK;Denmark
-Dominican Rep;DOM;DO;;;
+Dominican Republic;DOM;DO;;;
 Algeria;DZA;DZ;;;
 Ecuador;ECU;EC;EC;;
 Egypt;EGY;EG;;;
 Eritrea;ERI;ER;;;
-Westn Sahara;ESH;EH;;;
+Western Sahara;ESH;EH;;;
 Spain;ESP;ES;ES;ES;Spain
 Estonia;EST;EE;EE;EE;Estonia
 Ethiopia;ETH;ET;;;
@@ -78,7 +78,7 @@ France;FRA;FR;FR;FR;France
 Faroe Islands;FRO;FO;;;
 Micronesia;FSM;FM;;;
 Gabon;GAB;GA;;;
-UK;GBR;GB;UK;GB, NI;United Kingdom
+United Kingdom;GBR;GB;UK;GB, NI;United Kingdom
 Georgia;GEO;GE;;;Georgia
 Guernsey;GGY;GG;;;
 Ghana;GHA;GH;GH;;Ghana
@@ -87,7 +87,7 @@ Guinea;GIN;GN;;;
 Guadeloupe;GLP;GP;;;
 Gambia;GMB;GM;;;
 Guinea Bissau;GNB;GW;;;
-Eq Guinea;GNQ;GQ;;;
+Equatorial Guinea;GNQ;GQ;;;
 Greece;GRC;GR;EL;GR;Greece
 Grenada;GRD;GD;;;
 Greenland;GRL;GL;;;
@@ -106,7 +106,7 @@ Isle of Man;IMN;IM;;;
 India;IND;IN;;;
 British Indian Ocean Territory;IOT;IO;;;
 Ireland;IRL;IE;IE;IE;Ireland
-Iran IR;IRN;IR;;;
+Iran (Islamic Republic of);IRN;IR;;;
 Iraq;IRQ;IQ;;;
 Iceland;ISL;IS;IS;IS;Iceland
 Israel;ISR;IL;;;
@@ -122,9 +122,9 @@ Kyrgyzstan;KGZ;KG;;;
 Cambodia;KHM;KH;;;
 Kiribati;KIR;KI;;;
 Saint Kitts and Nevis;KNA;KN;;;
-Korea Rep;KOR;KR;;;
+Republic of Korea;KOR;KR;;;
 Kuwait;KWT;KW;;;
-Lao PDR;LAO;LA;;;
+Lao People's Democratic Republic;LAO;LA;;;
 Lebanon;LBN;LB;;;
 Liberia;LBR;LR;;;
 Libya;LBY;LY;;;
@@ -178,18 +178,18 @@ Pitcairn;PCN;PN;;;
 Peru;PER;PE;;;
 Philippines;PHL;PH;;;
 Palau;PLW;PW;;;
-Papua N Guin;PNG;PG;;;
+Papua New Guinea;PNG;PG;;;
 Poland;POL;PL;PL;PL;Poland
 Puerto Rico;PRI;PR;;;
-Korea DPR;PRK;KP;;;
+Democratic People's Republic of Korea;PRK;KP;;;
 Portugal;PRT;PT;PT;PT;Portugal
 Paraguay;PRY;PY;;;
-Palestine;PSE;PS;;;
+Palestina;PSE;PS;;;
 Fr Polynesia;PYF;PF;;;
 Qatar;QAT;QA;;;
 Reunion;REU;RE;;;
 Romania;ROU;RO;RO;RO;Romania
-Russian Fed;RUS;RU;;;
+Russian Federation;RUS;RU;;;
 Rwanda;RWA;RW;;;
 Saudi Arabia;SAU;SA;;;
 Sudan;SDN;SD;;;
@@ -211,10 +211,10 @@ Suriname;SUR;SR;;;
 Slovakia;SVK;SK;SK;SK;Slovakia
 Slovenia;SVN;SI;SI;SI;Slovenia
 Sweden;SWE;SE;SE;SE;Sweden
-Eswatini;SWZ;SZ;;;
+Swaziland;SWZ;SZ;;;
 St Maarten;SXM;SX;;;
 Seychelles;SYC;SC;;;
-Syrian AR;SYR;SY;;;
+Syria;SYR;SY;;;
 Turks Caicos;TCA;TC;;;
 Chad;TCD;TD;;;
 Togo;TGO;TG;;;
@@ -229,16 +229,16 @@ Tunisia;TUN;TN;;;
 Turkey;TUR;TR;;;Turkey
 Tuvalu;TUV;TV;;;
 Chinese Taipei;TWN;TW;;;
-Tanzania;TZA;TZ;;;
+United Republic of Tanzania;TZA;TZ;;;
 Uganda;UGA;UG;;;
 Ukraine;UKR;UA;;UA_W;Ukraine
 United States Minor Outlying Islands;UMI;UM;;;
 Uruguay;URY;UY;;;
-USA;USA;US;;;
+United States of America;USA;US;;;
 Uzbekistan;UZB;UZ;;;
 Holy See;VAT;VA;;;
 St Vincent Gren;VCT;VC;;;
-Venezuela;VEN;VE;;;
+Venezuela (Bolivarian Republic of);VEN;VE;;;
 Br Virgin Is;VGB;VG;;;
 US Virgin Is;VIR;VI;;;
 Viet Nam;VNM;VN;;;

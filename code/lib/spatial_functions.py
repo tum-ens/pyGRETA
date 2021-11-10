@@ -106,7 +106,7 @@ def crd2ind(Crd_points, Crd_all, resolution):
     return Ind_points
 
 
-def subset(A, param):
+def subset(A, crd, param):
     """
     This function retrieves a subset of the global MERRA-2 coverage based on weather resolution and the
     bounding box coordinates of the spatial scope.
@@ -120,7 +120,6 @@ def subset(A, param):
     :rtype: numpy array
     """
     if param["MERRA_coverage"] == "World" and param["region_name"] != "World":
-        crd = param["Crd_all"]
         res = param["res_weather"]
         southlim = int(math.floor((crd[2] + res[0] / 10 + 90 + res[0] / 2) / res[0]))
         northlim = int(math.ceil((crd[0] - res[0] / 10 + 90 + res[0] / 2) / res[0]))
@@ -342,95 +341,7 @@ def adjust_resolution(array, res_data, res_desired, aggfun=None):
         array = aggregate_y_dim(array, res_data, res_desired, aggfun)
     return array
 
-def recalc_topo_resolution(array, res_data, res_desired):
-    
-    array1 = np.zeros([int(array.shape[0]*res_data[0]/res_desired[0]),int(array.shape[1]*res_data[1]/res_desired[1])])
-    array1[:] = np.NaN
-    for i in range(0,array.shape[0],3):
-        for j in range(0,array.shape[1],3):
-            array1[int(i*5/3),int(j*5/3)] = array[i,j] #first row, first column
-            array1[int(i*5/3),int(j*5/3)+2] = array[i,j+1] 
-            array1[int(i*5/3),int(j*5/3)+4] = array[i,j+2]
-            
-            array1[int(i*5/3)+2,int(j*5/3)] = array[i+1,j] #third row, first column
-            array1[int(i*5/3)+2,int(j*5/3)+2] = array[i+1,j+1] 
-            array1[int(i*5/3)+2,int(j*5/3)+4] = array[i+1,j+2]
-            
-            array1[int(i*5/3)+4,int(j*5/3)] = array[i+2,j] #fifth row, first column
-            array1[int(i*5/3)+4,int(j*5/3)+2] = array[i+2,j+1] 
-            array1[int(i*5/3)+4,int(j*5/3)+4] = array[i+2,j+2]
 
-            array1[int(i*5/3),int(j*5/3)+1] = np.mean([array1[int(i*5/3),int(j*5/3)],array1[int(i*5/3),int(j*5/3)+2]],dtype=np.float64)
-            array1[int(i*5/3),int(j*5/3)+3] = np.mean([array1[int(i*5/3),int(j*5/3)+2],array1[int(i*5/3),int(j*5/3)+4]],dtype=np.float64)
-                            
-            array1[int(i*5/3)+1,int(j*5/3)] = np.mean([array1[int(i*5/3),int(j*5/3)],array1[int(i*5/3)+2,int(j*5/3)]],dtype=np.float64)
-            array1[int(i*5/3)+1,int(j*5/3)+2] = np.mean([array1[int(i*5/3),int(j*5/3)+2],array1[int(i*5/3)+2,int(j*5/3)+2]],dtype=np.float64)
-            array1[int(i*5/3)+1,int(j*5/3)+4] = np.mean([array1[int(i*5/3),int(j*5/3)+4],array1[int(i*5/3)+2,int(j*5/3)+4]],dtype=np.float64)
-                          
-            array1[int(i*5/3)+2,int(j*5/3)+1] = np.mean([array1[int(i*5/3)+2,int(j*5/3)],array1[int(i*5/3)+2,int(j*5/3)+2]],dtype=np.float64)
-            array1[int(i*5/3)+2,int(j*5/3)+3] = np.mean([array1[int(i*5/3)+2,int(j*5/3)+2],array1[int(i*5/3)+2,int(j*5/3)+4]],dtype=np.float64)
-                            
-            array1[int(i*5/3)+3,int(j*5/3)] = np.mean([array1[int(i*5/3)+2,int(j*5/3)],array1[int(i*5/3)+4,int(j*5/3)]],dtype=np.float64)
-            array1[int(i*5/3)+3,int(j*5/3)+2] = np.mean([array1[int(i*5/3)+2,int(j*5/3)+2],array1[int(i*5/3)+4,int(j*5/3)+2]],dtype=np.float64)
-            array1[int(i*5/3)+3,int(j*5/3)+4] = np.mean([array1[int(i*5/3)+2,int(j*5/3)+4],array1[int(i*5/3)+4,int(j*5/3)+4]],dtype=np.float64)
-                            
-            array1[int(i*5/3)+4,int(j*5/3)+1] = np.mean([array1[int(i*5/3)+4,int(j*5/3)],array1[int(i*5/3)+4,int(j*5/3)+2]],dtype=np.float64)
-            array1[int(i*5/3)+4,int(j*5/3)+3] = np.mean([array1[int(i*5/3)+4,int(j*5/3)+2],array1[int(i*5/3)+4,int(j*5/3)+4]],dtype=np.float64)
-            
-            array1[int(i*5/3)+1,int(j*5/3)+1] = np.mean([array1[int(i*5/3)+1,int(j*5/3)],array1[int(i*5/3)+1,int(j*5/3)+2],array1[int(i*5/3),int(j*5/3)+1],array1[int(i*5/3)+2,int(j*5/3)+1]],dtype=np.float64)
-            array1[int(i*5/3)+1,int(j*5/3)+3] = np.mean([array1[int(i*5/3)+1,int(j*5/3)+2],array1[int(i*5/3)+1,int(j*5/3)+4],array1[int(i*5/3),int(j*5/3)+3],array1[int(i*5/3)+2,int(j*5/3)+3]],dtype=np.float64)
-            
-            array1[int(i*5/3)+3,int(j*5/3)+1] = np.mean([array1[int(i*5/3)+3,int(j*5/3)],array1[int(i*5/3)+3,int(j*5/3)+2],array1[int(i*5/3)+2,int(j*5/3)+1],array1[int(i*5/3)+4,int(j*5/3)+1]],dtype=np.float64)
-            array1[int(i*5/3)+3,int(j*5/3)+3] = np.mean([array1[int(i*5/3)+3,int(j*5/3)+2],array1[int(i*5/3)+3,int(j*5/3)+4],array1[int(i*5/3)+2,int(j*5/3)+3],array1[int(i*5/3)+4,int(j*5/3)+3]],dtype=np.float64)
-                
-    return array1
-    
-
-def recalc_bath_resolution(array, res_data, res_desired):
-    
-    array1 = np.zeros([int(array.shape[0]*res_data[0]/res_desired[0]),int(array.shape[1]*res_data[1]/res_desired[1])])
-    array1[:] = np.NaN
-    for i in range(0,array.shape[0],3):
-        for j in range(0,array.shape[1],3):
-            #print (str(i)+"_"+str(j))
-            array1[int(i*20/3):int(i*20/3)+6,int(j*20/3):int(j*20/3)+6] = array[i,j] #first row, first column
-            array1[int(i*20/3):int(i*20/3)+6,int(j*20/3)+7:int(j*20/3)+13] = array[i,j+1] 
-            array1[int(i*20/3):int(i*20/3)+6,int(j*20/3)+14:int(j*20/3)+20] = array[i,j+2]
-            
-            array1[int(i*20/3)+7:int(i*20/3)+13,int(j*20/3):int(j*20/3)+6] = array[i+1,j] #third row, first column
-            array1[int(i*20/3)+7:int(i*20/3)+13,int(j*20/3)+7:int(j*20/3)+13] = array[i+1,j+1] 
-            array1[int(i*20/3)+7:int(i*20/3)+13,int(j*20/3)+14:int(j*20/3)+20] = array[i+1,j+2]
-            
-            array1[int(i*20/3)+14:int(i*20/3)+20,int(j*20/3):int(j*20/3)+6] = array[i+2,j] #fifth row, first column
-            array1[int(i*20/3)+14:int(i*20/3)+20,int(j*20/3)+7:int(j*20/3)+13] = array[i+2,j+1] 
-            array1[int(i*20/3)+14:int(i*20/3)+20,int(j*20/3)+14:int(j*20/3)+20] = array[i+2,j+2]
-
-            array1[int(i*20/3):int(i*20/3)+6,int(j*20/3)+6] = np.mean([array1[int(i*20/3),int(j*20/3)],array1[int(i*20/3),int(j*20/3)+7]],dtype=np.float64)
-            array1[int(i*20/3):int(i*20/3)+6,int(j*20/3)+13] = np.mean([array1[int(i*20/3),int(j*20/3)+7],array1[int(i*20/3),int(j*20/3)+14]],dtype=np.float64)
-                            
-            array1[int(i*20/3)+6,int(j*20/3):int(j*20/3)+6] = np.mean([array1[int(i*20/3),int(j*20/3)],array1[int(i*20/3)+7,int(j*20/3)]],dtype=np.float64)
-            array1[int(i*20/3)+6,int(j*20/3)+7:int(j*20/3)+13] = np.mean([array1[int(i*20/3),int(j*20/3)+7],array1[int(i*20/3)+7,int(j*20/3)+7]],dtype=np.float64)
-            array1[int(i*20/3)+6,int(j*20/3)+14:int(j*20/3)+20] = np.mean([array1[int(i*20/3),int(j*20/3)+14],array1[int(i*20/3)+7,int(j*20/3)+14]],dtype=np.float64)
-                          
-            array1[int(i*20/3)+7:int(i*20/3)+13,int(j*20/3)+6] = np.mean([array1[int(i*20/3)+7,int(j*20/3)],array1[int(i*20/3)+7,int(j*20/3)+7]],dtype=np.float64)
-            array1[int(i*20/3)+7:int(i*20/3)+13,int(j*20/3)+13] = np.mean([array1[int(i*20/3)+7,int(j*20/3)+7],array1[int(i*20/3)+7,int(j*20/3)+14]],dtype=np.float64)
-                            
-            array1[int(i*20/3)+13,int(j*20/3):int(j*20/3)+6] = np.mean([array1[int(i*20/3)+7,int(j*20/3)],array1[int(i*20/3)+14,int(j*20/3)]],dtype=np.float64)
-            array1[int(i*20/3)+13,int(j*20/3)+7:int(j*20/3)+13] = np.mean([array1[int(i*20/3)+7,int(j*20/3)+7],array1[int(i*20/3)+14,int(j*20/3)+7]],dtype=np.float64)
-            array1[int(i*20/3)+13,int(j*20/3)+14:int(j*20/3)+20] = np.mean([array1[int(i*20/3)+7,int(j*20/3)+14],array1[int(i*20/3)+14,int(j*20/3)+14]],dtype=np.float64)
-                            
-            array1[int(i*20/3)+14:int(i*20/3)+20,int(j*20/3)+6] = np.mean([array1[int(i*20/3)+14,int(j*20/3)],array1[int(i*20/3)+14,int(j*20/3)+7]],dtype=np.float64)
-            array1[int(i*20/3)+14:int(i*20/3)+20,int(j*20/3)+13] = np.mean([array1[int(i*20/3)+14,int(j*20/3)+7],array1[int(i*20/3)+14,int(j*20/3)+14]],dtype=np.float64)
-            
-            array1[int(i*20/3)+6,int(j*20/3)+6] = np.mean([array1[int(i*20/3)+6,int(j*20/3)],array1[int(i*20/3)+6,int(j*20/3)+7],array1[int(i*20/3),int(j*20/3)+6],array1[int(i*20/3)+7,int(j*20/3)+6]],dtype=np.float64)
-            array1[int(i*20/3)+6,int(j*20/3)+13] = np.mean([array1[int(i*20/3)+6,int(j*20/3)+7],array1[int(i*20/3)+6,int(j*20/3)+14],array1[int(i*20/3),int(j*20/3)+13],array1[int(i*20/3)+7,int(j*20/3)+13]],dtype=np.float64)
-            
-            array1[int(i*20/3)+13,int(j*20/3)+6] = np.mean([array1[int(i*20/3)+13,int(j*20/3)],array1[int(i*20/3)+13,int(j*20/3)+7],array1[int(i*20/3)+7,int(j*20/3)+6],array1[int(i*20/3)+14,int(j*20/3)+6]],dtype=np.float64)
-            array1[int(i*20/3)+13,int(j*20/3)+13] = np.mean([array1[int(i*20/3)+13,int(j*20/3)+7],array1[int(i*20/3)+13,int(j*20/3)+14],array1[int(i*20/3)+7,int(j*20/3)+13],array1[int(i*20/3)+14,int(j*20/3)+13]],dtype=np.float64)
-                
-    return array1
-
-    
 def recalc_livestock_resolution(array, res_data, res_desired):
     
     #The livestock density (number of animals per sq.km) will be adjusted to higher resolution
@@ -469,7 +380,7 @@ def create_buffer(param, array, buffer_pixel_amount, GeoRef, Outraster):
     #saving file
     hdf5storage.writes({"BUFFER": A_NotArray}, Outraster, store_python_metadata=True, matlab_compatible=True)
     if param["savetiff_inputmaps"]:
-        array2raster(Outraster, GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
+        array2raster(ul.changeExt2tif(Outraster), GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"],
                     A_NotArray)
 
 

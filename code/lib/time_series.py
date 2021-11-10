@@ -32,22 +32,29 @@ def find_representative_locations(paths, param, tech):
     FLH_mask = hdf5storage.read("FLH_mask", paths[tech]["FLH_mask"])
     quantiles = param["quantiles"]
     res_desired = param["res_desired"]
-    Crd_all = param["Crd_all"]
-    GeoRef = param["GeoRef"]
-    # Select only indices in the report
     filter = pd.read_csv(paths[tech]["Region_Stats"], sep=";", decimal=",", index_col=0).index
-    regions_shp = param["regions_land"].loc[filter]
-    nRegions = len(regions_shp)
-    Crd_regions_land = param["Crd_regions_land"]
-    Ind = ind_merra(Crd_regions_land, Crd_all, res_desired)
-    
+    if tech == "WindOff":
+        Crd = param["Crd_offshore"]
+        GeoRef = param["GeoRef_offshore"]
+        # Select only indices in the report
+        regions_shp = param["regions_sea"].loc[filter]
+        nRegions = len(regions_shp)
+        Crd_regions = param["Crd_regions_sea"]
+    else:
+        Crd = param["Crd_all"]
+        GeoRef = param["GeoRef"]
+        # Select only indices in the report
+        regions_shp = param["regions_land"].loc[filter]
+        nRegions = len(regions_shp)
+        Crd_regions = param["Crd_regions_land"]
+    Ind = ind_merra(Crd_regions, Crd, res_desired)
     reg_ind = np.zeros((nRegions, len(quantiles), 2))
     k = 0
     list_names = []
     list_quantiles = []
     for reg in filter:
         # A_region
-        A_region = calc_region(regions_shp.loc[reg], Crd_regions_land[reg, :], res_desired, GeoRef)
+        A_region = calc_region(regions_shp.loc[reg], Crd_regions[reg, :], res_desired, GeoRef)
 
         FLH_reg = A_region * FLH_mask[Ind[reg, 2] - 1 : Ind[reg, 0], Ind[reg, 3] - 1 : Ind[reg, 1]]
         FLH_reg[FLH_reg == 0] = np.nan
@@ -61,8 +68,12 @@ def find_representative_locations(paths, param, tech):
 
         q_rank = 0
         for q in quantiles:
-            list_names.append(regions_shp["NAME_SHORT"].loc[reg])
-            # list_names.append(regions_shp["GID_0"].loc[reg])
+            if tech == "WindOff":
+                list_names.append(regions_shp["ISO_Ter1"].loc[reg])
+            else:
+                # list_names.append(regions_shp["NAME_SHORT"].loc[reg])
+                list_names.append(regions_shp["GID_0"].loc[reg])
+
             list_quantiles.append("q" + str(q))
             if q == 100:
                 I = I_old[(len(X) - 1) - sum(np.isnan(X).astype(int))]
@@ -81,7 +92,7 @@ def find_representative_locations(paths, param, tech):
     reg_ind = (reg_ind[:, 0]-1, reg_ind[:, 1]-1)
 
     param[tech]["Ind_points"] = reg_ind
-    param[tech]["Crd_points"] = ind2crd(reg_ind, Crd_all, res_desired)
+    param[tech]["Crd_points"] = ind2crd(reg_ind, Crd, res_desired)
     param[tech]["Crd_points"] = (param[tech]["Crd_points"][0], param[tech]["Crd_points"][1], list_names, list_quantiles)
 
 
@@ -106,7 +117,7 @@ def find_representative_locations(paths, param, tech):
     ul.create_json(
         paths[tech]["Locations"],
         param,
-        ["author", "comment", tech, "region_name", "subregions_name", "quantiles", "Crd_all"],
+        ["author", "comment", tech, "region_name", "subregions_name", "quantiles"],
         paths,
         ["subregions"],
     )
@@ -225,8 +236,11 @@ def generate_time_series_for_representative_locations(paths, param, tech):
 
     # Restructuring results
     tuples = list(zip(list_names, list_quantiles))
-    column_names = pd.MultiIndex.from_tuples(tuples, names=["NAME_SHORT", "Quantile"])
-    # column_names = pd.MultiIndex.from_tuples(tuples, names=["GID_0", "Quantile"])
+    if tech == "WindOff":
+        column_names = pd.MultiIndex.from_tuples(tuples, names=["ISO_Ter1", "Quantile"])
+    else:
+        # column_names = pd.MultiIndex.from_tuples(tuples, names=["NAME_SHORT", "Quantile"])
+        column_names = pd.MultiIndex.from_tuples(tuples, names=["GID_0", "Quantile"])
     results = pd.DataFrame(TS.transpose(), columns=column_names)
     results.to_csv(paths[tech]["TS"], sep=";", decimal=",")
     ul.create_json(
@@ -487,8 +501,8 @@ def calc_TS_windoff(hours, args):
     rasterData = args[2]
     merraData = args[3]
 
-    m_high = param["m_high"]
-    n_high = param["n_high"]
+    m_high_offshore = param["m_high_offshore"]
+    n_high_offshore = param["n_high_offshore"]
     reg_ind = param[tech]["Ind_points"]
 
     turbine = param[tech]["technical"]
@@ -502,7 +516,7 @@ def calc_TS_windoff(hours, args):
             ul.display_progress(tech + " " + param["subregions_name"] + " ", (len(hours), status))
 
         # Calculate hourly capacity factor
-        CF = pm.calc_CF_windoff(hour, reg_ind, turbine, m_high, n_high, merraData, rasterData)
+        CF = pm.calc_CF_windoff(hour, reg_ind, turbine, m_high_offshore, n_high_offshore, merraData, rasterData)
 
         # Aggregates CF to obtain the time series
         CF[np.isnan(CF)] = 0

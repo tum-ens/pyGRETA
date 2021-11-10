@@ -177,6 +177,11 @@ Shapefile of Exclusive Economic Zones (EEZ)
 A shapefile of the maritime boundaries of all countries is available at the website of the Flanders Marine Institute `(VLIZ) <http://www.vliz.be/en/imis?dasid=5465&doiid=312>`_.
 It is used to identify offshore areas.
 
+Shapefile of Internal Waters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+A shapefile of the internal waters boundaries of all countries is available at the website of the Flanders Marine Institute `(VLIZ) <http://www.vliz.be/en/imis?module=dataset&dasid=5469>`_.
+It is used to identify offshore areas.
+
 Raster of topography / elevation data
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 A high resolution raster (15 arcsec = 1/240° longitude and 1/240° latitude) made of 24 tiles can be downloaded from `viewfinder panoramas

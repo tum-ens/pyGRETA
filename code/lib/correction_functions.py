@@ -9,7 +9,7 @@ import rasterio
 from scipy.ndimage import generic_filter
 
 
-def clean_weather_data(paths, param):
+def clean_weather_data(p, paths, param):
     """
     This function detects data outliers in the weather input .mat files. An outlier is a data point, for which
     the absolute value of the difference between the yearly average value and the mean of the direct neighbors
@@ -25,29 +25,28 @@ def clean_weather_data(paths, param):
     :rtype: None
     """
     logger.info('Start')
-    for p in ["W50M", "CLEARNESS", "T2M"]:
 
-        # Read Weather Data
-        weather = hdf5storage.read(p, paths[p])
-        mean = np.mean(weather, 2)
+    # Read Weather Data
+    weather = hdf5storage.read(p, paths[p])
+    mean = np.mean(weather, 2)
 
-        # Set convolution mask
-        kernel = np.ones((3, 3))
-        kernel[1, 1] = 0
+    # Set convolution mask
+    kernel = np.ones((3, 3))
+    kernel[1, 1] = 0
 
-        # Compute average Convolution
-        neighbors = generic_filter(mean, np.nanmean, footprint=kernel, mode="constant", cval=np.NaN)
-        ratio = mean / neighbors
+    # Compute average Convolution
+    neighbors = generic_filter(mean, np.nanmean, footprint=kernel, mode="constant", cval=np.NaN)
+    ratio = mean / neighbors
 
-        # Extract over threshold Points
-        points = np.where(abs(ratio - np.mean(ratio)) > param["MERRA_correction_factor"][p])
+    # Extract over threshold Points
+    points = np.where(abs(ratio - np.mean(ratio)) > param["MERRA_correction_factor"][p])
 
-        # Correct points hourly
-        for t in range(weather.shape[2]):
-            weather[points[0], points[1], t] = weather[points[0], points[1], t] / ratio[points[0], points[1]]
+    # Correct points hourly
+    for t in range(weather.shape[2]):
+        weather[points[0], points[1], t] = weather[points[0], points[1], t] / ratio[points[0], points[1]]
 
-        # Save corrected Wind
-        hdf5storage.writes({p: weather}, paths[p], store_python_metadata=True, matlab_compatible=True)
+    # Save corrected Wind
+    hdf5storage.writes({p: weather}, paths[p], store_python_metadata=True, matlab_compatible=True)
     logger.debug("End")
 
 
@@ -73,20 +72,17 @@ def generate_wind_correction(paths, param):
     :return: The rasters for wind correction CORR_ON and/or CORR_OFF are saved directly in the user-defined paths, along with their metadata in JSON files.
     :rtype: None
     """
-    if os.path.isfile(paths["CORR_ON"]) or os.path.isfile(paths["CORR_OFF"]): #ToDo more realistic skipping, seperate for wind offshore and onshore
-        logger.info('Skip')    # Skip generation if files are already there
+    logger.info("Start")
 
-    else:
-        logger.info("Start")
-        GeoRef = param["GeoRef"]
-        landuse = param["landuse"]
-        A_lu = hdf5storage.read("LU", paths["LU"]).astype(int)
-        # with rasterio.open(paths["LU"]) as src:
-        #     A_lu = np.flipud(src.read(1)).astype(int)
-        A_hellmann = ul.changem(A_lu, landuse["hellmann"], landuse["type"]).astype(float)
-
-        # Onshore height correction
-        if "WindOn" in param["technology"]:
+    # Onshore height correction
+    if "WindOn" in param["technology"]:
+        if os.path.isfile(paths["CORR_ON"]):
+            logger.info('Skip')  # Skip generation if files are already there
+        else:
+            GeoRef = param["GeoRef"]
+            landuse = param["landuse"]
+            A_lu = hdf5storage.read("LU", paths["LU"]).astype(int)
+            A_hellmann = ul.changem(A_lu, landuse["hellmann"], landuse["type"]).astype(float)
             turbine_height_on = param["WindOn"]["technical"]["hub_height"]
             A_cf_on = (turbine_height_on / 50) ** A_hellmann
             with rasterio.open(paths["LAND"]) as src:
@@ -97,18 +93,22 @@ def generate_wind_correction(paths, param):
             ul.create_json(paths["CORR_ON"], param, ["region_name", "year", "WindOn", "landuse", "res_weather", "res_desired"], paths, ["LAND"])
             logger.info("files saved: " + paths["CORR_ON"])
 
-        # Offshore height correction
-        if "WindOff" in param["technology"]:
+    # Offshore height correction
+    if "WindOff" in param["technology"]:
+        if os.path.isfile(paths["CORR_OFF"]):
+            logger.info('Skip')  # Skip generation if files are already there
+        else:
+            GeoRef_offshore = param["GeoRef_offshore"]
+            A_hellmann = 0.1
             turbine_height_off = param["WindOff"]["technical"]["hub_height"]
             A_cf_off = (turbine_height_off / 50) ** A_hellmann
             del A_hellmann
-            A_eez = hdf5storage.read("EEZ", paths["EEZ"]).astype(int)
-            # with rasterio.open(paths["EEZ"]) as src:
-            #     A_eez = np.flipud(src.read(1)).astype(int)
+            with rasterio.open(paths["EEZ"]) as src:
+                A_eez = np.flipud(src.read(1)).astype(int)
             A_cf_off = A_cf_off * A_eez
 
-            sf.array2raster(paths["CORR_OFF"], GeoRef["RasterOrigin"], GeoRef["pixelWidth"], GeoRef["pixelHeight"], A_cf_off)
-            ul.create_json(paths["CORR_OFF"], param, ["region_name", "year", "WindOff", "landuse", "res_weather", "res_desired"], paths, ["EEZ"])
+            sf.array2raster(paths["CORR_OFF"], GeoRef_offshore["RasterOrigin"], GeoRef_offshore["pixelWidth"], GeoRef_offshore["pixelHeight"], A_cf_off)
+            ul.create_json(paths["CORR_OFF"], param, ["region_name", "year", "WindOff", "res_weather", "res_desired"], paths, ["EEZ"])
             logger.info("files saved: " + paths["CORR_OFF"])
         logger.debug("End")
 

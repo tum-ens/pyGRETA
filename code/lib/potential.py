@@ -655,17 +655,12 @@ def mask_potential_maps(paths, param, tech): #ToDo optimize no. of lines
             A_protect = np.flipud(A_protect).astype(int)  # Protection categories 0-10, to be classified
         # Exclude protection categories that are not suitable
         A_suitability_pa = ul.changem(A_protect, mask["pa_suitability"], param["protected_areas"]["type"]).astype(int)
-        # A_suitability_pa = (A_suitability_pa > 0).astype(int)
         A_notProtected = hdf5storage.read("BUFFER", paths["WINDOFF_PA_BUFFER"]).astype(int)
-        # with rasterio.open(paths["TERR_SEA"]) as src:
-        #     A_TerritorialSeas = src.read(1)
-        #     A_notTerritorialSeas = np.flipud(~A_TerritorialSeas.astype(bool)).astype(int)
         with rasterio.open(paths["INT_WATER"]) as src:
             A_InternalWaters = src.read(1)
             A_notInternalWaters = np.flipud(~A_InternalWaters.astype(bool)).astype(int)
-        # A_notProtected = 1
         A_bathymetry = hdf5storage.read("BATH", paths["BATH"]) # Bathymetry (depth) in meter
-        A_bathymetry = (np.logical_and(A_bathymetry >= mask["depth"],A_bathymetry < -50)).astype(int) # (boolean)
+        A_bathymetry = (A_bathymetry >= mask["depth"]).astype(int) # (boolean)
         # Masking matrix for the suitable sites (pixels)
         A_mask = (A_suitability_pa * A_suitability_lu * A_notInternalWaters * A_bathymetry * A_notProtected).astype(float)
 

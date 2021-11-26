@@ -720,7 +720,6 @@ def generate_slope(paths, param, A_TOPO):
     else:
         logger.info("Start")
 
-        # ul.timecheck("Start")
         res_desired = param["res_desired"]
         Crd_all = param["Crd_all"]
         Ind = sf.ind_global(Crd_all, res_desired)[0]
@@ -747,18 +746,13 @@ def generate_slope(paths, param, A_TOPO):
         y_cell = ul.repmat((deltaLat[Ind[0] - 1 : Ind[2]] * m_per_deg_lat[Ind[0] - 1 : Ind[2]]), Ind[1]-Ind[3]+1, 1).T
         y_cell = np.flipud(y_cell)
 
-        # with rasterio.open(paths["TOPO"]) as src:
-        #     A_TOPO = src.read(1)
-
         kernel = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]) / 8
         dzdx = scipy.ndimage.convolve(A_TOPO, kernel) / x_cell
         kernel = np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]]) / 8
         dzdy = scipy.ndimage.convolve(A_TOPO, kernel) / y_cell
 
         slope_deg = ul.arctan((dzdx ** 2 + dzdy ** 2) ** 0.5) * 180 / np.pi
-        slope_pc = ul.tan(np.deg2rad(slope_deg)) * 100
-
-        A_SLP = np.flipud(slope_pc)
+        A_SLP = slope_deg
 
         #saving file
         hdf5storage.writes({"SLOPE": A_SLP}, paths["SLOPE"], store_python_metadata=True, matlab_compatible=True)
@@ -1107,7 +1101,7 @@ def generate_country_boarders(paths,param):
 
 
 def generate_roads(paths, param):
-    # "fclass" ILIKE 'primary' OR "fclass" ILIKE 'secondary'
+    # "fclass" ILIKE 'motorways' OR "fclass" ILIKE 'trunks' OR "fclass" ILIKE 'primary' OR "fclass" ILIKE 'secondary'
     if os.path.isfile(paths["ROADS"]):
         logger.info('Skip')  # Skip generation if files are already there
 

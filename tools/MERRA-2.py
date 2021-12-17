@@ -1,4 +1,4 @@
-# How to create authentication file for downloading data with GES DISC account
+# How to create authentication file for downloading data with GES DISC account (https://disc.gsfc.nasa.gov/data-access)
 # On Mac/Linux:
 # 1) cd ~ or cd $HOME
 # 2) touch .netrc
@@ -9,11 +9,15 @@
 # 2) Enter (without quotes): machine urs.earthdata.nasa.gov login <uid> password <password>
 # 3) Save as: C:\Users\<username>\.netrc
 
+# Generate link file
+# Go to GES disc data collection and search for "tavg1_2d_slv_NX"
+
 import os
 import requests
 
 # Parameters
 file_links = "subset_M2I1NXLFO_5.12.4_20210930_073038.txt"  # Downloaded links from GES DISC
+file_links = 'subset_MAT1NXSLV_5.2.0_20211217_094609.txt'
 path_downloadedFiles = "download/"
 
 # Create folder for downloaded files

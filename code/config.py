@@ -129,6 +129,7 @@ def scope_paths_and_parameters(paths, param, config_file):
     param["country_code"] = input_dict["country_code"].replace(" ", "")
     param["year"] = int(input_dict["year"].replace(" ", ""))  # Convert string 'xxxx' to int
     param["technology"] = input_dict["technology"].replace(" ", "").split(',')  # Creat array by comma separated string
+    param["gid"] = input_dict["gid"].replace(" ", "")  # Define spatial level according to GID
 
     return paths, param
 
@@ -990,7 +991,8 @@ def output_folders(paths, param):
     subregions = param["subregions_name"]
 
     # Main output folder
-    paths["region"] = root + "03 Intermediate files" + fs + "Files " + region + fs
+    # paths["region"] = root + "03 Intermediate files" + fs + "Files " + region + fs        # old structure of database
+    paths["region"] = os.path.join(root, "..", "1_results", "Files" + region, "")
 
     # Output folder for weather data
     paths["weather_data"] = paths["region"] + "Weather data" + fs

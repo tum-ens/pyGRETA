@@ -60,7 +60,7 @@ def read_shapefiles(paths, param):
 def read_regions(param, regions_shp):
     logger.info("Start")
     # regions_shp.sort_values(by=["NAME_SHORT"], inplace=True)
-    regions_shp.sort_values(by=["GID_0"], inplace=True)     # ToDo: Replace 'GID_0' by variable
+    regions_shp.sort_values(by=[param["gid"]], inplace=True)
     regions_shp.reset_index(inplace=True)
     param["regions_land"] = regions_shp
     param["nRegions_land"] = len(regions_shp)

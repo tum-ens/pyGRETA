@@ -991,7 +991,7 @@ def report_potentials(paths, param, tech):
             regions.loc[reg, "Region"] = regions_shp.loc[reg]["ISO_Ter1"] + "_" + location
         else:
             # regions.loc[reg, "Region"] = regions_shp.loc[reg]["NAME_SHORT"] + "_" + location
-            regions.loc[reg, "Region"] = regions_shp.loc[reg]["GID_0"] + "_" + location
+            regions.loc[reg, "Region"] = regions_shp.loc[reg][param["gid"]] + "_" + location
 
         # Compute region_mask
         A_region_extended = sf.calc_region(regions_shp.loc[reg], Crd_all, res_desired, GeoRef)
@@ -1349,7 +1349,7 @@ def report_biomass_potentials(paths, param, tech):
     for reg in range(0, nRegions_land):
         # Get name of Country
         # countries.loc[reg, "Region"] = countries_shp.loc[reg]["NAME_SHORT"]
-        countries.loc[reg, "Region"] = countries_shp.loc[reg]["GID_0"]
+        countries.loc[reg, "Region"] = countries_shp.loc[reg][param["gid"]]
 
         # Compute region_mask
         A_country_extended = sf.calc_region(countries_shp.loc[reg], Crd_all, res_desired, GeoRef)

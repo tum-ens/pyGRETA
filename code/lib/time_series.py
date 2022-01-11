@@ -72,7 +72,7 @@ def find_representative_locations(paths, param, tech):
                 list_names.append(regions_shp["ISO_Ter1"].loc[reg])
             else:
                 # list_names.append(regions_shp["NAME_SHORT"].loc[reg])
-                list_names.append(regions_shp["GID_0"].loc[reg])
+                list_names.append(regions_shp[param["gid"]].loc[reg])
 
             list_quantiles.append("q" + str(q))
             if q == 100:
@@ -240,7 +240,7 @@ def generate_time_series_for_representative_locations(paths, param, tech):
         column_names = pd.MultiIndex.from_tuples(tuples, names=["ISO_Ter1", "Quantile"])
     else:
         # column_names = pd.MultiIndex.from_tuples(tuples, names=["NAME_SHORT", "Quantile"])
-        column_names = pd.MultiIndex.from_tuples(tuples, names=["GID_0", "Quantile"])
+        column_names = pd.MultiIndex.from_tuples(tuples, names=[param["gid"], "Quantile"])
     results = pd.DataFrame(TS.transpose(), columns=column_names)
     results.to_csv(paths[tech]["TS"], sep=";", decimal=",")
     ul.create_json(

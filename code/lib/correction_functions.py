@@ -127,7 +127,7 @@ def clean_IRENA_summary(paths, param):
     :rtype: None
     """
     year = str(param["year"])
-    filter_countries = param["regions_land"]["GID_0"].to_list()
+    filter_countries = param["regions_land"][param["gid"]].to_list()
     IRENA_dict = pd.read_csv(paths["IRENA_dict"], sep=";", index_col=0)
     IRENA_dict = IRENA_dict["Countries shapefile"].to_dict()
     IRENA = pd.read_csv(paths["IRENA"], skiprows=7, sep=";", index_col=False, usecols=[0, 1, 2, 3])

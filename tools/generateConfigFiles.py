@@ -4,6 +4,7 @@ import os
 year = 2019
 technology = "OpenFieldPV,RoofTopPV,WindOn"
 path = "../configs/"
+gid = "GID_0"
 
 ISO = pd.read_csv("../assumptions/ISO3166-1.csv", sep=";")
 
@@ -21,4 +22,5 @@ for i in range(len(ISO)):
     f.write("country_code:" + str(country['Alpha-3']) + "\n")
     f.write("year:" + str(year) + "\n")
     f.write("technology:" + technology + "\n")
+    f.write("gid:" + gid + "\n")
     f.close()

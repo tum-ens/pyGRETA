@@ -71,7 +71,6 @@ def find_representative_locations(paths, param, tech):
             if tech == "WindOff":
                 list_names.append(regions_shp["ISO_Ter1"].loc[reg])
             else:
-                # list_names.append(regions_shp["NAME_SHORT"].loc[reg])
                 list_names.append(regions_shp[param["gid"]].loc[reg])
 
             list_quantiles.append("q" + str(q))
@@ -239,7 +238,6 @@ def generate_time_series_for_representative_locations(paths, param, tech):
     if tech == "WindOff":
         column_names = pd.MultiIndex.from_tuples(tuples, names=["ISO_Ter1", "Quantile"])
     else:
-        # column_names = pd.MultiIndex.from_tuples(tuples, names=["NAME_SHORT", "Quantile"])
         column_names = pd.MultiIndex.from_tuples(tuples, names=[param["gid"], "Quantile"])
     results = pd.DataFrame(TS.transpose(), columns=column_names)
     results.to_csv(paths[tech]["TS"], sep=";", decimal=",")
@@ -471,7 +469,7 @@ def calc_TS_solar(hours, args):
         CF_low = np.zeros((m_low, n_low))
         CF_low[ind] = CF_low[ind] + CF
         CF_high = ul.resizem(CF_low, m_high, n_high)
-        CF_reg = CF_high[reg_ind]
+        CF_reg = CF_high[tuple(reg_ind)]
         TS[:, hour] = CF_reg
     return TS
 

@@ -332,8 +332,7 @@ def display_progress(message, progress_stat):
     """
     length = progress_stat[0]
     status = progress_stat[1]
-    sys.stdout.write("\r")
-    sys.stdout.write(message + " " + "[%-50s] %d%%" % ("=" * ((status * 50) // length), (status * 100) // length))
+    sys.stdout.write("\r" + message + " " + "[%-50s] %d%%" % ("=" * ((status * 50) // length), (status * 100) // length))
     sys.stdout.flush()
     if status == length:
         print("\n")

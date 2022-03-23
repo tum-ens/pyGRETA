@@ -52,15 +52,15 @@ def generate_maps_for_scope(paths, param, multiprocessing):
     """
 
     generate_land(paths, param)  # Subregions
-    generate_sea(paths, param)  # Sea
+    # generate_sea(paths, param)  # Sea
+    generate_topography(paths, param)
     generate_weather_files(paths, param)  # MERRA Weather data for land
-    generate_weather_offshore_files(paths, param)  # MERRA Weather data for offshore # comment out if no offshore
+    # generate_weather_offshore_files(paths, param)  # MERRA Weather data for offshore # comment out if no offshore
 
     if multiprocessing:
         processes = []
 
         processes.append(mp.Process(target=generate_area, args=(paths, param)))
-        processes.append(mp.Process(target=generate_topography, args=(paths, param)))
         processes.append(mp.Process(target=generate_landuse, args=(paths, param)))
         processes.append(mp.Process(target=generate_protected_areas, args=(paths, param)))
         processes.append(mp.Process(target=generate_airports, args=(paths, param)))
@@ -244,8 +244,30 @@ def generate_weather_files(paths, param): #ToDo: Multiprocessing?
 
         # Create the overall wind speed
         W50M = abs(U50M + (1j * V50M))
+        hdf5storage.writes({"SWTDN": SWTDN}, paths["SWTDN"], store_python_metadata=True,
+                           matlab_compatible=True)
+        hdf5storage.writes({"SWGDN": SWGDN}, paths["SWGDN"], store_python_metadata=True,
+                           matlab_compatible=True)
         # Calculate the clearness index
-        CLEARNESS = np.divide(SWGDN, SWTDN, out=np.zeros_like(SWGDN), where=SWTDN != 0)
+        # MERRA bias corrections
+        TOPO_low = hdf5storage.read("TOPO_low", paths["TOPO_low"]).astype(float)
+        TOPO_low = TOPO_low / 1000 #in km
+        SWGDN = hdf5storage.read("SWGDN", paths["SWGDN"]).astype(float)
+        SWTDN = hdf5storage.read("SWTDN", paths["SWTDN"]).astype(float)
+        numfactor1 = 1 + 0.087 * np.multiply(TOPO_low, TOPO_low) - 0.065 * TOPO_low - 0.51
+        # numfactor2 = np.multiply(SWGDN, SWTDN)
+        num = np.zeros([param["m_low"],param["n_low"],8760])
+        for hour in range(8760):
+            num[:,:,hour] = np.multiply(numfactor1, SWGDN[:,:,hour])
+        den = -0.82 * SWGDN + SWTDN
+        CLEARNESS = np.divide(num, den, out=np.zeros_like(num), where=den != 0)
+        for i in range(param["m_low"]):
+            for j in range(param["n_low"]):
+                for k in range(8760):
+                    if CLEARNESS[i,j,k] > 0.7:
+                        CLEARNESS[i,j,k] = SWGDN[i,j,k] / SWTDN[i,j,k]
+        # Clearness without corrections
+        # CLEARNESS = np.divide(SWGDN, SWTDN, out=np.zeros_like(SWGDN), where=SWTDN != 0)
 
         sys.stdout.write("\n")
         logger.info("Writing Files: T2M, W50M, CLEARNESS")
@@ -640,55 +662,27 @@ def generate_topography(paths, param):
         logger.info('Skip')    # Skip generation if files are already there
 
     else:
+    # if 1==1:
         logger.info("Start")
         Crd_all = param["Crd_all"]
-        # Ind = sf.ind_global(Crd_all, param["res_topography"])[0]
         Ind = sf.ind_global(Crd_all, param["res_desired"])[0]
         GeoRef = param["GeoRef"]
-        # Topo = np.zeros((int(180 / param["res_topography"][0]), int(360 / param["res_topography"][1])))
-        # tile_extents = np.zeros((24, 4), dtype=int)
-        # i = 1
-        # j = 1
-        # for letter in ul.char_range("A", "X"):
-        #     north = (i - 1) * 45 / param["res_topography"][0] + 1
-        #     east = j * 60 / param["res_topography"][1]
-        #     south = i * 45 / param["res_topography"][0]
-        #     west = (j - 1) * 60 / param["res_topography"][1] + 1
-        #     tile_extents[ord(letter) - ord("A"), :] = [north, east, south, west]
-        #     j = j + 1
-        #     if j == 7:
-        #         i = i + 1
-        #         j = 1
-        # n_min = (Ind[0] // (45 * 240)) * 45 / param["res_topography"][0] + 1
-        # e_max = (Ind[1] // (60 * 240) + 1) * 60 / param["res_topography"][1]
-        # s_max = (Ind[2] // (45 * 240) + 1) * 45 / param["res_topography"][0]
-        # w_min = (Ind[3] // (60 * 240)) * 60 / param["res_topography"][1] + 1
-        #
-        # need = np.logical_and(
-        #     (np.logical_and((tile_extents[:, 0] >= n_min), (tile_extents[:, 1] <= e_max))),
-        #     np.logical_and((tile_extents[:, 2] <= s_max), (tile_extents[:, 3] >= w_min)),
-        # )
-        #
-        # for letter in ul.char_range("A", "X"):
-        #     index = ord(letter) - ord("A")
-        #     if need[index]:
-        #         with rasterio.open(paths["Topo_tiles"] + "15-" + letter + ".tif") as src:
-        #             tile = src.read()
-        #         Topo[tile_extents[index, 0] - 1 : tile_extents[index, 2], tile_extents[index, 3] - 1 : tile_extents[index, 1]] = tile[0, 0:-1, 0:-1]
-        #
-        # A_TOPO = np.flipud(Topo[Ind[0] - 1 : Ind[2], Ind[3] - 1 : Ind[1]])
-        # A_TOPO = sf.adjust_resolution(A_TOPO, param["res_topography"], param["res_desired"], "mean")
-        # A_TOPO = sf.recalc_topo_resolution(A_TOPO, param["res_topography"], param["res_desired"])
+        m_low = param ["m_low"]
+        n_low = param ["n_low"]
 
         with rasterio.open(paths["Topo_global"]) as src:
             A_TOPO = src.read(1, window=rasterio.windows.Window.from_slices(slice(Ind[0] - 1, Ind[2]),
                                                                             slice(Ind[3] - 1, Ind[1])))
             A_TOPO = np.flipud(A_TOPO)
 
+        A_TOPO_low = np.zeros([m_low,n_low])
+        for i in range(m_low):
+            for j in range(n_low):
+                A_TOPO_low[i,j] = np.sum(A_TOPO[i:i+200,j:j+250])/(200*250)
 
         hdf5storage.writes({"TOPO": A_TOPO}, paths["TOPO"], store_python_metadata=True, matlab_compatible=True)
+        hdf5storage.writes({"TOPO_low": A_TOPO_low}, paths["TOPO_low"], store_python_metadata=True, matlab_compatible=True)
         logger.info("files saved: " + paths["TOPO"])
-        # ul.create_json(paths["TOPO"], param, ["region_name", "Crd_all", "res_topography", "res_desired", "GeoRef"], paths, ["Topo_tiles", "TOPO"])
         ul.create_json(paths["TOPO"], param, ["region_name", "Crd_all", "res_desired", "GeoRef"],
                        paths, ["Topo_global", "TOPO"])
         if param["savetiff_inputmaps"]:
@@ -1408,7 +1402,6 @@ def generate_livestock(paths, param):
     :rtype: None
     """
     logger.info("Start")
-    res_desired = param["res_desired"]
     Crd_all = param["Crd_all"]
     Ind = sf.ind_global(Crd_all, param["res_livestock"])[0]
     GeoRef = param["GeoRef"]
@@ -1421,7 +1414,6 @@ def generate_livestock(paths, param):
                                                                           slice(Ind[3] - 1, Ind[1])))
         A_LS = np.flipud(A_LS)
         A_LS = sf.recalc_livestock_resolution(A_LS, param["res_livestock"], param["res_desired"])
-        # print (np.size(A_LS))
         A_LS[A_LS < 0] = float(0)
         A_LS = np.multiply(A_LS, A_area) / (10 ** 6)
 

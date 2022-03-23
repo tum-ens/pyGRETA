@@ -67,7 +67,7 @@ def general_settings():
     param["author"] = "Thushara Addanki"  # the name of the person running the script
     param["comment"] = "Potential Analysis"
     param["path_database_windows"] = "..\..\pyGRETA\Database_KS"    # specify the relative (from the runme.py file) or the absolute path to the database folder
-    param["path_database_linux"] = os.path.expanduser("~") + fs + "database_ks"  # specify path to database on linux
+    param["path_database_linux"] = os.path.expanduser("~") + fs + "pygreta" + fs + "0_database"  # specify path to database on linux
 
     if sys.platform.startswith("win"):
         root = param["path_database_windows"]       # use windows location of database folder
@@ -123,10 +123,11 @@ def scope_paths_and_parameters(paths, param, config_file):
                            skip_blank_lines=True, )  # Import parameters from config_files in folder 'configs'
     input_dict = input_df[1].to_dict()  # Convert dataframe to dict with values from the first column
 
-    paths["subregions"] = PathTemp + input_dict["regions"].replace(" ", "")
     param["region_name"] = input_dict["region_name"].replace(" ", "")  # Name tag of the spatial scope
     param["subregions_name"] = input_dict["subregions_name"] .replace(" ", "") # Name tag of the subregions
     param["country_code"] = input_dict["country_code"].replace(" ", "")
+    paths["subregions"] = PathTemp + "gadm40_" + param["country_code"] + "_shp" + fs + input_dict["regions"].replace(
+        " ", "")
     param["year"] = int(input_dict["year"].replace(" ", ""))  # Convert string 'xxxx' to int
     param["technology"] = input_dict["technology"].replace(" ", "").split(',')  # Creat array by comma separated string
     param["gid"] = input_dict["gid"].replace(" ", "")  # Define spatial level according to GID
@@ -148,7 +149,7 @@ def computation_parameters(param):
     :return param: The updated dictionary param.
     :rtype: dict
     """
-    param["nproc"] = 6
+    param["nproc"] = 10
     param["CPU_limit"] = True
     return param
 
@@ -426,27 +427,27 @@ def osm_areas(param):
 def buffers(param):
 
     buffer = {
-        "snow": 4,
-        "water": 1,
-        "wetland": 1,
+        "snow": 4, #Landuse
+        "water": 1, #Landuse
+        "wetland": 1, #Landuse
 
-        "protected_areas_pv": 1,
-        "protected_areas_windon": 2,
-        "protected_areas_windoff": 4,
+        "protected_areas_pv": 1, #ProtectedAreas
+        "protected_areas_windon": 2, #ProtectedAreas
+        "protected_areas_windoff": 4, #ProtectedAreas
 
-        "airport_windon": 16,
-        "boarder": 2,
+        "airport_windon": 16, #Airports
+        "boarder": 2, #gadm
 
-        "commercial_windon" : 2,
-        "industrial_windon" : 1,
-        "mining" : 1,
-        "military_windon" : 2,
-        "park_pv" : 1,
-        "park_windon" : 3,
-        "recreation_windon" : 1,
+        "commercial_windon" : 2, #osm
+        "industrial_windon" : 1, #osm
+        "mining" : 1, #osm
+        "military_windon" : 2, #osm
+        "park_pv" : 1, #osm
+        "park_windon" : 3, #osm
+        "recreation_windon" : 1, #osm
 
-        "settlement_pv": 1,
-        "settlement_windon" : 4,
+        "settlement_pv": 1, #WSF
+        "settlement_windon" : 4, #WSF
 
         "hydrolakes" : 1,
         "hydrorivers_pv" : 1,
@@ -649,7 +650,7 @@ def csp_parameters(param):
     }
     csp["mask"] = {
         "slope": 20,
-        "lu_suitability": np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0]),
+        "lu_suitability": np.array([1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,1,1,1,1,1,0,0,0,0,1,1,1,0,0]),
         "pa_suitability": np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     }
     csp["weight"] = {
@@ -992,7 +993,7 @@ def output_folders(paths, param):
 
     # Main output folder
     # paths["region"] = root + "03 Intermediate files" + fs + "Files " + region + fs        # old structure of database
-    paths["region"] = os.path.join(root, "..", "1_results", "Files" + region, "")
+    paths["region"] = os.path.join(root, "..", "1_results", "Files " + region, "")
 
     # Output folder for weather data
     paths["weather_data"] = paths["region"] + "Weather data" + fs
@@ -1049,6 +1050,9 @@ def weather_output_paths(paths, param):
     year = str(param["year"])
     paths["W50M"] = paths["weather_data"] + "w50m_" + year + ".mat"
     paths["CLEARNESS"] = paths["weather_data"] + "clearness_" + year + ".mat"
+    paths["SWGDN"] = paths["weather_data"] + "SWGDN_" + year + ".mat"
+    paths["SWTDN"] = paths["weather_data"] + "SWTDN_" + year + ".mat"
+    paths["SWGDN_real"] = paths["weather_data"] + "SWGDN_real_" + year + ".mat"
     paths["T2M"] = paths["weather_data"] + "t2m_" + year + ".mat"
     paths["W50M_offshore"] = paths["weather_data"] + "w50m_offshore" + year + ".mat"
 
@@ -1101,6 +1105,7 @@ def local_maps_paths(paths, param):
     paths["AREA"] = PathTemp + "_Area.mat"  # Area per pixel in m²
     paths["AREA_offshore"] = PathTemp + "_Area_offshore.mat"  # Area per pixel in m²
     paths["TOPO"] = PathTemp + "_Topography.mat"  # Topography
+    paths["TOPO_low"] = PathTemp + "_Topography_low.mat"
     paths["SLOPE"] = PathTemp + "_Slope.mat"  # Slope
     paths["BATH"] = PathTemp + "_Bathymetry.mat"  # Bathymetry
 
@@ -1283,6 +1288,9 @@ def potential_output_paths(paths, param, tech):
 
     # File name for Biomass
     if tech in ["Biomass"]:
+        paths[tech]["BIOMASS_CROPS"] = PathTemp + "_Biomass_Crops.mat"
+        paths[tech]["BIOMASS_WOOD"] = PathTemp + "_Biomass_Wood.mat"
+        paths[tech]["BIOMASS_MANURE"] = PathTemp + "_Biomass_Manure.mat"
         paths[tech]["BIOMASS_ENERGY"] = PathTemp + "_Biomass_Energy.mat"
         paths[tech]["BIOMASS_CO2"] = PathTemp + "_Biomass_CO2.mat"
     # File name for all other tech
@@ -1339,7 +1347,7 @@ def regional_analysis_output_paths(paths, param, tech):
     paths[tech]["Region_Stats"] = PathTemp + "_Region_stats_" + year + ".csv"
 
     if tech != "Biomass":
-        paths[tech]["Locations"] = PathTemp + "_Locations.shp"
+        paths[tech]["Locations"] = PathTemp + "_Locations_" + year + ".shp"
         paths[tech]["TS"] = PathTemp + "_TS_" + year + ".csv"
         paths[tech]["Sorted_FLH"] = PathTemp + "_sorted_FLH_sampled_" + year + ".mat"
         paths[tech]["Regression_coefficients"] = paths["regression_out"] + subregions + "_" + tech + "_reg_coefficients_"

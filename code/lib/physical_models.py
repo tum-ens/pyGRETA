@@ -203,8 +203,10 @@ def calc_CF_solar(hour, reg_ind, param, merraData, rasterData, tech):
 
     if tech == "CSP":
         # Wind Speed Corrected at 2m
-        w2m_h = ul.resizem(merraData["W50M"][:, :, hour], m_high, n_high)
-        w2m_h = w2m_h[reg_ind] * rasterData["A_WindSpeed_Corr"][reg_ind]
+        # w2m_h = ul.resizem(merraData["W50M"][:, :, hour], m_high, n_high)
+        w2m_h = merraData["W50M"][:, :, hour]
+        # w2m_h = w2m_h[reg_ind] * rasterData["A_WindSpeed_Corr"][reg_ind]
+        w2m_h = w2m_h[reg_ind_h] * rasterData["A_WindSpeed_Corr"][reg_ind_h]
 
         # Wind Speed cutoff filter:
         windfilter = w2m_h >= csp["Wind_cutoff"]

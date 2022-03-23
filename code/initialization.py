@@ -3,6 +3,9 @@ from lib import spatial_functions as sf
 from lib.log import logger
 import geopandas as gpd
 import numpy as np
+import urllib.request
+import os
+import zipfile
 import shapely
 # import matplotlib.pyplot as plt
 
@@ -81,7 +84,7 @@ def read_EEZ(paths, param, scope_shp):
     eez_shp = gpd.read_file(paths["EEZ_global"])    # Import all exclusive economic zones worldwide
     eez_shp = eez_shp.to_crs(epsg=4326)             # In case it is not already in this format
 
-    countries = scope_shp['GID_0'].drop_duplicates()        # Obtain the countries out of the regions shapefile
+    countries = scope_shp['ID_0'].drop_duplicates()        # Obtain the countries out of the regions shapefile
     eez_shp = eez_shp[eez_shp['ISO_Ter1'].isin(countries)].reset_index()    # Remain only eez areas of countries involved
 
     param["offshore_scope"] = sf.define_spatial_scope(eez_shp)
